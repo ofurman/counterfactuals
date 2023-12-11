@@ -5,20 +5,19 @@ description = "A package for demonstrating counterfactuals"
 dependencies = [
   "umap-learn",
   "nflows @ git+https://github.com/pfilo8/nflows.git",
+  "UMNN",
   "pandas",
   "torch",
   "tqdm",
   "matplotlib",
   "plotly",
-  "ipykernel"
+  "ipykernel",
+  "scikit-learn",
 ]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-
 [tool.setuptools.packages .find]
-where = ["src"]
+where = ["."]
