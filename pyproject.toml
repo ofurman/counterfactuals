@@ -1,0 +1,24 @@
+[project]
+name = "counterfactuals"
+version = "2023.05.1"
+description = "A package for demonstrating counterfactuals"
+dependencies = [
+  "umap-learn",
+  "nflows @ git+https://github.com/pfilo8/nflows.git",
+  "pandas",
+  "torch",
+  "tqdm",
+  "matplotlib",
+  "plotly",
+  "ipykernel"
+]
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages .find]
+where = ["src"]
