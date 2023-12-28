@@ -2,5 +2,5 @@
 
 To install requirements use this code:
 ```bash
-pip install .
+pip install -e .
 ```

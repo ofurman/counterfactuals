@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 from counterfactuals.optimizers.base import AbstractCounterfactualModel
 
 
-class MainCounterfactuals(AbstractCounterfactualModel):
+class ApproachTwo(AbstractCounterfactualModel):
     def __init__(self, model, device=None):
         self.model = model
         if device:
@@ -36,14 +36,22 @@ class MainCounterfactuals(AbstractCounterfactualModel):
             float: The loss for the current training step.
         """
         alpha = kwargs.get("alpha", None)
+        beta = kwargs.get("beta", None)
         if alpha is None:
-            raise ValueError("Paramtere 'alpha' should be in kwargs")
+            raise ValueError("Parameter 'alpha' should be in kwargs")
+        if beta is None:
+            raise ValueError("Parameter 'beta' should be in kwargs")
 
+        self.model.eval()
         dist = torch.linalg.norm(x_origin - x_param, axis=1)
 
-        p_orig = self.model.log_prob(x_param, context=context_origin)
-        p_hat = self.model.log_prob(x_param, context=context_target)
-        loss = dist - alpha * (p_hat - torch.logsumexp(torch.concat([p_orig, p_hat]), dim=0))
+        p_x_param_c_orig = self.model.log_prob(x_param, context=context_origin).exp()
+        p_x_param_c_target = self.model.log_prob(x_param, context=context_target).exp()
+        p_x_orig_c_orig = self.model.log_prob(x_origin, context=context_origin).exp()
+        
+        max_inner = torch.max(torch.cat((p_x_param_c_orig + beta, p_x_orig_c_orig)))
+        max_outer = torch.max(torch.cat((max_inner - p_x_param_c_target, torch.Tensor([0.0]))))
+        loss = dist + alpha * max_outer
         return loss
 
     def train_model(
@@ -58,7 +66,7 @@ class MainCounterfactuals(AbstractCounterfactualModel):
         """
         optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
 
-        for i in tqdm(range(epochs), desc="Epochs: "):
+        for i in tqdm(range(epochs), desc="Epochs: ", leave=False):
             train_losses = []
             test_losses = []
             for x, y in train_loader:

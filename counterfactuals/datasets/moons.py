@@ -1,25 +1,25 @@
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler, LabelEncoder
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.datasets import make_moons
 
 from counterfactuals.datasets.base import AbstractDataset
 
 
-class HelocDataset(AbstractDataset):
+class MoonsDataset(AbstractDataset):
     def __init__(self, file_path: str = None, preprocess: bool = True):
         super().__init__(data=None)
-        self.scaler = MinMaxScaler()
 
         # TODO: make from_filepath class method
         if file_path:
             self.load(file_path=file_path)
             if preprocess:
                 self.preprocess()
+        else:
+            X, y = make_moons(n_samples=4096, random_state=42)
+            self.data = pd.DataFrame(np.hstack([X, y.reshape(-1 ,1)]))
 
     def load(self, file_path):
         """
@@ -50,17 +50,15 @@ class HelocDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        X = self.data[self.data.columns[1:]]
-        y = self.data[self.data.columns[0]]
+        X = self.data[self.data.columns[:-1]]
+        y = self.data[self.data.columns[-1]]
         X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True)
 
-        self.feature_transformer = MinMaxScaler()
-        self.X_train = self.feature_transformer.fit_transform(X_train)
-        self.X_test = self.feature_transformer.transform(X_test)
+        self.X_train = X_train
+        self.X_test = X_test
 
-        self.target_transformer = LabelEncoder()
-        self.y_train = self.target_transformer.fit_transform(y_train.reshape(-1, 1))
-        self.y_test = self.target_transformer.transform(y_test.reshape(-1, 1))
+        self.y_train = y_train.reshape(-1, 1)
+        self.y_test = y_test.reshape(-1, 1)
 
         self.X_train = self.X_train.astype(np.float32)
         self.X_test = self.X_test.astype(np.float32)

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class AbstractDataset(ABC):
     def __init__(self, data=None):
         self.data = data
@@ -24,3 +25,21 @@ class AbstractDataset(ABC):
         Save the processed data to a file or destination.
         """
         pass
+    
+    @abstractmethod
+    def get_split_data(self):
+        """
+        Return X_train, X_test, y_train, y_test.
+        """
+
+    @abstractmethod
+    def train_dataloader(self):
+        """
+        Return train torch dataloader.
+        """
+
+    @abstractmethod
+    def test_dataloader(self):
+        """
+        Return test torch dataloader.
+        """
