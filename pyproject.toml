@@ -13,6 +13,9 @@ dependencies = [
   "plotly",
   "ipykernel",
   "scikit-learn",
+  "mlflow",
+  "black",
+  "isort",
 ]
 
 [build-system]

@@ -11,15 +11,14 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class HelocDataset(AbstractDataset):
-    def __init__(self, file_path: str = None, preprocess: bool = True):
+    def __init__(self, file_path: str, preprocess: bool = True):
         super().__init__(data=None)
         self.scaler = MinMaxScaler()
 
         # TODO: make from_filepath class method
-        if file_path:
-            self.load(file_path=file_path)
-            if preprocess:
-                self.preprocess()
+        self.load(file_path=file_path)
+        if preprocess:
+            self.preprocess()
 
     def load(self, file_path):
         """
@@ -80,7 +79,7 @@ class HelocDataset(AbstractDataset):
 
     def test_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
         return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
+            TensorDataset(torch.from_numpy(self.X_test), torch.from_numpy(self.y_test)),
             batch_size=batch_size,
             shuffle=shuffle,
             **kwargs_dataloader,
