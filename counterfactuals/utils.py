@@ -23,6 +23,53 @@ def plot_x_point(x, x_origin, model):
     ax.arrow(x_origin[0], x_origin[1], x_res[0]-x_origin[0], x_res[1]-x_origin[1], width=0.025, length_includes_head=True, color="C3")
     ax.scatter(x_origin[0], x_origin[1], c="r")
 
+def plot_model_distribution(model):
+    fig, ax = plt.subplots(1, 1)
+    fig.set_size_inches(8,5)
+
+    xline = torch.linspace(-1.5, 2.5, 200)
+    yline = torch.linspace(-.75, 1.25, 200)
+    xgrid, ygrid = torch.meshgrid(xline, yline)
+    xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+    
+    with torch.no_grad():
+        zgrid = model.log_prob(xyinput, torch.zeros(40000, 1)).exp().reshape(200, 200) \
+                - model.log_prob(xyinput, torch.ones(40000, 1)).exp().reshape(200, 200) \
+
+    cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=50, cmap=cm.PuBu_r) # locator=ticker.LogLocator()
+    cbar = fig.colorbar(cs)
+    plt.show()
+
+def plot_loss_space(x, x_origin, optim_function, **optim_function_params):
+    fig, ax = plt.subplots(1, 1)
+    fig.set_size_inches(8,5)
+
+    xline = torch.linspace(-1.5, 2.5, 200)
+    yline = torch.linspace(-.75, 1.25, 200)
+    xgrid, ygrid = torch.meshgrid(xline, yline)
+    xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+
+    x_res = x.detach().numpy().squeeze()
+    context_origin = torch.zeros((xyinput.shape[0], 1))
+    context_target = torch.ones((xyinput.shape[0], 1))
+    
+    with torch.no_grad():
+        zgrid, _, _, _ = optim_function(xyinput, x_origin, context_origin, context_target, **optim_function_params)
+        zgrid = zgrid.log().reshape(200, 200)
+
+    # zgrid[zgrid > 2] = 2
+    cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=100, cmap=cm.PuBu_r) #  locator=ticker.LogLocator()
+    cbar = fig.colorbar(cs)
+    ax.scatter(x_origin[0,0], x_origin[0,1], c="r")
+    min_i = np.argmin(zgrid)
+    print(torch.min(zgrid))
+
+    ax.scatter(xyinput[min_i, 0], xyinput[min_i, 1], c="y")
+    ax.arrow(x_origin[0, 0], x_origin[0, 1], x_res[0]-x_origin[0, 0], x_res[1]-x_origin[0, 1], width=0.025, length_includes_head=True, color="C3")
+    plt.show()
+
+
+
 
 def plot_distributions(x, x_orig, model, optim_function, alpha):
     fig, ax = plt.subplots(1, 2)

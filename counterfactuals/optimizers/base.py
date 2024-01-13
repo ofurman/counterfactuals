@@ -79,7 +79,7 @@ class AbstractCounterfactualModel(ABC):
 
         for epoch in range(num_epochs):
             optimizer.zero_grad()
-            loss = self.search_step(x, x_origin, context_origin, context_target, **search_step_kwargs)
+            loss, _, _, _ = self.search_step(x, x_origin, context_origin, context_target, **search_step_kwargs)
             loss.backward()
             optimizer.step()
 

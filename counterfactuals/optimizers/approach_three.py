@@ -45,14 +45,13 @@ class ApproachThree(AbstractCounterfactualModel):
 
         p_x_param_c_orig = self.model.log_prob(x_param, context=context_origin)
         p_x_param_c_target = self.model.log_prob(x_param, context=context_target)
-        p_x_orig_c_orig = self.model.log_prob(x_origin, context=context_origin)
-                                            #   torch.zeros(x_origin.shape[0]).reshape(-1, 1))
+        p_x_orig_c_orig = self.model.log_prob(x_origin, context=context_origin.flatten()[0].repeat((x_origin.shape[0], 1)))
 
         p_x_param_c_orig_with_beta = p_x_param_c_orig + beta
         max_inner = torch.nn.functional.relu(p_x_orig_c_orig-p_x_param_c_target)
         max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
         loss = dist + alpha * (max_outer + max_inner)
-        return loss
+        return loss, dist, max_inner, max_outer
     
     def generate_counterfactuals(self, Xs, ys, num_epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]

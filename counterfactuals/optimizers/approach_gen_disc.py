@@ -56,7 +56,7 @@ class ApproachGenDisc(AbstractCounterfactualModel):
         max_inner = torch.nn.functional.relu(p_x_orig_c_orig-p_x_param_c_target)
         max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
         loss = dist + alpha * (max_outer + max_inner)
-        return loss
+        return loss, dist, max_inner, max_outer
     
     def generate_counterfactuals(self, Xs, ys, num_epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]
