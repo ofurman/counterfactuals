@@ -8,24 +8,30 @@ from tqdm.auto import tqdm
 
 import numpy as np
 from sklearn.metrics import classification_report
+from sklearn.base import RegressorMixin, ClassifierMixin
 
 from counterfactuals.utils import plot_distributions
 
 class AbstractCounterfactualModel(ABC):
-    def __init__(self, model, with_context: bool = False, device=None):
+    def __init__(self, model, disc_model=None, device=None, mlflow=None):
         """
         Initializes the trainer with the provided model.
 
         Args:
             model (nn.Module): The PyTorch model to be trained.
         """
-        self.model = model
-        self.with_context = with_context
+        if isinstance(model, str):
+            model = torch.load(model)
+        else:
+            self.model = model
+        self.classifier = disc_model
+        self.with_context = False if self.classifier else True
         if device:
             self.device = device
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
+        self.mlflow = mlflow
 
     @abstractmethod
     def search_step(self, x_param, x_origin, context_origin, context_target):
@@ -37,19 +43,6 @@ class AbstractCounterfactualModel(ABC):
 
         Returns:
             float: The loss for the current training step.
-        """
-        pass
-
-    @abstractmethod
-    def train_model(
-        self,
-        train_loader: DataLoader,
-        test_loader: DataLoader,
-        epochs: int = 100,
-        verbose: bool = True,
-    ):
-        """
-        Trains the model for a specified number of epochs.
         """
         pass
 
@@ -91,6 +84,47 @@ class AbstractCounterfactualModel(ABC):
             print("Search finished!")
         return x
     
+    def search_batch(
+        self,
+        dataloader: DataLoader,
+        epochs: int = 10,
+        lr: float = 0.01,
+        verbose: bool = False,
+        **search_step_kwargs,
+    ):
+        """
+        Trains the model for a specified number of epochs.
+        """
+        self.model.eval()
+        counterfactuals = []
+        original = []
+        original_class = []
+
+        loss_hist = []
+        for xs_origin, contexts_origin in tqdm(dataloader):
+            contexts_origin = contexts_origin.reshape(-1, 1)
+            contexts_target = torch.abs(1-contexts_origin)
+
+            xs_origin = torch.as_tensor(xs_origin)
+            xs = xs_origin.clone()
+            xs_origin.requires_grad = False
+            xs.requires_grad = True
+
+            optimizer = optim.Adam([xs], lr=lr)
+
+            for epoch in range(epochs):
+                optimizer.zero_grad()
+                loss, _, _, _ = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
+                mean_loss = loss.mean()
+                mean_loss.backward()
+                optimizer.step()
+
+                loss_hist.append(loss.detach().cpu().numpy())
+            counterfactuals.append(xs.detach().cpu().numpy())
+            original.append(xs_origin.detach().cpu().numpy())
+            original_class.append(contexts_origin.detach().cpu().numpy())
+        return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class, axis=0)
+    
 
     def _model_log_prob(self, inputs, context):
         context = context if self.with_context else None
@@ -102,14 +136,14 @@ class AbstractCounterfactualModel(ABC):
         train_loader: DataLoader,
         test_loader: DataLoader,
         epochs: int = 100,
-        verbose: bool = True, #TODO: add support of this parameter.
     ):
         """
         Trains the model for a specified number of epochs.
         """
         optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
-
-        for i in tqdm(range(epochs), desc="Epochs: "):
+        train_losses = []
+        i=0
+        for i in (pbar := tqdm(range(epochs), desc=f"Epochs: {i}, Loss: {np.mean(train_losses)}")):
             train_losses = []
             test_losses = []
             for x, y in train_loader:
@@ -124,8 +158,10 @@ class AbstractCounterfactualModel(ABC):
                     y = y.reshape(-1, 1)
                     loss = -self._model_log_prob(inputs=x, context=y).mean()
                     test_losses.append(loss.item())
-            if i % 10 == 0:
-                print(f"Epoch {i}, Train: {np.mean(train_losses)}, test: {np.mean(test_losses)}")
+            if self.mlflow:
+                self.mlflow.log_metric("gen_train_nll", np.mean(train_losses), step=i)
+                self.mlflow.log_metric("gen_test_nll", np.mean(test_losses), step=i)
+            pbar.set_description(f"Epoch {i}, Train: {np.mean(train_losses):.4f}, test: {np.mean(test_losses):.4f}")
 
     def test_model(
         self,
@@ -152,7 +188,7 @@ class AbstractCounterfactualModel(ABC):
         
         y_pred = torch.concat(y_pred)
         y_true = torch.concat(y_true)
-        print(classification_report(y_true=y_true, y_pred=y_pred))
+        return classification_report(y_true=y_true, y_pred=y_pred, output_dict=True)
 
 
     def predict_model_point(self, x: np.ndarray):

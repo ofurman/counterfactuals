@@ -103,3 +103,17 @@ def plot_distributions(x, x_orig, model, optim_function, alpha):
     ax[0].set_title(f"log_p_orig: {log_p_origin:.2e}")
     ax[1].set_title(f"Distance: {np.linalg.norm(x_orig - x_res):0.2f}, log_p: {log_p:.2e}")
     plt.show()
+
+def flatten_dict(dd, separator ='_', prefix =''):
+    return { prefix + separator + k if prefix else k : v
+             for kk, vv in dd.items()
+             for k, v in flatten_dict(vv, separator, kk).items()
+             } if isinstance(dd, dict) else { prefix : dd }
+
+def add_prefix_to_dict(d: dict, prefix: str) -> dict:
+    return {prefix + "/" + k : v for k,v in d.items()}
+
+def process_classification_report(report: dict, prefix: str) -> dict:
+    report = flatten_dict(report)
+    report = add_prefix_to_dict(report, prefix)
+    return report

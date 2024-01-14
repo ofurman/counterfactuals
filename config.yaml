@@ -1,0 +1,28 @@
+defaults:
+  - _self_
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+mlflow:
+  tracking_uri: "file:///Users/ofurman/Study/counterfactuals/mlruns"
+  experiment_name: "Counterfactuals"
+
+dataset:
+  _target_: "counterfactuals.datasets.CompasDataset"
+
+gen_model:
+  checkpoint_path: null
+  batch_size: 128
+  epochs: 100
+
+disc_model:
+  # _target_: "sklearn.linear_model.LogisticRegression"
+  _target_: sklearn.neural_network.MLPClassifier
+  hidden_layer_sizes: [128, 64]
+  
+
+counterfactuals:
+  epochs: 500
+  lr: 0.005
+  alpha: 20
+  beta: 0.01

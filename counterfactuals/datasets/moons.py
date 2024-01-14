@@ -9,9 +9,7 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class MoonsDataset(AbstractDataset):
-    def __init__(self, file_path: str, preprocess: bool = True):
-        super().__init__(data=None)
-
+    def __init__(self, file_path: str = "data/origin/moons.csv", preprocess: bool = True):
         # TODO: make from_filepath class method
         self.load(file_path=file_path)
         if preprocess:
@@ -24,7 +22,7 @@ class MoonsDataset(AbstractDataset):
         try:
             self.data = pd.read_csv(file_path, header=None)
         except Exception as e:
-            print(f"Error loading data from {file_path}: {e}")
+            raise FileNotFoundError(f"Error loading data from {file_path}: {e}")
 
     def save(self, file_path):
         """
@@ -48,6 +46,11 @@ class MoonsDataset(AbstractDataset):
 
         X = self.data[self.data.columns[:-1]]
         y = self.data[self.data.columns[-1]]
+
+        self.numerical_features = [0, 1]
+        self.categorical_features = []
+        self.actionable_features = [0, 1]
+
         X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True)
 
         self.X_train = X_train

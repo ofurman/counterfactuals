@@ -11,9 +11,8 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class CompasDataset(AbstractDataset):
-    def __init__(self, file_path: str, preprocess: bool = True):
+    def __init__(self, file_path: str = "data/origin/compas_two_years.csv", preprocess: bool = True):
         super().__init__(data=None)
-        self.scaler = MinMaxScaler()
 
         # TODO: make from_filepath class method
         self.load(file_path=file_path)
@@ -56,8 +55,8 @@ class CompasDataset(AbstractDataset):
             # Categorical
             'c_charge_degree', 'sex', 'race', 
         ]
-        self.continuous_columns = list(range(0, 7))
-        self.categorical_columns = list(range(7,10))
+        self.numerical_columns = list(range(0, 7))
+        self.categorical_columns = list(range(7, len(feature_columns)))
         target_column = 'class'
 
         self.data['days_b_screening_arrest'] = np.abs(self.data['days_b_screening_arrest'])
@@ -89,11 +88,10 @@ class CompasDataset(AbstractDataset):
 
         self.feature_transformer = ColumnTransformer(
             [
-                ("MinMaxScaler", MinMaxScaler(), self.continuous_columns),
+                ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 ("OneHotEncoder", OneHotEncoder(drop='if_binary', sparse_output=False), self.categorical_columns)
             ],
         )
-        self.categorical_columns = list(range(7,15))
         # self.feature_transformer.set_output(transform='pandas')
 
         self.X_train = self.feature_transformer.fit_transform(X_train)
@@ -106,6 +104,10 @@ class CompasDataset(AbstractDataset):
         self.X_test = self.X_test.astype(np.float32)
         self.y_train = self.y_train.astype(np.float32)
         self.y_test = self.y_test.astype(np.float32)
+
+        self.numerical_features = list(range(0, len(self.numerical_columns)))
+        self.categorical_features = list(range(len(self.numerical_columns), self.X_train.shape[1]))
+        self.actionable_features = list(range(0, self.X_train.shape[1]))
 
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test

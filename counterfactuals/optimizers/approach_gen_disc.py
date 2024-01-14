@@ -16,16 +16,6 @@ from counterfactuals.optimizers.base import AbstractCounterfactualModel
 
 
 class ApproachGenDisc(AbstractCounterfactualModel):
-    def __init__(self, gen_model, disc_model: ClassifierMixin, device=None):
-        self.with_context = False
-        self.model = gen_model
-        self.classifier = disc_model
-        if device:
-            self.device = device
-        else:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
-
     def search_step(self, x_param, x_origin, context_origin, context_target, **kwargs):
         """
         Performs a single search step for counterfactual point.
@@ -39,8 +29,16 @@ class ApproachGenDisc(AbstractCounterfactualModel):
 
         dist = torch.linalg.norm(x_origin-x_param, axis=1)
 
-        p_y_x_param = torch.from_numpy(self.classifier.predict_proba(x_param.detach().numpy())[:, 1])
-        p_y_x_orig = torch.from_numpy(self.classifier.predict_proba(x_origin)[:, 1])
+        # assert np.all(np.argmax(self.classifier.predict_proba(x_origin), axis=1) == context_origin.numpy().astype(int))
+        # p_y_x_param = torch.from_numpy(np.max(self.classifier.predict_proba(x_param.detach()), axis=1))
+        # p_y_x_orig = torch.from_numpy(np.max(self.classifier.predict_proba(x_origin), axis=1))
+
+        p_pred = self.classifier.predict_proba(x_origin)
+        max_i = np.argmax(p_pred, axis=1)
+        max_i = np.vstack([np.arange(p_pred.shape[0]), max_i])
+
+        p_y_x_param = torch.from_numpy(self.classifier.predict_proba(x_param.detach())[*max_i])
+        p_y_x_orig = torch.from_numpy(self.classifier.predict_proba(x_origin)[*max_i])
 
         p_x_param = self.model.log_prob(x_param, context=None).exp()
         p_x_orig = self.model.log_prob(x_param, context=None).exp()
@@ -58,7 +56,7 @@ class ApproachGenDisc(AbstractCounterfactualModel):
         loss = dist + alpha * (max_outer + max_inner)
         return loss, dist, max_inner, max_outer
     
-    def generate_counterfactuals(self, Xs, ys, num_epochs, lr, alpha, beta):
+    def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]
         ys = ys.reshape(-1, 1)
         ys_hat = np.abs(1-ys).reshape(-1, 1)
@@ -67,7 +65,7 @@ class ApproachGenDisc(AbstractCounterfactualModel):
             X = torch.Tensor(X)
             y = torch.Tensor(y)
             y_hat = torch.Tensor(y_hat)
-            x_cf = self.search(X, y, y_hat, num_epochs=num_epochs, lr=lr, alpha=alpha, beta=beta, verbose=False)
+            x_cf = self.search(X, y, y_hat, num_epochs=epochs, lr=lr, alpha=alpha, beta=beta, verbose=False)
             x_cfs.append(x_cf)
 
         # x_cfs = np.array([x.detach().numpy() for x in x_cfs]).squeeze()

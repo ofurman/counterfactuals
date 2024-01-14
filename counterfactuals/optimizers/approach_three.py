@@ -15,15 +15,6 @@ from counterfactuals.optimizers.base import AbstractCounterfactualModel
 
 
 class ApproachThree(AbstractCounterfactualModel):
-    def __init__(self, model, device=None):
-        self.model = model
-        self.with_context = True
-        if device:
-            self.device = device
-        else:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
-
     def search_step(self, x_param, x_origin, context_origin, context_target, **kwargs):
         """
         Performs a single training step on a batch of data.
@@ -53,7 +44,7 @@ class ApproachThree(AbstractCounterfactualModel):
         loss = dist + alpha * (max_outer + max_inner)
         return loss, dist, max_inner, max_outer
     
-    def generate_counterfactuals(self, Xs, ys, num_epochs, lr, alpha, beta):
+    def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]
         ys = ys.reshape(-1, 1)
         ys_hat = np.abs(1-ys).reshape(-1, 1)
@@ -62,7 +53,7 @@ class ApproachThree(AbstractCounterfactualModel):
             X = torch.Tensor(X)
             y = torch.Tensor(y)
             y_hat = torch.Tensor(y_hat)
-            x_cf = self.search(X, y, y_hat, num_epochs=num_epochs, lr=lr, alpha=alpha, beta=beta, verbose=False)
+            x_cf = self.search(X, y, y_hat, num_epochs=epochs, lr=lr, alpha=alpha, beta=beta, verbose=False)
             x_cfs.append(x_cf)
 
         # x_cfs = np.array([x.detach().numpy() for x in x_cfs]).squeeze()

@@ -38,6 +38,7 @@ def perc_valid_cf(y, y_cf):
     return res
 
 def actionable_cf(X, X_cf, actionable_features: list):
+    # TODO: rewrite
     assert X.shape == X_cf.shape, f"Shapes should be the same: {X.shape} - {X_cf.shape}"
     actionable = np.all((X == X_cf)[:, actionable_features], axis=1)
     return actionable
@@ -141,7 +142,7 @@ def distance_l2_jaccard(X, X_cf, continuous_features, categorical_features, rati
         ratio_categorical = len(categorical_features) / number_features
     else:
         ratio_continuous = ratio_cont
-        ratio_categorical = 1.0 - ratio_cont
+        ratio_categorical = 1.0 - ratio_continuous
     dist = ratio_continuous * dist_cont + ratio_categorical * dist_cate
     return dist
 

@@ -11,7 +11,7 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class LawDataset(AbstractDataset):
-    def __init__(self, file_path: str, preprocess: bool = True):
+    def __init__(self, file_path: str = "data/origin/law.csv", preprocess: bool = True):
         super().__init__(data=None)
         self.scaler = MinMaxScaler()
 
@@ -49,8 +49,10 @@ class LawDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        feature_columns = ["lsat", "gpa", "zfygpa"]
+        feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
         target_column = "pass_bar"
+        self.numerical_columns = list(range(0, 3))
+        self.categorical_columns = list(range(3, len(feature_columns)))
 
         # Downsample to minor class
         self.data = self.data.dropna(subset=feature_columns)
@@ -66,7 +68,12 @@ class LawDataset(AbstractDataset):
 
         X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True)
 
-        self.feature_transformer = MinMaxScaler()
+        self.feature_transformer = ColumnTransformer(
+            [
+                ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
+                ("OneHotEncoder", OneHotEncoder(drop='if_binary', sparse_output=False), self.categorical_columns)
+            ],
+        )
         self.X_train = self.feature_transformer.fit_transform(X_train)
         self.X_test = self.feature_transformer.transform(X_test)
 
@@ -80,6 +87,10 @@ class LawDataset(AbstractDataset):
         self.X_test = self.X_test.astype(np.float32)
         self.y_train = self.y_train.astype(np.float32)
         self.y_test = self.y_test.astype(np.float32)
+
+        self.numerical_features = list(range(0, len(self.numerical_columns)))
+        self.categorical_features = list(range(len(self.numerical_columns), self.X_train.shape[1]))
+        self.actionable_features = list(range(0, self.X_train.shape[1]))
 
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test
