@@ -4,6 +4,7 @@ import mlflow
 import numpy as np
 import torch
 import neptune
+from uuid import uuid4
 import pandas as pd
 from joblib import dump, load
 from hydra.utils import instantiate
@@ -38,10 +39,11 @@ def main(cfg: DictConfig):
     os.makedirs(output_folder, exist_ok=True)
 
     # Log parameters using Hydra config
-    run["parameters"] = add_prefix_to_dict(cfg.experiment, "experiment")
-    run["parameters"] = add_prefix_to_dict(cfg.dataset, "dataset")
-    run["parameters"] = add_prefix_to_dict(cfg.disc_model, "disc_model")
-    run["parameters"] = add_prefix_to_dict(cfg.gen_model, "gen_model")
+    run["parameters/experiment"] = cfg.experiment
+    run["parameters/dataset"] = cfg.dataset
+    run["parameters/disc_model"] = cfg.disc_model
+    run["parameters/gen_model"] = cfg.gen_model
+    run["parameters/counterfactuals"] = cfg.counterfactuals
 
     dataset = instantiate(cfg.dataset)
     train_dataloader=dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True)
@@ -54,7 +56,7 @@ def main(cfg: DictConfig):
     mlflow.log_metrics(process_classification_report(report, prefix="disc_test"))
     run["metrics"] = process_classification_report(report, prefix="disc_test")
 
-    disc_model_path = os.path.join(output_folder, "disc_model.joblib")
+    disc_model_path = os.path.join(output_folder, f"disc_model_{uuid4()}.joblib")
     dump(disc_model, disc_model_path)
     run["disc_model"].upload(disc_model_path)
     
@@ -88,6 +90,7 @@ def main(cfg: DictConfig):
         cf = ApproachThree(model=flow)
         gen_model_path = cfg.gen_model.checkpoint_path
     else:
+        gen_model_path = os.path.join(output_folder, f"gen_model_{uuid4()}.pt")
         flow = MaskedAutoregressiveFlow(
             features=dataset.X_train.shape[1],
             hidden_features=cfg.gen_model.hidden_features,
@@ -95,14 +98,12 @@ def main(cfg: DictConfig):
             num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
             context_features=1
         )
-        cf = ApproachThree(model=flow, neptune_run=run)
+        cf = ApproachThree(model=flow, neptune_run=run, checkpoint_path=gen_model_path)
         cf.train_model(
             train_loader=train_dataloader,
             test_loader=test_dataloader,
             epochs=cfg.gen_model.epochs,
         )
-        gen_model_path = os.path.join(output_folder, "gen_model.pt")
-        torch.save(cf.model, gen_model_path)
     run["gen_model"].upload(gen_model_path)
 
     report = cf.test_model(test_loader=test_dataloader)
@@ -115,11 +116,12 @@ def main(cfg: DictConfig):
         alpha=cfg.counterfactuals.alpha,
         beta=cfg.counterfactuals.beta
     )
-    pd.DataFrame(Xs_cfs).to_csv("data/counterfactuals.csv", index=False)
-    run["counterfactuals"].upload("data/counterfactuals.csv")
+    counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
+    pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    run["counterfactuals"].upload(counterfactuals_path)
 
-    ys_cfs_gen_pred = cf.predict_model(Xs_cfs)
-    ys_orig_gen_pred = cf.predict_model(Xs)
+    log_p_zeros, log_p_ones, ys_cfs_gen_pred = cf.predict_model(Xs_cfs)
+    _, _, ys_orig_gen_pred = cf.predict_model(Xs)
 
     ys_cfs_disc_pred = disc_model.predict(Xs_cfs)
     ys_orig_disc_pred = disc_model.predict(Xs)
@@ -133,24 +135,26 @@ def main(cfg: DictConfig):
         "valid_cf_disc": perc_valid_cf(ys_orig_disc_pred, y_cf=ys_cfs_disc_pred),
         # "perc_valid_actionable_cf": perc_valid_actionable_cf(X=dataset.X_test[:100], X_cf=Xs_cfs, y=ys_orig_pred, y_cf=ys_cfs_pred,
         #                                                      actionable_features=dataset.actionable_features),
-        # "continuous_distance": continuous_distance(X=Xs, X_cf=Xs_cfs, 
-        #                                            continuous_features=dataset.numerical_features, metric='mad', X_all=dataset.X_test),
-        # "categorical_distance": categorical_distance(X=Xs, X_cf=Xs_cfs,
-        #                                              categorical_features=dataset.categorical_features, metric='jaccard', agg='mean'),
-        # "distance_l2_jaccard": distance_l2_jaccard(X=Xs, X_cf=Xs_cfs,
-        #                                            continuous_features=dataset.numerical_features, categorical_features=dataset.categorical_features),
-        # "distance_mad_hamming": distance_mad_hamming(X=Xs, X_cf=Xs_cfs,
-        #                                             continuous_features=dataset.numerical_features, categorical_features=dataset.categorical_features, X_all=Xs, agg='mean'),
-        # "plausibility": plausibility(
-        #     Xs, Xs_cfs, ys_orig,
-        #     continuous_features_all=dataset.numerical_features,
-        #     categorical_features_all=dataset.categorical_features,
-        #     X_train=dataset.X_train,
-        #     ratio_cont=None
-        # ),
-        # "log_density": np.mean(cf.predict_model(test_dataloader))
+        "continuous_distance": continuous_distance(X=Xs, X_cf=Xs_cfs, 
+                                                   continuous_features=dataset.numerical_features, metric='mad', X_all=dataset.X_test),
+        "categorical_distance": categorical_distance(X=Xs, X_cf=Xs_cfs,
+                                                     categorical_features=dataset.categorical_features, metric='jaccard', agg='mean'),
+        "distance_l2_jaccard": distance_l2_jaccard(X=Xs, X_cf=Xs_cfs,
+                                                   continuous_features=dataset.numerical_features, categorical_features=dataset.categorical_features),
+        "distance_mad_hamming": distance_mad_hamming(X=Xs, X_cf=Xs_cfs,
+                                                    continuous_features=dataset.numerical_features, categorical_features=dataset.categorical_features, X_all=Xs, agg='mean'),
+        "plausibility": plausibility(
+            Xs, Xs_cfs, ys_orig,
+            continuous_features_all=dataset.numerical_features,
+            categorical_features_all=dataset.categorical_features,
+            X_train=dataset.X_train,
+            ratio_cont=None
+        ),
+        "log_density": np.mean(np.concatenate([log_p_zeros[ys_orig == 0], log_p_ones[ys_orig == 1]]))
     }
     run["metrics/counterfactuals"] = metrics
+
+    run.stop()
 
 if __name__ == "__main__":
     main()

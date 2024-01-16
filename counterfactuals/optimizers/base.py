@@ -13,7 +13,7 @@ from sklearn.base import RegressorMixin, ClassifierMixin
 from counterfactuals.utils import plot_distributions
 
 class AbstractCounterfactualModel(ABC):
-    def __init__(self, model, disc_model=None, device=None, neptune_run=None):
+    def __init__(self, model, disc_model=None, device=None, neptune_run=None, checkpoint_path=None):
         """
         Initializes the trainer with the provided model.
 
@@ -32,6 +32,7 @@ class AbstractCounterfactualModel(ABC):
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
         self.neptune_run = neptune_run
+        self.checkpoint_path = checkpoint_path
 
     @abstractmethod
     def search_step(self, x_param, x_origin, context_origin, context_target):
@@ -143,6 +144,7 @@ class AbstractCounterfactualModel(ABC):
         optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
         train_losses = []
         i=0
+        min_loss = np.inf
         for i in (pbar := tqdm(range(epochs), desc=f"Epochs: {i}, Loss: {np.mean(train_losses)}")):
             train_losses = []
             test_losses = []
@@ -157,11 +159,15 @@ class AbstractCounterfactualModel(ABC):
                 with torch.no_grad():
                     y = y.reshape(-1, 1)
                     loss = -self._model_log_prob(inputs=x, context=y).mean()
+                    if loss.item() < min_loss:
+                        min_loss = loss.item()
+                        torch.save(self.model, self.checkpoint_path)
                     test_losses.append(loss.item())
             if self.neptune_run:
                 self.neptune_run["gen_train_nll"].append(np.mean(train_losses))
                 self.neptune_run["gen_test_nll"].append(np.mean(test_losses))
             pbar.set_description(f"Epoch {i}, Train: {np.mean(train_losses):.4f}, test: {np.mean(test_losses):.4f}")
+        self.model = torch.load(self.checkpoint_path)
 
     def test_model(
         self,
@@ -222,13 +228,19 @@ class AbstractCounterfactualModel(ABC):
             dataloader = test_data
 
         results = []
+        log_p_zeros = []
+        log_p_ones = []
         with torch.no_grad():
             for x in dataloader:
                 x = x[0]
-                _, _, result = self.predict_model_point(x)
+                log_p_zero, log_p_one, result = self.predict_model_point(x)
                 results.append(result)
+                log_p_zeros.append(log_p_zero)
+                log_p_ones.append(log_p_one)
             results = torch.concat(results)
-        return results.numpy()
+            log_p_zeros = torch.concat(log_p_zeros)
+            log_p_ones = torch.concat(log_p_ones)
+        return log_p_zeros.numpy(), log_p_ones.numpy(), results.numpy()
 
         
 
