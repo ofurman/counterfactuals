@@ -13,7 +13,7 @@ from sklearn.base import RegressorMixin, ClassifierMixin
 from counterfactuals.utils import plot_distributions
 
 class AbstractCounterfactualModel(ABC):
-    def __init__(self, model, disc_model=None, device=None, mlflow=None):
+    def __init__(self, model, disc_model=None, device=None, neptune_run=None):
         """
         Initializes the trainer with the provided model.
 
@@ -31,7 +31,7 @@ class AbstractCounterfactualModel(ABC):
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
-        self.mlflow = mlflow
+        self.neptune_run = neptune_run
 
     @abstractmethod
     def search_step(self, x_param, x_origin, context_origin, context_target):
@@ -158,9 +158,9 @@ class AbstractCounterfactualModel(ABC):
                     y = y.reshape(-1, 1)
                     loss = -self._model_log_prob(inputs=x, context=y).mean()
                     test_losses.append(loss.item())
-            if self.mlflow:
-                self.mlflow.log_metric("gen_train_nll", np.mean(train_losses), step=i)
-                self.mlflow.log_metric("gen_test_nll", np.mean(test_losses), step=i)
+            if self.neptune_run:
+                self.neptune_run["gen_train_nll"].append(np.mean(train_losses))
+                self.neptune_run["gen_test_nll"].append(np.mean(test_losses))
             pbar.set_description(f"Epoch {i}, Train: {np.mean(train_losses):.4f}, test: {np.mean(test_losses):.4f}")
 
     def test_model(

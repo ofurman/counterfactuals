@@ -9,7 +9,7 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class MoonsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/origin/moons.csv", preprocess: bool = True):
+    def __init__(self, file_path: str = "data/moons.csv", preprocess: bool = True):
         # TODO: make from_filepath class method
         self.load(file_path=file_path)
         if preprocess:

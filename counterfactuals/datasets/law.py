@@ -11,7 +11,7 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class LawDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/origin/law.csv", preprocess: bool = True):
+    def __init__(self, file_path: str = "data/law.csv", preprocess: bool = True):
         super().__init__(data=None)
         self.scaler = MinMaxScaler()
 

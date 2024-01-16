@@ -11,7 +11,7 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class CompasDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/origin/compas_two_years.csv", preprocess: bool = True):
+    def __init__(self, file_path: str = "data/compas_two_years.csv", preprocess: bool = True):
         super().__init__(data=None)
 
         # TODO: make from_filepath class method
