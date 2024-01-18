@@ -1,6 +1,6 @@
 import hydra
+import logging
 import os
-import mlflow
 import numpy as np
 import torch
 import neptune
@@ -29,11 +29,15 @@ from counterfactuals.metrics.metrics import (
     sparsity,
 )
 from counterfactuals.optimizers.approach_three import ApproachThree
-from counterfactuals.utils import add_prefix_to_dict, process_classification_report
+from counterfactuals.utils import process_classification_report
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
 @hydra.main(config_path="conf", config_name="config", version_base="1.2")
 def main(cfg: DictConfig):
+    logger.info("Initializing Neptune run")
     run = neptune.init_run(
         mode="async" if cfg.neptune.enable else "offline",
         project=cfg.neptune.project,
@@ -43,23 +47,27 @@ def main(cfg: DictConfig):
 
     output_folder = cfg.experiment.output_folder
     os.makedirs(output_folder, exist_ok=True)
+    logger.info("Creatied output folder %s", output_folder)
 
     # Log parameters using Hydra config
+    logger.info("Logging parameters")
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = cfg.dataset
     run["parameters/disc_model"] = cfg.disc_model
     run["parameters/gen_model"] = cfg.gen_model
     run["parameters/counterfactuals"] = cfg.counterfactuals
 
+    logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
     train_dataloader=dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=0)
     test_dataloader=dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
-
+    
+    logger.info("Training discriminator model")
     disc_model = instantiate(cfg.disc_model)
     disc_model.fit(dataset.X_train, dataset.y_train.reshape(-1))
-    report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
 
-    mlflow.log_metrics(process_classification_report(report, prefix="disc_test"))
+    logger.info("Evaluating discriminator model")
+    report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
     run["metrics"] = process_classification_report(report, prefix="disc_test")
 
     disc_model_path = os.path.join(output_folder, f"disc_model_{uuid4()}.joblib")
@@ -79,6 +87,7 @@ def main(cfg: DictConfig):
         train_dataloader=dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
         test_dataloader=dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
+    logger.info("Training generator model")
     if cfg.gen_model.checkpoint_path:
         flow = torch.load(cfg.gen_model.checkpoint_path)
         cf = ApproachThree(model=flow)
@@ -101,9 +110,11 @@ def main(cfg: DictConfig):
         )
     run["gen_model"].upload(gen_model_path)
 
+    logger.info("Evaluating generator model")
     report = cf.test_model(test_loader=test_dataloader)
     run["metrics"] = process_classification_report(report, prefix="gen_test")
 
+    logger.info("Handling counterfactual generation")
     Xs_cfs, Xs, ys_orig = cf.search_batch(
         dataloader=test_dataloader,
         epochs=cfg.counterfactuals.epochs,
@@ -115,6 +126,7 @@ def main(cfg: DictConfig):
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
+    logger.info("Calculating metrics")
     log_p_zeros, log_p_ones, ys_cfs_gen_pred = cf.predict_model(Xs_cfs)
     _, _, ys_orig_gen_pred = cf.predict_model(Xs)
 
@@ -157,6 +169,7 @@ def main(cfg: DictConfig):
     }
     run["metrics/cf"] = metrics
 
+    logger.info("Finalizing and stopping run")
     run.stop()
 
 if __name__ == "__main__":

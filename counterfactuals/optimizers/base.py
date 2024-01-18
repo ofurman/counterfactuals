@@ -6,6 +6,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm.auto import tqdm
 
+from typing import Union
+
 import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.base import RegressorMixin, ClassifierMixin
@@ -103,6 +105,9 @@ class AbstractCounterfactualModel(ABC):
 
         loss_hist = []
         for xs_origin, contexts_origin in tqdm(dataloader):
+            xs_origin = xs_origin.to(self.device)
+            contexts_origin = contexts_origin.to(self.device)
+
             contexts_origin = contexts_origin.reshape(-1, 1)
             contexts_target = torch.abs(1-contexts_origin)
 
@@ -158,6 +163,8 @@ class AbstractCounterfactualModel(ABC):
             train_losses = []
             test_losses = []
             for x, y in train_loader:
+                x = x.to(self.device)
+                y = y.to(self.device)
                 y = y.reshape(-1, 1)
                 optimizer.zero_grad()
                 loss = -self._model_log_prob(inputs=x, context=y).mean()
@@ -165,6 +172,8 @@ class AbstractCounterfactualModel(ABC):
                 optimizer.step()
                 train_losses.append(loss.item())
             for x, y in test_loader:
+                x = x.to(self.device)
+                y = y.to(self.device)
                 with torch.no_grad():
                     y = y.reshape(-1, 1)
                     loss = -self._model_log_prob(inputs=x, context=y).mean()
@@ -199,22 +208,24 @@ class AbstractCounterfactualModel(ABC):
 
         with torch.no_grad():
             for x, y in test_loader:
-                y_zero = torch.zeros((x.shape[0], 1))
-                y_one = torch.ones((x.shape[0], 1))
+                x = x.to(self.device)
+                y = y.to(self.device)
+                y_zero = torch.zeros((x.shape[0], 1)).to(self.device)
+                y_one = torch.ones((x.shape[0], 1)).to(self.device)
                 log_p_zero = self._model_log_prob(inputs=x, context=y_zero)
                 log_p_one = self._model_log_prob(inputs=x, context=y_one)
                 result = log_p_one > log_p_zero
                 y_pred.append(result)
                 y_true.append(y)
         
-        y_pred = torch.concat(y_pred)
-        y_true = torch.concat(y_true)
+        y_pred = torch.concat(y_pred).cpu()
+        y_true = torch.concat(y_true).cpu()
         return classification_report(y_true=y_true, y_pred=y_pred, output_dict=True)
 
 
     def predict_model_point(self, x: np.ndarray):
-        y_zero = torch.zeros((x.shape[0], 1))
-        y_one = torch.ones((x.shape[0], 1))
+        y_zero = torch.zeros((x.shape[0], 1)).to(self.device)
+        y_one = torch.ones((x.shape[0], 1)).to(self.device)
         if self.with_context:
             log_p_zero = self.model.log_prob(inputs=x, context=y_zero)
             log_p_one = self.model.log_prob(inputs=x, context=y_one)
@@ -225,7 +236,7 @@ class AbstractCounterfactualModel(ABC):
             return None, None, log_p
 
 
-    def predict_model(self, test_data: DataLoader | np.ndarray, batch_size: int = 64):
+    def predict_model(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):
         """
         Predict class using generative model.
         """
@@ -247,7 +258,7 @@ class AbstractCounterfactualModel(ABC):
         log_p_ones = []
         with torch.no_grad():
             for x in dataloader:
-                x = x[0]
+                x = x[0].to(self.device)
                 log_p_zero, log_p_one, result = self.predict_model_point(x)
                 results.append(result)
                 log_p_zeros.append(log_p_zero)
@@ -255,7 +266,7 @@ class AbstractCounterfactualModel(ABC):
             results = torch.concat(results)
             log_p_zeros = torch.concat(log_p_zeros)
             log_p_ones = torch.concat(log_p_ones)
-        return log_p_zeros.numpy(), log_p_ones.numpy(), results.numpy()
+        return log_p_zeros.cpu().numpy(), log_p_ones.cpu().numpy(), results.cpu().numpy()
 
         
 
