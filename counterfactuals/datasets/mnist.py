@@ -1,14 +1,13 @@
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, TensorDataset
-from sklearn.datasets import make_moons
+from sklearn.decomposition import PCA
+from sklearn.datasets import load_digits
 
 from counterfactuals.datasets.base import AbstractDataset
 
 
-class MoonsDataset(AbstractDataset):
+class MnistDataset(AbstractDataset):
     def __init__(self, file_path: str = "data/moons.csv", preprocess: bool = True):
         # TODO: make from_filepath class method
         self.load(file_path=file_path)
@@ -44,14 +43,13 @@ class MoonsDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        X = self.data[self.data.columns[:-1]]
-        y = self.data[self.data.columns[-1]]
+        X, y = load_digits(n_class=2, return_X_y=True)
 
-        self.numerical_features = [0, 1]
-        self.categorical_features = []
-        self.actionable_features = [0, 1]
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True, stratify=y)
 
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y)
+        self.feature_transformer = PCA(n_components=0.95)
+        X_train = self.feature_transformer.fit_transform(X_train)
+        X_test = self.feature_transformer.transform(X_test)
 
         self.X_train = X_train
         self.X_test = X_test
@@ -63,6 +61,10 @@ class MoonsDataset(AbstractDataset):
         self.X_test = self.X_test.astype(np.float32)
         self.y_train = self.y_train.astype(np.float32)
         self.y_test = self.y_test.astype(np.float32)
+
+        self.numerical_features = list(range(self.X_train.shape[1]))
+        self.categorical_features = []
+        self.actionable_features = self.numerical_features
 
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test

@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from counterfactuals.datasets.base import AbstractDataset
 
 
-class CompasDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/compas_two_years.csv", preprocess: bool = True):
+class GermanCreditDataset(AbstractDataset):
+    def __init__(self, file_path: str = "data/german_credit.csv", preprocess: bool = True):
         super().__init__(data=None)
 
         # TODO: make from_filepath class method
@@ -50,26 +50,16 @@ class CompasDataset(AbstractDataset):
 
         feature_columns = [
             # Continuous
-            'age', 'priors_count', 'days_b_screening_arrest',
-            'length_of_stay', 'is_recid', 'is_violent_recid', 'two_year_recid',
+            'duration_in_month', 'credit_amount', 'installment_as_income_perc', 'present_res_since',
+            'age', 'credits_this_bank', 'people_under_maintenance',
             # Categorical
-            'c_charge_degree', 'sex', 'race', 
+            'account_check_status', 'credit_history', 'purpose', 'savings', 'present_emp_since',
+            'personal_status_sex', 'other_debtors', 'property', 'other_installment_plans', 'housing',
+            'job', 'telephone', 'foreign_worker',
         ]
         self.numerical_columns = list(range(0, 7))
         self.categorical_columns = list(range(7, len(feature_columns)))
-        target_column = 'class'
-
-        self.data['days_b_screening_arrest'] = np.abs(self.data['days_b_screening_arrest'])
-        self.data['c_jail_out'] = pd.to_datetime(self.data['c_jail_out'])
-        self.data['c_jail_in'] = pd.to_datetime(self.data['c_jail_in'])
-        self.data['length_of_stay'] = np.abs((self.data['c_jail_out'] - self.data['c_jail_in']).dt.days)
-        self.data['length_of_stay'].fillna(self.data['length_of_stay'].value_counts().index[0], inplace=True)
-        self.data['days_b_screening_arrest'].fillna(self.data['days_b_screening_arrest'].value_counts().index[0], inplace=True)
-        self.data['length_of_stay'] = self.data['length_of_stay'].astype(int)
-        self.data['days_b_screening_arrest'] = self.data['days_b_screening_arrest'].astype(int)
-        self.data = self.data[self.data['score_text'] != "Medium"]
-        self.data["class"] = pd.get_dummies(self.data["score_text"])["High"].astype(int)
-        self.data.drop(['c_jail_in', 'c_jail_out', 'score_text'], axis=1, inplace=True)
+        target_column = 'default'
         
 
         # Downsample to minor class
@@ -84,7 +74,7 @@ class CompasDataset(AbstractDataset):
         y = self.data[target_column]
 
 
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.3, shuffle=True, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.2, shuffle=True, stratify=y)
 
         self.feature_transformer = ColumnTransformer(
             [

@@ -65,8 +65,7 @@ class LawDataset(AbstractDataset):
         X = self.data[feature_columns]
         y = self.data[target_column]
 
-
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True)
+        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y)
 
         self.feature_transformer = ColumnTransformer(
             [
