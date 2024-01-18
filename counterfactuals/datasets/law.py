@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler, LabelEncoder
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -57,20 +54,24 @@ class LawDataset(AbstractDataset):
         # Downsample to minor class
         self.data = self.data.dropna(subset=feature_columns)
         row_per_class = sum(self.data[target_column] == 0)
-        self.data = pd.concat([
-            self.data[self.data[target_column] == 0],
-            self.data[self.data[target_column] == 1].sample(row_per_class, random_state=42),
-        ])
+        self.data = pd.concat(
+            [
+                self.data[self.data[target_column] == 0],
+                self.data[self.data[target_column] == 1].sample(row_per_class, random_state=42),
+            ]
+        )
 
         X = self.data[feature_columns]
         y = self.data[target_column]
 
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y
+        )
 
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                ("OneHotEncoder", OneHotEncoder(drop='if_binary', sparse_output=False), self.categorical_columns)
+                ("OneHotEncoder", OneHotEncoder(drop="if_binary", sparse_output=False), self.categorical_columns),
             ],
         )
         self.X_train = self.feature_transformer.fit_transform(X_train)

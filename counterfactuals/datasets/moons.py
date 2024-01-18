@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, TensorDataset
-from sklearn.datasets import make_moons
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -51,7 +48,9 @@ class MoonsDataset(AbstractDataset):
         self.categorical_features = []
         self.actionable_features = [0, 1]
 
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y
+        )
 
         self.X_train = X_train
         self.X_test = X_test

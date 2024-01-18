@@ -1,37 +1,33 @@
-import hydra
 import logging
 import os
-import numpy as np
-import torch
-import neptune
 from uuid import uuid4
+
+import hydra
+import neptune
+import numpy as np
 import pandas as pd
-from joblib import dump, load
+import torch
 from hydra.utils import instantiate
+from joblib import dump, load
 from nflows.flows import MaskedAutoregressiveFlow
 from omegaconf import DictConfig
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
-from sklearn.neural_network import MLPClassifier
-from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.datasets import (CompasDataset,  # AdultDataset,
-                                      HelocDataset, LawDataset, MoonsDataset)
 from counterfactuals.metrics.metrics import (
     categorical_distance,
     continuous_distance,
     distance_l2_jaccard,
     distance_mad_hamming,
+    kde_density,
     perc_valid_actionable_cf,
     perc_valid_cf,
     plausibility,
-    kde_density,
     sparsity,
 )
 from counterfactuals.optimizers.approach_three import ApproachThree
 from counterfactuals.utils import process_classification_report
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -59,9 +55,9 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    train_dataloader=dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=0)
-    test_dataloader=dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
-    
+    train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=0)
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
+
     logger.info("Training discriminator model")
     disc_model = instantiate(cfg.disc_model)
     disc_model.fit(dataset.X_train, dataset.y_train.reshape(-1))
@@ -81,11 +77,11 @@ def main(cfg: DictConfig):
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
-        train_dataloader=dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-        test_dataloader=dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
+        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
+        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
     else:
-        train_dataloader=dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-        test_dataloader=dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
+        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
+        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
     logger.info("Training generator model")
     if cfg.gen_model.checkpoint_path:
@@ -99,7 +95,7 @@ def main(cfg: DictConfig):
             hidden_features=cfg.gen_model.hidden_features,
             num_layers=cfg.gen_model.num_layers,
             num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
-            context_features=1
+            context_features=1,
         )
         cf = ApproachThree(model=flow, neptune_run=run, checkpoint_path=gen_model_path)
         cf.train_model(
@@ -120,7 +116,7 @@ def main(cfg: DictConfig):
         epochs=cfg.counterfactuals.epochs,
         lr=cfg.counterfactuals.lr,
         alpha=cfg.counterfactuals.alpha,
-        beta=cfg.counterfactuals.beta
+        beta=cfg.counterfactuals.beta,
     )
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
@@ -142,29 +138,46 @@ def main(cfg: DictConfig):
         "valid_cf_disc": perc_valid_cf(ys_orig_disc_pred, y_cf=ys_cfs_disc_pred),
         # "perc_valid_actionable_cf": perc_valid_actionable_cf(X=dataset.X_test[:100], X_cf=Xs_cfs, y=ys_orig_pred, y_cf=ys_cfs_pred,
         #                                                      actionable_features=dataset.actionable_features),
-        "dissimilarity_proximity_categorical_hamming": categorical_distance(X=Xs, X_cf=Xs_cfs, categorical_features=dataset.categorical_features, metric='hamming', agg='mean'),
-        "dissimilarity_proximity_categorical_jaccard": categorical_distance(X=Xs, X_cf=Xs_cfs, categorical_features=dataset.categorical_features, metric='jaccard', agg='mean'),
-        
-        "dissimilarity_proximity_continuous_manhatan": continuous_distance(X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric='cityblock', X_all=dataset.X_test),
-        "dissimilarity_proximity_continuous_euclidean": continuous_distance(X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric='euclidean', X_all=dataset.X_test),
-        "dissimilarity_proximity_continuous_mad": continuous_distance(X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric='mad', X_all=dataset.X_test),
-
-        "distance_l2_jaccard": distance_l2_jaccard(X=Xs, X_cf=Xs_cfs,
-                                                   continuous_features=dataset.numerical_features, categorical_features=dataset.categorical_features),
-        "distance_mad_hamming": distance_mad_hamming(X=Xs, X_cf=Xs_cfs,
-                                                    continuous_features=dataset.numerical_features, categorical_features=dataset.categorical_features, X_all=Xs, agg='mean'),
-
+        "dissimilarity_proximity_categorical_hamming": categorical_distance(
+            X=Xs, X_cf=Xs_cfs, categorical_features=dataset.categorical_features, metric="hamming", agg="mean"
+        ),
+        "dissimilarity_proximity_categorical_jaccard": categorical_distance(
+            X=Xs, X_cf=Xs_cfs, categorical_features=dataset.categorical_features, metric="jaccard", agg="mean"
+        ),
+        "dissimilarity_proximity_continuous_manhatan": continuous_distance(
+            X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric="cityblock", X_all=dataset.X_test
+        ),
+        "dissimilarity_proximity_continuous_euclidean": continuous_distance(
+            X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric="euclidean", X_all=dataset.X_test
+        ),
+        "dissimilarity_proximity_continuous_mad": continuous_distance(
+            X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric="mad", X_all=dataset.X_test
+        ),
+        "distance_l2_jaccard": distance_l2_jaccard(
+            X=Xs,
+            X_cf=Xs_cfs,
+            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features,
+        ),
+        "distance_mad_hamming": distance_mad_hamming(
+            X=Xs,
+            X_cf=Xs_cfs,
+            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features,
+            X_all=Xs,
+            agg="mean",
+        ),
         "plausibility": plausibility(
-            Xs, Xs_cfs, ys_orig,
+            Xs,
+            Xs_cfs,
+            ys_orig,
             continuous_features_all=dataset.numerical_features,
             categorical_features_all=dataset.categorical_features,
             X_train=dataset.X_train,
-            ratio_cont=None
+            ratio_cont=None,
         ),
-
         "flow_log_density": np.mean(np.concatenate([log_p_zeros[ys_orig == 0], log_p_ones[ys_orig == 1]])),
         "kde_log_density": kde_density(dataset.X_train, dataset.y_train, Xs, Xs_cfs, ys_orig),
-
         "sparsity": sparsity(Xs, Xs_cfs),
     }
     run["metrics/cf"] = metrics
@@ -172,6 +185,6 @@ def main(cfg: DictConfig):
     logger.info("Finalizing and stopping run")
     run.stop()
 
+
 if __name__ == "__main__":
     main()
-

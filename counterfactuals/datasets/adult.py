@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler, LabelEncoder
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -50,32 +47,41 @@ class AdultDataset(AbstractDataset):
 
         feature_columns = [
             # Continuous
-            'age', 'hours_per_week',
+            "age",
+            "hours_per_week",
             # Categorical
-            'workclass', 'education', 'marital_status', 'occupation', 'race', 'gender'
+            "workclass",
+            "education",
+            "marital_status",
+            "occupation",
+            "race",
+            "gender",
         ]
         self.numerical_columns = list(range(0, 2))
         self.categorical_columns = list(range(2, len(feature_columns)))
-        target_column = 'income'
+        target_column = "income"
 
         # Downsample to minor class
         self.data = self.data.dropna(subset=feature_columns)
         row_per_class = sum(self.data[target_column] == 1)
-        self.data = pd.concat([
-            self.data[self.data[target_column] == 0].sample(row_per_class, random_state=42),
-            self.data[self.data[target_column] == 1],
-        ])
+        self.data = pd.concat(
+            [
+                self.data[self.data[target_column] == 0].sample(row_per_class, random_state=42),
+                self.data[self.data[target_column] == 1],
+            ]
+        )
 
         X = self.data[feature_columns]
         y = self.data[target_column]
 
-
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=42, test_size=0.2, shuffle=True, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.to_numpy(), y.to_numpy(), random_state=42, test_size=0.2, shuffle=True, stratify=y
+        )
 
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                ("OneHotEncoder", OneHotEncoder(drop='if_binary', sparse_output=False), self.categorical_columns)
+                ("OneHotEncoder", OneHotEncoder(drop="if_binary", sparse_output=False), self.categorical_columns),
             ],
         )
         # self.feature_transformer.set_output(transform='pandas')

@@ -1,11 +1,7 @@
 import numpy as np
 import pandas as pd
-import torch
-from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler, LabelEncoder
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -49,11 +45,13 @@ class HelocDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        target_column = 'RiskPerformance'
+        target_column = "RiskPerformance"
         feature_columns = self.data.columns.drop(target_column)
         X = self.data[feature_columns]
         y = self.data[target_column]
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.8, shuffle=True, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.8, shuffle=True, stratify=y
+        )
 
         self.feature_transformer = MinMaxScaler()
         self.X_train = self.feature_transformer.fit_transform(X_train)

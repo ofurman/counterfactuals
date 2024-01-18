@@ -1,7 +1,7 @@
+from abc import ABC, abstractmethod
+
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-
-from abc import ABC, abstractmethod
 
 
 class AbstractDataset(ABC):
@@ -28,7 +28,7 @@ class AbstractDataset(ABC):
         Save the processed data to a file or destination.
         """
         pass
-    
+
     @abstractmethod
     def get_split_data(self):
         """
@@ -45,7 +45,7 @@ class AbstractDataset(ABC):
             noise = torch.randn_like(X[:, self.numerical_features]) * noise_lvl
             X[:, self.numerical_features] = X[:, self.numerical_features] + noise
             return X, y
-        
+
         return DataLoader(
             TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
             batch_size=batch_size,

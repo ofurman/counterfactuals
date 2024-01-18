@@ -3,9 +3,7 @@ import pandas as pd
 import torch
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler, LabelEncoder
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -50,46 +48,57 @@ class CompasDataset(AbstractDataset):
 
         feature_columns = [
             # Continuous
-            'age', 'priors_count', 'days_b_screening_arrest',
-            'length_of_stay', 'is_recid', 'is_violent_recid', 'two_year_recid',
+            "age",
+            "priors_count",
+            "days_b_screening_arrest",
+            "length_of_stay",
+            "is_recid",
+            "is_violent_recid",
+            "two_year_recid",
             # Categorical
-            'c_charge_degree', 'sex', 'race', 
+            "c_charge_degree",
+            "sex",
+            "race",
         ]
         self.numerical_columns = list(range(0, 7))
         self.categorical_columns = list(range(7, len(feature_columns)))
-        target_column = 'class'
+        target_column = "class"
 
-        self.data['days_b_screening_arrest'] = np.abs(self.data['days_b_screening_arrest'])
-        self.data['c_jail_out'] = pd.to_datetime(self.data['c_jail_out'])
-        self.data['c_jail_in'] = pd.to_datetime(self.data['c_jail_in'])
-        self.data['length_of_stay'] = np.abs((self.data['c_jail_out'] - self.data['c_jail_in']).dt.days)
-        self.data['length_of_stay'].fillna(self.data['length_of_stay'].value_counts().index[0], inplace=True)
-        self.data['days_b_screening_arrest'].fillna(self.data['days_b_screening_arrest'].value_counts().index[0], inplace=True)
-        self.data['length_of_stay'] = self.data['length_of_stay'].astype(int)
-        self.data['days_b_screening_arrest'] = self.data['days_b_screening_arrest'].astype(int)
-        self.data = self.data[self.data['score_text'] != "Medium"]
+        self.data["days_b_screening_arrest"] = np.abs(self.data["days_b_screening_arrest"])
+        self.data["c_jail_out"] = pd.to_datetime(self.data["c_jail_out"])
+        self.data["c_jail_in"] = pd.to_datetime(self.data["c_jail_in"])
+        self.data["length_of_stay"] = np.abs((self.data["c_jail_out"] - self.data["c_jail_in"]).dt.days)
+        self.data["length_of_stay"].fillna(self.data["length_of_stay"].value_counts().index[0], inplace=True)
+        self.data["days_b_screening_arrest"].fillna(
+            self.data["days_b_screening_arrest"].value_counts().index[0], inplace=True
+        )
+        self.data["length_of_stay"] = self.data["length_of_stay"].astype(int)
+        self.data["days_b_screening_arrest"] = self.data["days_b_screening_arrest"].astype(int)
+        self.data = self.data[self.data["score_text"] != "Medium"]
         self.data["class"] = pd.get_dummies(self.data["score_text"])["High"].astype(int)
-        self.data.drop(['c_jail_in', 'c_jail_out', 'score_text'], axis=1, inplace=True)
-        
+        self.data.drop(["c_jail_in", "c_jail_out", "score_text"], axis=1, inplace=True)
 
         # Downsample to minor class
         self.data = self.data.dropna(subset=feature_columns)
         row_per_class = sum(self.data[target_column] == 1)
-        self.data = pd.concat([
-            self.data[self.data[target_column] == 0].sample(row_per_class, random_state=42),
-            self.data[self.data[target_column] == 1],
-        ])
+        self.data = pd.concat(
+            [
+                self.data[self.data[target_column] == 0].sample(row_per_class, random_state=42),
+                self.data[self.data[target_column] == 1],
+            ]
+        )
 
         X = self.data[feature_columns]
         y = self.data[target_column]
 
-
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.3, shuffle=True, stratify=y)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.3, shuffle=True, stratify=y
+        )
 
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                ("OneHotEncoder", OneHotEncoder(drop='if_binary', sparse_output=False), self.categorical_columns)
+                ("OneHotEncoder", OneHotEncoder(drop="if_binary", sparse_output=False), self.categorical_columns),
             ],
         )
         # self.feature_transformer.set_output(transform='pandas')
