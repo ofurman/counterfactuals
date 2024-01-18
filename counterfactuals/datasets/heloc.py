@@ -11,7 +11,7 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class HelocDataset(AbstractDataset):
-    def __init__(self, file_path: str, preprocess: bool = True):
+    def __init__(self, file_path: str = "data/heloc.csv", preprocess: bool = True):
         super().__init__(data=None)
         self.scaler = MinMaxScaler()
 
@@ -49,9 +49,11 @@ class HelocDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        X = self.data[self.data.columns[1:]]
-        y = self.data[self.data.columns[0]]
-        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True)
+        target_column = 'RiskPerformance'
+        feature_columns = self.data.columns.drop(target_column)
+        X = self.data[feature_columns]
+        y = self.data[target_column]
+        X_train, X_test, y_train, y_test = train_test_split(X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.8, shuffle=True, stratify=y)
 
         self.feature_transformer = MinMaxScaler()
         self.X_train = self.feature_transformer.fit_transform(X_train)
@@ -66,21 +68,8 @@ class HelocDataset(AbstractDataset):
         self.y_train = self.y_train.astype(np.float32)
         self.y_test = self.y_test.astype(np.float32)
 
+        self.categorical_features = []
+        self.numerical_features = list(range(0, len(feature_columns)))
+
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test
-
-    def train_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
-        return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
-            batch_size=batch_size,
-            shuffle=shuffle,
-            **kwargs_dataloader,
-        )
-
-    def test_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
-        return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_test), torch.from_numpy(self.y_test)),
-            batch_size=batch_size,
-            shuffle=shuffle,
-            **kwargs_dataloader,
-        )

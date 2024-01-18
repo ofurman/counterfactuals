@@ -7,6 +7,7 @@ from scipy.stats import median_abs_deviation
 from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.neighbors import KernelDensity 
 
 class DummyScaler:
 
@@ -85,6 +86,14 @@ def avg_number_violations_per_cf(X, X_cf, actionable_features):
 def avg_number_violations(X, X_cf, actionable_features):
     val = np.sum(number_violations_per_cf(X, X_cf, actionable_features))
     number_cf, number_features = X_cf.shape
+    return val / (number_cf * number_features)
+
+def sparsity(X, X_cf, actionable_features=None):
+    number_cf, number_features = X_cf.shape
+    val = X != X_cf
+    if actionable_features is not None:
+        val = val[:, actionable_features]
+    val = np.sum(val)
     return val / (number_cf * number_features)
 
 
@@ -198,6 +207,27 @@ def delta_proba(x, cf_list, classifier, agg=None):
 
     if agg == 'min':
         return np.min(deltas)
+    
+def kde_density(X_train, ys_train, Xs, Xs_cfs, ys, return_x_log_density=False):
+    log_density = []
+    log_density_cfs = []
+
+    for y in np.unique(ys_train):
+        X_train_y = X_train[ys_train == y]
+        Xs_y = Xs[ys == y]
+        Xs_cfs_y = Xs_cfs[ys != y]
+        kde = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(X_train_y)
+        
+        log_dens_cfs = kde.score_samples(Xs_cfs_y)
+        log_density_cfs.append(log_dens_cfs)
+        if return_x_log_density:
+            log_dens = kde.score_samples(Xs_y)
+            log_density.append(log_dens)
+        
+    if return_x_log_density:
+        return np.mean(np.hstack(log_density)), np.mean(np.hstack(log_density_cfs))
+    else:
+        return np.mean(np.hstack(log_density_cfs))
 
 # def continuous_diversity(cf_list, continuous_features, metric='euclidean', X=None, agg=None):
 #     if metric == 'mad':

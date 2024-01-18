@@ -1,3 +1,6 @@
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+
 from abc import ABC, abstractmethod
 
 
@@ -32,14 +35,29 @@ class AbstractDataset(ABC):
         Return X_train, X_test, y_train, y_test.
         """
 
-    @abstractmethod
-    def train_dataloader(self):
-        """
-        Return train torch dataloader.
-        """
+    def train_dataloader(self, batch_size: int, shuffle: bool, noise_lvl=1e-4, **kwargs_dataloader):
+        def collate_fn(batch):
+            X, y = zip(*batch)
+            X = torch.stack(X)
+            y = torch.stack(y)
 
-    @abstractmethod
-    def test_dataloader(self):
-        """
-        Return test torch dataloader.
-        """
+            # Add Gaussian noise to train features
+            noise = torch.randn_like(X[:, self.numerical_features]) * noise_lvl
+            X[:, self.numerical_features] = X[:, self.numerical_features] + noise
+            return X, y
+        
+        return DataLoader(
+            TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
+            batch_size=batch_size,
+            shuffle=shuffle,
+            collate_fn=collate_fn if noise_lvl else None,
+            **kwargs_dataloader,
+        )
+
+    def test_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
+        return DataLoader(
+            TensorDataset(torch.from_numpy(self.X_test), torch.from_numpy(self.y_test)),
+            batch_size=batch_size,
+            shuffle=shuffle,
+            **kwargs_dataloader,
+        )

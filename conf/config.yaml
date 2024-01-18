@@ -1,40 +1,40 @@
 defaults:
   - _self_
+  - gen_model: small_flow
   - override hydra/hydra_logging: disabled
   - override hydra/job_logging: disabled
 
-# mlflow:
-#   tracking_uri: "file:///Users/ofurman/Study/counterfactuals/mlruns"
-#   experiment_name: "Counterfactuals"
+hydra:
+  sweeper:
+    max_batch_size: 10
 
 neptune:
   enable: true
   project: "ofurman/counterfactuals"
-  api_token: "api_token"
-  tags: ["compas", "mlp"]
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["development"]
+  
 
 experiment:
   output_folder: output/
   relabel_with_disc_model: true
 
 dataset:
-  _target_: "counterfactuals.datasets.CompasDataset"
+  _target_: counterfactuals.datasets.HelocDataset
 
 gen_model:
   checkpoint_path: null
-  hidden_features: 4 # 16
-  num_blocks_per_layer: 2 # 4
-  num_layers: 5 # 8
   batch_size: 128
-  epochs: 100
+  epochs: 200
+  patience: 20
 
 disc_model:
   # _target_: "sklearn.linear_model.LogisticRegression"
   _target_: sklearn.neural_network.MLPClassifier
-  hidden_layer_sizes: [128, 64]
 
 counterfactuals:
-  epochs: 500
+  epochs: 200
+  batch_size: 128
   lr: 0.005
-  alpha: 20
+  alpha: 10
   beta: 0.01

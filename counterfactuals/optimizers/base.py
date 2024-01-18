@@ -73,7 +73,7 @@ class AbstractCounterfactualModel(ABC):
 
         for epoch in range(num_epochs):
             optimizer.zero_grad()
-            loss, _, _, _ = self.search_step(x, x_origin, context_origin, context_target, **search_step_kwargs)
+            loss, dist, max_inner, max_outer = self.search_step(x, x_origin, context_origin, context_target, **search_step_kwargs)
             loss.backward()
             optimizer.step()
 
@@ -115,12 +115,17 @@ class AbstractCounterfactualModel(ABC):
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
-                loss, _, _, _ = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
+                loss, dist, max_inner, max_outer = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
                 mean_loss = loss.mean()
                 mean_loss.backward()
                 optimizer.step()
 
                 loss_hist.append(loss.detach().cpu().numpy())
+                self.neptune_run["cf_search/loss"].append(np.mean(loss.mean().detach().cpu().numpy()))
+                self.neptune_run["cf_search/dist"].append(dist.mean().detach().cpu().numpy())
+                self.neptune_run["cf_search/max_inner"].append(max_inner.mean().detach().cpu().numpy())
+                self.neptune_run["cf_search/max_outer"].append(max_outer.mean().detach().cpu().numpy())
+
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
@@ -137,6 +142,8 @@ class AbstractCounterfactualModel(ABC):
         train_loader: DataLoader,
         test_loader: DataLoader,
         epochs: int = 100,
+        patience: int = 20,
+        eps: float = 1e-2,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -145,6 +152,8 @@ class AbstractCounterfactualModel(ABC):
         train_losses = []
         i=0
         min_loss = np.inf
+        epochs_no_improve = 0
+
         for i in (pbar := tqdm(range(epochs), desc=f"Epochs: {i}, Loss: {np.mean(train_losses)}")):
             train_losses = []
             test_losses = []
@@ -159,14 +168,20 @@ class AbstractCounterfactualModel(ABC):
                 with torch.no_grad():
                     y = y.reshape(-1, 1)
                     loss = -self._model_log_prob(inputs=x, context=y).mean()
-                    if loss.item() < min_loss:
+                    if np.abs(loss.item() - min_loss) > eps:
                         min_loss = loss.item()
                         torch.save(self.model, self.checkpoint_path)
+                        epochs_no_improve = 0
+                    else:
+                        epochs_no_improve += 1
                     test_losses.append(loss.item())
             if self.neptune_run:
                 self.neptune_run["gen_train_nll"].append(np.mean(train_losses))
                 self.neptune_run["gen_test_nll"].append(np.mean(test_losses))
             pbar.set_description(f"Epoch {i}, Train: {np.mean(train_losses):.4f}, test: {np.mean(test_losses):.4f}")
+            if epochs_no_improve > patience:
+                print("Early stopping!")
+                break
         self.model = torch.load(self.checkpoint_path)
 
     def test_model(

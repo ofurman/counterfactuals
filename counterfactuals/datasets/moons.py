@@ -66,19 +66,3 @@ class MoonsDataset(AbstractDataset):
 
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test
-
-    def train_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
-        return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
-            batch_size=batch_size,
-            shuffle=shuffle,
-            **kwargs_dataloader,
-        )
-
-    def test_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
-        return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_test), torch.from_numpy(self.y_test)),
-            batch_size=batch_size,
-            shuffle=shuffle,
-            **kwargs_dataloader,
-        )
