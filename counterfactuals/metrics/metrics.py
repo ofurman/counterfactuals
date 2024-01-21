@@ -208,12 +208,12 @@ def delta_proba(x, cf_list, classifier, agg=None):
     if agg == 'min':
         return np.min(deltas)
     
-def kde_density(X_train, ys_train, Xs, Xs_cfs, ys, return_x_log_density=False):
+def kde_density(X_train, y_train, Xs, Xs_cfs, ys, return_x_log_density=False):
     log_density = []
     log_density_cfs = []
 
-    for y in np.unique(ys_train):
-        X_train_y = X_train[ys_train == y]
+    for y in np.unique(y_train):
+        X_train_y = X_train[y_train == y]
         Xs_y = Xs[ys == y]
         Xs_cfs_y = Xs_cfs[ys != y]
         kde = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(X_train_y)
@@ -228,6 +228,66 @@ def kde_density(X_train, ys_train, Xs, Xs_cfs, ys, return_x_log_density=False):
         return np.mean(np.hstack(log_density)), np.mean(np.hstack(log_density_cfs))
     else:
         return np.mean(np.hstack(log_density_cfs))
+    
+def evaluate_cf(disc_model, X, X_cf, continuous_features, categorical_features, X_train, y_train, X_test, y_test):
+    
+    ys_disc_pred = disc_model.predict(X)
+    ys_cfs_disc_pred = disc_model.predict(X_cf)
+    X = X[ys_cfs_disc_pred != ys_disc_pred]
+    X_cf = X_cf[ys_cfs_disc_pred != ys_disc_pred]
+
+    disc_model.predict(X)
+
+    metrics = {
+        # "valid_cf_gen_orig": perc_valid_cf(ys_orig, y_cf=ys_cfs_gen_pred),
+        # "valid_cf_disc_orig": perc_valid_cf(ys_orig, y_cf=ys_cfs_disc_pred),
+        # "valid_cf_gen": perc_valid_cf(ys_orig_gen_pred, y_cf=ys_cfs_gen_pred),
+        "valid_cf_disc": perc_valid_cf(ys_disc_pred, y_cf=ys_cfs_disc_pred),
+        # "perc_valid_actionable_cf": perc_valid_actionable_cf(X=dataset.X_test[:100], X_cf=Xs_cfs, y=ys_orig_pred, y_cf=ys_cfs_pred,
+        #                                                      actionable_features=dataset.actionable_features),
+        "dissimilarity_proximity_categorical_hamming": categorical_distance(
+            X=X, X_cf=X_cf, categorical_features=categorical_features, metric="hamming", agg="mean"
+        ),
+        "dissimilarity_proximity_categorical_jaccard": categorical_distance(
+            X=X, X_cf=X_cf, categorical_features=categorical_features, metric="jaccard", agg="mean"
+        ),
+        "dissimilarity_proximity_continuous_manhatan": continuous_distance(
+            X=X, X_cf=X_cf, continuous_features=continuous_features, metric="cityblock", X_all=X_test
+        ),
+        "dissimilarity_proximity_continuous_euclidean": continuous_distance(
+            X=X, X_cf=X_cf, continuous_features=continuous_features, metric="euclidean", X_all=X_test
+        ),
+        "dissimilarity_proximity_continuous_mad": continuous_distance(
+            X=X, X_cf=X_cf, continuous_features=continuous_features, metric="mad", X_all=X_test
+        ),
+        "distance_l2_jaccard": distance_l2_jaccard(
+            X=X,
+            X_cf=X_cf,
+            continuous_features=continuous_features,
+            categorical_features=categorical_features,
+        ),
+        "distance_mad_hamming": distance_mad_hamming(
+            X=X,
+            X_cf=X_cf,
+            continuous_features=continuous_features,
+            categorical_features=categorical_features,
+            X_all=X_test,
+            agg="mean",
+        ),
+        "plausibility": plausibility(
+            X,
+            X_cf,
+            disc_model.predict(X),
+            continuous_features_all=continuous_features,
+            categorical_features_all=categorical_features,
+            X_train=X_train,
+            ratio_cont=None,
+        ),
+        # "flow_log_density": np.mean(np.concatenate([log_p_zeros[ys_orig == 0], log_p_ones[ys_orig == 1]])),
+        "kde_log_density": kde_density(X_train=X_train, y_train=y_train, Xs=X, Xs_cfs=X_cf, ys=disc_model.predict(X)),
+        "sparsity": sparsity(X, X_cf),
+    }
+    return metrics
 
 # def continuous_diversity(cf_list, continuous_features, metric='euclidean', X=None, agg=None):
 #     if metric == 'mad':
