@@ -46,13 +46,13 @@ class LawDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
+        self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
         target_column = "pass_bar"
         self.numerical_columns = list(range(0, 3))
-        self.categorical_columns = list(range(3, len(feature_columns)))
+        self.categorical_columns = list(range(3, len(self.feature_columns)))
 
         # Downsample to minor class
-        self.data = self.data.dropna(subset=feature_columns)
+        self.data = self.data.dropna(subset=self.feature_columns)
         row_per_class = sum(self.data[target_column] == 0)
         self.data = pd.concat(
             [
@@ -61,7 +61,7 @@ class LawDataset(AbstractDataset):
             ]
         )
 
-        X = self.data[feature_columns]
+        X = self.data[self.feature_columns]
         y = self.data[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(

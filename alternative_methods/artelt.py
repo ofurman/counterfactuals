@@ -12,30 +12,16 @@ import tensorflow as tf
 from hydra.utils import instantiate
 from joblib import dump, load
 from omegaconf import DictConfig
-from scipy.stats import multivariate_normal
 from sklearn.metrics import classification_report
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
 from tqdm import tqdm
 
-from sklearn.datasets import load_iris, load_digits, load_breast_cancer, load_wine
-from sklearn.model_selection import train_test_split
-
 from counterfactuals.artelt.plausible_counterfactuals import (
     HighDensityEllipsoids, PlausibleCounterfactualOfDecisionTree,
     PlausibleCounterfactualOfHyperplaneClassifier)
-from counterfactuals.metrics.metrics import (
-    valid_cf,
-    categorical_distance,
-    continuous_distance,
-    distance_l2_jaccard,
-    distance_mad_hamming, kde_density,
-    perc_valid_actionable_cf,
-    perc_valid_cf, plausibility,
-    sparsity,
-    evaluate_cf
-)
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.utils import process_classification_report
 
 logger = logging.getLogger(__name__)
@@ -85,9 +71,7 @@ def main(cfg: DictConfig):
     y_train = disc_model.predict(X_train)
     y_test = disc_model.predict(X_test)
 
-    # ###############################################################################################################################################
-    # ###############################################################################################################################################
-    # ###############################################################################################################################################
+    # Start ArteltH20 Method
 
     # For each class, fit density estimators
     logger.info("Fitting density estimators")

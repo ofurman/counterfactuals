@@ -216,7 +216,7 @@ def kde_density(X_train, y_train, Xs, Xs_cfs, ys, return_x_log_density=False):
         X_train_y = X_train[y_train == y]
         Xs_y = Xs[ys == y]
         Xs_cfs_y = Xs_cfs[ys != y]
-        kde = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(X_train_y)
+        kde = KernelDensity(kernel='gaussian', bandwidth=0.1).fit(X_train_y)
         
         log_dens_cfs = kde.score_samples(Xs_cfs_y)
         log_density_cfs.append(log_dens_cfs)

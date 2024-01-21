@@ -166,3 +166,6 @@ output/
 outputs/
 env.sh
 .DS_Store
+.vscode/
+.neptune/
+

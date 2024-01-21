@@ -13,24 +13,15 @@ from tqdm import tqdm
 
 from omegaconf import DictConfig
 from sklearn.metrics import classification_report
-from alibi.explainers import Counterfactual
 
-from counterfactuals.metrics.metrics import (
-    categorical_distance,
-    continuous_distance,
-    distance_l2_jaccard,
-    distance_mad_hamming,
-    perc_valid_actionable_cf,
-    perc_valid_cf,
-    plausibility,
-    kde_density,
-    sparsity,
-    evaluate_cf,
-)
-from counterfactuals.utils import add_prefix_to_dict, process_classification_report
+from alibi.explainers import CounterFactualProto
+from alibi.utils.mapping import ohe_to_ord, ord_to_ohe
+
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.utils import process_classification_report
 
 
-@hydra.main(config_path="../conf/other_methods", config_name="config_wach", version_base="1.2")
+@hydra.main(config_path="../conf/other_methods", config_name="config_cegp", version_base="1.2")
 def main(cfg: DictConfig):
     tf.compat.v1.disable_eager_execution()
 
@@ -68,15 +59,32 @@ def main(cfg: DictConfig):
     pd.DataFrame(disc_model.predict(dataset.X_test)).to_csv(X_test_pred_path, index=False)
     run["X_test_pred"].upload(X_test_pred_path)
 
+    X_test = X_test[:20]
+    y_test = y_test[:20]
 
-    target_proba = 1.0
-    tol = 0.01 # want counterfactuals with p(class)>0.99
-    target_class = 'other' # any class other than origin will do
-    max_iter = 1000
-    lam_init = 1e-1
-    max_lam_steps = 10
-    learning_rate_init = 0.1
-    feature_range = (X_train.min(),X_train.max())
+    shape = (1,) + X_train.shape[1:]  # instance shape
+    beta = .01
+    c_init = 1.
+    c_steps = 5
+    max_iterations = 500
+    rng = (-1., 1.)  # scale features between -1 and 1
+    rng_shape = (1,) + X_train.shape[1:]
+    feature_range = (X_train.min(axis=0).reshape(shape),  # feature range for the perturbed instance
+                     X_train.max(axis=0).reshape(shape))
+
+    cf = CounterFactualProto(
+        disc_model.predict_proba,
+        shape,
+        beta=beta,
+        # cat_vars=cat_vars_ohe,
+        # ohe=True,  # OHE flag
+        max_iterations=max_iterations,
+        feature_range=feature_range,
+        c_init=c_init,
+        c_steps=c_steps
+    )
+
+    cf.fit(X_train, d_type='abdm', disc_perc=[25, 50, 75])
 
 
     # X_test = X_test[:20]
@@ -84,16 +92,9 @@ def main(cfg: DictConfig):
     Xs_cfs = []
     start_time = time()
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
-        target_class = np.abs(y - 1).flatten().astype(int)[0]
-        print(target_class)
-        X = X.reshape((1,) + X.shape)
-        shape = (1,) + X_train.shape[1:]
-        cf = Counterfactual(disc_model.predict_proba, shape=shape, target_proba=target_proba, tol=tol,
-                            target_class=target_class, max_iter=max_iter, lam_init=lam_init,
-                            max_lam_steps=max_lam_steps, learning_rate_init=learning_rate_init,
-                            feature_range=feature_range)
-        explanation = cf.explain(X)
-        Xs_cfs.append(explanation.cf['X'])
+        explanation = cf.explain(X.reshape(1, -1))
+        Xs_cfs.append(explanation.cf['X'] if explanation.cf is not None else X)
+
     run["metrics/avg_time_one_cf"] = (time() - start_time) / X_test.shape[0]
 
     Xs_cfs = np.array(Xs_cfs).squeeze()
@@ -108,9 +109,9 @@ def main(cfg: DictConfig):
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
         X_train=X_train,
-        y_train=y_train.reshape(-1),
+        y_train=y_train,
         X_test=X_test,
-        y_test=y_test.reshape(-1),
+        y_test=y_test,
     )
     run["metrics/cf"] = metrics
 

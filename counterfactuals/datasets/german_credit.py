@@ -45,7 +45,7 @@ class GermanCreditDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        feature_columns = [
+        self.feature_columns = [
             # Continuous
             "duration_in_month",
             "credit_amount",
@@ -70,11 +70,11 @@ class GermanCreditDataset(AbstractDataset):
             "foreign_worker",
         ]
         self.numerical_columns = list(range(0, 7))
-        self.categorical_columns = list(range(7, len(feature_columns)))
+        self.categorical_columns = list(range(7, len(self.feature_columns)))
         target_column = "default"
 
         # Downsample to minor class
-        self.data = self.data.dropna(subset=feature_columns)
+        self.data = self.data.dropna(subset=self.feature_columns)
         row_per_class = sum(self.data[target_column] == 1)
         self.data = pd.concat(
             [
@@ -83,7 +83,7 @@ class GermanCreditDataset(AbstractDataset):
             ]
         )
 
-        X = self.data[feature_columns]
+        X = self.data[self.feature_columns]
         y = self.data[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(

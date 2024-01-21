@@ -1,0 +1,24 @@
+defaults:
+  - _self_
+
+hydra:
+  sweeper:
+    max_batch_size: 10
+
+neptune:
+  enable: true
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["CEM", "other_methods"]
+  
+
+experiment:
+  output_folder: output/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.CompasDataset
+
+disc_model:
+  # _target_: "sklearn.linear_model.LogisticRegression"
+  _target_: sklearn.neural_network.MLPClassifier

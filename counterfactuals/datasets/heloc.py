@@ -46,8 +46,8 @@ class HelocDataset(AbstractDataset):
             raise Exception("Data is empy. Nothing to preprocess!")
 
         target_column = "RiskPerformance"
-        feature_columns = self.data.columns.drop(target_column)
-        X = self.data[feature_columns]
+        self.feature_columns = self.data.columns.drop(target_column)
+        X = self.data[self.feature_columns]
         y = self.data[target_column]
         X_train, X_test, y_train, y_test = train_test_split(
             X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.8, shuffle=True, stratify=y
@@ -67,7 +67,7 @@ class HelocDataset(AbstractDataset):
         self.y_test = self.y_test.astype(np.float32)
 
         self.categorical_features = []
-        self.numerical_features = list(range(0, len(feature_columns)))
+        self.numerical_features = list(range(0, len(self.feature_columns)))
 
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test

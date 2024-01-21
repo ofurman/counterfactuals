@@ -45,7 +45,7 @@ class AdultDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        feature_columns = [
+        self.feature_columns = [
             # Continuous
             "age",
             "hours_per_week",
@@ -58,11 +58,11 @@ class AdultDataset(AbstractDataset):
             "gender",
         ]
         self.numerical_columns = list(range(0, 2))
-        self.categorical_columns = list(range(2, len(feature_columns)))
+        self.categorical_columns = list(range(2, len(self.feature_columns)))
         target_column = "income"
 
         # Downsample to minor class
-        self.data = self.data.dropna(subset=feature_columns)
+        self.data = self.data.dropna(subset=self.feature_columns)
         row_per_class = sum(self.data[target_column] == 1)
         self.data = pd.concat(
             [
@@ -71,7 +71,7 @@ class AdultDataset(AbstractDataset):
             ]
         )
 
-        X = self.data[feature_columns]
+        X = self.data[self.feature_columns]
         y = self.data[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(

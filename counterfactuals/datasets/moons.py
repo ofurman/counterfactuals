@@ -63,5 +63,9 @@ class MoonsDataset(AbstractDataset):
         self.y_train = self.y_train.astype(np.float32)
         self.y_test = self.y_test.astype(np.float32)
 
+    @property
+    def categorical_features_lists(self) -> list:
+        return []
+
     def get_split_data(self) -> list:
         return self.X_train, self.X_test, self.y_train, self.y_test
