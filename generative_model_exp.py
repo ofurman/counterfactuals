@@ -23,6 +23,7 @@ from counterfactuals.metrics.metrics import (
     perc_valid_cf,
     plausibility,
     sparsity,
+    evaluate_cf
 )
 from counterfactuals.optimizers.approach_three import ApproachThree
 from counterfactuals.utils import process_classification_report
@@ -55,6 +56,7 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
+    X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train, dataset.y_test
     train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=0)
     test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
@@ -122,64 +124,23 @@ def main(cfg: DictConfig):
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
+    model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
+
     logger.info("Calculating metrics")
-    log_p_zeros, log_p_ones, ys_cfs_gen_pred = cf.predict_model(Xs_cfs)
-    _, _, ys_orig_gen_pred = cf.predict_model(Xs)
-
-    ys_cfs_disc_pred = disc_model.predict(Xs_cfs)
-    ys_orig_disc_pred = disc_model.predict(Xs)
-
     ys_orig = ys_orig.flatten()
 
-    metrics = {
-        "valid_cf_gen_orig": perc_valid_cf(ys_orig, y_cf=ys_cfs_gen_pred),
-        "valid_cf_disc_orig": perc_valid_cf(ys_orig, y_cf=ys_cfs_disc_pred),
-        "valid_cf_gen": perc_valid_cf(ys_orig_gen_pred, y_cf=ys_cfs_gen_pred),
-        "valid_cf_disc": perc_valid_cf(ys_orig_disc_pred, y_cf=ys_cfs_disc_pred),
-        # "perc_valid_actionable_cf": perc_valid_actionable_cf(X=dataset.X_test[:100], X_cf=Xs_cfs, y=ys_orig_pred, y_cf=ys_cfs_pred,
-        #                                                      actionable_features=dataset.actionable_features),
-        "dissimilarity_proximity_categorical_hamming": categorical_distance(
-            X=Xs, X_cf=Xs_cfs, categorical_features=dataset.categorical_features, metric="hamming", agg="mean"
-        ),
-        "dissimilarity_proximity_categorical_jaccard": categorical_distance(
-            X=Xs, X_cf=Xs_cfs, categorical_features=dataset.categorical_features, metric="jaccard", agg="mean"
-        ),
-        "dissimilarity_proximity_continuous_manhatan": continuous_distance(
-            X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric="cityblock", X_all=dataset.X_test
-        ),
-        "dissimilarity_proximity_continuous_euclidean": continuous_distance(
-            X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric="euclidean", X_all=dataset.X_test
-        ),
-        "dissimilarity_proximity_continuous_mad": continuous_distance(
-            X=Xs, X_cf=Xs_cfs, continuous_features=dataset.numerical_features, metric="mad", X_all=dataset.X_test
-        ),
-        "distance_l2_jaccard": distance_l2_jaccard(
-            X=Xs,
-            X_cf=Xs_cfs,
-            continuous_features=dataset.numerical_features,
-            categorical_features=dataset.categorical_features,
-        ),
-        "distance_mad_hamming": distance_mad_hamming(
-            X=Xs,
-            X_cf=Xs_cfs,
-            continuous_features=dataset.numerical_features,
-            categorical_features=dataset.categorical_features,
-            X_all=Xs,
-            agg="mean",
-        ),
-        "plausibility": plausibility(
-            Xs,
-            Xs_cfs,
-            ys_orig,
-            continuous_features_all=dataset.numerical_features,
-            categorical_features_all=dataset.categorical_features,
-            X_train=dataset.X_train,
-            ratio_cont=None,
-        ),
-        "flow_log_density": np.mean(np.concatenate([log_p_zeros[ys_orig == 0], log_p_ones[ys_orig == 1]])),
-        "kde_log_density": kde_density(dataset.X_train, dataset.y_train, Xs, Xs_cfs, ys_orig),
-        "sparsity": sparsity(Xs, Xs_cfs),
-    }
+    metrics = evaluate_cf(
+        disc_model=disc_model,
+        X=Xs,
+        X_cf=Xs_cfs,
+        model_returned=model_returned,
+        categorical_features=dataset.categorical_features,
+        continuous_features=dataset.numerical_features,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
     run["metrics/cf"] = metrics
 
     logger.info("Finalizing and stopping run")

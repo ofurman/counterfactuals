@@ -208,9 +208,9 @@ def main(cfg: DictConfig):
         if xcf2 is None:
             print("No counterfactual found!")
             model_returned.append(False)
-            continue
-        Xs_cfs.append(xcf2)
-        model_returned.append(True)
+        else:
+            Xs_cfs.append(xcf2)
+            model_returned.append(True)
 
     run["metrics/avg_time_one_cf"] = np.mean(Xs_cfs_times)
 

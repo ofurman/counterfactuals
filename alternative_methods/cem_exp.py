@@ -86,10 +86,15 @@ def main(cfg: DictConfig):
     # X_test = X_test[:20]
     # y_test = y_test[:20]
     Xs_cfs = []
+    model_returned = []
     start_time = time()
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
         explanation = cf.explain(X.reshape(1, -1), verbose=False)
-        Xs_cfs.append(explanation.PN if explanation.PN is not None else X)
+        if explanation.PN is None:
+            model_returned.append(False)
+        else:
+            Xs_cfs.append(explanation.PN)
+            model_returned.append(True)
     run["metrics/avg_time_one_cf"] = (time() - start_time) / X_test.shape[0]
 
     Xs_cfs = np.array(Xs_cfs).squeeze()
@@ -101,6 +106,7 @@ def main(cfg: DictConfig):
         disc_model=disc_model,
         X=X_test,
         X_cf=Xs_cfs,
+        model_returned=model_returned,
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
         X_train=X_train,

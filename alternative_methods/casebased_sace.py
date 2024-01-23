@@ -93,9 +93,11 @@ def main(cfg: DictConfig):
     cf_time = time()
 
     Xs_cfs = []
+    model_returned = []
     for x in tqdm(X_test):
         x_cf = cf.get_counterfactuals(x, k=1)
         Xs_cfs.append(x_cf)
+        model_returned.append(True)
 
     run["metrics/avg_time_one_cf"] = time() - cf_time / len(X_test)
 
@@ -109,6 +111,7 @@ def main(cfg: DictConfig):
         disc_model=disc_model,
         X=X_test,
         X_cf=Xs_cfs,
+        model_returned=model_returned,
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
         X_train=X_train,
