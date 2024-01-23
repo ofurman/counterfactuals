@@ -180,6 +180,7 @@ def main(cfg: DictConfig):
     # Compute and plot counterfactual without density constraints
     logger.info("n_test_samples: %d", X_test.shape[0])
     Xs_cfs = []
+    model_returned = []
     Xs_cfs_times = []
     for i in tqdm(range(X_test.shape[0])):
         # x_orig = X_test[i,:]
@@ -206,9 +207,10 @@ def main(cfg: DictConfig):
         Xs_cfs_times.append(xcf_t2)
         if xcf2 is None:
             print("No counterfactual found!")
-            Xs_cfs.append(x_orig_orig)
+            model_returned.append(False)
             continue
         Xs_cfs.append(xcf2)
+        model_returned.append(True)
 
     run["metrics/avg_time_one_cf"] = np.mean(Xs_cfs_times)
 
@@ -221,6 +223,7 @@ def main(cfg: DictConfig):
         disc_model=disc_model,
         X=X_test,
         X_cf=Xs_cfs,
+        model_returned=model_returned,
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
         X_train=X_train,
