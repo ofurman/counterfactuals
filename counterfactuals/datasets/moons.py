@@ -49,7 +49,7 @@ class MoonsDataset(AbstractDataset):
         self.actionable_features = [0, 1]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X.to_numpy(), y.to_numpy(), random_state=4, train_size=0.9, shuffle=True, stratify=y
+            X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.1, shuffle=True, stratify=y
         )
 
         self.X_train = X_train

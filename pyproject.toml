@@ -3,6 +3,8 @@ name = "counterfactuals"
 version = "2023.12.1"
 description = "A package for demonstrating counterfactuals"
 dependencies = [
+  "alibi",
+  "tensorflow",
   "numpy",
   "scipy",
   "cvxpy",

@@ -75,7 +75,7 @@ class AdultDataset(AbstractDataset):
         y = self.data[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X.to_numpy(), y.to_numpy(), random_state=42, test_size=0.2, shuffle=True, stratify=y
+            X.to_numpy(), y.to_numpy(), random_state=42, test_size=0.1, shuffle=True, stratify=y
         )
 
         self.feature_transformer = ColumnTransformer(
