@@ -59,9 +59,6 @@ def main(cfg: DictConfig):
     pd.DataFrame(disc_model.predict(dataset.X_test)).to_csv(X_test_pred_path, index=False)
     run["X_test_pred"].upload(X_test_pred_path)
 
-    X_test = X_test[:20]
-    y_test = y_test[:20]
-
     shape = (1,) + X_train.shape[1:]  # instance shape
     beta = .01
     c_init = 1.
@@ -86,9 +83,6 @@ def main(cfg: DictConfig):
 
     cf.fit(X_train, d_type='abdm', disc_perc=[25, 50, 75])
 
-
-    # X_test = X_test[:20]
-    # y_test = y_test[:20]
     Xs_cfs = []
     model_returned = []
     start_time = time()

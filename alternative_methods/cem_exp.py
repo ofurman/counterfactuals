@@ -57,9 +57,6 @@ def main(cfg: DictConfig):
     pd.DataFrame(disc_model.predict(dataset.X_test)).to_csv(X_test_pred_path, index=False)
     run["X_test_pred"].upload(X_test_pred_path)
 
-    X_test = X_test[:20]
-    y_test = y_test[:20]
-
     mode = 'PN'  # 'PN' (pertinent negative) or 'PP' (pertinent positive)
     shape = (1,) + X_train.shape[1:]  # instance shape
     kappa = .2  # minimum difference needed between the prediction probability for the perturbed instance on the
@@ -82,9 +79,6 @@ def main(cfg: DictConfig):
                   learning_rate_init=lr_init, clip=clip)
     cf.fit(X_train, no_info_type='median')
 
-
-    # X_test = X_test[:20]
-    # y_test = y_test[:20]
     Xs_cfs = []
     model_returned = []
     start_time = time()

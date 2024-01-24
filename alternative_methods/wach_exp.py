@@ -78,15 +78,11 @@ def main(cfg: DictConfig):
     learning_rate_init = 0.1
     feature_range = (X_train.min(),X_train.max())
 
-
-    # X_test = X_test[:20]
-    # y_test = y_test[:20]
     Xs_cfs = []
     model_returned = []
     start_time = time()
     for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
         target_class = np.abs(y - 1).flatten().astype(int)[0]
-        print(target_class)
         X = X.reshape((1,) + X.shape)
         shape = (1,) + X_train.shape[1:]
         cf = Counterfactual(disc_model.predict_proba, shape=shape, target_proba=target_proba, tol=tol,
@@ -94,8 +90,11 @@ def main(cfg: DictConfig):
                             max_lam_steps=max_lam_steps, learning_rate_init=learning_rate_init,
                             feature_range=feature_range)
         explanation = cf.explain(X)
-        Xs_cfs.append(explanation.cf['X'])
-        model_returned.append(True)
+        if explanation.cf is None:
+            model_returned.append(False)
+        else:
+            Xs_cfs.append(explanation.cf['X'])
+            model_returned.append(True)
     run["metrics/avg_time_one_cf"] = (time() - start_time) / X_test.shape[0]
 
     Xs_cfs = np.array(Xs_cfs).squeeze()

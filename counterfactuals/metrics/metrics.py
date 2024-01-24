@@ -224,10 +224,16 @@ def kde_density(X_train, y_train, Xs, Xs_cfs, ys):
     return np.mean(np.hstack(log_density_cfs))
     
 def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test):
+    model_returned_smth = np.sum(model_returned) / len(model_returned)
+    
     
     X = X[model_returned]
+    if X.shape == 0:
+        return dict(model_returned_smth=model_returned_smth)
+    
     ys_disc_pred = disc_model.predict(X)
     ys_cfs_disc_pred = disc_model.predict(X_cf)
+
     X = X[ys_cfs_disc_pred != ys_disc_pred]
     X_cf = X_cf[ys_cfs_disc_pred != ys_disc_pred]
 
@@ -237,9 +243,11 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
     # valid_cf_gen = perc_valid_cf(ys_orig_gen_pred, y_cf=ys_cfs_gen_pred)
     model_returned_smth = np.sum(model_returned) / len(model_returned)
     valid_cf_disc_metric = perc_valid_cf(ys_disc_pred, y_cf=ys_cfs_disc_pred)
-    print(valid_cf_disc_metric)
-    if valid_cf_disc_metric == 0:
-        return dict(valid_cf_disc_metric=valid_cf_disc_metric)
+    if X.shape == 0:
+        return dict(
+            valid_cf_disc_metric=valid_cf_disc_metric,
+            model_returned_smth=model_returned_smth,
+        )
     hamming_distance_metric = categorical_distance(
         X=X, X_cf=X_cf, categorical_features=categorical_features, metric="hamming", agg="mean"
     )
