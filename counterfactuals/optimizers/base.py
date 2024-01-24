@@ -14,7 +14,7 @@ from sklearn.base import RegressorMixin, ClassifierMixin
 
 from counterfactuals.utils import plot_distributions
 
-class AbstractCounterfactualModel(ABC):
+class BaseCounterfactualModel(ABC):
     def __init__(self, model, disc_model=None, device=None, neptune_run=None, checkpoint_path=None):
         """
         Initializes the trainer with the provided model.
@@ -126,10 +126,11 @@ class AbstractCounterfactualModel(ABC):
                 optimizer.step()
 
                 loss_hist.append(loss.detach().cpu().numpy())
-                self.neptune_run["cf_search/loss"].append(np.mean(loss.mean().detach().cpu().numpy()))
-                self.neptune_run["cf_search/dist"].append(dist.mean().detach().cpu().numpy())
-                self.neptune_run["cf_search/max_inner"].append(max_inner.mean().detach().cpu().numpy())
-                self.neptune_run["cf_search/max_outer"].append(max_outer.mean().detach().cpu().numpy())
+                if self.neptune_run:
+                    self.neptune_run["cf_search/loss"].append(np.mean(loss.mean().detach().cpu().numpy()))
+                    self.neptune_run["cf_search/dist"].append(dist.mean().detach().cpu().numpy())
+                    self.neptune_run["cf_search/max_inner"].append(max_inner.mean().detach().cpu().numpy())
+                    self.neptune_run["cf_search/max_outer"].append(max_outer.mean().detach().cpu().numpy())
 
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())

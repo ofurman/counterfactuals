@@ -12,10 +12,10 @@ from tqdm.auto import tqdm
 from functools import partial
 from sklearn.base import RegressorMixin, ClassifierMixin
 
-from counterfactuals.optimizers.base import AbstractCounterfactualModel
+from counterfactuals.optimizers.base import BaseCounterfactualModel
 
 
-class ApproachGenDisc(AbstractCounterfactualModel):
+class ApproachGenDisc(BaseCounterfactualModel):
     def search_step(self, x_param, x_origin, context_origin, context_target, **kwargs):
         """
         Performs a single search step for counterfactual point.

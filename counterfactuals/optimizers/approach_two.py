@@ -10,10 +10,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from counterfactuals.optimizers.base import AbstractCounterfactualModel
+from counterfactuals.optimizers.base import BaseCounterfactualModel
 
 
-class ApproachTwo(AbstractCounterfactualModel):
+class ApproachTwo(BaseCounterfactualModel):
     def __init__(self, model, device=None):
         self.model = model
         if device:

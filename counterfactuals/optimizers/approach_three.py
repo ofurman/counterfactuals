@@ -11,10 +11,10 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from functools import partial
 
-from counterfactuals.optimizers.base import AbstractCounterfactualModel
+from counterfactuals.optimizers.base import BaseCounterfactualModel
 
 
-class ApproachThree(AbstractCounterfactualModel):
+class ApproachThree(BaseCounterfactualModel):
     def search_step(self, x_param, x_origin, context_origin, context_target, **kwargs):
         """
         Performs a single training step on a batch of data.
