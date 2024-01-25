@@ -118,6 +118,7 @@ def main(cfg: DictConfig):
     run["metrics"] = process_classification_report(report, prefix="gen_test")
 
     logger.info("Handling counterfactual generation")
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
     Xs_cfs, Xs, ys_orig = cf.search_batch(
         dataloader=test_dataloader,
         epochs=cfg.counterfactuals.epochs,

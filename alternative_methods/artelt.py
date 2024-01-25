@@ -254,13 +254,13 @@ def main(cfg: DictConfig):
         #     Xs_cfs.append(x_orig_orig)
         #     continue
 
-        # Compute and plot counterfactual WITH kernel density constraints
-        idx = y_train == y_target
-        X_ = X_train[idx, :]
+        # # Compute and plot counterfactual WITH kernel density constraints
+        # idx = y_train == y_target
+        # X_ = X_train[idx, :]
 
-        # Build density estimator
-        de = density_estimators[y_target]
-        kde = kernel_density_estimators[y_target]
+        # # Build density estimator
+        # de = density_estimators[y_target]
+        # kde = kernel_density_estimators[y_target]
 
         xcf_t2 = time()
         xcf2 = cf[y_target].compute_counterfactual(x_orig_orig, y=y_target)

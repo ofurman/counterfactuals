@@ -32,6 +32,13 @@ class MultilayerPerceptron(torch.nn.Module):
             pbar.set_description(f"Epoch {epoch}, Loss: {np.mean(losses):.4f}")
 
     def predict(self, X_test):
-        probs = self.forward(torch.from_numpy(X_test))
-        probs = probs > 0.5
-        return np.squeeze(probs.numpy().astype(np.float32))
+        with torch.no_grad():
+            probs = self.forward(torch.from_numpy(X_test))
+            probs = probs > 0.5
+            return np.squeeze(probs.numpy().astype(np.float32))
+    
+    def predict_proba(self, X_test):
+        with torch.no_grad():
+            probs = self.forward(torch.from_numpy(X_test).type(torch.float32))
+            probs = torch.hstack([1-probs, probs]).detach().numpy().astype(np.float32)
+            return probs

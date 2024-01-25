@@ -224,6 +224,8 @@ def kde_density(X_train, y_train, Xs_cfs, ys, Xs=None):
 
         if Xs is not None:
             Xs_y = Xs[ys == y]
+            if Xs_y.shape[0] == 0:
+                continue
             log_dens_xs = kde.score_samples(Xs_y)
             log_density_xs.append(log_dens_xs)
     if Xs is None:
@@ -243,13 +245,14 @@ def gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
     
 def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test, cf_class=None):
     assert X.shape[0] == len(model_returned)
-    assert X[model_returned].shape == X_cf.shape
+    assert X[model_returned].shape[0] == X_cf.shape[0]
     assert isinstance(X_cf, np.ndarray)
     assert X_cf.dtype == np.float32
     assert X.dtype == np.float32
 
     X = X[model_returned]
-    if X.shape == 0:
+    print(X.shape)
+    if X.shape[0] == 0:
         model_returned_smth = np.sum(model_returned) / len(model_returned)
         return dict(model_returned_smth=model_returned_smth)
     

@@ -5,10 +5,11 @@ class BlackBox:
 
     def __init__(self, model):
         self.model = model
-        if hasattr(self.model, 'predict_proba'):
-            self.pred_fn = self.model.predict_proba
-        else:
-            self.pred_fn = self.model.predict
+        self.pred_fn = self.model.predict
+        # if hasattr(self.model, 'predict_proba'):
+        #     self.pred_fn = self.model.predict_proba
+        # else:
+        #     self.pred_fn = self.model.predict
 
     def predict(self, X):
 

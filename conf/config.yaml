@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.MnistDataset
 
 gen_model:
   checkpoint_path: null
@@ -26,7 +26,7 @@ gen_model:
   epochs: 200
   patience: 20
 
-disc_model: "lr" # "mlp"
+disc_model: LR # MLP
 
 counterfactuals:
   epochs: 1000
