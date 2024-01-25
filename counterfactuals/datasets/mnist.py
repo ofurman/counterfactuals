@@ -45,6 +45,9 @@ class MnistDataset(AbstractDataset):
 
         X, y = load_digits(n_class=2, return_X_y=True)
 
+        self.numerical_columns = list(range(0, 2))
+        self.categorical_columns = []
+
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, shuffle=True, stratify=y
         )

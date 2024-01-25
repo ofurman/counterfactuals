@@ -4,7 +4,7 @@ from time import time
 from uuid import uuid4
 
 import hydra
-import mlflow
+import torch
 import neptune
 import numpy as np
 import pandas as pd
@@ -21,6 +21,10 @@ from tqdm import tqdm
 from counterfactuals.artelt.plausible_counterfactuals import (
     HighDensityEllipsoids, PlausibleCounterfactualOfDecisionTree,
     PlausibleCounterfactualOfHyperplaneClassifier)
+
+from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from nflows.flows.autoregressive import MaskedAutoregressiveFlow
+from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.utils import process_classification_report
 
@@ -43,33 +47,87 @@ def main(cfg: DictConfig):
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = cfg.dataset
     run["parameters/disc_model"] = cfg.disc_model
-    run["parameters/gen_model"] = "Artelt"
+    run["parameters/gen_model"] = cfg.gen_model
+    run["parameters/reference_method"] = "Artelt"
 
-    available_disc_models = ["LogisticRegression", "DecisionTreeClassifier"]
-    if cfg.disc_model._target_.split(".")[-1] not in available_disc_models:
+    available_disc_models = ["LR", "MLP"]
+    if cfg.disc_model not in available_disc_models:
         raise ValueError(f"Disc model not supported. Please choose one of {available_disc_models}")
-    use_decision_tree = cfg.disc_model._target_.split(".")[-1] == "DecisionTreeClassifier"
+    use_decision_tree = cfg.disc_model == "DecisionTreeClassifier"
 
+    logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train, dataset.y_test
+    X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train.reshape(-1), dataset.y_test.reshape(-1)
+    train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
-    disc_model = instantiate(cfg.disc_model)
-    disc_model.fit(dataset.X_train, dataset.y_train.reshape(-1))
+    logger.info("Training discriminator model")
+    disc_models = {
+        "LR": LogisticRegression(X_train.shape[1], 1),
+        "MLP": MultilayerPerceptron(layer_sizes=[X_train.shape[1], 128, 1]),
+    }
+    disc_model = disc_models[cfg.disc_model]
+    disc_model.fit(train_dataloader)
+
+    logger.info("Evaluating discriminator model")
     report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
-
-    mlflow.log_metrics(process_classification_report(report, prefix="disc_test"))
     run["metrics"] = process_classification_report(report, prefix="disc_test")
 
     disc_model_path = os.path.join(output_folder, f"disc_model_{uuid4()}.joblib")
-    dump(disc_model, disc_model_path)
+    torch.save(disc_model, disc_model_path)
     run["disc_model"].upload(disc_model_path)
 
     X_test_pred_path = os.path.join(output_folder, "X_test_pred.csv")
     pd.DataFrame(disc_model.predict(dataset.X_test)).to_csv(X_test_pred_path, index=False)
     run["X_test_pred"].upload(X_test_pred_path)
 
-    y_train = disc_model.predict(X_train)
-    y_test = disc_model.predict(X_test)
+    if cfg.experiment.relabel_with_disc_model:
+        dataset.y_train = disc_model.predict(dataset.X_train)
+        dataset.y_test = disc_model.predict(dataset.X_test)
+        X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train.reshape(-1), dataset.y_test.reshape(-1)
+        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
+        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
+    else:
+        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
+        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
+
+    logger.info("Training generator model")
+    if cfg.gen_model.checkpoint_path:
+        flow = torch.load(cfg.gen_model.checkpoint_path)
+        cf = ApproachGenDiscLoss(
+            gen_model=flow,
+            disc_model=disc_model,
+            disc_model_criterion=torch.nn.BCELoss(),
+            neptune_run=neptune
+        )
+        gen_model_path = cfg.gen_model.checkpoint_path
+    else:
+        gen_model_path = os.path.join(output_folder, f"gen_model_{uuid4()}.pt")
+        flow = MaskedAutoregressiveFlow(
+            features=dataset.X_train.shape[1],
+            hidden_features=cfg.gen_model.hidden_features,
+            num_layers=cfg.gen_model.num_layers,
+            num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
+            context_features=1,
+        )
+        cf_class = ApproachGenDiscLoss(
+            gen_model=flow,
+            disc_model=disc_model,
+            disc_model_criterion=torch.nn.BCELoss(),
+            neptune_run=run,
+            checkpoint_path=gen_model_path
+        )
+        cf_class.train_model(
+            train_loader=train_dataloader,
+            test_loader=test_dataloader,
+            epochs=cfg.gen_model.epochs,
+            patience=cfg.gen_model.patience,
+        )
+    run["gen_model"].upload(gen_model_path)
+
+    logger.info("Evaluating generator model")
+    report = cf_class.test_model(test_loader=test_dataloader)
+    run["metrics"] = process_classification_report(report, prefix="gen_test")
 
     # Start ArteltH20 Method
 
@@ -149,11 +207,13 @@ def main(cfg: DictConfig):
         ).compute_ellipsoids()
 
         # Compute counterfactul with proposed density constraint
+        disc_model_coef_ = list(disc_model.parameters())[0].detach().cpu().numpy()
+        disc_model_intercept_ = list(disc_model.parameters())[1].detach().cpu().numpy()
         
         if use_decision_tree is False:
             cf[label] = PlausibleCounterfactualOfHyperplaneClassifier(
-                disc_model.coef_,
-                disc_model.intercept_,
+                disc_model_coef_,
+                disc_model_intercept_,
                 n_dims=X_train.shape[1],
                 ellipsoids_r=ellipsoids[label],
                 gmm_weights=de.weights_,
@@ -164,6 +224,7 @@ def main(cfg: DictConfig):
                 density_threshold=density_threshold,
             )
         else:
+            raise NotImplementedError("Our method does not support DecisionTree")
             cf[label] = PlausibleCounterfactualOfDecisionTree(
                 disc_model,
                 n_dims=X_train.shape[1],
@@ -188,10 +249,10 @@ def main(cfg: DictConfig):
         y_orig = y_test[i]
         y_target = np.abs(1 - y_orig)
 
-        if disc_model.predict([x_orig_orig]) == y_target:  # Model already predicts target label!
-            print("Requested prediction already satisfied")
-            Xs_cfs.append(x_orig_orig)
-            continue
+        # if disc_model.predict(np.array([x_orig_orig])) == y_target:  # Model already predicts target label!
+        #     print("Requested prediction already satisfied")
+        #     Xs_cfs.append(x_orig_orig)
+        #     continue
 
         # Compute and plot counterfactual WITH kernel density constraints
         idx = y_train == y_target
@@ -214,12 +275,13 @@ def main(cfg: DictConfig):
 
     run["metrics/avg_time_one_cf"] = np.mean(Xs_cfs_times)
 
-    Xs_cfs = np.array(Xs_cfs).squeeze()
+    Xs_cfs = np.array(Xs_cfs, dtype=np.float32).squeeze()
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
     metrics = evaluate_cf(
+        cf_class=cf_class,
         disc_model=disc_model,
         X=X_test,
         X_cf=Xs_cfs,

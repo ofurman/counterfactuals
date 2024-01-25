@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - gen_model: small_flow
 
 hydra:
   sweeper:
@@ -19,6 +20,12 @@ experiment:
 dataset:
   _target_: counterfactuals.datasets.LawDataset
 
-disc_model:
-  # _target_: "sklearn.linear_model.LogisticRegression"
-  _target_: sklearn.neural_network.MLPClassifier
+disc_model: LR # MLP
+
+reference_method: "artelth20"
+
+gen_model:
+  checkpoint_path: null
+  batch_size: 128
+  epochs: 200
+  patience: 20

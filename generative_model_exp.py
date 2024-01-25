@@ -8,24 +8,14 @@ import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
-from joblib import dump, load
 from nflows.flows import MaskedAutoregressiveFlow
 from omegaconf import DictConfig
 from sklearn.metrics import classification_report
 
-from counterfactuals.metrics.metrics import (
-    categorical_distance,
-    continuous_distance,
-    distance_l2_jaccard,
-    distance_mad_hamming,
-    kde_density,
-    perc_valid_actionable_cf,
-    perc_valid_cf,
-    plausibility,
-    sparsity,
-    evaluate_cf
-)
-from counterfactuals.optimizers.approach_three import ApproachThree
+from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
+
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
 from counterfactuals.utils import process_classification_report
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -57,19 +47,23 @@ def main(cfg: DictConfig):
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
     X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train, dataset.y_test
-    train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=0)
+    train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
     test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
     logger.info("Training discriminator model")
-    disc_model = instantiate(cfg.disc_model)
-    disc_model.fit(dataset.X_train, dataset.y_train.reshape(-1))
+    disc_models = {
+        "LR": LogisticRegression(X_train.shape[1], 1),
+        "MLP": MultilayerPerceptron(layer_sizes=[X_train.shape[1], 128, 1]),
+    }
+    disc_model = disc_models[cfg.disc_model]
+    disc_model.fit(train_dataloader)
 
     logger.info("Evaluating discriminator model")
     report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
     run["metrics"] = process_classification_report(report, prefix="disc_test")
 
     disc_model_path = os.path.join(output_folder, f"disc_model_{uuid4()}.joblib")
-    dump(disc_model, disc_model_path)
+    torch.save(disc_model, disc_model_path)
     run["disc_model"].upload(disc_model_path)
 
     X_test_pred_path = os.path.join(output_folder, "X_test_pred.csv")
@@ -88,7 +82,12 @@ def main(cfg: DictConfig):
     logger.info("Training generator model")
     if cfg.gen_model.checkpoint_path:
         flow = torch.load(cfg.gen_model.checkpoint_path)
-        cf = ApproachThree(model=flow)
+        cf = ApproachGenDiscLoss(
+            gen_model=flow,
+            disc_model=disc_model,
+            disc_model_criterion=torch.nn.BCELoss(),
+            neptune_run=neptune
+        )
         gen_model_path = cfg.gen_model.checkpoint_path
     else:
         gen_model_path = os.path.join(output_folder, f"gen_model_{uuid4()}.pt")
@@ -99,7 +98,13 @@ def main(cfg: DictConfig):
             num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
             context_features=1,
         )
-        cf = ApproachThree(model=flow, neptune_run=run, checkpoint_path=gen_model_path)
+        cf = ApproachGenDiscLoss(
+            gen_model=flow,
+            disc_model=disc_model,
+            disc_model_criterion=torch.nn.BCELoss(),
+            neptune_run=run,
+            checkpoint_path=gen_model_path
+        )
         cf.train_model(
             train_loader=train_dataloader,
             test_loader=test_dataloader,
@@ -130,6 +135,7 @@ def main(cfg: DictConfig):
     ys_orig = ys_orig.flatten()
 
     metrics = evaluate_cf(
+        cf_class=cf,
         disc_model=disc_model,
         X=Xs,
         X_cf=Xs_cfs,
@@ -137,7 +143,7 @@ def main(cfg: DictConfig):
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
         X_train=X_train,
-        y_train=y_train,
+        y_train=y_train.reshape(-1),
         X_test=X_test,
         y_test=y_test,
     )

@@ -13,11 +13,8 @@ class BlackBox:
     def predict(self, X):
 
         proba = self.pred_fn(X)
-        if proba.shape[-1] > 1:
-            classes = proba.argmax(axis=-1)
-        else:
-            classes = proba.flatten()
-            classes = np.array([1 if y_pred > 0.5 else 0 for y_pred in classes])
+        classes = proba.flatten()
+        classes = np.array([1 if y_pred > 0.5 else 0 for y_pred in classes])
         return classes
 
     def predict_proba(self, X):

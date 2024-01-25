@@ -201,9 +201,11 @@ class BaseCounterfactualModel(ABC):
         self.model = torch.load(self.checkpoint_path)
 
     def predict_gen_log_prob(self, x: np.ndarray):
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x)
         with torch.no_grad():
-            y_zero = torch.zeros((x.shape[0], 1)).to(self.device)
-            y_one = torch.ones((x.shape[0], 1)).to(self.device)
+            y_zero = torch.zeros((x.shape[0], 1), dtype=x.dtype).to(self.device)
+            y_one = torch.ones((x.shape[0], 1), dtype=x.dtype).to(self.device)
             log_p_zero = self.model.log_prob(inputs=x, context=y_zero)
             log_p_one = self.model.log_prob(inputs=x, context=y_one)
         result = torch.vstack([log_p_zero, log_p_one])

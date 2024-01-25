@@ -10,7 +10,7 @@ neptune:
   enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["run_exp"]
+  tags: ["run_exp", "GEN_DISC_LOSS"]
   
 
 experiment:
@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
 gen_model:
   checkpoint_path: null
@@ -26,13 +26,11 @@ gen_model:
   epochs: 200
   patience: 20
 
-disc_model:
-  # _target_: "sklearn.linear_model.LogisticRegression"
-  _target_: sklearn.neural_network.MLPClassifier
+disc_model: "lr" # "mlp"
 
 counterfactuals:
-  epochs: 200
-  batch_size: 128
+  epochs: 1000
+  batch_size: 16
   lr: 0.005
-  alpha: 10
-  beta: 0.01
+  alpha: 20
+  beta: 0.1

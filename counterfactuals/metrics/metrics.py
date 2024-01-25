@@ -242,14 +242,21 @@ def gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
 
     
 def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test, cf_class=None):
+    assert X.shape[0] == len(model_returned)
+    assert X[model_returned].shape == X_cf.shape
+    assert isinstance(X_cf, np.ndarray)
+    assert X_cf.dtype == np.float32
+    assert X.dtype == np.float32
+
     X = X[model_returned]
     if X.shape == 0:
+        model_returned_smth = np.sum(model_returned) / len(model_returned)
         return dict(model_returned_smth=model_returned_smth)
     
     if cf_class:
         gen_log_probs_xs = cf_class.predict_gen_log_prob(X)
         ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
-
+        print(X_cf.dtype)
         gen_log_probs_cf = cf_class.predict_gen_log_prob(X_cf)
         ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
 
