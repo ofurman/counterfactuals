@@ -20,6 +20,7 @@ class ApproachGenDisc(BaseCounterfactualModel):
         """
         Performs a single search step for counterfactual point.
         """
+        raise NotImplementedError("Currently does not supported :(")
         alpha = kwargs.get("alpha", None)
         beta = kwargs.get("beta", None)
         if alpha is None:

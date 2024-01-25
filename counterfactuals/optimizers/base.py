@@ -15,24 +15,24 @@ from sklearn.base import RegressorMixin, ClassifierMixin
 from counterfactuals.utils import plot_distributions
 
 class BaseCounterfactualModel(ABC):
-    def __init__(self, model, disc_model=None, device=None, neptune_run=None, checkpoint_path=None):
+    def __init__(self, gen_model, disc_model=None, device=None, neptune_run=None, checkpoint_path=None):
         """
         Initializes the trainer with the provided model.
 
         Args:
             model (nn.Module): The PyTorch model to be trained.
         """
-        if isinstance(model, str):
-            model = torch.load(model)
+        if isinstance(gen_model, str):
+            model = torch.load(gen_model)
         else:
-            self.model = model
-        self.classifier = disc_model
-        self.with_context = False if self.classifier else True
+            self.gen_model = gen_model
+        self.disc_model = disc_model
         if device:
             self.device = device
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
+        self.gen_model.to(self.device)
+        self.disc_model.to(self.device)
         self.neptune_run = neptune_run
         self.checkpoint_path = checkpoint_path
 
@@ -62,7 +62,8 @@ class BaseCounterfactualModel(ABC):
         """
         Trains the model for a specified number of epochs.
         """
-        self.model.eval()
+        self.gen_model.eval()
+        self.disc_model.eval()
         
         x_origin = torch.as_tensor(x_origin)
         x = x_origin.clone()
@@ -98,7 +99,9 @@ class BaseCounterfactualModel(ABC):
         """
         Trains the model for a specified number of epochs.
         """
-        self.model.eval()
+        self.gen_model.eval()
+        self.disc_model.eval()
+
         counterfactuals = []
         original = []
         original_class = []
@@ -148,13 +151,16 @@ class BaseCounterfactualModel(ABC):
         train_loader: DataLoader,
         test_loader: DataLoader,
         epochs: int = 100,
+        lr: float = 0.001,
         patience: int = 20,
         eps: float = 1e-2,
     ):
         """
         Trains the model for a specified number of epochs.
         """
-        optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
+        
+        optimizer = optim.Adam(self.gen_model.parameters(), lr=lr)
+        # scheduler = optim.lr_scheduler.ConstantLR(optimizer, factor=2, total_iters=400)
         train_losses = []
         i=0
         min_loss = np.inf
@@ -168,7 +174,7 @@ class BaseCounterfactualModel(ABC):
                 y = y.to(self.device)
                 y = y.reshape(-1, 1)
                 optimizer.zero_grad()
-                loss = -self._model_log_prob(inputs=x, context=y).mean()
+                loss = -self.gen_model.log_prob(inputs=x, context=y).mean()
                 loss.backward()
                 optimizer.step()
                 train_losses.append(loss.item())
@@ -177,10 +183,10 @@ class BaseCounterfactualModel(ABC):
                 y = y.to(self.device)
                 with torch.no_grad():
                     y = y.reshape(-1, 1)
-                    loss = -self._model_log_prob(inputs=x, context=y).mean()
+                    loss = -self.gen_model.log_prob(inputs=x, context=y).mean()
                     if np.abs(loss.item() - min_loss) > eps:
                         min_loss = loss.item()
-                        torch.save(self.model, self.checkpoint_path)
+                        torch.save(self.gen_model, self.checkpoint_path)
                         epochs_no_improve = 0
                     else:
                         epochs_no_improve += 1
@@ -194,6 +200,15 @@ class BaseCounterfactualModel(ABC):
                 break
         self.model = torch.load(self.checkpoint_path)
 
+    def predict_gen_log_prob(self, x: np.ndarray):
+        with torch.no_grad():
+            y_zero = torch.zeros((x.shape[0], 1)).to(self.device)
+            y_one = torch.ones((x.shape[0], 1)).to(self.device)
+            log_p_zero = self.model.log_prob(inputs=x, context=y_zero)
+            log_p_one = self.model.log_prob(inputs=x, context=y_one)
+        result = torch.vstack([log_p_zero, log_p_one])
+        return result
+
     def test_model(
         self,
         test_loader: DataLoader,
@@ -201,41 +216,22 @@ class BaseCounterfactualModel(ABC):
         """
         Test the model within defined metrics.
         """
-
         self.model.eval()
-
-        y_pred = []
-        y_true = []
-
+        ys_pred = []
+        ys_true = []
         with torch.no_grad():
             for x, y in test_loader:
                 x = x.to(self.device)
                 y = y.to(self.device)
-                y_zero = torch.zeros((x.shape[0], 1)).to(self.device)
-                y_one = torch.ones((x.shape[0], 1)).to(self.device)
-                log_p_zero = self._model_log_prob(inputs=x, context=y_zero)
-                log_p_one = self._model_log_prob(inputs=x, context=y_one)
-                result = log_p_one > log_p_zero
-                y_pred.append(result)
-                y_true.append(y)
+                log_p = self.predict_gen_log_prob(x)
+                y_pred = torch.argmax(log_p, axis=0)
+                ys_pred.append(y_pred)
+                ys_true.append(y)
         
-        y_pred = torch.concat(y_pred).cpu()
-        y_true = torch.concat(y_true).cpu()
-        return classification_report(y_true=y_true, y_pred=y_pred, output_dict=True)
-
-
-    def predict_model_point(self, x: np.ndarray):
-        y_zero = torch.zeros((x.shape[0], 1)).to(self.device)
-        y_one = torch.ones((x.shape[0], 1)).to(self.device)
-        if self.with_context:
-            log_p_zero = self.model.log_prob(inputs=x, context=y_zero)
-            log_p_one = self.model.log_prob(inputs=x, context=y_one)
-            result = log_p_one > log_p_zero
-            return log_p_zero, log_p_one, result
-        else:
-            log_p = self.model.log_prob(inputs=x, context=None)
-            return None, None, log_p
-
+        ys_pred = torch.concat(ys_pred).cpu()
+        ys_true = torch.concat(ys_true).cpu()
+        return classification_report(y_true=ys_true, y_pred=ys_pred, output_dict=True)
+    
 
     def predict_model(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):
         """

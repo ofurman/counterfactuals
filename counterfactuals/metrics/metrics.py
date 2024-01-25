@@ -208,39 +208,64 @@ def delta_proba(x, cf_list, classifier, agg=None):
     if agg == 'min':
         return np.min(deltas)
     
-def kde_density(X_train, y_train, Xs, Xs_cfs, ys):
+def kde_density(X_train, y_train, Xs_cfs, ys, Xs=None):
     log_density_cfs = []
+    log_density_xs = []
     for y in np.unique(y_train):
         X_train_y = X_train[y_train == y]
-        # Xs_y = Xs[ys == y]
         Xs_cfs_y = Xs_cfs[ys != y]
+        
         if Xs_cfs_y.shape[0] == 0:
             continue
 
         kde = KernelDensity(kernel='gaussian', bandwidth=0.1).fit(X_train_y)
-        
         log_dens_cfs = kde.score_samples(Xs_cfs_y)
         log_density_cfs.append(log_dens_cfs)
-    return np.mean(np.hstack(log_density_cfs))
+
+        if Xs is not None:
+            Xs_y = Xs[ys == y]
+            log_dens_xs = kde.score_samples(Xs_y)
+            log_density_xs.append(log_dens_xs)
+    if Xs is None:
+        return np.mean(np.hstack(log_density_cfs))
+    else:
+        return np.mean(np.hstack(log_density_cfs)), np.mean(np.hstack(log_density_xs))
     
-def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test):
-    model_returned_smth = np.sum(model_returned) / len(model_returned)
+
+def gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
+    log_density_cfs = []
+    log_density_xs = []
+    for y in np.unique(ys):
+        log_density_cfs.append(gen_log_probs_cf[y.astype(int), ys != y])
+        log_density_xs.append(gen_log_probs_xs[y.astype(int), ys == y])
+    return np.mean(np.hstack(log_density_cfs)), np.mean(np.hstack(log_density_xs))
+
     
-    
+def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test, cf_class=None):
     X = X[model_returned]
     if X.shape == 0:
         return dict(model_returned_smth=model_returned_smth)
     
-    ys_disc_pred = disc_model.predict(X)
-    ys_cfs_disc_pred = disc_model.predict(X_cf)
+    if cf_class:
+        gen_log_probs_xs = cf_class.predict_gen_log_prob(X)
+        ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
 
+        gen_log_probs_cf = cf_class.predict_gen_log_prob(X_cf)
+        ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
+
+        gen_model_log_probs_cfs, gen_model_log_probs_xs = gen_model_density(
+            gen_log_probs_xs, gen_log_probs_cf, ys=disc_model.predict(X)
+        )
+        valid_cf_gen_metric = perc_valid_cf(ys_gen_pred, y_cf=ys_cfs_gen_pred)
+
+    ys_disc_pred = np.array(disc_model.predict(X))
+    ys_cfs_disc_pred = np.array(disc_model.predict(X_cf))
     X = X[ys_cfs_disc_pred != ys_disc_pred]
     X_cf = X_cf[ys_cfs_disc_pred != ys_disc_pred]
 
     # Define variables for metrics
     # valid_cf_gen_orig = perc_valid_cf(ys_orig, y_cf=ys_cfs_gen_pred)
     # valid_cf_disc_orig = perc_valid_cf(ys_orig, y_cf=ys_cfs_disc_pred)
-    # valid_cf_gen = perc_valid_cf(ys_orig_gen_pred, y_cf=ys_cfs_gen_pred)
     model_returned_smth = np.sum(model_returned) / len(model_returned)
     valid_cf_disc_metric = perc_valid_cf(ys_disc_pred, y_cf=ys_cfs_disc_pred)
     if X.shape == 0:
@@ -286,7 +311,7 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         X_train=X_train,
         ratio_cont=None,
     )
-    kde_log_density_metric = kde_density(
+    kde_log_density_metric_cfs, kde_log_density_metric_xs = kde_density(
         X_train=X_train, y_train=y_train, Xs=X, Xs_cfs=X_cf, ys=disc_model.predict(X)
     )
     sparsity_metric = sparsity(X, X_cf)
@@ -303,9 +328,16 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         "distance_l2_jaccard": l2_jaccard_distance_metric,
         "distance_mad_hamming": mad_hamming_distance_metric,
         "plausibility": plausibility_metric,
-        "kde_log_density": kde_log_density_metric,
+        "kde_log_density_cfs": kde_log_density_metric_cfs,
+        "kde_log_density_xs": kde_log_density_metric_xs,
         "sparsity": sparsity_metric,
     }
+    if cf_class:
+        metrics.update({
+            "valid_cf_gen": valid_cf_gen_metric,
+            "flow_log_density_cfs": gen_model_log_probs_cfs,
+            "flow_log_density_xs": gen_model_log_probs_xs,
+        })
     return metrics
 
 # def continuous_diversity(cf_list, continuous_features, metric='euclidean', X=None, agg=None):

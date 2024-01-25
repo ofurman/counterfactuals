@@ -14,25 +14,23 @@ from functools import partial
 from counterfactuals.optimizers.base import BaseCounterfactualModel
 
 
-class ApproachThree(BaseCounterfactualModel):
-    def search_step(self, x_param, x_origin, context_origin, context_target, **kwargs):
-        """
-        Performs a single training step on a batch of data.
+class ApproachGenDiscLoss(BaseCounterfactualModel):
+    def __init__(self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None, checkpoint_path=None):
+        self.disc_model_criterion = disc_model_criterion
+        super().__init__(gen_model, disc_model, device, neptune_run, checkpoint_path)
 
-        Args:
-            data (dict): A dictionary containing input data and target data.
-
-        Returns:
-            float: The loss for the current training step.
-        """
-        alpha = kwargs.get("alpha", None)
-        beta = kwargs.get("beta", None)
+    def search_step(self, x_param, x_origin, context_origin, context_target, **search_step_kwargs):
+        alpha = search_step_kwargs.get("alpha", None)
+        beta = search_step_kwargs.get("beta", None)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
         if beta is None:
             raise ValueError("Parameter 'beta' should be in kwargs")
 
         dist = torch.linalg.norm(x_origin-x_param, axis=1)
+
+        outputs = self.disc_model.forward(x_param)
+        loss_d = self.disc_model_criterion(outputs, context_target)
 
         p_x_param_c_orig = self.gen_model.log_prob(x_param, context=context_origin)
         p_x_param_c_target = self.gen_model.log_prob(x_param, context=context_target)
@@ -41,7 +39,7 @@ class ApproachThree(BaseCounterfactualModel):
         p_x_param_c_orig_with_beta = p_x_param_c_orig + beta
         max_inner = torch.nn.functional.relu(p_x_orig_c_orig-p_x_param_c_target)
         max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
-        loss = dist + alpha * (max_outer + max_inner)
+        loss = dist + alpha * (max_outer + max_inner + loss_d)
         return loss, dist, max_inner, max_outer
     
     def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
