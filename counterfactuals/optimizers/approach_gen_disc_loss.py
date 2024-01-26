@@ -30,6 +30,7 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         dist = torch.linalg.norm(x_origin-x_param, axis=1)
 
         outputs = self.disc_model.forward(x_param)
+        outputs = outputs.reshape(-1) if outputs.shape[0] == 1 else outputs
         loss_d = self.disc_model_criterion(outputs, context_target)
 
         p_x_param_c_orig = self.gen_model.log_prob(x_param, context=context_origin)
