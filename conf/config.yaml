@@ -18,13 +18,13 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
-  model: FLOW
+  model: LR
 
 counterfactuals:
-  epochs: 1000
+  epochs: 2000
   batch_size: 16
   lr: 0.005
   alpha: 20

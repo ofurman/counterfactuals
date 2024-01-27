@@ -35,7 +35,7 @@ class AbstractDataset(ABC):
         Return X_train, X_test, y_train, y_test.
         """
 
-    def train_dataloader(self, batch_size: int, shuffle: bool, noise_lvl=1e-4, **kwargs_dataloader):
+    def train_dataloader(self, batch_size: int, shuffle: bool, noise_lvl=0, **kwargs_dataloader):
         def collate_fn(batch):
             X, y = zip(*batch)
             X = torch.stack(X)

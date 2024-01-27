@@ -32,11 +32,12 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
 
         dist = torch.linalg.norm(x_origin-x_param, axis=1)
 
-        if self.disc_model and (step < 500):
+        if self.disc_model and (step < 2000):
             outputs = self.disc_model.forward(x_param)
             outputs = outputs.reshape(-1) if outputs.shape[0] == 1 else outputs
             context_target = context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
-            loss_d = self.disc_model_criterion(outputs, context_target)
+            # loss_d = self.disc_model_criterion(outputs, context_target)
+            loss_d = torch.nn.functional.relu((-2 * context_target + 1) * (outputs - torch.Tensor([0.5])))
         else:
             loss_d = torch.zeros(1)
 

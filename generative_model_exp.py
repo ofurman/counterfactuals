@@ -57,8 +57,10 @@ def main(cfg: DictConfig):
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train)
             dataset.y_test = disc_model.predict(dataset.X_test)
-
-        gen_model_path = os.path.join(models_folder, f"gen_model_relabeled_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+            gen_model_path = os.path.join(models_folder, f"gen_model_relabeled_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+        else:
+            gen_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
+        
     elif cfg.disc_model.model == "FLOW":
         disc_model=None
         disc_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
@@ -87,11 +89,12 @@ def main(cfg: DictConfig):
     )
 
     logger.info("Handling counterfactual generation")
-    test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
-    delta = cf.calculate_median_log_prob(test_dataloader)
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
+    delta = cf.calculate_median_log_prob(train_dataloader_for_log_prob)
     run["parameters/delta"] = delta
     print(delta)
 
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
     Xs_cfs, Xs, ys_orig = cf.search_batch(
         dataloader=test_dataloader,
         epochs=cfg.counterfactuals.epochs,

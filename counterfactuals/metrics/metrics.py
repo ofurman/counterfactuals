@@ -250,6 +250,9 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
     assert X_cf.dtype == np.float32
     assert X.dtype == np.float32
 
+    y_train = y_train.reshape(-1)
+    y_test = y_test.reshape(-1)
+
     X = X[model_returned]
     print(X.shape)
     if X.shape[0] == 0:
@@ -270,7 +273,7 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
                 np.sum(delta < gen_log_probs_cf_zero) +
                 np.sum(delta < gen_log_probs_cf_one)
             )
-            / (len(gen_log_probs_xs_zero) + len(gen_log_probs_xs_one))
+            / (len(gen_log_probs_cf_zero) + len(gen_log_probs_cf_one))
         )
 
         ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
