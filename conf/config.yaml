@@ -15,10 +15,10 @@ neptune:
 
 experiment:
   models_folder: models/
-  relabel_with_disc_model: true
+  relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
   model: LR
@@ -27,5 +27,5 @@ counterfactuals:
   epochs: 2000
   batch_size: 16
   lr: 0.005
-  alpha: 20
+  alpha: 1000
   beta: 0.01
