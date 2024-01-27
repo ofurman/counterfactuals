@@ -15,14 +15,17 @@ neptune:
 
 experiment:
   output_folder: output/
-  relabel_with_disc_model: true
+  relabel_with_disc_model: false
+  models_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.CompasDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
-disc_model: LR # MLP
+disc_model: 
+  model: LR # MLP
 
 reference_method: "artelth20"
+pca_dim: 10
 
 gen_model:
   checkpoint_path: null
