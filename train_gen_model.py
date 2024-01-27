@@ -129,7 +129,6 @@ def main(cfg: DictConfig):
     test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
     gen_model_path = os.path.join(output_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
-    disc_model_path = os.path.join(output_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
     flow = MaskedAutoregressiveFlow(
         features=dataset.X_train.shape[1],
         hidden_features=cfg.gen_model.hidden_features,

@@ -46,10 +46,12 @@ class LawDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
+        # self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
+        self.feature_columns = ["lsat", "gpa", "zfygpa"]
         target_column = "pass_bar"
         self.numerical_columns = list(range(0, 3))
-        self.categorical_columns = list(range(3, len(self.feature_columns)))
+        # self.categorical_columns = list(range(3, len(self.feature_columns)))
+        self.categorical_columns = []
 
         # Downsample to minor class
         self.data = self.data.dropna(subset=self.feature_columns)
