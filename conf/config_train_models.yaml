@@ -17,7 +17,7 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 gen_model:
   checkpoint_path: null
@@ -28,8 +28,8 @@ gen_model:
   noise_lvl: 0
 
 disc_model:
-  model: MLP # LR
+  model: LR # LR
   hidden_features: [256, 256] # Ignored if model is LR
-  epochs: 200
+  epochs: 2000
   batch_size: 64
   lr: 0.0001

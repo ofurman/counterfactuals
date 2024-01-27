@@ -88,12 +88,17 @@ def main(cfg: DictConfig):
 
     logger.info("Handling counterfactual generation")
     test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
+    delta = cf.calculate_median_log_prob(test_dataloader)
+    run["parameters/delta"] = delta
+    print(delta)
+
     Xs_cfs, Xs, ys_orig = cf.search_batch(
         dataloader=test_dataloader,
         epochs=cfg.counterfactuals.epochs,
         lr=cfg.counterfactuals.lr,
         alpha=cfg.counterfactuals.alpha,
         beta=cfg.counterfactuals.beta,
+        delta=delta
     )
     counterfactuals_path = os.path.join(models_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
@@ -116,6 +121,7 @@ def main(cfg: DictConfig):
         y_train=dataset.y_train.reshape(-1),
         X_test=dataset.X_test,
         y_test=dataset.y_test,
+        delta=delta
     )
     run["metrics/cf"] = stringify_unsupported(metrics)
     results_path = os.path.join("results/", f"results_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.json")

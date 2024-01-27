@@ -241,6 +241,26 @@ class BaseCounterfactualModel(ABC):
         ys_pred = torch.concat(ys_pred).cpu()
         ys_true = torch.concat(ys_true).cpu()
         return classification_report(y_true=ys_true, y_pred=ys_pred, output_dict=True)
+
+    def calculate_median_log_prob(
+            self,
+            test_loader: DataLoader,
+    ):
+        """
+        Test the model within defined metrics.
+        """
+        self.gen_model.eval()
+        log_probs = []
+
+        with torch.no_grad():
+            for x, y in test_loader:
+                x = x.to(self.device)
+                y = y.to(self.device).reshape(-1, 1)
+                log_p = self.gen_model.log_prob(x, y)
+                log_probs.append(log_p)
+
+        log_probs = torch.concat(log_probs)
+        return np.median(log_probs)
     
 
     def predict(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):

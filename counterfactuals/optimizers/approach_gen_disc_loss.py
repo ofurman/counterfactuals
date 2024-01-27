@@ -22,10 +22,13 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
     def search_step(self, x_param, x_origin, context_origin, context_target, step, **search_step_kwargs):
         alpha = search_step_kwargs.get("alpha", None)
         beta = search_step_kwargs.get("beta", None)
+        delta = search_step_kwargs.get("delta", None)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
         if beta is None:
             raise ValueError("Parameter 'beta' should be in kwargs")
+        if delta is None:
+            raise ValueError("Parameter 'delta' should be in kwargs")
 
         dist = torch.linalg.norm(x_origin-x_param, axis=1)
 
@@ -39,14 +42,14 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
 
         p_x_param_c_orig = self.gen_model.log_prob(x_param, context=context_origin)
         p_x_param_c_target = self.gen_model.log_prob(x_param, context=context_target)
-        p_x_orig_c_orig = self.gen_model.log_prob(x_origin, context=context_origin.flatten()[0].repeat((x_origin.shape[0], 1)))
+        p_x_orig_c_orig = delta # self.gen_model.log_prob(x_origin, context=context_origin.flatten()[0].repeat((x_origin.shape[0], 1)))
 
         p_x_param_c_orig_with_beta = p_x_param_c_orig + beta
         max_inner = torch.nn.functional.relu(p_x_orig_c_orig-p_x_param_c_target)
         max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
-        loss = dist + alpha * (max_outer + max_inner + loss_d)
+        loss = dist + alpha * (max_outer + 100*max_inner + loss_d)
         return loss, dist, max_inner, max_outer, loss_d
-    
+
     def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]
         ys = ys.reshape(-1, 1)

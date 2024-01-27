@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
   model: FLOW
