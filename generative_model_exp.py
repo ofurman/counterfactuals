@@ -1,9 +1,10 @@
 import logging
 import os
 from uuid import uuid4
-
+import json
 import hydra
 import neptune
+from neptune.utils import stringify_unsupported
 import numpy as np
 import pandas as pd
 import torch
@@ -32,90 +33,58 @@ def main(cfg: DictConfig):
         tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
     )
 
-    output_folder = cfg.experiment.output_folder
-    os.makedirs(output_folder, exist_ok=True)
-    logger.info("Creatied output folder %s", output_folder)
+    models_folder = cfg.experiment.models_folder
+    os.makedirs(models_folder, exist_ok=True)
+    logger.info("Creatied output folder %s", models_folder)
 
     # Log parameters using Hydra config
     logger.info("Logging parameters")
     run["parameters/experiment"] = cfg.experiment
-    run["parameters/dataset"] = cfg.dataset
-    run["parameters/disc_model"] = cfg.disc_model
-    run["parameters/gen_model"] = cfg.gen_model
+    run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
+    run["parameters/disc_model/model"] = cfg.disc_model.model
+    # run["parameters/gen_model"] = cfg.gen_model
     run["parameters/counterfactuals"] = cfg.counterfactuals
+    run.wait()
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train, dataset.y_test
-    train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-    test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
-    logger.info("Training discriminator model")
-    disc_models = {
-        "LR": LogisticRegression(X_train.shape[1], 1),
-        "MLP": MultilayerPerceptron(layer_sizes=[X_train.shape[1], 128, 1]),
-    }
-    disc_model = disc_models[cfg.disc_model]
-    disc_model.fit(train_dataloader)
+    logger.info("Loading discriminator model")
+    if cfg.disc_model.model in ["LR", "MLP"]:
+        disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+        disc_model = torch.load(disc_model_path)
 
-    logger.info("Evaluating discriminator model")
-    report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
-    run["metrics"] = process_classification_report(report, prefix="disc_test")
+        if cfg.experiment.relabel_with_disc_model:
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-    disc_model_path = os.path.join(output_folder, f"disc_model_{uuid4()}.joblib")
-    torch.save(disc_model, disc_model_path)
-    run["disc_model"].upload(disc_model_path)
-
-    X_test_pred_path = os.path.join(output_folder, "X_test_pred.csv")
-    pd.DataFrame(disc_model.predict(dataset.X_test)).to_csv(X_test_pred_path, index=False)
-    run["X_test_pred"].upload(X_test_pred_path)
-
-    if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = disc_model.predict(dataset.X_train)
-        dataset.y_test = disc_model.predict(dataset.X_test)
-        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
-    else:
-        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
-
-    logger.info("Training generator model")
-    if cfg.gen_model.checkpoint_path:
-        flow = torch.load(cfg.gen_model.checkpoint_path)
-        cf = ApproachGenDiscLoss(
+        gen_model_path = os.path.join(models_folder, f"gen_model_relabeled_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+    elif cfg.disc_model.model == "FLOW":
+        disc_model=None
+        disc_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
+        flow = torch.load(disc_model_path)
+        disc_model_flow = ApproachGenDiscLoss(
             gen_model=flow,
-            disc_model=disc_model,
-            disc_model_criterion=torch.nn.BCELoss(),
-            neptune_run=neptune
-        )
-        gen_model_path = cfg.gen_model.checkpoint_path
-    else:
-        gen_model_path = os.path.join(output_folder, f"gen_model_{uuid4()}.pt")
-        flow = MaskedAutoregressiveFlow(
-            features=dataset.X_train.shape[1],
-            hidden_features=cfg.gen_model.hidden_features,
-            num_layers=cfg.gen_model.num_layers,
-            num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
-            context_features=1,
-        )
-        cf = ApproachGenDiscLoss(
-            gen_model=flow,
-            disc_model=disc_model,
+            disc_model=None,
             disc_model_criterion=torch.nn.BCELoss(),
             neptune_run=run,
-            checkpoint_path=gen_model_path
+            checkpoint_path=disc_model_path
         )
-        cf.train_model(
-            train_loader=train_dataloader,
-            test_loader=test_dataloader,
-            epochs=cfg.gen_model.epochs,
-            patience=cfg.gen_model.patience,
-        )
-    run["gen_model"].upload(gen_model_path)
+        if cfg.experiment.relabel_with_disc_model:
+            dataset.y_train = disc_model_flow.predict(dataset.X_train)
+            dataset.y_test = disc_model_flow.predict(dataset.X_test)
 
-    logger.info("Evaluating generator model")
-    report = cf.test_model(test_loader=test_dataloader)
-    run["metrics"] = process_classification_report(report, prefix="gen_test")
+        gen_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
+
+    logger.info("Loading generator model")
+    flow = torch.load(gen_model_path)
+    cf = ApproachGenDiscLoss(
+        gen_model=flow,
+        disc_model=disc_model,
+        disc_model_criterion=torch.nn.BCELoss(),
+        neptune_run=run,
+        checkpoint_path=gen_model_path
+    )
 
     logger.info("Handling counterfactual generation")
     test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
@@ -126,7 +95,7 @@ def main(cfg: DictConfig):
         alpha=cfg.counterfactuals.alpha,
         beta=cfg.counterfactuals.beta,
     )
-    counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
+    counterfactuals_path = os.path.join(models_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
@@ -137,18 +106,23 @@ def main(cfg: DictConfig):
 
     metrics = evaluate_cf(
         cf_class=cf,
-        disc_model=disc_model,
+        disc_model=disc_model if disc_model else disc_model_flow,
         X=Xs,
         X_cf=Xs_cfs,
         model_returned=model_returned,
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
-        X_train=X_train,
-        y_train=y_train.reshape(-1),
-        X_test=X_test,
-        y_test=y_test,
+        X_train=dataset.X_train,
+        y_train=dataset.y_train.reshape(-1),
+        X_test=dataset.X_test,
+        y_test=dataset.y_test,
     )
-    run["metrics/cf"] = metrics
+    run["metrics/cf"] = stringify_unsupported(metrics)
+    results_path = os.path.join("results/", f"results_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.json")
+    # write results dict to json file using json
+    with open(results_path, "w") as f:
+        json.dump({k: str(v) for k, v in metrics.items()}, f)
+
 
     logger.info("Finalizing and stopping run")
     run.stop()

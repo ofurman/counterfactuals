@@ -113,7 +113,8 @@ def flatten_dict(dd, separator ='_', prefix =''):
 def add_prefix_to_dict(d: dict, prefix: str) -> dict:
     return {prefix + "/" + k : v for k,v in d.items()}
 
-def process_classification_report(report: dict, prefix: str) -> dict:
+def process_classification_report(report: dict, prefix: str = None) -> dict:
     report = flatten_dict(report)
-    report = add_prefix_to_dict(report, prefix)
+    if prefix:
+        report = add_prefix_to_dict(report, prefix)
     return report

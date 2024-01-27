@@ -19,7 +19,7 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         self.disc_model_criterion = disc_model_criterion
         super().__init__(gen_model, disc_model, device, neptune_run, checkpoint_path)
 
-    def search_step(self, x_param, x_origin, context_origin, context_target, **search_step_kwargs):
+    def search_step(self, x_param, x_origin, context_origin, context_target, step, **search_step_kwargs):
         alpha = search_step_kwargs.get("alpha", None)
         beta = search_step_kwargs.get("beta", None)
         if alpha is None:
@@ -29,9 +29,13 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
 
         dist = torch.linalg.norm(x_origin-x_param, axis=1)
 
-        outputs = self.disc_model.forward(x_param)
-        outputs = outputs.reshape(-1) if outputs.shape[0] == 1 else outputs
-        loss_d = self.disc_model_criterion(outputs, context_target)
+        if self.disc_model and (step < 500):
+            outputs = self.disc_model.forward(x_param)
+            outputs = outputs.reshape(-1) if outputs.shape[0] == 1 else outputs
+            context_target = context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
+            loss_d = self.disc_model_criterion(outputs, context_target)
+        else:
+            loss_d = torch.zeros(1)
 
         p_x_param_c_orig = self.gen_model.log_prob(x_param, context=context_origin)
         p_x_param_c_target = self.gen_model.log_prob(x_param, context=context_target)
@@ -41,7 +45,7 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         max_inner = torch.nn.functional.relu(p_x_orig_c_orig-p_x_param_c_target)
         max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
         loss = dist + alpha * (max_outer + max_inner + loss_d)
-        return loss, dist, max_inner, max_outer
+        return loss, dist, max_inner, max_outer, loss_d
     
     def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]

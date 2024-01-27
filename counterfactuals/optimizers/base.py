@@ -32,7 +32,8 @@ class BaseCounterfactualModel(ABC):
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.gen_model.to(self.device)
-        self.disc_model.to(self.device)
+        if self.disc_model:
+            self.disc_model.to(self.device)
         self.neptune_run = neptune_run
         self.checkpoint_path = checkpoint_path
 
@@ -100,7 +101,13 @@ class BaseCounterfactualModel(ABC):
         Trains the model for a specified number of epochs.
         """
         self.gen_model.eval()
-        self.disc_model.eval()
+        for param in self.gen_model.parameters():
+            param.requires_grad = False
+
+        if self.disc_model:
+            self.disc_model.eval()
+            for param in self.disc_model.parameters():
+                param.requires_grad = False
 
         counterfactuals = []
         original = []
@@ -123,7 +130,7 @@ class BaseCounterfactualModel(ABC):
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
-                loss, dist, max_inner, max_outer = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
+                loss, dist, max_inner, max_outer, loss_d = self.search_step(xs, xs_origin, contexts_origin, contexts_target, epoch, **search_step_kwargs)
                 mean_loss = loss.mean()
                 mean_loss.backward()
                 optimizer.step()
@@ -134,6 +141,7 @@ class BaseCounterfactualModel(ABC):
                     self.neptune_run["cf_search/dist"].append(dist.mean().detach().cpu().numpy())
                     self.neptune_run["cf_search/max_inner"].append(max_inner.mean().detach().cpu().numpy())
                     self.neptune_run["cf_search/max_outer"].append(max_outer.mean().detach().cpu().numpy())
+                    self.neptune_run["cf_search/loss_d"].append(loss_d.mean().detach().cpu().numpy())
 
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
@@ -153,7 +161,7 @@ class BaseCounterfactualModel(ABC):
         epochs: int = 100,
         lr: float = 0.001,
         patience: int = 20,
-        eps: float = 1e-2,
+        eps: float = 1e-3,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -166,7 +174,7 @@ class BaseCounterfactualModel(ABC):
         min_loss = np.inf
         epochs_no_improve = 0
 
-        for i in (pbar := tqdm(range(epochs), desc=f"Epochs: {i}, Loss: {np.mean(train_losses)}")):
+        for i in (pbar := tqdm(range(epochs))):
             train_losses = []
             test_losses = []
             for x, y in train_loader:
@@ -206,8 +214,8 @@ class BaseCounterfactualModel(ABC):
         with torch.no_grad():
             y_zero = torch.zeros((x.shape[0], 1), dtype=x.dtype).to(self.device)
             y_one = torch.ones((x.shape[0], 1), dtype=x.dtype).to(self.device)
-            log_p_zero = self.model.log_prob(inputs=x, context=y_zero)
-            log_p_one = self.model.log_prob(inputs=x, context=y_one)
+            log_p_zero = self.gen_model.log_prob(inputs=x, context=y_zero)
+            log_p_one = self.gen_model.log_prob(inputs=x, context=y_one)
         result = torch.vstack([log_p_zero, log_p_one])
         return result
 
@@ -235,7 +243,7 @@ class BaseCounterfactualModel(ABC):
         return classification_report(y_true=ys_true, y_pred=ys_pred, output_dict=True)
     
 
-    def predict_model(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):
+    def predict(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):
         """
         Predict class using generative model.
         """
@@ -253,19 +261,14 @@ class BaseCounterfactualModel(ABC):
             dataloader = test_data
 
         results = []
-        log_p_zeros = []
-        log_p_ones = []
         with torch.no_grad():
             for x in dataloader:
                 x = x[0].to(self.device)
-                log_p_zero, log_p_one, result = self.predict_model_point(x)
-                results.append(result)
-                log_p_zeros.append(log_p_zero)
-                log_p_ones.append(log_p_one)
+                log_p = self.predict_gen_log_prob(x)
+                y_pred = torch.argmax(log_p, axis=0)
+                results.append(y_pred)
             results = torch.concat(results)
-            log_p_zeros = torch.concat(log_p_zeros)
-            log_p_ones = torch.concat(log_p_ones)
-        return log_p_zeros.cpu().numpy(), log_p_ones.cpu().numpy(), results.cpu().numpy()
+        return results.cpu().numpy().astype(np.float32)
 
         
 

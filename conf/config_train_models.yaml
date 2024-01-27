@@ -1,0 +1,35 @@
+defaults:
+  - _self_
+  - gen_model: small_flow
+
+hydra:
+  sweeper:
+    max_batch_size: 10
+
+neptune:
+  enable: true
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["train_models"]
+  
+
+experiment:
+  output_folder: models/
+
+dataset:
+  _target_: counterfactuals.datasets.HelocDataset
+
+gen_model:
+  checkpoint_path: null
+  batch_size: 128
+  epochs: 200
+  patience: 20
+  lr: 0.001
+  noise_lvl: 0
+
+disc_model:
+  model: MLP # LR
+  hidden_features: [256, 256] # Ignored if model is LR
+  epochs: 200
+  batch_size: 64
+  lr: 0.0001

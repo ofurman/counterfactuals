@@ -14,23 +14,18 @@ neptune:
   
 
 experiment:
-  output_folder: output/
+  models_folder: models/
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MnistDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
-gen_model:
-  checkpoint_path: null
-  batch_size: 128
-  epochs: 200
-  patience: 20
-
-disc_model: LR # MLP
+disc_model:
+  model: FLOW
 
 counterfactuals:
   epochs: 1000
   batch_size: 16
   lr: 0.005
   alpha: 20
-  beta: 0.1
+  beta: 0.01

@@ -16,8 +16,8 @@ class MultilayerPerceptron(torch.nn.Module):
         x = torch.sigmoid(x)
         return x
     
-    def fit(self, train_loader, epochs=200):
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+    def fit(self, train_loader, epochs=200, lr=0.001):
+        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         criterion = torch.nn.BCELoss()
         for epoch in (pbar := tqdm(range(epochs))):
             losses = []

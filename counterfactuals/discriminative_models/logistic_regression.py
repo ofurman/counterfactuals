@@ -12,8 +12,8 @@ class LogisticRegression(torch.nn.Module):
         y_pred = torch.sigmoid(self.linear(x))
         return y_pred
     
-    def fit(self, train_loader, epochs=200):
-        optimizer = torch.optim.Adam(self.linear.parameters(), lr=0.003)
+    def fit(self, train_loader, epochs=200, lr=0.003):
+        optimizer = torch.optim.Adam(self.linear.parameters(), lr=lr)
         criterion = torch.nn.BCELoss()
         for epoch in (pbar := tqdm(range(epochs))):
             losses = []

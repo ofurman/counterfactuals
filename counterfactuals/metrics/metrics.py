@@ -234,7 +234,7 @@ def kde_density(X_train, y_train, Xs_cfs, ys, Xs=None):
         return np.mean(np.hstack(log_density_cfs)), np.mean(np.hstack(log_density_xs))
     
 
-def gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
+def calc_gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
     log_density_cfs = []
     log_density_xs = []
     for y in np.unique(ys):
@@ -258,26 +258,35 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
     
     if cf_class:
         gen_log_probs_xs = cf_class.predict_gen_log_prob(X)
-        ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
-        print(X_cf.dtype)
-        gen_log_probs_cf = cf_class.predict_gen_log_prob(X_cf)
-        ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
+        gen_log_probs_xs_zero = gen_log_probs_xs[0, y_test == 0].numpy()
+        gen_log_probs_xs_one = gen_log_probs_xs[1, y_test == 1].numpy()
 
-        gen_model_log_probs_cfs, gen_model_log_probs_xs = gen_model_density(
-            gen_log_probs_xs, gen_log_probs_cf, ys=disc_model.predict(X)
+        gen_log_probs_cf = cf_class.predict_gen_log_prob(X_cf)
+        gen_log_probs_cf_one = gen_log_probs_cf[0, y_test != 0].numpy()
+        gen_log_probs_cf_zero = gen_log_probs_cf[1, y_test != 1].numpy()
+
+        flow_prob_condition_acc = (
+            (
+                np.sum(gen_log_probs_xs_zero < gen_log_probs_cf_zero) + 
+                np.sum(gen_log_probs_xs_one < gen_log_probs_cf_one)
+            )
+            / (len(gen_log_probs_xs_zero) + len(gen_log_probs_xs_one))
         )
+
+        ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
+        ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
         valid_cf_gen_metric = perc_valid_cf(ys_gen_pred, y_cf=ys_cfs_gen_pred)
 
     ys_disc_pred = np.array(disc_model.predict(X))
     ys_cfs_disc_pred = np.array(disc_model.predict(X_cf))
-    X = X[ys_cfs_disc_pred != ys_disc_pred]
-    X_cf = X_cf[ys_cfs_disc_pred != ys_disc_pred]
+    # X = X[ys_cfs_disc_pred != ys_disc_pred]
+    # X_cf = X_cf[ys_cfs_disc_pred != ys_disc_pred]
 
     # Define variables for metrics
     # valid_cf_gen_orig = perc_valid_cf(ys_orig, y_cf=ys_cfs_gen_pred)
     # valid_cf_disc_orig = perc_valid_cf(ys_orig, y_cf=ys_cfs_disc_pred)
     model_returned_smth = np.sum(model_returned) / len(model_returned)
-    valid_cf_disc_metric = perc_valid_cf(ys_disc_pred, y_cf=ys_cfs_disc_pred)
+    valid_cf_disc_metric = perc_valid_cf(y_test, y_cf=ys_cfs_disc_pred)
     if X.shape == 0:
         return dict(
             valid_cf_disc_metric=valid_cf_disc_metric,
@@ -322,7 +331,7 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         ratio_cont=None,
     )
     kde_log_density_metric_cfs, kde_log_density_metric_xs = kde_density(
-        X_train=X_train, y_train=y_train, Xs=X, Xs_cfs=X_cf, ys=disc_model.predict(X)
+        X_train=X_train, y_train=y_train, Xs=X, Xs_cfs=X_cf, ys=y_test
     )
     sparsity_metric = sparsity(X, X_cf)
 
@@ -337,7 +346,7 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         "dissimilarity_proximity_continuous_mad": mad_distance_metric,
         "distance_l2_jaccard": l2_jaccard_distance_metric,
         "distance_mad_hamming": mad_hamming_distance_metric,
-        "plausibility": plausibility_metric,
+        # "plausibility": plausibility_metric,
         "kde_log_density_cfs": kde_log_density_metric_cfs,
         "kde_log_density_xs": kde_log_density_metric_xs,
         "sparsity": sparsity_metric,
@@ -345,8 +354,13 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
     if cf_class:
         metrics.update({
             "valid_cf_gen": valid_cf_gen_metric,
-            "flow_log_density_cfs": gen_model_log_probs_cfs,
-            "flow_log_density_xs": gen_model_log_probs_xs,
+            "flow_log_density_cfs_zero": gen_log_probs_cf_zero.mean(),
+            "flow_log_density_cfs_one": gen_log_probs_cf_one.mean(),
+            "flow_log_density_cfs": np.concatenate([gen_log_probs_cf_zero, gen_log_probs_cf_one]).mean(),
+            "flow_log_density_xs_zero": gen_log_probs_xs_zero.mean(),
+            "flow_log_density_xs_one": gen_log_probs_xs_one.mean(),
+            "flow_log_density_xs": np.concatenate([gen_log_probs_xs_zero, gen_log_probs_xs_one]).mean(),
+            "flow_prob_condition_acc": flow_prob_condition_acc,
         })
     return metrics
 
