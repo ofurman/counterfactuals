@@ -243,7 +243,7 @@ def calc_gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
     return np.mean(np.hstack(log_density_cfs)), np.mean(np.hstack(log_density_xs))
 
     
-def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test, cf_class=None):
+def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, categorical_features, X_train, y_train, X_test, y_test, cf_class=None, delta=None):
     assert X.shape[0] == len(model_returned)
     assert X[model_returned].shape[0] == X_cf.shape[0]
     assert isinstance(X_cf, np.ndarray)
@@ -267,8 +267,8 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
 
         flow_prob_condition_acc = (
             (
-                np.sum(gen_log_probs_xs_zero < gen_log_probs_cf_zero) + 
-                np.sum(gen_log_probs_xs_one < gen_log_probs_cf_one)
+                np.sum(delta < gen_log_probs_cf_zero) +
+                np.sum(delta < gen_log_probs_cf_one)
             )
             / (len(gen_log_probs_xs_zero) + len(gen_log_probs_xs_one))
         )

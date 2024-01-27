@@ -36,6 +36,7 @@ def main(cfg: DictConfig):
 
     output_folder = cfg.experiment.output_folder
     os.makedirs(output_folder, exist_ok=True)
+    os.makedirs("results/model_train/", exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
     # Log parameters using Hydra config
