@@ -1,17 +1,18 @@
-"""
-# Approach 2
-
-$$agmin\quad d(x, x') - \lambda (log p(x'|y') - log(p(x'|y) + p(x'|y')))$$
-"""
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from functools import partial
 
 from counterfactuals.optimizers.base import BaseCounterfactualModel
+
+
+class OurLoss(torch.nn.modules.loss._Loss):
+    def __init__(self, size_average=None, reduce=None, reduction: str = 'mean', eps=0.02) -> None:
+        super().__init__(size_average, reduce, reduction)
+        self.eps = eps
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        scaled = -2 * target + 1
+        return torch.nn.functional.relu(scaled * (input - torch.Tensor([0.5]) + scaled * torch.Tensor([self.eps])))
 
 
 class ApproachGenDiscLoss(BaseCounterfactualModel):
@@ -37,14 +38,7 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         outputs = outputs.reshape(-1) if outputs.shape[0] == 1 else outputs
         context_target = context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
 
-        # loss_d = self.disc_model_criterion(outputs, context_target)
-        # loss_d = torch.nn.functional.relu((-2 * context_target + 1) * (outputs - torch.Tensor([0.5])))
-
-        def loss_function(context_target, outputs, eps=0.01):
-            scaled = -2 * context_target + 1
-            return torch.nn.functional.relu(scaled * (outputs - torch.Tensor([0.5]) + scaled * torch.Tensor([eps])))
-
-        loss_d = loss_function(context_target, outputs, eps=0.05)
+        loss_d = self.disc_model_criterion(outputs, context_target)
 
         p_x_param_c_orig = self.gen_model.log_prob(x_param, context=context_origin)
         p_x_param_c_target = self.gen_model.log_prob(x_param, context=context_target)
@@ -53,7 +47,7 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         p_x_param_c_orig_with_beta = p_x_param_c_orig
         max_inner = torch.nn.functional.relu(p_x_orig_c_orig - p_x_param_c_target)
         max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
-        loss = dist + alpha * max_inner + alpha * loss_d
+        loss = dist + alpha * (max_inner + loss_d)
         return loss, dist, max_inner, max_outer, loss_d
 
     def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):

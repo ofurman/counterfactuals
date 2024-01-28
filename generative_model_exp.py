@@ -16,7 +16,7 @@ from sklearn.metrics import classification_report
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss, OurLoss
 from counterfactuals.utils import process_classification_report
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -83,7 +83,7 @@ def main(cfg: DictConfig):
     cf = ApproachGenDiscLoss(
         gen_model=flow,
         disc_model=disc_model,
-        disc_model_criterion=torch.nn.BCELoss(),
+        disc_model_criterion=OurLoss(),# torch.nn.BCELoss(), TODO: Make that parametrizable from config.
         neptune_run=run,
         checkpoint_path=gen_model_path
     )
