@@ -21,7 +21,7 @@ dataset:
   _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
-  model: LR
+  model: DTC # LR, MLP, 
 
 counterfactuals:
   epochs: 2000
@@ -30,5 +30,5 @@ counterfactuals:
   alpha: 1000
   beta: 0.01
   disc_loss:
-    _target_: counterfactuals.losses.BinaryDiscLoss
-    # _target_: torch.nn.BCEWithLogitsLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: torch.nn.BCEWithLogitsLoss

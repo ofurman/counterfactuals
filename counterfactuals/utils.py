@@ -1,9 +1,9 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
+import joblib
+import numpy as np
 
-from matplotlib import cm, ticker
-from numpy import ma
+from matplotlib import cm
+import matplotlib.pyplot as plt
 
 def plot_x_point(x, x_origin, model):
     model.eval()
@@ -118,3 +118,16 @@ def process_classification_report(report: dict, prefix: str = None) -> dict:
     if prefix:
         report = add_prefix_to_dict(report, prefix)
     return report
+
+def save_model(model, path):
+    if isinstance(model, torch.nn.Module):
+        torch.save(model.state_dict(), path)
+    else:
+        joblib.dump(model, path)
+
+def load_model(path):
+    if path.endswith(".pt"):
+        model = torch.load(path)
+    else:
+        model = joblib.load(path)
+    return model

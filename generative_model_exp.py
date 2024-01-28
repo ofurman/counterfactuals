@@ -12,6 +12,7 @@ from omegaconf import DictConfig
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from counterfactuals.utils import load_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -44,9 +45,13 @@ def main(cfg: DictConfig):
     dataset = instantiate(cfg.dataset)
 
     logger.info("Loading discriminator model")
-    if cfg.disc_model.model in ["LR", "MLP"]:
-        disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
-        disc_model = torch.load(disc_model_path)
+    print(cfg.disc_model.model)
+    if cfg.disc_model.model in ["LR", "MLP", "DTC"]:
+        if cfg.disc_model.model == "DTC":
+            disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.joblib")
+        else:
+            disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+        disc_model = load_model(disc_model_path)
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train)
@@ -58,7 +63,7 @@ def main(cfg: DictConfig):
     elif cfg.disc_model.model == "FLOW":
         disc_model=None
         disc_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
-        flow = torch.load(disc_model_path)
+        flow = load_model(disc_model_path)
         disc_model_flow = ApproachGenDiscLoss(
             gen_model=flow,
             disc_model=None,
@@ -73,7 +78,7 @@ def main(cfg: DictConfig):
         gen_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
 
     logger.info("Loading generator model")
-    flow = torch.load(gen_model_path)
+    flow = load_model(gen_model_path)
     cf = ApproachGenDiscLoss(
         gen_model=flow,
         disc_model=disc_model,

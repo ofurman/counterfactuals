@@ -14,11 +14,11 @@ from nflows.flows import MaskedAutoregressiveFlow
 from omegaconf import DictConfig
 from sklearn.metrics import classification_report
 
-from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
+from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron, DecisionTreeClassifier
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
-from counterfactuals.utils import process_classification_report
+from counterfactuals.utils import process_classification_report, load_model, save_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ def main(cfg: DictConfig):
     disc_models = {
         "LR": LogisticRegression(X_train.shape[1], 1),
         "MLP": MultilayerPerceptron(layer_sizes=[X_train.shape[1]] + cfg.disc_model.hidden_features + [1]),
+        "DTC": DecisionTreeClassifier()
     }
     if cfg.disc_model.model in disc_models.keys():
         logger.info("Training discriminator model")
@@ -69,15 +70,19 @@ def main(cfg: DictConfig):
         report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
         run["metrics"] = process_classification_report(report, prefix="disc_test")
 
-        disc_model_path = os.path.join(output_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
-        torch.save(disc_model, disc_model_path)
+        if cfg.disc_model.model == "DTC":
+            disc_model_path = os.path.join(output_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.joblib")
+        else:
+            disc_model_path = os.path.join(output_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+        
+        save_model(disc_model, disc_model_path)
         run["disc_model"].upload(disc_model_path)
         results_path = os.path.join("results/model_train/", f"results_{cfg.disc_model.model}_orig_{run['parameters/dataset'].fetch()}.json")
         with open(results_path, "w") as f:
             json.dump({k: str(v) for k, v in process_classification_report(report).items()}, f)
     elif cfg.disc_model.model == "FLOW":
         gen_model_path = os.path.join(output_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
-        flow = torch.load(gen_model_path)
+        flow = load_model(gen_model_path)
         cf = ApproachGenDiscLoss(
             gen_model=flow,
             disc_model=disc_models["LR"],
@@ -122,7 +127,6 @@ def main(cfg: DictConfig):
         with open(results_path, "w") as f:
             json.dump({k: str(v) for k, v in process_classification_report(report).items()}, f)
     
-
 
     logger.info("Training orig generator model")
     train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=cfg.gen_model.noise_lvl)
