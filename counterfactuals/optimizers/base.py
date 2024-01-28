@@ -22,10 +22,7 @@ class BaseCounterfactualModel(ABC):
         Args:
             model (nn.Module): The PyTorch model to be trained.
         """
-        if isinstance(gen_model, str):
-            model = torch.load(gen_model)
-        else:
-            self.gen_model = gen_model
+        self.gen_model = gen_model
         self.disc_model = disc_model
         if device:
             self.device = device
@@ -63,6 +60,7 @@ class BaseCounterfactualModel(ABC):
         """
         Trains the model for a specified number of epochs.
         """
+        raise NotImplementedError("Use search batch method.")
         self.gen_model.eval()
         self.disc_model.eval()
         
@@ -112,8 +110,6 @@ class BaseCounterfactualModel(ABC):
         counterfactuals = []
         original = []
         original_class = []
-
-        loss_hist = []
         for xs_origin, contexts_origin in tqdm(dataloader):
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
@@ -130,18 +126,14 @@ class BaseCounterfactualModel(ABC):
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
-                loss, dist, max_inner, max_outer, loss_d = self.search_step(xs, xs_origin, contexts_origin, contexts_target, epoch, **search_step_kwargs)
-                mean_loss = loss.mean()
+                loss_components = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
+                mean_loss = loss_components["loss"].mean()
                 mean_loss.backward()
                 optimizer.step()
 
-                loss_hist.append(loss.detach().cpu().numpy())
                 if self.neptune_run:
-                    self.neptune_run["cf_search/loss"].append(np.mean(loss.mean().detach().cpu().numpy()))
-                    self.neptune_run["cf_search/dist"].append(dist.mean().detach().cpu().numpy())
-                    self.neptune_run["cf_search/max_inner"].append(max_inner.mean().detach().cpu().numpy())
-                    self.neptune_run["cf_search/max_outer"].append(max_outer.mean().detach().cpu().numpy())
-                    self.neptune_run["cf_search/loss_d"].append(loss_d.mean().detach().cpu().numpy())
+                    for loss_name, loss in loss_components.items():
+                        self.neptune_run[f"cf_search/{loss_name}"].append(loss.mean().detach().cpu().numpy())
 
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())

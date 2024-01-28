@@ -1,6 +1,5 @@
 import logging
 import os
-from uuid import uuid4
 import json
 import hydra
 import neptune
@@ -9,15 +8,10 @@ import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
-from nflows.flows import MaskedAutoregressiveFlow
 from omegaconf import DictConfig
-from sklearn.metrics import classification_report
-
-from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss, OurLoss
-from counterfactuals.utils import process_classification_report
+from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -83,7 +77,7 @@ def main(cfg: DictConfig):
     cf = ApproachGenDiscLoss(
         gen_model=flow,
         disc_model=disc_model,
-        disc_model_criterion=OurLoss(),# torch.nn.BCELoss(), TODO: Make that parametrizable from config.
+        disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
         neptune_run=run,
         checkpoint_path=gen_model_path
     )
