@@ -1,19 +1,10 @@
-import numpy as np
 import torch
+import torch.nn.functional as F
+import numpy as np
+
 from tqdm.auto import tqdm
 
 from counterfactuals.optimizers.base import BaseCounterfactualModel
-
-
-class OurLoss(torch.nn.modules.loss._Loss):
-    def __init__(self, size_average=None, reduce=None, reduction: str = 'mean', eps=0.02) -> None:
-        super().__init__(size_average, reduce, reduction)
-        self.eps = eps
-
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        scaled = -2 * target + 1
-        return torch.nn.functional.relu(scaled * (input - torch.Tensor([0.5]) + scaled * torch.Tensor([self.eps])))
-
 
 class ApproachGenDiscLoss(BaseCounterfactualModel):
     def __init__(self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None,
@@ -21,14 +12,18 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         self.disc_model_criterion = disc_model_criterion
         super().__init__(gen_model, disc_model, device, neptune_run, checkpoint_path)
 
-    def search_step(self, x_param, x_origin, context_origin, context_target, step, **search_step_kwargs):
+    def search_step(self, x_param, x_origin, contexts_origin, context_target, **search_step_kwargs) -> dict:
+        """Search step for the cf search process.
+        :param x_param: point to be optimized
+        :param x_origin: original point
+        :param context_target: target context
+        :param search_step_kwargs: dict with additional parameters
+        :return: dict with loss and additional components to log.
+        """
         alpha = search_step_kwargs.get("alpha", None)
-        beta = search_step_kwargs.get("beta", None)
         delta = search_step_kwargs.get("delta", None)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
-        if beta is None:
-            raise ValueError("Parameter 'beta' should be in kwargs")
         if delta is None:
             raise ValueError("Parameter 'delta' should be in kwargs")
 
@@ -38,17 +33,18 @@ class ApproachGenDiscLoss(BaseCounterfactualModel):
         outputs = outputs.reshape(-1) if outputs.shape[0] == 1 else outputs
         context_target = context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
 
-        loss_d = self.disc_model_criterion(outputs, context_target)
+        loss_disc = self.disc_model_criterion(outputs, context_target)
 
-        p_x_param_c_orig = self.gen_model.log_prob(x_param, context=context_origin)
         p_x_param_c_target = self.gen_model.log_prob(x_param, context=context_target)
-        p_x_orig_c_orig = delta
+        max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
 
-        p_x_param_c_orig_with_beta = p_x_param_c_orig
-        max_inner = torch.nn.functional.relu(p_x_orig_c_orig - p_x_param_c_target)
-        max_outer = torch.nn.functional.relu(p_x_param_c_orig_with_beta - p_x_param_c_target)
-        loss = dist + alpha * (max_inner + loss_d)
-        return loss, dist, max_inner, max_outer, loss_d
+        loss = dist + alpha * (max_inner + loss_disc)
+        return {
+            "loss": loss,
+            "dist": dist,
+            "max_inner": max_inner,
+            "loss_disc": loss_disc,
+        }
 
     def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
         Xs = Xs[:, np.newaxis, :]
