@@ -48,9 +48,9 @@ def main(cfg: DictConfig):
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
     run["parameters/disc_model"] = cfg.disc_model.model
-    # run["parameters/gen_model"] = cfg.gen_model
+    run["parameters/gen_model"] = cfg.gen_model.model
     run["parameters/reference_method"] = "Artelt"
-    run["parameters/pca_dim"] = cfg.pca_dim
+    # run["parameters/pca_dim"] = cfg.pca_dim
     run.wait()
 
     models_folder = cfg.experiment.models_folder
@@ -72,10 +72,10 @@ def main(cfg: DictConfig):
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     logger.info("Loading generator model")
-    gen_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
-    flow = torch.load(gen_model_path)
+    gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
+    gen_model = torch.load(gen_model_path)
     cf_class = ApproachGenDiscLoss(
-        gen_model=flow,
+        gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=torch.nn.BCELoss(),
         neptune_run=neptune
@@ -207,6 +207,7 @@ def main(cfg: DictConfig):
     Xs_cfs = []
     model_returned = []
     Xs_cfs_times = []
+    time_start = time()
     for i in tqdm(range(X_test.shape[0])):
         # x_orig = X_test[i,:]
         x_orig_orig = X_test[i, :]
@@ -236,7 +237,7 @@ def main(cfg: DictConfig):
         else:
             Xs_cfs.append(xcf2)
             model_returned.append(True)
-
+    run["metrics/eval_time"] = np.mean(time() - time_start)
     run["metrics/avg_time_one_cf"] = np.mean(Xs_cfs_times)
 
     Xs_cfs = np.array(Xs_cfs, dtype=np.float32).squeeze()

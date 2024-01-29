@@ -6,6 +6,7 @@ import neptune
 from neptune.utils import stringify_unsupported
 import numpy as np
 import pandas as pd
+from time import time
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
@@ -36,6 +37,7 @@ def main(cfg: DictConfig):
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
     run["parameters/disc_model/model"] = cfg.disc_model.model
+    run["parameters/gen_model/model"] = cfg.gen_model.model
     # run["parameters/gen_model"] = cfg.gen_model
     run["parameters/counterfactuals"] = cfg.counterfactuals
     run.wait()
@@ -51,13 +53,13 @@ def main(cfg: DictConfig):
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train)
             dataset.y_test = disc_model.predict(dataset.X_test)
-            gen_model_path = os.path.join(models_folder, f"gen_model_relabeled_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+            gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_relabeled_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
         else:
-            gen_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
+            gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
         
-    elif cfg.disc_model.model == "FLOW":
+    elif cfg.disc_model.model in ["FLOW", "KDE"]:
         disc_model=None
-        disc_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
+        disc_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
         flow = torch.load(disc_model_path)
         disc_model_flow = ApproachGenDiscLoss(
             gen_model=flow,
@@ -70,12 +72,12 @@ def main(cfg: DictConfig):
             dataset.y_train = disc_model_flow.predict(dataset.X_train)
             dataset.y_test = disc_model_flow.predict(dataset.X_test)
 
-        gen_model_path = os.path.join(models_folder, f"gen_model_orig_{run['parameters/dataset'].fetch()}.pt")
+        gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
 
     logger.info("Loading generator model")
-    flow = torch.load(gen_model_path)
+    gen_model = torch.load(gen_model_path)
     cf = ApproachGenDiscLoss(
-        gen_model=flow,
+        gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
         neptune_run=run,
@@ -89,6 +91,7 @@ def main(cfg: DictConfig):
     print(delta)
 
     test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
+    time_start = time()
     Xs_cfs, Xs, ys_orig = cf.search_batch(
         dataloader=test_dataloader,
         epochs=cfg.counterfactuals.epochs,
@@ -97,6 +100,7 @@ def main(cfg: DictConfig):
         beta=cfg.counterfactuals.beta,
         delta=delta
     )
+    run["metrics/eval_time"] = np.mean(time() - time_start)
     counterfactuals_path = os.path.join(models_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)

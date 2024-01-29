@@ -333,9 +333,9 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         X_train=X_train,
         ratio_cont=None,
     )
-    kde_log_density_metric_cfs, kde_log_density_metric_xs = kde_density(
-        X_train=X_train, y_train=y_train, Xs=X, Xs_cfs=X_cf, ys=y_test
-    )
+    # kde_log_density_metric_cfs, kde_log_density_metric_xs = kde_density(
+    #     X_train=X_train, y_train=y_train, Xs=X, Xs_cfs=X_cf, ys=y_test
+    # )
     sparsity_metric = sparsity(X, X_cf)
 
     # Create a dictionary of metrics
@@ -350,8 +350,8 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         "distance_l2_jaccard": l2_jaccard_distance_metric,
         "distance_mad_hamming": mad_hamming_distance_metric,
         # "plausibility": plausibility_metric,
-        "kde_log_density_cfs": kde_log_density_metric_cfs,
-        "kde_log_density_xs": kde_log_density_metric_xs,
+        # "kde_log_density_cfs": kde_log_density_metric_cfs,
+        # "kde_log_density_xs": kde_log_density_metric_xs,
         "sparsity": sparsity_metric,
     }
     if cf_class:

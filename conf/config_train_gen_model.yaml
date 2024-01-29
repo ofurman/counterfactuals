@@ -17,9 +17,10 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
 gen_model:
+  model: KDE
   checkpoint_path: null
   batch_size: 128
   epochs: 200
@@ -28,8 +29,4 @@ gen_model:
   noise_lvl: 0
 
 disc_model:
-  model: MLP # LR
-  hidden_features: [256, 256] # Ignored if model is LR
-  epochs: 500
-  batch_size: 64
-  lr: 0.0003
+  model: null # LR, MLP, null

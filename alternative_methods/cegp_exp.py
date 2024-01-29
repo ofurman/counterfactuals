@@ -43,88 +43,45 @@ def main(cfg: DictConfig):
     os.makedirs(output_folder, exist_ok=True)
 
     # Log parameters using Hydra configrun["parameters/experiment"] = cfg.experiment
-    run["parameters/dataset"] = cfg.dataset
-    run["parameters/disc_model"] = cfg.disc_model
-    run["parameters/gen_model"] = cfg.gen_model
+    run["parameters/experiment"] = cfg.experiment
+    run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
+    run["parameters/disc_model"] = cfg.disc_model.model
+    run["parameters/gen_model"] = cfg.gen_model.model
     run["parameters/reference_method"] = "CEGP"
+    # run["parameters/pca_dim"] = cfg.pca_dim
+    run.wait()
 
-    available_disc_models = ["LR", "MLP"]
-    if cfg.disc_model not in available_disc_models:
+    models_folder = cfg.experiment.models_folder
+
+    available_disc_models = ["LR"]
+    if cfg.disc_model.model not in available_disc_models:
         raise ValueError(f"Disc model not supported. Please choose one of {available_disc_models}")
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train.reshape(-1), dataset.y_test.reshape(-1)
-    train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-    test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
-    logger.info("Training discriminator model")
-    disc_models = {
-        "LR": LogisticRegression(X_train.shape[1], 1),
-        "MLP": MultilayerPerceptron(layer_sizes=[X_train.shape[1], 128, 1]),
-    }
-    disc_model = disc_models[cfg.disc_model]
-    disc_model.fit(train_dataloader)
-
-    logger.info("Evaluating discriminator model")
-    report = classification_report(dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True)
-    run["metrics"] = process_classification_report(report, prefix="disc_test")
-
-    disc_model_path = os.path.join(output_folder, f"disc_model_{uuid4()}.joblib")
-    torch.save(disc_model, disc_model_path)
-    run["disc_model"].upload(disc_model_path)
-
-    X_test_pred_path = os.path.join(output_folder, "X_test_pred.csv")
-    pd.DataFrame(disc_model.predict(dataset.X_test)).to_csv(X_test_pred_path, index=False)
-    run["X_test_pred"].upload(X_test_pred_path)
+    logger.info("Loading discriminator model")
+    disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+    disc_model = torch.load(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
-        X_train, X_test, y_train, y_test = dataset.X_train, dataset.X_test, dataset.y_train.reshape(-1), dataset.y_test.reshape(-1)
-        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
-    else:
-        train_dataloader = dataset.train_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=True, noise_lvl=1e-5)
-        test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
 
-    logger.info("Training generator model")
-    if cfg.gen_model.checkpoint_path:
-        flow = torch.load(cfg.gen_model.checkpoint_path)
-        cf = ApproachGenDiscLoss(
-            gen_model=flow,
-            disc_model=disc_model,
-            disc_model_criterion=torch.nn.BCELoss(),
-            neptune_run=neptune
-        )
-        gen_model_path = cfg.gen_model.checkpoint_path
-    else:
-        gen_model_path = os.path.join(output_folder, f"gen_model_{uuid4()}.pt")
-        flow = MaskedAutoregressiveFlow(
-            features=dataset.X_train.shape[1],
-            hidden_features=cfg.gen_model.hidden_features,
-            num_layers=cfg.gen_model.num_layers,
-            num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
-            context_features=1,
-        )
-        cf_class = ApproachGenDiscLoss(
-            gen_model=flow,
-            disc_model=disc_model,
-            disc_model_criterion=torch.nn.BCELoss(),
-            neptune_run=run,
-            checkpoint_path=gen_model_path
-        )
-        cf_class.train_model(
-            train_loader=train_dataloader,
-            test_loader=test_dataloader,
-            epochs=cfg.gen_model.epochs,
-            patience=cfg.gen_model.patience,
-        )
-    run["gen_model"].upload(gen_model_path)
+    logger.info("Loading generator model")
+    gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
+    gen_model = torch.load(gen_model_path)
+    cf_class = ApproachGenDiscLoss(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        disc_model_criterion=torch.nn.BCELoss(),
+        neptune_run=neptune
+    )
 
-    logger.info("Evaluating generator model")
-    report = cf_class.test_model(test_loader=test_dataloader)
-    run["metrics"] = process_classification_report(report, prefix="gen_test")
+    X_train, y_train = dataset.X_train, dataset.y_train
+    X_test, y_test = dataset.X_test, dataset.y_test
+
+    time_start = time()
 
     shape = (1,) + X_train.shape[1:]  # instance shape
     beta = .01
@@ -162,14 +119,16 @@ def main(cfg: DictConfig):
             model_returned.append(True)
 
     run["metrics/avg_time_one_cf"] = (time() - start_time) / X_test.shape[0]
+    run["metrics/eval_time"] = np.mean(time() - time_start)
 
     Xs_cfs = np.array(Xs_cfs, dtype=np.float32).squeeze()
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-
+    delta = cf_class.calculate_median_log_prob(dataset.train_dataloader(batch_size=64, shuffle=False))
     metrics = evaluate_cf(
         cf_class=cf_class,
+        delta=delta,
         disc_model=disc_model,
         X=X_test,
         X_cf=Xs_cfs,

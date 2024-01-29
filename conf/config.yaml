@@ -10,7 +10,7 @@ neptune:
   enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["run_exp", "GEN_DISC_LOSS"]
+  tags: ["exp_v1", "GEN_DISC_LOSS"]
   
 
 experiment:
@@ -23,8 +23,11 @@ dataset:
 disc_model:
   model: LR
 
+gen_model:
+  model: KDE
+
 counterfactuals:
-  epochs: 2000
+  epochs: 3000
   batch_size: 16
   lr: 0.005
   alpha: 1000

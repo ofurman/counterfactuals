@@ -218,7 +218,7 @@ class BaseCounterfactualModel(ABC):
         """
         Test the model within defined metrics.
         """
-        self.model.eval()
+        self.gen_model.eval()
         ys_pred = []
         ys_true = []
         with torch.no_grad():

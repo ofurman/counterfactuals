@@ -19,7 +19,7 @@ experiment:
   models_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model: 
   model: LR # MLP
@@ -28,6 +28,7 @@ reference_method: "artelth20"
 pca_dim: 10
 
 gen_model:
+  model: FLOW
   checkpoint_path: null
   batch_size: 128
   epochs: 200

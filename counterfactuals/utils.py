@@ -62,7 +62,6 @@ def plot_loss_space(x, x_origin, optim_function, **optim_function_params):
     cbar = fig.colorbar(cs)
     ax.scatter(x_origin[0,0], x_origin[0,1], c="r")
     min_i = np.argmin(zgrid)
-    print(torch.min(zgrid))
 
     ax.scatter(xyinput[min_i, 0], xyinput[min_i, 1], c="y")
     ax.arrow(x_origin[0, 0], x_origin[0, 1], x_res[0]-x_origin[0, 0], x_res[1]-x_origin[0, 1], width=0.025, length_includes_head=True, color="C3")
