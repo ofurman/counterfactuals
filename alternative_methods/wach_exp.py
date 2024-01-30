@@ -80,7 +80,7 @@ def main(cfg: DictConfig):
     time_start = time()
 
     target_proba = 1.0
-    tol = 0.01 # want counterfactuals with p(class)>0.99
+    tol = 0.49 # want counterfactuals with p(class)>0.99
     target_class = 'other' # any class other than origin will do
     max_iter = 1000
     lam_init = 1e-1

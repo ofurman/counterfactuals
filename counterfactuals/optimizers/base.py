@@ -92,6 +92,7 @@ class BaseCounterfactualModel(ABC):
         dataloader: DataLoader,
         epochs: int = 10,
         lr: float = 0.01,
+        patience: int = 100,
         verbose: bool = False,
         **search_step_kwargs,
     ):
@@ -110,6 +111,8 @@ class BaseCounterfactualModel(ABC):
         counterfactuals = []
         original = []
         original_class = []
+        min_loss = np.inf
+        no_improve = 0
         for xs_origin, contexts_origin in tqdm(dataloader):
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
@@ -134,6 +137,12 @@ class BaseCounterfactualModel(ABC):
                 if self.neptune_run:
                     for loss_name, loss in loss_components.items():
                         self.neptune_run[f"cf_search/{loss_name}"].append(loss.mean().detach().cpu().numpy())
+                if mean_loss.item() < min_loss:
+                    min_loss = mean_loss.item()
+                else:
+                    no_improve += 1
+                if no_improve > patience:
+                    break
 
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())

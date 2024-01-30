@@ -19,7 +19,7 @@ experiment:
   models_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
   model: LR # MLP

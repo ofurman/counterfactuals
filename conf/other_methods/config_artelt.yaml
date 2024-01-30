@@ -19,13 +19,13 @@ experiment:
   models_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model: 
   model: LR # MLP
 
 reference_method: "artelth20"
-pca_dim: 10
+pca_dim: 25
 
 gen_model:
   model: FLOW

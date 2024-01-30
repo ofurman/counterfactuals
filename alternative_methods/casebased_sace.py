@@ -42,7 +42,7 @@ def main(cfg: DictConfig):
     run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
     run["parameters/disc_model"] = cfg.disc_model.model
     run["parameters/gen_model"] = cfg.gen_model.model
-    run["parameters/reference_method"] = "WACH"
+    run["parameters/reference_method"] = "CBCE"
     # run["parameters/pca_dim"] = cfg.pca_dim
     run.wait()
 

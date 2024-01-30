@@ -24,7 +24,7 @@ dataset:
 disc_model:
   model: LR # MLP
 
-reference_method: "artelth20"
+reference_method: "CBCE"
 
 gen_model:
   model: FLOW

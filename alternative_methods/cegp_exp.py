@@ -48,7 +48,6 @@ def main(cfg: DictConfig):
     run["parameters/disc_model"] = cfg.disc_model.model
     run["parameters/gen_model"] = cfg.gen_model.model
     run["parameters/reference_method"] = "CEGP"
-    # run["parameters/pca_dim"] = cfg.pca_dim
     run.wait()
 
     models_folder = cfg.experiment.models_folder

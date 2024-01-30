@@ -24,14 +24,15 @@ disc_model:
   model: LR
 
 gen_model:
-  model: KDE
+  model: FLOW
 
 counterfactuals:
-  epochs: 3000
-  batch_size: 16
+  epochs: 5000
+  batch_size: 2048
   lr: 0.005
-  alpha: 1000
+  alpha: 100
   beta: 0.01
+  patience: 100
   disc_loss:
     _target_: counterfactuals.losses.BinaryDiscLoss
     # _target_: torch.nn.BCEWithLogitsLoss

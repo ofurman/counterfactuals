@@ -96,6 +96,7 @@ def main(cfg: DictConfig):
         dataloader=test_dataloader,
         epochs=cfg.counterfactuals.epochs,
         lr=cfg.counterfactuals.lr,
+        patience=cfg.counterfactuals.patience,
         alpha=cfg.counterfactuals.alpha,
         beta=cfg.counterfactuals.beta,
         delta=delta
