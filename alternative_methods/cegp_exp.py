@@ -20,7 +20,7 @@ from alibi.utils.mapping import ohe_to_ord, ord_to_ohe
 
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from counterfactuals.optimizers.ppcef import PPCEF
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.utils import process_classification_report
@@ -70,7 +70,7 @@ def main(cfg: DictConfig):
     logger.info("Loading generator model")
     gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
     gen_model = torch.load(gen_model_path)
-    cf_class = ApproachGenDiscLoss(
+    cf_class = PPCEF(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=torch.nn.BCELoss(),

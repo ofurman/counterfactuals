@@ -17,7 +17,7 @@ from sklearn.metrics import classification_report
 
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 
-from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from counterfactuals.optimizers.ppcef import PPCEF
 from counterfactuals.generative_models.kde import KDE
 from counterfactuals.utils import process_classification_report
 
@@ -76,7 +76,7 @@ def main(cfg: DictConfig):
             num_blocks_per_layer=cfg.gen_model.num_blocks_per_layer,
             context_features=1,
         )
-        cf = ApproachGenDiscLoss(
+        cf = PPCEF(
             gen_model=gen_model,
             disc_model=disc_model,
             disc_model_criterion=torch.nn.BCELoss(),
@@ -94,7 +94,7 @@ def main(cfg: DictConfig):
         gen_model = KDE(bandwidth=0.1)
         gen_model.fit(train_dataloader)
         torch.save(gen_model, gen_model_path)
-        cf = ApproachGenDiscLoss(
+        cf = PPCEF(
             gen_model=gen_model,
             disc_model=disc_model,
             disc_model_criterion=torch.nn.BCELoss(),

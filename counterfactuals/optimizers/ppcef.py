@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 
 from counterfactuals.optimizers.base import BaseCounterfactualModel
 
-class ApproachGenDiscLoss(BaseCounterfactualModel):
+class PPCEF(BaseCounterfactualModel):
     def __init__(self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None,
                  checkpoint_path=None):
         self.disc_model_criterion = disc_model_criterion
