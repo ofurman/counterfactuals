@@ -23,9 +23,9 @@ def plot_x_point(x, x_origin, model):
     ax.arrow(x_origin[0], x_origin[1], x_res[0]-x_origin[0], x_res[1]-x_origin[1], width=0.025, length_includes_head=True, color="C3")
     ax.scatter(x_origin[0], x_origin[1], c="r")
 
-def plot_model_distribution(model):
+def plot_model_distribution(model, median_prob=None, disc_model=None):
     fig, ax = plt.subplots(1, 1)
-    fig.set_size_inches(8,5)
+    fig.set_size_inches(8,6)
 
     xline = torch.linspace(-1.5, 2.5, 200)
     yline = torch.linspace(-.75, 1.25, 200)
@@ -34,11 +34,17 @@ def plot_model_distribution(model):
     
     with torch.no_grad():
         zgrid = model.log_prob(xyinput, torch.zeros(40000, 1)).exp().reshape(200, 200) \
-                - model.log_prob(xyinput, torch.ones(40000, 1)).exp().reshape(200, 200) \
+                + model.log_prob(xyinput, torch.ones(40000, 1)).exp().reshape(200, 200) \
 
-    cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=50, cmap=cm.PuBu_r) # locator=ticker.LogLocator()
+    zgrid = zgrid.numpy()
+    
+    cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=50, cmap=cm.PuBu) # locator=ticker.LogLocator()
     cbar = fig.colorbar(cs)
-    plt.show()
+    if median_prob is not None:
+        median_prob = np.exp(median_prob)
+        cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=[median_prob-0.01, median_prob+0.01], colors='r') # locator=ticker.LogLocator()
+
+    return ax
 
 def plot_loss_space(x, x_origin, optim_function, **optim_function_params):
     fig, ax = plt.subplots(1, 1)
@@ -54,10 +60,10 @@ def plot_loss_space(x, x_origin, optim_function, **optim_function_params):
     context_target = torch.ones((xyinput.shape[0], 1))
     
     with torch.no_grad():
-        zgrid, _, _, _ = optim_function(xyinput, x_origin, context_origin, context_target, **optim_function_params)
-        zgrid = zgrid.log().reshape(200, 200)
+        zgrid = optim_function(xyinput, x_origin, context_origin, context_target, **optim_function_params)
+        zgrid = zgrid["loss"]
+        zgrid = zgrid.log().reshape(200, 200).numpy()
 
-    # zgrid[zgrid > 2] = 2
     cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=100, cmap=cm.PuBu_r) #  locator=ticker.LogLocator()
     cbar = fig.colorbar(cs)
     ax.scatter(x_origin[0,0], x_origin[0,1], c="r")
