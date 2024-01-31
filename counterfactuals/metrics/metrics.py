@@ -265,9 +265,9 @@ def evaluate_cf(disc_model, X, X_cf, model_returned, continuous_features, catego
         gen_log_probs_xs_one = gen_log_probs_xs[1, y_test == 1].numpy()
 
         gen_log_probs_cf = cf_class.predict_gen_log_prob(X_cf)
-        gen_log_probs_cf_one = gen_log_probs_cf[0, y_test != 0].numpy()
-        gen_log_probs_cf_zero = gen_log_probs_cf[1, y_test != 1].numpy()
-
+        gen_log_probs_cf_zero = gen_log_probs_cf[0, y_test == 1].numpy()
+        gen_log_probs_cf_one = gen_log_probs_cf[1, y_test == 0].numpy()
+        
         flow_prob_condition_acc = (
             (
                 np.sum(delta < gen_log_probs_cf_zero) +

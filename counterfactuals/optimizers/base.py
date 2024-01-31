@@ -183,7 +183,7 @@ class BaseCounterfactualModel(ABC):
                 y = y.to(self.device)
                 y = y.reshape(-1, 1)
                 optimizer.zero_grad()
-                loss = -self.gen_model.log_prob(inputs=x, context=y).mean()
+                loss = -self.gen_model.log_prob(x, y).mean()
                 loss.backward()
                 optimizer.step()
                 train_losses.append(loss.item())
@@ -192,7 +192,7 @@ class BaseCounterfactualModel(ABC):
                 y = y.to(self.device)
                 with torch.no_grad():
                     y = y.reshape(-1, 1)
-                    loss = -self.gen_model.log_prob(inputs=x, context=y).mean()
+                    loss = -self.gen_model.log_prob(x, y).mean()
                     if np.abs(loss.item() - min_loss) > eps:
                         min_loss = loss.item()
                         torch.save(self.gen_model, self.checkpoint_path)
@@ -215,8 +215,8 @@ class BaseCounterfactualModel(ABC):
         with torch.no_grad():
             y_zero = torch.zeros((x.shape[0], 1), dtype=x.dtype).to(self.device)
             y_one = torch.ones((x.shape[0], 1), dtype=x.dtype).to(self.device)
-            log_p_zero = self.gen_model.log_prob(inputs=x, context=y_zero)
-            log_p_one = self.gen_model.log_prob(inputs=x, context=y_one)
+            log_p_zero = self.gen_model.log_prob(x, y_zero)
+            log_p_one = self.gen_model.log_prob(x, y_one)
         result = torch.vstack([log_p_zero, log_p_one])
         return result
 

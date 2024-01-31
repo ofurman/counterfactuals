@@ -10,7 +10,8 @@ import pandas as pd
 import torch
 from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
-from nflows.flows import MaskedAutoregressiveFlow
+from nflows.flows import MaskedAutoregressiveFlow, SimpleRealNVP
+from counterfactuals.generative_models.cnf import ContinuousNormalizingFlowRegressor
 from omegaconf import DictConfig
 from sklearn.metrics import classification_report
 

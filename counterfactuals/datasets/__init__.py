@@ -5,3 +5,5 @@ from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.law import LawDataset
 from counterfactuals.datasets.mnist import MnistDataset
 from counterfactuals.datasets.moons import MoonsDataset
+from counterfactuals.datasets.polish_bankruptcy import PolishBankDataset
+from counterfactuals.datasets.audit import AuditDataset
