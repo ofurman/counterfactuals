@@ -46,7 +46,6 @@ from counterfactuals.datasets import MoonsDataset
 from counterfactuals.optimizers.ppcef import PPCEF
 from counterfactuals.discriminative_models import LogisticRegression
 from counterfactuals.losses import BinaryDiscLoss
-from counterfactuals.utils import plot_model_distribution
 
 
 dataset = MoonsDataset("../data/moons.csv")
@@ -92,12 +91,12 @@ The repository is organized as follows to facilitate ease of use and contributio
 ```
 
 Source code in `counterfactuals/` directory contains the following:
-  * `datasets` - Kedro wrappers for the TreeFlow model and UCI Datasets.
+  * `datasets` - Wrappers for the datasets. 
   * `discriminative_models` - Discriminative models implementations.
   * `generative_models` - Generative models implementations.
   * `losses` - Implementation of the proposed loss function.
   * `metrics` - Calculations of metrics.
-  * `optimizers` - Implementation of **PPCF** method
+  * `optimizers` - Implementation of **PPCEF** method
   * `artelth20` - Plausible Counterfactual Explanations by [André Artelt and Barbara Hammer](https://github.com/andreArtelt/ConvexDensityConstraintsForPlausibleCounterfactuals/tree/master).
   * `sace` - Implementations of refenrence methods by [Riccardo Guidotti](https://github.com/riccotti/Scamander/tree/main/sace)
 
