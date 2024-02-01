@@ -8,7 +8,7 @@ hydra:
 
 neptune:
   enable: true
-  project: "ofurman/counterfactuals"
+  project: "/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["CEGP", "other_methods"]
   
