@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
 from matplotlib import cm, ticker
 from numpy import ma
+
 
 def plot_x_point(x, x_origin, model):
     model.eval()

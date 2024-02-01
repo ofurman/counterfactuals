@@ -16,7 +16,7 @@ from sklearn.metrics import classification_report
 
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 
-from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from counterfactuals.optimizers.ppcef import PPCEF
 from counterfactuals.generative_models.kde import KDE
 from counterfactuals.utils import process_classification_report
 

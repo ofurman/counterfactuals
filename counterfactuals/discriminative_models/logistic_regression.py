@@ -1,6 +1,7 @@
-import torch
 import numpy as np
+import torch
 from tqdm import tqdm
+
 
 class LogisticRegression(torch.nn.Module):    
     # build the constructor

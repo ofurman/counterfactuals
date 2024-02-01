@@ -7,11 +7,6 @@ import torch
 import torch.nn.functional as F
 from torch import distributions, nn
 
-import abc
-
-import torch
-from torch import distributions, nn
-
 
 def _default_sample_fn(logits):
     return distributions.Bernoulli(logits=logits).sample()

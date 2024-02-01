@@ -12,7 +12,7 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.optimizers.approach_gen_disc_loss import ApproachGenDiscLoss
+from counterfactuals.optimizers.ppcef import PPCEF
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def main(cfg: DictConfig):
         disc_model=None
         disc_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
         flow = torch.load(disc_model_path)
-        disc_model_flow = ApproachGenDiscLoss(
+        disc_model_flow = PPCEF(
             gen_model=flow,
             disc_model=None,
             disc_model_criterion=torch.nn.BCELoss(),
@@ -76,7 +76,7 @@ def main(cfg: DictConfig):
 
     logger.info("Loading generator model")
     gen_model = torch.load(gen_model_path)
-    cf = ApproachGenDiscLoss(
+    cf = PPCEF(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),

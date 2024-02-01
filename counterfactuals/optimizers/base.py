@@ -1,18 +1,17 @@
 from abc import ABC, abstractmethod
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
-from tqdm.auto import tqdm
-
 from typing import Union
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.metrics import classification_report
-from sklearn.base import RegressorMixin, ClassifierMixin
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm.auto import tqdm
 
 from counterfactuals.utils import plot_distributions
+
 
 class BaseCounterfactualModel(ABC):
     def __init__(self, gen_model, disc_model=None, device=None, neptune_run=None, checkpoint_path=None):
