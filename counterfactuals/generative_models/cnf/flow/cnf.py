@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from torchdiffeq import odeint_adjoint
 from torchdiffeq import odeint as odeint_normal
+from torchdiffeq import odeint_adjoint
 
 __all__ = ["CNF", "SequentialFlow"]
 

@@ -1,12 +1,11 @@
 import torch
 import torch.nn as nn
-
 from nflows.distributions import StandardNormal
 from nflows.utils.torchutils import repeat_rows, split_leading_dim
 
-from .odefunc import ODEfunc, ODEnet, divergence_bf
-from .normalization import MovingBatchNorm1d
 from .cnf import CNF, SequentialFlow
+from .normalization import MovingBatchNorm1d
+from .odefunc import ODEfunc, ODEnet, divergence_bf
 
 
 class ContinuousNormalizingFlow(nn.Module):
