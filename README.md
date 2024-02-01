@@ -1,7 +1,7 @@
 
 # PPCEF: Probabilistically Plausible Counterfactual Explanations using Normalizing Flows
 
-This repository is dedicated to the research and development of **PPCEF**, a method designed for generating and evaluating counterfactual explanations in machine learning models. The project aims to enhance model interpretability and fairness by providing insights into alternative scenarios that could change a model's decision.
+This repository is dedicated to the research and development of **PPCEF** (Probabilistically Plausible Counterfactual Explanations using Normalizing Flows), a novel method designed for generating and evaluating counterfactual explanations in machine learning models. The project aims to enhance model interpretability and fairness by providing insights into alternative scenarios that change a model's decision.
 
 <p align="center">
 <img src="graphic.svg" alt="drawing" width="800"/>
@@ -28,14 +28,16 @@ Counterfactual explanations offer a way to understand machine learning model dec
 
 ## Prerequisites
 
-Details on environment setup, including necessary libraries and frameworks. Provide commands for cloning the repository and setting up the environment, such as:
+This section details the environment setup, including necessary libraries and frameworks. To clone the repository and set up the environment, use the following commands:
 
 ```shell
-# Install required libraries
+git clone https://github.com/{repository}/ppcef.git
+cd ppcef
 pip install -e .
 ```
 
 ## Getting Started
+The following Python code snippet demonstrates how to use the PPCEF framework for generating counterfactual explanations:
 
 ```python
 from nflows.flows import MaskedAutoregressiveFlow
@@ -69,11 +71,11 @@ X_cf, X_orig, y_orig = cf.search_batch(test_dataloader, alpha=100, delta=median_
 
 ### Pre-trained Models
 
-We publish trained models at the `./models/` directory.
+We publish pre-trained models in the `./models/` directory for immediate use and experimentation.
 
 ## Code Structure
 
-Describe the organization of the repository, including the main directories and their purposes. For example:
+The repository is organized as follows to facilitate ease of use and contribution:
 
 ```
 |── conf/                 # Configuration files
@@ -105,13 +107,14 @@ The full data folder can be found under the following link: [Link](data). More d
 
 ## Experiments
 
-To be able to run experiments you shoud prepare configs:
+To run experiments, prepare the configuration files located in the conf/ directory:
 
 - [config_train_disc_model.yaml](conf/config_train_disc_model.yaml)
 - [config_train_gen_model.yaml](conf/config_train_gen_model.yaml)
 - [config.yaml](conf/config.yaml)
 
-and then run scripts:
+Execute the following scripts to train models and run experiments:
+
 ```shell
 python3 train_disc_model.py # train disc model
 python3 train_gen_model.py # train gen model
