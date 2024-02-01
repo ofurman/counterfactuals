@@ -81,4 +81,4 @@ class AuditDataset(AbstractDataset):
         self.numerical_features = list(range(0, len(self.feature_columns)))
 
     def get_split_data(self) -> list:
-        return self.X_train, self.X_test, self.y_train, self.y_test
+        return self.X_train, self.X_test, self.y_train.reshape(-1), self.y_test.reshape(-1)
