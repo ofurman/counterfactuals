@@ -1,10 +1,10 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
-import numpy as np
-
 from tqdm.auto import tqdm
 
 from counterfactuals.optimizers.base import BaseCounterfactualModel
+
 
 class PPCEF(BaseCounterfactualModel):
     def __init__(self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None,

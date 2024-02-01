@@ -1,17 +1,15 @@
 import uuid
-
-from tqdm import tqdm
 from typing import Iterable, List, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
+from tqdm import tqdm
 
 from .flow import ContinuousNormalizingFlow
 

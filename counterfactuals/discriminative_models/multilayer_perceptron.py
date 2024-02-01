@@ -1,6 +1,7 @@
-import torch
 import numpy as np
+import torch
 from tqdm import tqdm
+
 
 class MultilayerPerceptron(torch.nn.Module):    
     def __init__(self, layer_sizes):
