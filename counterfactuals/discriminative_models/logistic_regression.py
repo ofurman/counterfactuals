@@ -5,9 +5,9 @@ from tqdm import tqdm
 
 class LogisticRegression(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_outputs):
+    def __init__(self, input_size, target_size):
         super(LogisticRegression, self).__init__()
-        self.linear = torch.nn.Linear(n_inputs, n_outputs)
+        self.linear = torch.nn.Linear(input_size, target_size)
     # make predictions
     def forward(self, x):
         y_pred = torch.sigmoid(self.linear(x))
@@ -39,3 +39,9 @@ class LogisticRegression(torch.nn.Module):
             probs = self.forward(torch.from_numpy(X_test).type(torch.float32))
             probs = torch.hstack([1-probs, probs]).detach().numpy().astype(np.float32)
             return probs
+
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path))

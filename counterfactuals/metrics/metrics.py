@@ -236,6 +236,7 @@ def calc_gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
 
 def evaluate_cf(
     disc_model,
+    gen_model,
     X,
     X_cf,
     model_returned,
@@ -245,7 +246,6 @@ def evaluate_cf(
     y_train,
     X_test,
     y_test,
-    cf_class=None,
     delta=None,
 ):
     assert X.shape[0] == len(model_returned)
@@ -263,22 +263,21 @@ def evaluate_cf(
         model_returned_smth = np.sum(model_returned) / len(model_returned)
         return dict(model_returned_smth=model_returned_smth)
 
-    if cf_class:
-        gen_log_probs_xs = cf_class.predict_gen_log_prob(X)
-        gen_log_probs_xs_zero = gen_log_probs_xs[0, y_test == 0].numpy()
-        gen_log_probs_xs_one = gen_log_probs_xs[1, y_test == 1].numpy()
+    gen_log_probs_xs = gen_model.predict_log_probs(X)
+    gen_log_probs_xs_zero = gen_log_probs_xs[0, y_test == 0].numpy()
+    gen_log_probs_xs_one = gen_log_probs_xs[1, y_test == 1].numpy()
 
-        gen_log_probs_cf = cf_class.predict_gen_log_prob(X_cf)
-        gen_log_probs_cf_zero = gen_log_probs_cf[0, y_test == 1].numpy()
-        gen_log_probs_cf_one = gen_log_probs_cf[1, y_test == 0].numpy()
+    gen_log_probs_cf = gen_model.predict_log_probs(X_cf)
+    gen_log_probs_cf_zero = gen_log_probs_cf[0, y_test == 1].numpy()
+    gen_log_probs_cf_one = gen_log_probs_cf[1, y_test == 0].numpy()
 
-        flow_prob_condition_acc = (np.sum(delta < gen_log_probs_cf_zero) + np.sum(delta < gen_log_probs_cf_one)) / (
-            len(gen_log_probs_cf_zero) + len(gen_log_probs_cf_one)
-        )
+    flow_prob_condition_acc = (np.sum(delta < gen_log_probs_cf_zero) + np.sum(delta < gen_log_probs_cf_one)) / (
+        len(gen_log_probs_cf_zero) + len(gen_log_probs_cf_one)
+    )
 
-        ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
-        ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
-        valid_cf_gen_metric = perc_valid_cf(ys_gen_pred, y_cf=ys_cfs_gen_pred)
+    ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
+    ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
+    valid_cf_gen_metric = perc_valid_cf(ys_gen_pred, y_cf=ys_cfs_gen_pred)
 
     ys_disc_pred = np.array(disc_model.predict(X))
     ys_cfs_disc_pred = np.array(disc_model.predict(X_cf))
@@ -335,17 +334,17 @@ def evaluate_cf(
         "distance_mad_hamming": mad_hamming_distance_metric,
         "sparsity": sparsity_metric,
     }
-    if cf_class:
-        metrics.update(
-            {
-                "valid_cf_gen": valid_cf_gen_metric,
-                "flow_log_density_cfs_zero": gen_log_probs_cf_zero.mean(),
-                "flow_log_density_cfs_one": gen_log_probs_cf_one.mean(),
-                "flow_log_density_cfs": np.concatenate([gen_log_probs_cf_zero, gen_log_probs_cf_one]).mean(),
-                "flow_log_density_xs_zero": gen_log_probs_xs_zero.mean(),
-                "flow_log_density_xs_one": gen_log_probs_xs_one.mean(),
-                "flow_log_density_xs": np.concatenate([gen_log_probs_xs_zero, gen_log_probs_xs_one]).mean(),
-                "flow_prob_condition_acc": flow_prob_condition_acc,
-            }
-        )
+    
+    metrics.update(
+        {
+            "valid_cf_gen": valid_cf_gen_metric,
+            "flow_log_density_cfs_zero": gen_log_probs_cf_zero.mean(),
+            "flow_log_density_cfs_one": gen_log_probs_cf_one.mean(),
+            "flow_log_density_cfs": np.concatenate([gen_log_probs_cf_zero, gen_log_probs_cf_one]).mean(),
+            "flow_log_density_xs_zero": gen_log_probs_xs_zero.mean(),
+            "flow_log_density_xs_one": gen_log_probs_xs_one.mean(),
+            "flow_log_density_xs": np.concatenate([gen_log_probs_xs_zero, gen_log_probs_xs_one]).mean(),
+            "flow_prob_condition_acc": flow_prob_condition_acc,
+        }
+    )
     return metrics

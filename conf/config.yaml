@@ -1,6 +1,7 @@
 defaults:
   - _self_
-  - gen_model: small_flow
+  - gen_model: medium_maf
+  - disc_model: lr
 
 hydra:
   sweeper:
@@ -8,23 +9,16 @@ hydra:
 
 neptune:
   enable: true
-  project: "/counterfactuals"
+  project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["exp_v1", "GEN_DISC_LOSS"]
-  
 
 experiment:
-  models_folder: models/
+  output_folder: models/
   relabel_with_disc_model: false
 
 dataset:
   _target_: counterfactuals.datasets.MoonsDataset
-
-disc_model:
-  model: LR
-
-gen_model:
-  model: FLOW
 
 counterfactuals:
   epochs: 5000
@@ -32,7 +26,7 @@ counterfactuals:
   lr: 0.005
   alpha: 100
   beta: 0.01
-  patience: 100
+  patience: 500
   disc_loss:
     _target_: counterfactuals.losses.BinaryDiscLoss
     # _target_: torch.nn.BCEWithLogitsLoss
