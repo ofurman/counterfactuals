@@ -1,6 +1,7 @@
 defaults:
   - _self_
-  - gen_model: small_flow
+  - gen_model: medium_maf
+  # - disc_model: lr
 
 hydra:
   sweeper:
@@ -8,7 +9,7 @@ hydra:
 
 neptune:
   enable: true
-  project: "/counterfactuals"
+  project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["train_models"]
   
@@ -17,16 +18,14 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 gen_model:
-  model: KDE
-  checkpoint_path: null
   batch_size: 128
-  epochs: 200
+  epochs: 500
   patience: 20
   lr: 0.001
   noise_lvl: 0
 
-disc_model:
-  model: null # LR, MLP, null
+# to enable relabeling, comment this and use defaults above
+disc_model: null

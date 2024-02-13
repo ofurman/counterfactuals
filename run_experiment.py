@@ -28,17 +28,26 @@ def main(cfg: DictConfig):
         tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
     )
 
-    models_folder = cfg.experiment.models_folder
-    os.makedirs(models_folder, exist_ok=True)
-    logger.info("Creatied output folder %s", models_folder)
+    dataset_name = cfg.dataset._target_.split(".")[-1]
+    gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
+    disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}.pt")
+    if cfg.experiment.relabel_with_disc_model:
+        gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}_relabeled_by_{disc_model_name}.pt")
+    else:
+        gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}.pt")
+    os.makedirs(output_folder, exist_ok=True)
+    logger.info("Creatied output folder %s", output_folder)
 
     # Log parameters using Hydra config
     logger.info("Logging parameters")
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
-    run["parameters/disc_model/model"] = cfg.disc_model.model
-    run["parameters/gen_model/model"] = cfg.gen_model.model
-    # run["parameters/gen_model"] = cfg.gen_model
+    run["parameters/disc_model/model_name"] = disc_model_name
+    run["parameters/disc_model"] = cfg.disc_model
+    run["parameters/gen_model/model_name"] = gen_model_name
+    run["parameters/gen_model"] = cfg.gen_model
     run["parameters/counterfactuals"] = cfg.counterfactuals
     run.wait()
 
@@ -46,47 +55,26 @@ def main(cfg: DictConfig):
     dataset = instantiate(cfg.dataset)
 
     logger.info("Loading discriminator model")
-    if cfg.disc_model.model in ["LR", "MLP"]:
-        disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
-        disc_model = torch.load(disc_model_path)
+    disc_model = instantiate(cfg.disc_model.model, input_size=dataset.X_train.shape[1], target_size=1)
+    disc_model.load(disc_model_path)
 
-        if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train)
-            dataset.y_test = disc_model.predict(dataset.X_test)
-            gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_relabeled_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
-        else:
-            gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
-        
-    elif cfg.disc_model.model in ["FLOW", "KDE"]:
-        disc_model=None
-        disc_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
-        flow = torch.load(disc_model_path)
-        disc_model_flow = PPCEF(
-            gen_model=flow,
-            disc_model=None,
-            disc_model_criterion=torch.nn.BCELoss(),
-            neptune_run=run,
-            checkpoint_path=disc_model_path
-        )
-        if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model_flow.predict(dataset.X_train)
-            dataset.y_test = disc_model_flow.predict(dataset.X_test)
-
-        gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
+    if cfg.experiment.relabel_with_disc_model:
+        dataset.y_train = disc_model.predict(dataset.X_train)
+        dataset.y_test = disc_model.predict(dataset.X_test)
 
     logger.info("Loading generator model")
-    gen_model = torch.load(gen_model_path)
+    gen_model = instantiate(cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1)
+    gen_model.load(gen_model_path)
     cf = PPCEF(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
         neptune_run=run,
-        checkpoint_path=gen_model_path
     )
 
     logger.info("Handling counterfactual generation")
     train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
-    delta = cf.calculate_median_log_prob(train_dataloader_for_log_prob)
+    delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
     run["parameters/delta"] = delta
     print(delta)
 
@@ -102,7 +90,7 @@ def main(cfg: DictConfig):
         delta=delta
     )
     run["metrics/eval_time"] = np.mean(time() - time_start)
-    counterfactuals_path = os.path.join(models_folder, "counterfactuals.csv")
+    counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
@@ -112,8 +100,8 @@ def main(cfg: DictConfig):
     ys_orig = ys_orig.flatten()
 
     metrics = evaluate_cf(
-        cf_class=cf,
-        disc_model=disc_model if disc_model else disc_model_flow,
+        gen_model=gen_model,
+        disc_model=disc_model,
         X=Xs,
         X_cf=Xs_cfs,
         model_returned=model_returned,
@@ -123,15 +111,9 @@ def main(cfg: DictConfig):
         y_train=dataset.y_train.reshape(-1),
         X_test=dataset.X_test,
         y_test=dataset.y_test,
-        delta=delta
+        delta=delta.numpy()
     )
     run["metrics/cf"] = stringify_unsupported(metrics)
-    results_path = os.path.join("results/", f"results_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.json")
-    # write results dict to json file using json
-    with open(results_path, "w") as f:
-        json.dump({k: str(v) for k, v in metrics.items()}, f)
-
-
     logger.info("Finalizing and stopping run")
     run.stop()
 

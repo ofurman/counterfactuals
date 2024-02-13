@@ -7,6 +7,8 @@ import torch
 import torch.nn.functional as F
 from torch import distributions, nn
 
+from counterfactuals.generative_models.base import BaseGenModel
+
 
 def _default_sample_fn(logits):
     return distributions.Bernoulli(logits=logits).sample()
@@ -166,22 +168,53 @@ class KernelDensityEstimator(GenerativeModel):
         return self.kernel.sample(self.train_Xs[idxs])
     
 
-class KDE(nn.Module):
-    def __init__(self, bandwidth=0.1):
-        super(KDE, self).__init__()
+class KDE(BaseGenModel):
+    def __init__(self, bandwidth=0.1, **kwargs): # Ignores kwargs!
         self.bandwidth = bandwidth
+        super(KDE, self).__init__()
 
-    def fit(self, train_dataloader):
-        train_Xs, train_ys = train_dataloader.dataset.tensors
+    def fit(
+            self,
+            train_loader: torch.utils.data.DataLoader,
+            test_loader: torch.utils.data.DataLoader,
+            checkpoint_path: str = "best_model.pth",
+            **kwargs
+        ):
+        train_Xs, train_ys = train_loader.dataset.tensors
         train_ys = train_ys.view(-1)
         self.models = {}
         for y in train_ys.unique():
             idxs = train_ys == y
             self.models[y.item()] = KernelDensityEstimator(train_Xs[idxs], kernel=GaussianKernel(bandwidth=self.bandwidth))
         self.model = KernelDensityEstimator(train_Xs, kernel=GaussianKernel(bandwidth=self.bandwidth))
+        self.save(checkpoint_path)
+
+        test_Xs, test_ys = test_loader.dataset.tensors
+        train_log_probs = self.predict_log_prob(train_Xs, train_ys)
+        test_log_probs = self.predict_log_prob(test_Xs, test_ys)
+        print(f"Train log-likelihood: {train_log_probs.mean()}")
+        print(f"Test log-likelihood: {test_log_probs.mean()}")
     
-    def log_prob(self, inputs, context):
+    def predict_log_prob(self, inputs, context):
         preds = torch.zeros_like(context)
         for i in range(inputs.shape[0]):
             preds[i] = self.models[context[i].item()](inputs[i].unsqueeze(0))
         return preds.view(-1)
+    
+    def predict_log_probs(self, X: np.ndarray):
+        if isinstance(X, np.ndarray):
+            X = torch.from_numpy(X)
+        preds = torch.zeros((len(self.models), X.shape[0]))
+        for i in range(X.shape[0]):
+            for i_model in range(len(self.models)):
+                preds[i_model, i] = self.models[i_model](X[i].unsqueeze(0))
+        return preds
+    
+    def forward(self, x, context):
+        return self.predict_log_prob(x, context)
+    
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path))

@@ -7,10 +7,9 @@ from counterfactuals.optimizers.base import BaseCounterfactualModel
 
 
 class PPCEF(BaseCounterfactualModel):
-    def __init__(self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None,
-                 checkpoint_path=None):
+    def __init__(self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None):
         self.disc_model_criterion = disc_model_criterion
-        super().__init__(gen_model, disc_model, device, neptune_run, checkpoint_path)
+        super().__init__(gen_model, disc_model, device, neptune_run)
 
     def search_step(self, x_param, x_origin, contexts_origin, context_target, **search_step_kwargs) -> dict:
         """Search step for the cf search process.
@@ -35,7 +34,7 @@ class PPCEF(BaseCounterfactualModel):
 
         loss_disc = self.disc_model_criterion(outputs, context_target)
 
-        p_x_param_c_target = self.gen_model.log_prob(x_param, context=context_target)
+        p_x_param_c_target = self.gen_model(x_param, context=context_target)
         max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
 
         loss = dist + alpha * (max_inner + loss_disc)

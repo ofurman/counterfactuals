@@ -14,7 +14,7 @@ from counterfactuals.utils import plot_distributions
 
 
 class BaseCounterfactualModel(ABC):
-    def __init__(self, gen_model, disc_model=None, device=None, neptune_run=None, checkpoint_path=None):
+    def __init__(self, gen_model, disc_model=None, device=None, neptune_run=None):
         """
         Initializes the trainer with the provided model.
 
@@ -31,7 +31,6 @@ class BaseCounterfactualModel(ABC):
         if self.disc_model:
             self.disc_model.to(self.device)
         self.neptune_run = neptune_run
-        self.checkpoint_path = checkpoint_path
 
     @abstractmethod
     def search_step(self, x_param, x_origin, context_origin, context_target):
@@ -45,46 +44,6 @@ class BaseCounterfactualModel(ABC):
             float: The loss for the current training step.
         """
         pass
-
-    def search(
-        self,
-        x_origin: torch.Tensor,
-        context_origin: torch.Tensor,
-        context_target: torch.Tensor,
-        num_epochs: int = 10,
-        lr: float = 0.01,
-        verbose: bool = False,
-        **search_step_kwargs,
-    ):
-        """
-        Trains the model for a specified number of epochs.
-        """
-        raise NotImplementedError("Use search batch method.")
-        self.gen_model.eval()
-        self.disc_model.eval()
-        
-        x_origin = torch.as_tensor(x_origin)
-        x = x_origin.clone()
-        x_origin.requires_grad = False
-        x.requires_grad = True
-
-        optimizer = optim.Adam([x], lr=lr)
-
-        loss_hist = []
-
-        for epoch in range(num_epochs):
-            optimizer.zero_grad()
-            loss, dist, max_inner, max_outer = self.search_step(x, x_origin, context_origin, context_target, **search_step_kwargs)
-            loss.backward()
-            optimizer.step()
-
-            loss_hist.append(loss.item())
-            if verbose and (epoch % 10 == 0):
-                print(f"Epoch [{epoch + 1}/{num_epochs}] - Loss: {loss_hist[-1]:.4f}")
-        
-        if verbose:
-            print("Search finished!")
-        return x
     
     def search_batch(
         self,
@@ -149,64 +108,6 @@ class BaseCounterfactualModel(ABC):
         return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class, axis=0)
     
 
-    def _model_log_prob(self, inputs, context):
-        context = context if self.with_context else None
-        return self.model.log_prob(inputs=inputs, context=context)
-        
-
-    def train_model(
-        self,
-        train_loader: DataLoader,
-        test_loader: DataLoader,
-        epochs: int = 200,
-        lr: float = 0.001,
-        patience: int = 20,
-        eps: float = 1e-3,
-    ):
-        """
-        Trains the model for a specified number of epochs.
-        """
-        
-        optimizer = optim.Adam(self.gen_model.parameters(), lr=lr)
-        # scheduler = optim.lr_scheduler.ConstantLR(optimizer, factor=2, total_iters=400)
-        train_losses = []
-        i=0
-        min_loss = np.inf
-        epochs_no_improve = 0
-
-        for i in (pbar := tqdm(range(epochs))):
-            train_losses = []
-            test_losses = []
-            for x, y in train_loader:
-                x = x.to(self.device)
-                y = y.to(self.device)
-                y = y.reshape(-1, 1)
-                optimizer.zero_grad()
-                loss = -self.gen_model.log_prob(x, y).mean()
-                loss.backward()
-                optimizer.step()
-                train_losses.append(loss.item())
-            for x, y in test_loader:
-                x = x.to(self.device)
-                y = y.to(self.device)
-                with torch.no_grad():
-                    y = y.reshape(-1, 1)
-                    loss = -self.gen_model.log_prob(x, y).mean()
-                    if np.abs(loss.item() - min_loss) > eps:
-                        min_loss = loss.item()
-                        torch.save(self.gen_model, self.checkpoint_path)
-                        epochs_no_improve = 0
-                    else:
-                        epochs_no_improve += 1
-                    test_losses.append(loss.item())
-            if self.neptune_run:
-                self.neptune_run["gen_train_nll"].append(np.mean(train_losses))
-                self.neptune_run["gen_test_nll"].append(np.mean(test_losses))
-            pbar.set_description(f"Epoch {i}, Train: {np.mean(train_losses):.4f}, test: {np.mean(test_losses):.4f}")
-            if epochs_no_improve > patience:
-                print("Early stopping!")
-                break
-        self.model = torch.load(self.checkpoint_path)
 
     def predict_gen_log_prob(self, x: np.ndarray):
         if isinstance(x, np.ndarray):

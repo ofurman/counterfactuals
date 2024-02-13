@@ -1,11 +1,13 @@
 import numpy as np
 import torch
 from tqdm import tqdm
+from typing import List
 
 
 class MultilayerPerceptron(torch.nn.Module):    
-    def __init__(self, layer_sizes):
+    def __init__(self, input_size: int, hidden_layer_sizes: List[int], target_size: int):
         super(MultilayerPerceptron, self).__init__()
+        layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
         self.layers = torch.nn.ModuleList()
         for i in range(len(layer_sizes) - 1):
             self.layers.append(torch.nn.Linear(layer_sizes[i], layer_sizes[i+1]))
@@ -43,3 +45,9 @@ class MultilayerPerceptron(torch.nn.Module):
             probs = self.forward(torch.from_numpy(X_test).type(torch.float32))
             probs = torch.hstack([1-probs, probs]).detach().numpy().astype(np.float32)
             return probs
+
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path))
