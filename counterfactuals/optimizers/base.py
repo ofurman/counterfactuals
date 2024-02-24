@@ -44,15 +44,15 @@ class BaseCounterfactualModel(ABC):
             float: The loss for the current training step.
         """
         pass
-    
+
     def search_batch(
-        self,
-        dataloader: DataLoader,
-        epochs: int = 1000,
-        lr: float = 0.0005,
-        patience: int = 100,
-        verbose: bool = False,
-        **search_step_kwargs,
+            self,
+            dataloader: DataLoader,
+            epochs: int = 1000,
+            lr: float = 0.0005,
+            patience: int = 100,
+            verbose: bool = False,
+            **search_step_kwargs,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -76,7 +76,7 @@ class BaseCounterfactualModel(ABC):
             contexts_origin = contexts_origin.to(self.device)
 
             contexts_origin = contexts_origin.reshape(-1, 1)
-            contexts_target = torch.abs(1-contexts_origin)
+            contexts_target = torch.abs(1 - contexts_origin)
 
             xs_origin = torch.as_tensor(xs_origin)
             xs = xs_origin.clone()
@@ -87,7 +87,8 @@ class BaseCounterfactualModel(ABC):
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
-                loss_components = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
+                loss_components = self.search_step(xs, xs_origin, contexts_origin, contexts_target,
+                                                   **search_step_kwargs)
                 mean_loss = loss_components["loss"].mean()
                 mean_loss.backward()
                 optimizer.step()
@@ -105,9 +106,8 @@ class BaseCounterfactualModel(ABC):
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
-        return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class, axis=0)
-    
-
+        return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class,
+                                                                                                         axis=0)
 
     def predict_gen_log_prob(self, x: np.ndarray):
         if isinstance(x, np.ndarray):
@@ -115,15 +115,12 @@ class BaseCounterfactualModel(ABC):
         with torch.no_grad():
             y_zero = torch.zeros((x.shape[0], 1), dtype=x.dtype).to(self.device)
             y_one = torch.ones((x.shape[0], 1), dtype=x.dtype).to(self.device)
-            log_p_zero = self.gen_model.log_prob(x, y_zero)
-            log_p_one = self.gen_model.log_prob(x, y_one)
+            log_p_zero = self.gen_model.predict_log_probs(x, y_zero)
+            log_p_one = self.gen_model.predict_log_probs(x, y_one)
         result = torch.vstack([log_p_zero, log_p_one])
         return result
 
-    def test_model(
-        self,
-        test_loader: DataLoader,
-    ):
+    def test_model(self, test_loader: DataLoader):
         """
         Test the model within defined metrics.
         """
@@ -138,33 +135,19 @@ class BaseCounterfactualModel(ABC):
                 y_pred = torch.argmax(log_p, axis=0)
                 ys_pred.append(y_pred)
                 ys_true.append(y)
-        
+
         ys_pred = torch.concat(ys_pred).cpu()
         ys_true = torch.concat(ys_true).cpu()
         return classification_report(y_true=ys_true, y_pred=ys_pred, output_dict=True)
 
-    def calculate_median_log_prob(
-            self,
-            test_loader: DataLoader,
-    ):
+    def calculate_median_log_prob(self, train_dataloader: DataLoader) -> float:
         """
         Test the model within defined metrics.
         """
-        self.gen_model.eval()
-        log_probs = []
-
-        with torch.no_grad():
-            for x, y in test_loader:
-                x = x.to(self.device)
-                y = y.to(self.device).reshape(-1, 1)
-                log_p = self.gen_model.log_prob(x, y)
-                log_probs.append(log_p)
-
-        log_probs = torch.concat(log_probs)
+        log_probs = self.gen_model.predict_log_prob(train_dataloader)
         return np.median(log_probs)
-    
 
-    def predict(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):
+    def predict(self, test_data: Union[DataLoader, torch.Tensor, np.ndarray], batch_size: int = 64) -> np.ndarray:
         """
         Predict class using generative model.
         """
@@ -185,11 +168,8 @@ class BaseCounterfactualModel(ABC):
         with torch.no_grad():
             for x in dataloader:
                 x = x[0].to(self.device)
-                log_p = self.predict_gen_log_prob(x)
+                log_p = self.gen_model.predict_log_probs(x)
                 y_pred = torch.argmax(log_p, axis=0)
                 results.append(y_pred)
             results = torch.concat(results)
         return results.cpu().numpy().astype(np.float32)
-
-        
-

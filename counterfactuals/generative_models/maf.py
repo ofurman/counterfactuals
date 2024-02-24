@@ -1,14 +1,14 @@
 import neptune
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 from counterfactuals.generative_models import BaseGenModel
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
-from sklearn.metrics import classification_report
 
+from typing import Union
 from tqdm import tqdm
+
 
 class MaskedAutoregressiveFlow(BaseGenModel):
     def __init__(
@@ -27,7 +27,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             batch_norm_between_layers=False,
             neptune_run=None,
             device="cpu",
-        ):
+    ):
         super(MaskedAutoregressiveFlow, self).__init__()
         self.device = device
         self.neptune_run = neptune_run
@@ -52,15 +52,15 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(
-        self,
-        train_loader: torch.utils.data.DataLoader,
-        test_loader: torch.utils.data.DataLoader,
-        num_epochs: int = 100,
-        learning_rate: float = 1e-3,
-        patience: int = 20,
-        eps: float = 1e-3,
-        checkpoint_path: str = "best_model.pth",
-        neptune_run: neptune.Run = None,
+            self,
+            train_loader: torch.utils.data.DataLoader,
+            test_loader: torch.utils.data.DataLoader,
+            num_epochs: int = 100,
+            learning_rate: float = 1e-3,
+            patience: int = 20,
+            eps: float = 1e-3,
+            checkpoint_path: str = "best_model.pth",
+            neptune_run: neptune.Run = None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
 
@@ -68,8 +68,8 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             self.train()
             train_loss = 0.0
 
-            for inputs, labels in train_loader:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
+            for batch in train_loader:
+                inputs, labels = self._unpack_batch(batch)
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
                 loss = -log_likelihood.mean()
@@ -83,7 +83,8 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             test_loss = 0.0
             min_test_loss = float("inf")
             with torch.no_grad():
-                for inputs, labels in test_loader:
+                for batch in test_loader:
+                    inputs, labels = self._unpack_batch(batch)
                     log_likelihood = self(inputs, labels)
                     loss = -log_likelihood.mean().item()
                     test_loss += loss
@@ -97,15 +98,17 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 min_test_loss = test_loss
                 patience_counter = 0
                 self.save(checkpoint_path)
-                
+
             else:
                 patience_counter += 1
             if patience_counter > patience:
                 break
         self.load(checkpoint_path)
 
-
-    def predict_log_prob(self, dataloader):
+    def predict_log_prob(self, dataloader) -> torch.Tensor:
+        """
+        Predict log probabilities for the given dataset using the context included in the dataset.
+        """
         self.eval()
         log_probs = []
 
@@ -113,10 +116,16 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             for inputs, labels in dataloader:
                 outputs = self(inputs, labels)
                 log_probs.append(outputs)
+        results = torch.concat(log_probs)
 
-        return torch.stack(log_probs)
-    
-    def predict_log_probs(self, X):
+        assert len(dataloader.dataset) == len(results)
+        return results
+
+    def predict_log_probs(self, X: Union[np.ndarray, torch.Tensor]):
+        """
+        Predict log probabilities of the input dataset for both context equal 0 and 1.
+        Results format is of the shape: [2, N]. N is number of samples, i.e., X.shape[0].
+        """
         self.eval()
         if isinstance(X, np.ndarray):
             X = torch.from_numpy(X)
@@ -126,10 +135,22 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             log_p_zero = self(X, y_zero)
             log_p_one = self(X, y_one)
         result = torch.vstack([log_p_zero, log_p_one])
+
+        assert result.T.shape[0] == X.shape[0], f"Shape of results don't match. " \
+                                                f"Shape of result: {result.shape}, shape of input: {X.shape}"
         return result
-    
+
     def save(self, path):
         torch.save(self.state_dict(), path)
 
     def load(self, path):
         self.load_state_dict(torch.load(path))
+
+    def _unpack_batch(self, batch):
+        if isinstance(batch, tuple):
+            inputs, labels = batch
+            inputs, labels = inputs.to(self.device), labels.to(self.device)
+        else:
+            inputs, labels = batch[0], None
+            inputs = inputs.to(self.device)
+        return inputs, labels
