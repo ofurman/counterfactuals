@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from counterfactuals.generative_models import BaseGenModel
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
 
+from typing import Union
 from tqdm import tqdm
 
 
@@ -50,15 +51,15 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(
-        self,
-        train_loader: torch.utils.data.DataLoader,
-        test_loader: torch.utils.data.DataLoader,
-        num_epochs: int = 100,
-        learning_rate: float = 1e-3,
-        patience: int = 20,
-        eps: float = 1e-3,
-        checkpoint_path: str = "best_model.pth",
-        neptune_run: neptune.Run = None,
+            self,
+            train_loader: torch.utils.data.DataLoader,
+            test_loader: torch.utils.data.DataLoader,
+            num_epochs: int = 100,
+            learning_rate: float = 1e-3,
+            patience: int = 20,
+            eps: float = 1e-3,
+            checkpoint_path: str = "best_model.pth",
+            neptune_run: neptune.Run = None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
@@ -104,7 +105,10 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 break
         self.load(checkpoint_path)
 
-    def predict_log_prob(self, dataloader):
+    def predict_log_prob(self, dataloader) -> torch.Tensor:
+        """
+        Predict log probabilities for the given dataset using the context included in the dataset.
+        """
         self.eval()
         log_probs = []
 
@@ -113,11 +117,42 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 labels = labels.type(torch.float32)
                 outputs = self(inputs, labels)
                 log_probs.append(outputs)
+        results = torch.concat(log_probs)
 
-        return torch.hstack(log_probs)
+        assert len(dataloader.dataset) == len(results)
+        return results
+
+    # Deprecated due tu multiclass support, use self.forward instead
+    # def predict_log_probs(self, X: Union[np.ndarray, torch.Tensor]):
+    #     """
+    #     Predict log probabilities of the input dataset for both context equal 0 and 1.
+    #     Results format is of the shape: [2, N]. N is number of samples, i.e., X.shape[0].
+    #     """
+    #     self.eval()
+    #     if isinstance(X, np.ndarray):
+    #         X = torch.from_numpy(X)
+    #     with torch.no_grad():
+    #         y_zero = torch.zeros((X.shape[0], 1), dtype=X.dtype).to(self.device)
+    #         y_one = torch.ones((X.shape[0], 1), dtype=X.dtype).to(self.device)
+    #         log_p_zero = self(X, y_zero)
+    #         log_p_one = self(X, y_one)
+    #     result = torch.vstack([log_p_zero, log_p_one])
+
+    #     assert result.T.shape[0] == X.shape[0], f"Shape of results don't match. " \
+    #                                             f"Shape of result: {result.shape}, shape of input: {X.shape}"
+    #     return result
 
     def save(self, path):
         torch.save(self.state_dict(), path)
 
     def load(self, path):
         self.load_state_dict(torch.load(path))
+
+    def _unpack_batch(self, batch):
+        if isinstance(batch, tuple):
+            inputs, labels = batch
+            inputs, labels = inputs.to(self.device), labels.to(self.device)
+        else:
+            inputs, labels = batch[0], None
+            inputs = inputs.to(self.device)
+        return inputs, labels
