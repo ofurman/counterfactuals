@@ -114,7 +114,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 outputs = self(inputs, labels)
                 log_probs.append(outputs)
 
-        return torch.stack(log_probs)
+        return torch.hstack(log_probs)
     
     def predict_log_probs(self, X):
         self.eval()

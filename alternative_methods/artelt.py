@@ -23,7 +23,7 @@ from counterfactuals.artelt.plausible_counterfactuals import (
     HighDensityEllipsoids, PlausibleCounterfactualOfDecisionTree,
     PlausibleCounterfactualOfHyperplaneClassifier)
 
-from counterfactuals.optimizers.ppcef import PPCEF
+from counterfactuals.cf_methods.ppcef import PPCEF
 from nflows.flows.autoregressive import MaskedAutoregressiveFlow
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf

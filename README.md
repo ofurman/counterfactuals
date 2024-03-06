@@ -43,7 +43,7 @@ The following Python code snippet demonstrates how to use the PPCEF framework fo
 from nflows.flows import MaskedAutoregressiveFlow
 
 from counterfactuals.datasets import MoonsDataset
-from counterfactuals.optimizers.ppcef import PPCEF
+from counterfactuals.cf_methods.ppcef import PPCEF
 from counterfactuals.discriminative_models import LogisticRegression
 from counterfactuals.losses import BinaryDiscLoss
 
