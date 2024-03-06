@@ -20,7 +20,7 @@ from alibi.utils.mapping import ohe_to_ord, ord_to_ohe
 
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.optimizers.ppcef import PPCEF
+from counterfactuals.cf_methods.ppcef import PPCEF
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.utils import process_classification_report

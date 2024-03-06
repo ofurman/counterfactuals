@@ -12,7 +12,7 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.optimizers.ppcef import PPCEF
+from counterfactuals.cf_methods.ppcef import PPCEF
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)

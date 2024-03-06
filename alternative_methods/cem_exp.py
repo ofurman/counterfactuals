@@ -16,7 +16,7 @@ from omegaconf import DictConfig
 from sklearn.metrics import classification_report
 from alibi.explainers import CEM
 
-from counterfactuals.optimizers.ppcef import PPCEF
+from counterfactuals.cf_methods.ppcef import PPCEF
 from nflows.flows.autoregressive import MaskedAutoregressiveFlow
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf

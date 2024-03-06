@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 
-from counterfactuals.optimizers.base import BaseCounterfactualModel
+from counterfactuals.cf_methods.base import BaseCounterfactualModel
 
 
 class PPCEF(BaseCounterfactualModel):
