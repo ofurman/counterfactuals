@@ -11,6 +11,7 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
+from counterfactuals.generative_models import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ppcef import PPCEF
 
@@ -63,7 +64,7 @@ def main(cfg: DictConfig):
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     logger.info("Loading generator model")
-    gen_model = instantiate(cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1)
+    gen_model: BaseGenModel = instantiate(cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1)
     gen_model.load(gen_model_path)
     cf = PPCEF(
         gen_model=gen_model,

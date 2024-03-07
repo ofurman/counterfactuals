@@ -44,18 +44,3 @@ class PPCEF(BaseCounterfactualModel):
             "max_inner": max_inner,
             "loss_disc": loss_disc,
         }
-
-    def generate_counterfactuals(self, Xs, ys, epochs, lr, alpha, beta):
-        Xs = Xs[:, np.newaxis, :]
-        ys = ys.reshape(-1, 1)
-        ys_hat = np.abs(1 - ys).reshape(-1, 1)
-        x_cfs = []
-        for X, y, y_hat in tqdm(zip(Xs, ys, ys_hat)):
-            X = torch.Tensor(X)
-            y = torch.Tensor(y)
-            y_hat = torch.Tensor(y_hat)
-            x_cf = self.search(X, y, y_hat, num_epochs=epochs, lr=lr, alpha=alpha, beta=beta, verbose=False)
-            x_cfs.append(x_cf)
-
-        # x_cfs = np.array([x.detach().numpy() for x in x_cfs]).squeeze()
-        return x_cfs

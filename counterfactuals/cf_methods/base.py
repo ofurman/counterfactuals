@@ -1,16 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.base import ClassifierMixin, RegressorMixin
-from sklearn.metrics import classification_report
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-
-from counterfactuals.utils import plot_distributions
 
 
 class BaseCounterfactualModel(ABC):
@@ -106,90 +101,3 @@ class BaseCounterfactualModel(ABC):
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
         return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class, axis=0)
-    
-
-
-    def predict_gen_log_prob(self, x: np.ndarray):
-        if isinstance(x, np.ndarray):
-            x = torch.from_numpy(x)
-        with torch.no_grad():
-            y_zero = torch.zeros((x.shape[0], 1), dtype=x.dtype).to(self.device)
-            y_one = torch.ones((x.shape[0], 1), dtype=x.dtype).to(self.device)
-            log_p_zero = self.gen_model.log_prob(x, y_zero)
-            log_p_one = self.gen_model.log_prob(x, y_one)
-        result = torch.vstack([log_p_zero, log_p_one])
-        return result
-
-    def test_model(
-        self,
-        test_loader: DataLoader,
-    ):
-        """
-        Test the model within defined metrics.
-        """
-        self.gen_model.eval()
-        ys_pred = []
-        ys_true = []
-        with torch.no_grad():
-            for x, y in test_loader:
-                x = x.to(self.device)
-                y = y.to(self.device)
-                log_p = self.predict_gen_log_prob(x)
-                y_pred = torch.argmax(log_p, axis=0)
-                ys_pred.append(y_pred)
-                ys_true.append(y)
-        
-        ys_pred = torch.concat(ys_pred).cpu()
-        ys_true = torch.concat(ys_true).cpu()
-        return classification_report(y_true=ys_true, y_pred=ys_pred, output_dict=True)
-
-    def calculate_median_log_prob(
-            self,
-            test_loader: DataLoader,
-    ):
-        """
-        Test the model within defined metrics.
-        """
-        self.gen_model.eval()
-        log_probs = []
-
-        with torch.no_grad():
-            for x, y in test_loader:
-                x = x.to(self.device)
-                y = y.to(self.device).reshape(-1, 1)
-                log_p = self.gen_model.log_prob(x, y)
-                log_probs.append(log_p)
-
-        log_probs = torch.concat(log_probs)
-        return np.median(log_probs)
-    
-
-    def predict(self, test_data: Union[DataLoader, np.ndarray], batch_size: int = 64):
-        """
-        Predict class using generative model.
-        """
-
-        if not isinstance(test_data, (np.ndarray, DataLoader, torch.Tensor)):
-            raise TypeError("Data should be numpy array or torch dataloader!")
-        if isinstance(test_data, (np.ndarray, torch.Tensor)):
-            test_data = torch.Tensor(test_data)
-            dataloader = DataLoader(
-                dataset=TensorDataset(test_data),
-                shuffle=False,
-                batch_size=batch_size
-            )
-        else:
-            dataloader = test_data
-
-        results = []
-        with torch.no_grad():
-            for x in dataloader:
-                x = x[0].to(self.device)
-                log_p = self.predict_gen_log_prob(x)
-                y_pred = torch.argmax(log_p, axis=0)
-                results.append(y_pred)
-            results = torch.concat(results)
-        return results.cpu().numpy().astype(np.float32)
-
-        
-
