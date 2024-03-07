@@ -19,7 +19,7 @@ from sklearn.neighbors import KernelDensity
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 
-from counterfactuals.artelt.plausible_counterfactuals import (
+from counterfactuals.cf_methods.artelt.plausible_counterfactuals import (
     HighDensityEllipsoids, PlausibleCounterfactualOfDecisionTree,
     PlausibleCounterfactualOfHyperplaneClassifier)
 

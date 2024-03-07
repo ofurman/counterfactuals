@@ -76,7 +76,7 @@ class PlausibleCounterfactualOfHyperplaneClassifier():
         # Constants
         c = np.ones(dim)
         z = np.zeros(dim)
-        I = np.eye(dim)
+        I = np.eye(dim) # noqa: E741
 
         # Construct constraints
         constraints = self._build_constraints(x, y)
@@ -161,7 +161,7 @@ class PlausibleCounterfactualOfDecisionTree():
         # Constants
         c = np.ones(dim)
         z = np.zeros(dim)
-        I = np.eye(dim)
+        I = np.eye(dim) # noqa: E741
 
         # Construct constraints
         constraints = self._build_constraints(x, y, path_to_leaf)

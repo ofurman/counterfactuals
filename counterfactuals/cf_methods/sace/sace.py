@@ -162,7 +162,7 @@ class SACE(ABC):
         d = self.cdist(x, pr, metric=self.metric, w=self.weights)[0]
         if d == 0.0:
             return np.inf
-        l = cdist(self._predict_proba(x), self._predict_proba(pr), metric='cosine')[0]
+        l = cdist(self._predict_proba(x), self._predict_proba(pr), metric='cosine')[0] # noqa: E741
         if l == 0.0:
             return np.inf
         score = beta * d + (1.0 - beta) * 1.0 / l

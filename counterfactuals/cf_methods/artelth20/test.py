@@ -28,11 +28,11 @@ if __name__ == "__main__":
     use_decision_tree = False   # If False, softmax regression is used!
 
     # Load data set
-    X, y = load_iris(return_X_y=True);pca_dim=None
+    X, y = load_iris(return_X_y=True);pca_dim=None # noqa: E702
     #X, y = load_breast_cancer(return_X_y=True);pca_dim=5
     #X, y = load_house_prices();pca_dim=10
     #X, y = load_wine(return_X_y=True);pca_dim=8
-    X, y = load_digits(return_X_y=True);pca_dim=40
+    X, y = load_digits(return_X_y=True);pca_dim=40 # noqa: E702
 
     X, y = shuffle(X, y, random_state=42)
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         y_test_target = []
         labels = np.unique(y)
         for i in range(X_test.shape[0]):
-            y_test_target.append(random.choice(list(filter(lambda l: l != y_test[i], labels))))
+            y_test_target.append(random.choice(list(filter(lambda l: l != y_test[i], labels)))) # noqa: E741
         y_test_target = np.array(y_test_target)
 
         # If requested: Reduce dimensionality

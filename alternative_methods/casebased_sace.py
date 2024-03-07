@@ -18,8 +18,8 @@ from tqdm import tqdm
 from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.sace.blackbox import BlackBox
-from counterfactuals.sace.casebased_sace import CaseBasedSACE
+from counterfactuals.cf_methods.sace.blackbox import BlackBox
+from counterfactuals.cf_methods.sace.casebased_sace import CaseBasedSACE
 from counterfactuals.utils import process_classification_report
 
 logger = logging.getLogger(__name__)
