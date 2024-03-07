@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import distributions, nn
+from collections import OrderedDict
+from typing import Any
 
 from counterfactuals.generative_models.base import BaseGenModel
 
@@ -150,7 +152,7 @@ class KernelDensityEstimator(GenerativeModel):
         """
         super().__init__()
         self.kernel = kernel or GaussianKernel()
-        self.train_Xs = train_Xs
+        self.train_Xs = nn.Parameter(train_Xs, requires_grad=False)
         assert len(self.train_Xs.shape) == 2, "Input cannot have more than two axes."
 
     @property
@@ -170,8 +172,24 @@ class KernelDensityEstimator(GenerativeModel):
 
 class KDE(BaseGenModel):
     def __init__(self, bandwidth=0.1, **kwargs): # Ignores kwargs!
-        self.bandwidth = bandwidth
         super(KDE, self).__init__()
+        self.bandwidth = bandwidth
+        self.models = nn.ModuleDict()
+
+    def _context_to_key(self, context):
+        return str(int(context))
+    
+    def _get_model_for_context(self, context):
+        key = self._context_to_key(context)
+        if key not in self.models:
+            raise ValueError(f"Context {key} not found in the model.")
+        return self.models[key]
+    
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True, assign: bool = False):
+        for key in state_dict.keys():
+            if key.startswith("models."):
+                self.models[key.split(".")[1]] = KernelDensityEstimator(state_dict[key], kernel=GaussianKernel(bandwidth=self.bandwidth))
+        return super().load_state_dict(state_dict, strict, assign)
 
     def fit(
             self,
@@ -182,36 +200,42 @@ class KDE(BaseGenModel):
         ):
         train_Xs, train_ys = train_loader.dataset.tensors
         train_ys = train_ys.view(-1)
-        self.models = {}
         for y in train_ys.unique():
             idxs = train_ys == y
-            self.models[y.item()] = KernelDensityEstimator(train_Xs[idxs], kernel=GaussianKernel(bandwidth=self.bandwidth))
-        self.model = KernelDensityEstimator(train_Xs, kernel=GaussianKernel(bandwidth=self.bandwidth))
+            self.models.update({
+                self._context_to_key(y.item()): KernelDensityEstimator(train_Xs[idxs], kernel=GaussianKernel(bandwidth=self.bandwidth))
+            })
         self.save(checkpoint_path)
 
-        test_Xs, test_ys = test_loader.dataset.tensors
-        train_log_probs = self.predict_log_prob(train_Xs, train_ys)
-        test_log_probs = self.predict_log_prob(test_Xs, test_ys)
+        train_log_probs = self.predict_log_prob(train_loader)
+        test_log_probs = self.predict_log_prob(test_loader)
         print(f"Train log-likelihood: {train_log_probs.mean()}")
         print(f"Test log-likelihood: {test_log_probs.mean()}")
+
+    def forward(self, x: torch.Tensor, context: torch.Tensor):
+        preds = torch.zeros_like(context)
+        for i in range(x.shape[0]):
+            model = self._get_model_for_context(context[i].item())
+            preds[i] = model(x[i].unsqueeze(0))
+        return preds.view(-1)
     
-    def predict_log_prob(self, inputs, context):
+    def predict_log_prob(self, dataloader: torch.utils.data.DataLoader):
+        inputs, context = dataloader.dataset.tensors
+        preds = self(inputs, context)
         preds = torch.zeros_like(context)
         for i in range(inputs.shape[0]):
-            preds[i] = self.models[context[i].item()](inputs[i].unsqueeze(0))
-        return preds.view(-1)
+            model = self._get_model_for_context(context[i].item())
+            preds[i] = model(inputs[i].unsqueeze(0))
+        return preds
     
     def predict_log_probs(self, X: np.ndarray):
         if isinstance(X, np.ndarray):
             X = torch.from_numpy(X)
         preds = torch.zeros((len(self.models), X.shape[0]))
         for i in range(X.shape[0]):
-            for i_model in range(len(self.models)):
-                preds[i_model, i] = self.models[i_model](X[i].unsqueeze(0))
+            for i_model, model_key in enumerate(self.models.keys()):
+                preds[i_model, i] = self.models[model_key](X[i].unsqueeze(0))
         return preds
-    
-    def forward(self, x, context):
-        return self.predict_log_prob(x, context)
     
     def save(self, path):
         torch.save(self.state_dict(), path)
