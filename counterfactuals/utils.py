@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from matplotlib import cm, ticker
-from numpy import ma
+from matplotlib import cm, ticker # noqa: F401
+from numpy import ma # noqa: F401
 
 
 def plot_x_point(x, x_origin, model):
@@ -39,7 +39,7 @@ def plot_model_distribution(model, median_prob=None, disc_model=None):
     zgrid = zgrid.numpy()
     
     cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=50, cmap=cm.PuBu) # locator=ticker.LogLocator()
-    cbar = fig.colorbar(cs)
+    cbar = fig.colorbar(cs) # noqa: F841
     if median_prob is not None:
         median_prob = np.exp(median_prob)
         cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=[median_prob-0.01, median_prob+0.01], colors='r') # locator=ticker.LogLocator()
@@ -65,7 +65,7 @@ def plot_loss_space(x, x_origin, optim_function, **optim_function_params):
         zgrid = zgrid.log().reshape(200, 200).numpy()
 
     cs = ax.contourf(xgrid.numpy(), ygrid.numpy(), zgrid, levels=100, cmap=cm.PuBu_r) #  locator=ticker.LogLocator()
-    cbar = fig.colorbar(cs)
+    cbar = fig.colorbar(cs) # noqa: F841
     ax.scatter(x_origin[0,0], x_origin[0,1], c="r")
     min_i = np.argmin(zgrid)
 
@@ -97,7 +97,7 @@ def plot_distributions(x, x_orig, model, optim_function, alpha):
     # zgrid1[zgrid1 > 2] = 2
     ax[0].contourf(xgrid.numpy(), ygrid.numpy(), zgrid0.numpy(), levels=20, cmap=cm.PuBu_r)
     cs = ax[1].contourf(xgrid.numpy(), ygrid.numpy(), zgrid1, levels=50, cmap=cm.PuBu_r) # locator=ticker.LogLocator()
-    cbar = fig.colorbar(cs)
+    cbar = fig.colorbar(cs) # noqa: F841
     ax[0].scatter(x_orig[0,0], x_orig[0,1], c="r")
     ax[1].scatter(x_orig[0,0], x_orig[0,1], c="r")
 
