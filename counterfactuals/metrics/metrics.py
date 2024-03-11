@@ -1,6 +1,7 @@
+import torch
 import numpy as np
 from scipy.stats import median_abs_deviation
-from scipy.spatial.distance import _validate_vector, cdist, pdist
+from scipy.spatial.distance import _validate_vector, cdist
 
 
 class DummyScaler:
@@ -105,7 +106,9 @@ def mad_cityblock(u, v, mad):
     return l1_diff_mad.sum()
 
 
-def continuous_distance(X, X_cf, continuous_features, metric="euclidean", X_all=None, agg="mean", _diag=True):
+def continuous_distance(
+    X, X_cf, continuous_features, metric="euclidean", X_all=None, agg="mean", _diag=True
+):
     assert X.shape == X_cf.shape, f"Shapes should be the same: {X.shape} - {X_cf.shape}"
     if metric == "mad":
         mad = median_abs_deviation(X_all[:, continuous_features], axis=0)
@@ -124,19 +127,29 @@ def continuous_distance(X, X_cf, continuous_features, metric="euclidean", X_all=
     return agg_funcs[agg](dist)
 
 
-def categorical_distance(X, X_cf, categorical_features, metric="jaccard", agg=None, _diag=True):
+def categorical_distance(
+    X, X_cf, categorical_features, metric="jaccard", agg=None, _diag=True
+):
     assert X.shape == X_cf.shape, f"Shapes should be the same: {X.shape} - {X_cf.shape}"
-    dist = cdist(X[:, categorical_features], X_cf[:, categorical_features], metric=metric)
+    dist = cdist(
+        X[:, categorical_features], X_cf[:, categorical_features], metric=metric
+    )
     dist = np.diag(dist) if _diag else dist
     agg_funcs = {"mean": np.mean, "max": np.max, "min": np.min, "no": lambda x: x}
     assert agg in agg_funcs.keys(), f"Param agg should be one of: {agg_funcs.keys()}"
     return agg_funcs[agg](dist)
 
 
-def distance_l2_jaccard(X, X_cf, continuous_features, categorical_features, ratio_cont=None):
+def distance_l2_jaccard(
+    X, X_cf, continuous_features, categorical_features, ratio_cont=None
+):
     number_features = X_cf.shape[1]
-    dist_cont = continuous_distance(X, X_cf, continuous_features, metric="euclidean", X_all=None, agg="mean")
-    dist_cate = categorical_distance(X, X_cf, categorical_features, metric="jaccard", agg="mean")
+    dist_cont = continuous_distance(
+        X, X_cf, continuous_features, metric="euclidean", X_all=None, agg="mean"
+    )
+    dist_cate = categorical_distance(
+        X, X_cf, categorical_features, metric="jaccard", agg="mean"
+    )
     if ratio_cont is None:
         ratio_continuous = len(continuous_features) / number_features
         ratio_categorical = len(categorical_features) / number_features
@@ -148,11 +161,22 @@ def distance_l2_jaccard(X, X_cf, continuous_features, categorical_features, rati
 
 
 def distance_mad_hamming(
-    X, X_cf, continuous_features, categorical_features, X_all, ratio_cont=None, agg=None, diag=True
+    X,
+    X_cf,
+    continuous_features,
+    categorical_features,
+    X_all,
+    ratio_cont=None,
+    agg=None,
+    diag=True,
 ):
     number_features = X_cf.shape[1]
-    dist_cont = continuous_distance(X, X_cf, continuous_features, metric="mad", X_all=X_all, agg=agg, _diag=diag)
-    dist_cate = categorical_distance(X, X_cf, categorical_features, metric="hamming", agg=agg, _diag=diag)
+    dist_cont = continuous_distance(
+        X, X_cf, continuous_features, metric="mad", X_all=X_all, agg=agg, _diag=diag
+    )
+    dist_cate = categorical_distance(
+        X, X_cf, categorical_features, metric="hamming", agg=agg, _diag=diag
+    )
     if ratio_cont is None:
         ratio_continuous = len(continuous_features) / number_features
         ratio_categorical = len(categorical_features) / number_features
@@ -183,7 +207,15 @@ def avg_number_changes(X, X_cf, continuous_features):
     return val / (number_cf * number_features)
 
 
-def plausibility(X_test, X_cf, y_test, continuous_features_all, categorical_features_all, X_train, ratio_cont=None):
+def plausibility(
+    X_test,
+    X_cf,
+    y_test,
+    continuous_features_all,
+    categorical_features_all,
+    X_train,
+    ratio_cont=None,
+):
     dist_neighb = distance_mad_hamming(
         X_test,
         X_test,
@@ -263,23 +295,33 @@ def evaluate_cf(
         model_returned_smth = np.sum(model_returned) / len(model_returned)
         return dict(model_returned_smth=model_returned_smth)
 
-    gen_log_probs_xs = gen_model.predict_log_probs(X)
-    gen_log_probs_xs_zero = gen_log_probs_xs[0, y_test == 0].numpy()
-    gen_log_probs_xs_one = gen_log_probs_xs[1, y_test == 1].numpy()
-
-    gen_log_probs_cf = gen_model.predict_log_probs(X_cf)
-    gen_log_probs_cf_zero = gen_log_probs_cf[0, y_test == 1].numpy()
-    gen_log_probs_cf_one = gen_log_probs_cf[1, y_test == 0].numpy()
-
-    flow_prob_condition_acc = (np.sum(delta < gen_log_probs_cf_zero) + np.sum(delta < gen_log_probs_cf_one)) / (
-        len(gen_log_probs_cf_zero) + len(gen_log_probs_cf_one)
+    gen_log_probs_xs_zero = (
+        gen_model(torch.from_numpy(X), torch.zeros(X.shape[0], 1)).detach().numpy()
     )
+    gen_log_probs_xs_one = (
+        gen_model(torch.from_numpy(X), torch.ones(X.shape[0], 1)).detach().numpy()
+    )
+    gen_log_probs_xs = np.vstack([gen_log_probs_xs_zero, gen_log_probs_xs_one])
+
+    gen_log_probs_cf_zero = (
+        gen_model(torch.from_numpy(X_cf), torch.zeros(X_cf.shape[0], 1))
+        .detach()
+        .numpy()
+    )
+    gen_log_probs_cf_one = (
+        gen_model(torch.from_numpy(X_cf), torch.ones(X_cf.shape[0], 1)).detach().numpy()
+    )
+    gen_log_probs_cf = np.vstack([gen_log_probs_cf_zero, gen_log_probs_cf_one])
+
+    flow_prob_condition_acc = (
+        np.sum(delta < gen_log_probs_cf_zero) + np.sum(delta < gen_log_probs_cf_one)
+    ) / (len(gen_log_probs_cf_zero) + len(gen_log_probs_cf_one))
 
     ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
     ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
     valid_cf_gen_metric = perc_valid_cf(ys_gen_pred, y_cf=ys_cfs_gen_pred)
 
-    ys_disc_pred = np.array(disc_model.predict(X))
+    # ys_disc_pred = np.array(disc_model.predict(X))
     ys_cfs_disc_pred = np.array(disc_model.predict(X_cf))
 
     # Define variables for metrics
@@ -291,19 +333,39 @@ def evaluate_cf(
             model_returned_smth=model_returned_smth,
         )
     hamming_distance_metric = categorical_distance(
-        X=X, X_cf=X_cf, categorical_features=categorical_features, metric="hamming", agg="mean"
+        X=X,
+        X_cf=X_cf,
+        categorical_features=categorical_features,
+        metric="hamming",
+        agg="mean",
     )
     jaccard_distance_metric = categorical_distance(
-        X=X, X_cf=X_cf, categorical_features=categorical_features, metric="jaccard", agg="mean"
+        X=X,
+        X_cf=X_cf,
+        categorical_features=categorical_features,
+        metric="jaccard",
+        agg="mean",
     )
     manhattan_distance_metric = continuous_distance(
-        X=X, X_cf=X_cf, continuous_features=continuous_features, metric="cityblock", X_all=X_test
+        X=X,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="cityblock",
+        X_all=X_test,
     )
     euclidean_distance_metric = continuous_distance(
-        X=X, X_cf=X_cf, continuous_features=continuous_features, metric="euclidean", X_all=X_test
+        X=X,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="euclidean",
+        X_all=X_test,
     )
     mad_distance_metric = continuous_distance(
-        X=X, X_cf=X_cf, continuous_features=continuous_features, metric="mad", X_all=X_test
+        X=X,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="mad",
+        X_all=X_test,
     )
     l2_jaccard_distance_metric = distance_l2_jaccard(
         X=X,
@@ -334,16 +396,20 @@ def evaluate_cf(
         "distance_mad_hamming": mad_hamming_distance_metric,
         "sparsity": sparsity_metric,
     }
-    
+
     metrics.update(
         {
             "valid_cf_gen": valid_cf_gen_metric,
             "flow_log_density_cfs_zero": gen_log_probs_cf_zero.mean(),
             "flow_log_density_cfs_one": gen_log_probs_cf_one.mean(),
-            "flow_log_density_cfs": np.concatenate([gen_log_probs_cf_zero, gen_log_probs_cf_one]).mean(),
+            "flow_log_density_cfs": np.concatenate(
+                [gen_log_probs_cf_zero, gen_log_probs_cf_one]
+            ).mean(),
             "flow_log_density_xs_zero": gen_log_probs_xs_zero.mean(),
             "flow_log_density_xs_one": gen_log_probs_xs_one.mean(),
-            "flow_log_density_xs": np.concatenate([gen_log_probs_xs_zero, gen_log_probs_xs_one]).mean(),
+            "flow_log_density_xs": np.concatenate(
+                [gen_log_probs_xs_zero, gen_log_probs_xs_one]
+            ).mean(),
             "flow_prob_condition_acc": flow_prob_condition_acc,
         }
     )
