@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import neptune
 
-import numpy as np
 from abc import ABC, abstractmethod
+
 
 class BaseGenModel(nn.Module, ABC):
     def __init__(self):
@@ -24,11 +24,11 @@ class BaseGenModel(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def predict_log_prob(self, dataloader: torch.utils.data.DataLoader):
+    def forward(self, x: torch.Tensor, context: torch.Tensor = None):
         pass
 
     @abstractmethod
-    def predict_log_probs(self, X: np.ndarray):
+    def predict_log_prob(self, dataloader: torch.utils.data.DataLoader):
         pass
 
     @abstractmethod

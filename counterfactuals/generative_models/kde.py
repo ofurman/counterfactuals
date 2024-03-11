@@ -4,7 +4,6 @@ import abc
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import distributions, nn
 from collections import OrderedDict
 from typing import Any
@@ -71,8 +70,8 @@ class GenerativeModel(abc.ABC, nn.Module):
         return next(self.parameters()).device
 
     @abc.abstractmethod
-    def sample(self, n_samples):
-        ...
+    def sample(self, n_samples): ...
+
 
 class Kernel(abc.ABC, nn.Module):
     """Base class which defines the interface for all kernels."""
@@ -168,43 +167,54 @@ class KernelDensityEstimator(GenerativeModel):
     def sample(self, n_samples):
         idxs = np.random.choice(range(len(self.train_Xs)), size=n_samples)
         return self.kernel.sample(self.train_Xs[idxs])
-    
+
 
 class KDE(BaseGenModel):
-    def __init__(self, bandwidth=0.1, **kwargs): # Ignores kwargs!
+    def __init__(self, bandwidth=0.1, **kwargs):  # Ignores kwargs!
         super(KDE, self).__init__()
         self.bandwidth = bandwidth
         self.models = nn.ModuleDict()
 
     def _context_to_key(self, context):
         return str(int(context))
-    
+
     def _get_model_for_context(self, context):
         key = self._context_to_key(context)
         if key not in self.models:
             raise ValueError(f"Context {key} not found in the model.")
         return self.models[key]
-    
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True, assign: bool = False):
+
+    def load_state_dict(
+        self,
+        state_dict: OrderedDict[str, Any],
+        strict: bool = True,
+        assign: bool = False,
+    ):
         for key in state_dict.keys():
             if key.startswith("models."):
-                self.models[key.split(".")[1]] = KernelDensityEstimator(state_dict[key], kernel=GaussianKernel(bandwidth=self.bandwidth))
+                self.models[key.split(".")[1]] = KernelDensityEstimator(
+                    state_dict[key], kernel=GaussianKernel(bandwidth=self.bandwidth)
+                )
         return super().load_state_dict(state_dict, strict, assign)
 
     def fit(
-            self,
-            train_loader: torch.utils.data.DataLoader,
-            test_loader: torch.utils.data.DataLoader,
-            checkpoint_path: str = "best_model.pth",
-            **kwargs
-        ):
+        self,
+        train_loader: torch.utils.data.DataLoader,
+        test_loader: torch.utils.data.DataLoader,
+        checkpoint_path: str = "best_model.pth",
+        **kwargs,
+    ):
         train_Xs, train_ys = train_loader.dataset.tensors
         train_ys = train_ys.view(-1)
         for y in train_ys.unique():
             idxs = train_ys == y
-            self.models.update({
-                self._context_to_key(y.item()): KernelDensityEstimator(train_Xs[idxs], kernel=GaussianKernel(bandwidth=self.bandwidth))
-            })
+            self.models.update(
+                {
+                    self._context_to_key(y.item()): KernelDensityEstimator(
+                        train_Xs[idxs], kernel=GaussianKernel(bandwidth=self.bandwidth)
+                    )
+                }
+            )
         self.save(checkpoint_path)
 
         train_log_probs = self.predict_log_prob(train_loader)
@@ -218,7 +228,7 @@ class KDE(BaseGenModel):
             model = self._get_model_for_context(context[i].item())
             preds[i] = model(x[i].unsqueeze(0))
         return preds.view(-1)
-    
+
     def predict_log_prob(self, dataloader: torch.utils.data.DataLoader):
         inputs, context = dataloader.dataset.tensors
         preds = self(inputs, context)
@@ -227,16 +237,7 @@ class KDE(BaseGenModel):
             model = self._get_model_for_context(context[i].item())
             preds[i] = model(inputs[i].unsqueeze(0))
         return preds
-    
-    def predict_log_probs(self, X: np.ndarray):
-        if isinstance(X, np.ndarray):
-            X = torch.from_numpy(X)
-        preds = torch.zeros((len(self.models), X.shape[0]))
-        for i in range(X.shape[0]):
-            for i_model, model_key in enumerate(self.models.keys()):
-                preds[i_model, i] = self.models[model_key](X[i].unsqueeze(0))
-        return preds
-    
+
     def save(self, path):
         torch.save(self.state_dict(), path)
 

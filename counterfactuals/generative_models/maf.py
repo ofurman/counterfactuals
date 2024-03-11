@@ -1,33 +1,31 @@
 import neptune
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import numpy as np
 from counterfactuals.generative_models import BaseGenModel
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
-from sklearn.metrics import classification_report
 
 from tqdm import tqdm
 
+
 class MaskedAutoregressiveFlow(BaseGenModel):
     def __init__(
-            self,
-            features,
-            hidden_features,
-            context_features=None,
-            num_layers=5,
-            num_blocks_per_layer=2,
-            use_residual_blocks=True,
-            use_random_masks=False,
-            use_random_permutations=False,
-            activation=F.relu,
-            dropout_probability=0.0,
-            batch_norm_within_layers=False,
-            batch_norm_between_layers=False,
-            neptune_run=None,
-            device="cpu",
-        ):
+        self,
+        features,
+        hidden_features,
+        context_features=None,
+        num_layers=5,
+        num_blocks_per_layer=2,
+        use_residual_blocks=True,
+        use_random_masks=False,
+        use_random_permutations=False,
+        activation=F.relu,
+        dropout_probability=0.0,
+        batch_norm_within_layers=False,
+        batch_norm_between_layers=False,
+        neptune_run=None,
+        device="cpu",
+    ):
         super(MaskedAutoregressiveFlow, self).__init__()
         self.device = device
         self.neptune_run = neptune_run
@@ -88,7 +86,9 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                     loss = -log_likelihood.mean().item()
                     test_loss += loss
             test_loss /= len(test_loader)
-            pbar.set_description(f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}")
+            pbar.set_description(
+                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}"
+            )
             if neptune_run:
                 neptune_run["gen_train_nll"].append(train_loss)
                 neptune_run["gen_test_nll"].append(test_loss)
@@ -97,13 +97,12 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 min_test_loss = test_loss
                 patience_counter = 0
                 self.save(checkpoint_path)
-                
+
             else:
                 patience_counter += 1
             if patience_counter > patience:
                 break
         self.load(checkpoint_path)
-
 
     def predict_log_prob(self, dataloader):
         self.eval()
@@ -115,19 +114,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 log_probs.append(outputs)
 
         return torch.hstack(log_probs)
-    
-    def predict_log_probs(self, X):
-        self.eval()
-        if isinstance(X, np.ndarray):
-            X = torch.from_numpy(X)
-        with torch.no_grad():
-            y_zero = torch.zeros((X.shape[0], 1), dtype=X.dtype).to(self.device)
-            y_one = torch.ones((X.shape[0], 1), dtype=X.dtype).to(self.device)
-            log_p_zero = self(X, y_zero)
-            log_p_one = self(X, y_one)
-        result = torch.vstack([log_p_zero, log_p_one])
-        return result
-    
+
     def save(self, path):
         torch.save(self.state_dict(), path)
 
