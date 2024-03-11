@@ -2,23 +2,26 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from typing import List
+from counterfactuals.discriminative_models.base import BaseDiscModel
 
 
-class MultilayerPerceptron(torch.nn.Module):    
-    def __init__(self, input_size: int, hidden_layer_sizes: List[int], target_size: int):
+class MultilayerPerceptron(BaseDiscModel):
+    def __init__(
+        self, input_size: int, hidden_layer_sizes: List[int], target_size: int
+    ):
         super(MultilayerPerceptron, self).__init__()
         layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
         self.layers = torch.nn.ModuleList()
         for i in range(len(layer_sizes) - 1):
-            self.layers.append(torch.nn.Linear(layer_sizes[i], layer_sizes[i+1]))
+            self.layers.append(torch.nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
         self.relu = torch.nn.ReLU()
-    
+
     def forward(self, x):
         for i in range(len(self.layers)):
             x = self.relu(self.layers[i](x))
         x = torch.sigmoid(x)
         return x
-    
+
     def fit(self, train_loader, epochs=200, lr=0.001):
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         criterion = torch.nn.BCELoss()
@@ -39,11 +42,11 @@ class MultilayerPerceptron(torch.nn.Module):
             probs = self.forward(torch.from_numpy(X_test))
             probs = probs > 0.5
             return np.squeeze(probs.numpy().astype(np.float32))
-    
+
     def predict_proba(self, X_test):
         with torch.no_grad():
             probs = self.forward(torch.from_numpy(X_test).type(torch.float32))
-            probs = torch.hstack([1-probs, probs]).detach().numpy().astype(np.float32)
+            probs = torch.hstack([1 - probs, probs]).detach().numpy().astype(np.float32)
             return probs
 
     def save(self, path):
