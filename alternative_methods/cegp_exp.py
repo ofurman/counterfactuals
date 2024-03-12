@@ -7,28 +7,23 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import neptune
-from uuid import uuid4
 from hydra.utils import instantiate
 from tqdm import tqdm
 
 from omegaconf import DictConfig
-from sklearn.metrics import classification_report
-from nflows.flows.autoregressive import MaskedAutoregressiveFlow
 
 from alibi.explainers import CounterFactualProto
-from alibi.utils.mapping import ohe_to_ord, ord_to_ohe
 
-from counterfactuals.discriminative_models import LogisticRegression, MultilayerPerceptron
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ppcef import PPCEF
 
-from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.utils import process_classification_report
 
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf/other_methods", config_name="config_cegp", version_base="1.2")
+@hydra.main(
+    config_path="../conf/other_methods", config_name="config_cegp", version_base="1.2"
+)
 def main(cfg: DictConfig):
     tf.compat.v1.disable_eager_execution()
 
@@ -54,13 +49,18 @@ def main(cfg: DictConfig):
 
     available_disc_models = ["LR"]
     if cfg.disc_model.model not in available_disc_models:
-        raise ValueError(f"Disc model not supported. Please choose one of {available_disc_models}")
+        raise ValueError(
+            f"Disc model not supported. Please choose one of {available_disc_models}"
+        )
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
 
     logger.info("Loading discriminator model")
-    disc_model_path = os.path.join(models_folder, f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt")
+    disc_model_path = os.path.join(
+        models_folder,
+        f"disc_model_{cfg.disc_model.model}_{run['parameters/dataset'].fetch()}.pt",
+    )
     disc_model = torch.load(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
@@ -68,13 +68,16 @@ def main(cfg: DictConfig):
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     logger.info("Loading generator model")
-    gen_model_path = os.path.join(models_folder, f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt")
+    gen_model_path = os.path.join(
+        models_folder,
+        f"gen_model_{cfg.gen_model.model}_orig_{run['parameters/dataset'].fetch()}.pt",
+    )
     gen_model = torch.load(gen_model_path)
     cf_class = PPCEF(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=torch.nn.BCELoss(),
-        neptune_run=neptune
+        neptune_run=neptune,
     )
 
     X_train, y_train = dataset.X_train, dataset.y_train
@@ -83,14 +86,16 @@ def main(cfg: DictConfig):
     time_start = time()
 
     shape = (1,) + X_train.shape[1:]  # instance shape
-    beta = .01
-    c_init = 1.
+    beta = 0.01
+    c_init = 1.0
     c_steps = 5
     max_iterations = 500
-    rng = (-1., 1.)  # scale features between -1 and 1
-    rng_shape = (1,) + X_train.shape[1:]
-    feature_range = (X_train.min(axis=0).reshape(shape),  # feature range for the perturbed instance
-                     X_train.max(axis=0).reshape(shape))
+    # rng = (-1., 1.)  # scale features between -1 and 1
+    # rng_shape = (1,) + X_train.shape[1:]
+    feature_range = (
+        X_train.min(axis=0).reshape(shape),  # feature range for the perturbed instance
+        X_train.max(axis=0).reshape(shape),
+    )
 
     cf = CounterFactualProto(
         disc_model.predict_proba,
@@ -101,10 +106,10 @@ def main(cfg: DictConfig):
         max_iterations=max_iterations,
         feature_range=feature_range,
         c_init=c_init,
-        c_steps=c_steps
+        c_steps=c_steps,
     )
 
-    cf.fit(X_train.astype(np.float32), d_type='abdm', disc_perc=[25, 50, 75])
+    cf.fit(X_train.astype(np.float32), d_type="abdm", disc_perc=[25, 50, 75])
 
     Xs_cfs = []
     model_returned = []
@@ -114,7 +119,7 @@ def main(cfg: DictConfig):
         if explanation.cf is None:
             model_returned.append(False)
         else:
-            Xs_cfs.append(explanation.cf['X'])
+            Xs_cfs.append(explanation.cf["X"])
             model_returned.append(True)
 
     run["metrics/avg_time_one_cf"] = (time() - start_time) / X_test.shape[0]
@@ -124,7 +129,9 @@ def main(cfg: DictConfig):
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    delta = cf_class.calculate_median_log_prob(dataset.train_dataloader(batch_size=64, shuffle=False))
+    delta = cf_class.calculate_median_log_prob(
+        dataset.train_dataloader(batch_size=64, shuffle=False)
+    )
     metrics = evaluate_cf(
         cf_class=cf_class,
         delta=delta,
@@ -143,6 +150,6 @@ def main(cfg: DictConfig):
 
     run.stop()
 
+
 if __name__ == "__main__":
     main()
-
