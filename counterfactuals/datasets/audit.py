@@ -44,24 +44,31 @@ class AuditDataset(AbstractDataset):
         """
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
-        
+
         target_column = self.data.columns[-1]
         self.feature_columns = list(self.data.columns[2:-1])
-        self.feature_columns.remove('Detection_Risk')
+        self.feature_columns.remove("Detection_Risk")
         self.numerical_columns = list(range(0, len(self.feature_columns)))
         self.categorical_columns = []
-        
+
         row_per_class = sum(self.data[target_column] == 1)
         self.data = pd.concat(
             [
-                self.data[self.data[target_column] == 0].sample(row_per_class, random_state=42),
+                self.data[self.data[target_column] == 0].sample(
+                    row_per_class, random_state=42
+                ),
                 self.data[self.data[target_column] == 1],
             ]
         )
         X = self.data[self.feature_columns]
         y = self.data[target_column]
         X_train, X_test, y_train, y_test = train_test_split(
-            X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.3, shuffle=True, stratify=y
+            X.to_numpy(),
+            y.to_numpy(),
+            random_state=4,
+            test_size=0.3,
+            shuffle=True,
+            stratify=y,
         )
 
         self.feature_transformer = MinMaxScaler()
@@ -81,4 +88,9 @@ class AuditDataset(AbstractDataset):
         self.numerical_features = list(range(0, len(self.feature_columns)))
 
     def get_split_data(self) -> list:
-        return self.X_train, self.X_test, self.y_train.reshape(-1), self.y_test.reshape(-1)
+        return (
+            self.X_train,
+            self.X_test,
+            self.y_train.reshape(-1),
+            self.y_test.reshape(-1),
+        )

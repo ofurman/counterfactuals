@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 from counterfactuals.datasets.adult import AdultDataset
 from counterfactuals.datasets.audit import AuditDataset
 from counterfactuals.datasets.compas import CompasDataset
