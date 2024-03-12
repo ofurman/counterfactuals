@@ -6,8 +6,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
@@ -15,17 +13,16 @@ from .flow import ContinuousNormalizingFlow
 
 
 class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Module):
-
     def __init__(
-            self,
-            input_dim: int,
-            output_dim: int,
-            embedding_dim: int = 32,
-            hidden_dims: Iterable[int] = (64, 64),
-            num_blocks: int = 3,
-            layer_type: str = "concatsquash",
-            nonlinearity: str = "tanh",
-            device: str = None
+        self,
+        input_dim: int,
+        output_dim: int,
+        embedding_dim: int = 32,
+        hidden_dims: Iterable[int] = (64, 64),
+        num_blocks: int = 3,
+        layer_type: str = "concatsquash",
+        nonlinearity: str = "tanh",
+        device: str = None,
     ):
         """
         Initialization of Continuous Normalizing Flow model.
@@ -35,9 +32,9 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         if device:
             self.device = device
         elif torch.cuda.is_available():
-            self.device = torch.device('cuda')
+            self.device = torch.device("cuda")
         else:
-            self.device = torch.device('cpu')
+            self.device = torch.device("cpu")
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -60,30 +57,32 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
             conditional=True,  # It must be true as we are using Conditional CNF model.
             layer_type=layer_type,
             nonlinearity=nonlinearity,
-            device=self.device
+            device=self.device,
         )
 
     def log_prob(self, X: torch.Tensor, y: torch.Tensor):
-        """ Calculate the log probability of the model (batch). Internal method used for training."""
+        """Calculate the log probability of the model (batch). Internal method used for training."""
         x = self.feature_extractor(X)
         x = self.flow_model.log_prob(y, x)
         # x += np.log(np.abs(np.prod(self.target_scaler.scale_)))  # Target scaling correction. log(abs(det(jacobian)))
         return x
 
     @torch.no_grad()
-    def _log_prob(self, X: np.ndarray, y: np.ndarray, batch_size: int = 128) -> np.ndarray:
-        """ Calculate the log probability of the model."""
+    def _log_prob(
+        self, X: np.ndarray, y: np.ndarray, batch_size: int = 128
+    ) -> np.ndarray:
+        """Calculate the log probability of the model."""
 
         X: torch.Tensor = torch.as_tensor(data=X, dtype=torch.float, device=self.device)
         y: torch.Tensor = torch.as_tensor(data=y, dtype=torch.float, device=self.device)
 
         dataset_loader: DataLoader = DataLoader(
-            dataset=TensorDataset(X, y),
-            shuffle=False,
-            batch_size=batch_size
+            dataset=TensorDataset(X, y), shuffle=False, batch_size=batch_size
         )
 
-        logpxs: List[torch.Tensor] = [self._log_prob(X=x_batch, y=y_batch) for x_batch, y_batch in dataset_loader]
+        logpxs: List[torch.Tensor] = [
+            self._log_prob(X=x_batch, y=y_batch) for x_batch, y_batch in dataset_loader
+        ]
         logpx: torch.Tensor = torch.cat(logpxs, dim=0)
         logpx: torch.Tensor = logpx.detach().cpu()
         logpx: np.ndarray = logpx.numpy()
@@ -96,15 +95,15 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         return x
 
     @torch.no_grad()
-    def sample(self, X: np.ndarray, num_samples: int = 10, batch_size: int = 128) -> np.ndarray:
+    def sample(
+        self, X: np.ndarray, num_samples: int = 10, batch_size: int = 128
+    ) -> np.ndarray:
         """Sample from the model."""
         X: np.ndarray = self.feature_scaler.transform(X)
 
         X: torch.Tensor = torch.as_tensor(data=X, dtype=torch.float, device=self.device)
         dataset_loader: DataLoader = DataLoader(
-            dataset=TensorDataset(X),
-            shuffle=False,
-            batch_size=batch_size
+            dataset=TensorDataset(X), shuffle=False, batch_size=batch_size
         )
 
         all_samples: List[torch.Tensor] = []
@@ -120,17 +119,28 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         # Inverse target transformation
         samples_size = samples.shape
 
-        samples: np.ndarray = samples.reshape((samples_size[0] * samples_size[1], samples_size[2]))
+        samples: np.ndarray = samples.reshape(
+            (samples_size[0] * samples_size[1], samples_size[2])
+        )
         samples: np.ndarray = self.target_scaler.inverse_transform(samples)
-        samples: np.ndarray = samples.reshape((samples_size[0], samples_size[1], samples_size[2]))
+        samples: np.ndarray = samples.reshape(
+            (samples_size[0], samples_size[1], samples_size[2])
+        )
 
         samples: np.ndarray = samples.squeeze()
         return samples
 
-    def fit(self, dataset_loader_train, X_val: Union[np.ndarray, None] = None,
-            y_val: Union[np.ndarray, None] = None, n_epochs: int = 100, batch_size: int = 128, max_patience: int = 50,
-            verbose: bool = False):
-        """ Fit Continuous Normalizing Flow model.
+    def fit(
+        self,
+        dataset_loader_train,
+        X_val: Union[np.ndarray, None] = None,
+        y_val: Union[np.ndarray, None] = None,
+        n_epochs: int = 100,
+        batch_size: int = 128,
+        max_patience: int = 50,
+        verbose: bool = False,
+    ):
+        """Fit Continuous Normalizing Flow model.
 
         Method supports the best epoch model selection and early stopping (max_patience param)
         if validation dataset is available.
@@ -138,7 +148,9 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         self.optimizer_ = optim.Adam(self.parameters())
 
         patience: int = 0
-        mid: str = str(uuid.uuid4())  # To be able to run multiple experiments in parallel.
+        mid: str = str(
+            uuid.uuid4()
+        )  # To be able to run multiple experiments in parallel.
         loss_best: float = np.inf
 
         with tqdm(range(n_epochs)) as pbar:
@@ -175,21 +187,29 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         return self
 
     @torch.no_grad()
-    def predict(self, X: np.ndarray, method: str = 'mean', num_samples: int = 1000, batch_size: int = 128,
-                **kwargs) -> np.ndarray:
-        samples: np.ndarray = self.sample(X=X, num_samples=num_samples, batch_size=batch_size)
+    def predict(
+        self,
+        X: np.ndarray,
+        method: str = "mean",
+        num_samples: int = 1000,
+        batch_size: int = 128,
+        **kwargs,
+    ) -> np.ndarray:
+        samples: np.ndarray = self.sample(
+            X=X, num_samples=num_samples, batch_size=batch_size
+        )
 
-        if method == 'mean':
+        if method == "mean":
             y_pred: np.ndarray = samples.mean(axis=1)
         else:
-            raise ValueError(f'Method {method} not supported.')
+            raise ValueError(f"Method {method} not supported.")
 
         y_pred: np.ndarray = np.array(y_pred)
         return y_pred
 
     @torch.no_grad()
     def nll(self, X: np.ndarray, y: np.ndarray) -> float:
-        return - self.log_prob(X, y).mean()
+        return -self.log_prob(X, y).mean()
 
     def _save_temp(self, mid: str):
         torch.save(self, f"/tmp/model_{mid}.pt")
