@@ -1,6 +1,5 @@
 import logging
 import os
-import json
 import hydra
 import neptune
 from neptune.utils import stringify_unsupported
@@ -15,7 +14,9 @@ from counterfactuals.generative_models import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ppcef import PPCEF
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +36,10 @@ def main(cfg: DictConfig):
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}.pt")
     if cfg.experiment.relabel_with_disc_model:
-        gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}_relabeled_by_{disc_model_name}.pt")
+        gen_model_path = os.path.join(
+            output_folder,
+            f"gen_model_{gen_model_name}_relabeled_by_{disc_model_name}.pt",
+        )
     else:
         gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}.pt")
     os.makedirs(output_folder, exist_ok=True)
@@ -56,7 +60,9 @@ def main(cfg: DictConfig):
     dataset = instantiate(cfg.dataset)
 
     logger.info("Loading discriminator model")
-    disc_model = instantiate(cfg.disc_model.model, input_size=dataset.X_train.shape[1], target_size=1)
+    disc_model = instantiate(
+        cfg.disc_model.model, input_size=dataset.X_train.shape[1], target_size=1
+    )
     disc_model.load(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
@@ -64,7 +70,9 @@ def main(cfg: DictConfig):
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     logger.info("Loading generator model")
-    gen_model: BaseGenModel = instantiate(cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1)
+    gen_model: BaseGenModel = instantiate(
+        cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
+    )
     gen_model.load(gen_model_path)
     cf = PPCEF(
         gen_model=gen_model,
@@ -74,12 +82,16 @@ def main(cfg: DictConfig):
     )
 
     logger.info("Handling counterfactual generation")
-    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
+    train_dataloader_for_log_prob = dataset.train_dataloader(
+        batch_size=cfg.counterfactuals.batch_size, shuffle=False
+    )
     delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
     run["parameters/delta"] = delta
     print(delta)
 
-    test_dataloader = dataset.test_dataloader(batch_size=cfg.counterfactuals.batch_size, shuffle=False)
+    test_dataloader = dataset.test_dataloader(
+        batch_size=cfg.counterfactuals.batch_size, shuffle=False
+    )
     time_start = time()
     Xs_cfs, Xs, ys_orig = cf.search_batch(
         dataloader=test_dataloader,
@@ -88,7 +100,7 @@ def main(cfg: DictConfig):
         patience=cfg.counterfactuals.patience,
         alpha=cfg.counterfactuals.alpha,
         beta=cfg.counterfactuals.beta,
-        delta=delta
+        delta=delta,
     )
     run["metrics/eval_time"] = np.mean(time() - time_start)
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
@@ -112,7 +124,7 @@ def main(cfg: DictConfig):
         y_train=dataset.y_train.reshape(-1),
         X_test=dataset.X_test,
         y_test=dataset.y_test,
-        delta=delta.numpy()
+        delta=delta.numpy(),
     )
     run["metrics/cf"] = stringify_unsupported(metrics)
     logger.info("Finalizing and stopping run")
