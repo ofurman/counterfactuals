@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
@@ -9,7 +8,9 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class CompasDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/compas_two_years.csv", preprocess: bool = True):
+    def __init__(
+        self, file_path: str = "data/compas_two_years.csv", preprocess: bool = True
+    ):
         super().__init__(data=None)
 
         # TODO: make from_filepath class method
@@ -64,16 +65,24 @@ class CompasDataset(AbstractDataset):
         self.categorical_columns = list(range(7, len(self.feature_columns)))
         target_column = "class"
 
-        self.data["days_b_screening_arrest"] = np.abs(self.data["days_b_screening_arrest"])
+        self.data["days_b_screening_arrest"] = np.abs(
+            self.data["days_b_screening_arrest"]
+        )
         self.data["c_jail_out"] = pd.to_datetime(self.data["c_jail_out"])
         self.data["c_jail_in"] = pd.to_datetime(self.data["c_jail_in"])
-        self.data["length_of_stay"] = np.abs((self.data["c_jail_out"] - self.data["c_jail_in"]).dt.days)
-        self.data["length_of_stay"].fillna(self.data["length_of_stay"].value_counts().index[0], inplace=True)
+        self.data["length_of_stay"] = np.abs(
+            (self.data["c_jail_out"] - self.data["c_jail_in"]).dt.days
+        )
+        self.data["length_of_stay"].fillna(
+            self.data["length_of_stay"].value_counts().index[0], inplace=True
+        )
         self.data["days_b_screening_arrest"].fillna(
             self.data["days_b_screening_arrest"].value_counts().index[0], inplace=True
         )
         self.data["length_of_stay"] = self.data["length_of_stay"].astype(int)
-        self.data["days_b_screening_arrest"] = self.data["days_b_screening_arrest"].astype(int)
+        self.data["days_b_screening_arrest"] = self.data[
+            "days_b_screening_arrest"
+        ].astype(int)
         self.data = self.data[self.data["score_text"] != "Medium"]
         self.data["class"] = pd.get_dummies(self.data["score_text"])["High"].astype(int)
         self.data.drop(["c_jail_in", "c_jail_out", "score_text"], axis=1, inplace=True)
@@ -83,7 +92,9 @@ class CompasDataset(AbstractDataset):
         row_per_class = sum(self.data[target_column] == 1)
         self.data = pd.concat(
             [
-                self.data[self.data[target_column] == 0].sample(row_per_class, random_state=42),
+                self.data[self.data[target_column] == 0].sample(
+                    row_per_class, random_state=42
+                ),
                 self.data[self.data[target_column] == 1],
             ]
         )
@@ -92,13 +103,22 @@ class CompasDataset(AbstractDataset):
         y = self.data[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.2, shuffle=True, stratify=y
+            X.to_numpy(),
+            y.to_numpy(),
+            random_state=4,
+            test_size=0.2,
+            shuffle=True,
+            stratify=y,
         )
 
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                ("OneHotEncoder", OneHotEncoder(drop="if_binary", sparse_output=False), self.categorical_columns),
+                (
+                    "OneHotEncoder",
+                    OneHotEncoder(drop="if_binary", sparse_output=False),
+                    self.categorical_columns,
+                ),
             ],
         )
         # self.feature_transformer.set_output(transform='pandas')
@@ -115,7 +135,9 @@ class CompasDataset(AbstractDataset):
         self.y_test = self.y_test.astype(np.float32)
 
         self.numerical_features = list(range(0, len(self.numerical_columns)))
-        self.categorical_features = list(range(len(self.numerical_columns), self.X_train.shape[1]))
+        self.categorical_features = list(
+            range(len(self.numerical_columns), self.X_train.shape[1])
+        )
         self.actionable_features = list(range(0, self.X_train.shape[1]))
 
     def get_split_data(self) -> list:

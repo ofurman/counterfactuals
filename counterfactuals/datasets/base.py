@@ -35,7 +35,9 @@ class AbstractDataset(ABC):
         Return X_train, X_test, y_train, y_test.
         """
 
-    def train_dataloader(self, batch_size: int, shuffle: bool, noise_lvl=0, **kwargs_dataloader):
+    def train_dataloader(
+        self, batch_size: int, shuffle: bool, noise_lvl=0, **kwargs_dataloader
+    ):
         def collate_fn(batch):
             X, y = zip(*batch)
             X = torch.stack(X)
@@ -47,7 +49,9 @@ class AbstractDataset(ABC):
             return X, y
 
         return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
+            TensorDataset(
+                torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)
+            ),
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=collate_fn if noise_lvl else None,
@@ -61,7 +65,7 @@ class AbstractDataset(ABC):
             shuffle=shuffle,
             **kwargs_dataloader,
         )
-    
+
     @property
     def categorical_features_lists(self) -> list:
         categorical_features_lists = []
@@ -69,9 +73,21 @@ class AbstractDataset(ABC):
             n_cat = self.data[self.feature_columns[col]].nunique()
             n_cat = 1 if n_cat == 2 else n_cat
             if len(categorical_features_lists) == 0:
-                categorical_features_lists.append(list(range(len(self.numerical_columns), len(self.numerical_columns) + n_cat)))
+                categorical_features_lists.append(
+                    list(
+                        range(
+                            len(self.numerical_columns),
+                            len(self.numerical_columns) + n_cat,
+                        )
+                    )
+                )
             else:
                 categorical_features_lists.append(
-                    list(range(categorical_features_lists[-1][-1] + 1, categorical_features_lists[-1][-1] + 1 + n_cat))
+                    list(
+                        range(
+                            categorical_features_lists[-1][-1] + 1,
+                            categorical_features_lists[-1][-1] + 1 + n_cat,
+                        )
+                    )
                 )
         return categorical_features_lists

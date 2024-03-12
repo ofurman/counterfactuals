@@ -59,7 +59,9 @@ class LawDataset(AbstractDataset):
         self.data = pd.concat(
             [
                 self.data[self.data[target_column] == 0],
-                self.data[self.data[target_column] == 1].sample(row_per_class, random_state=42),
+                self.data[self.data[target_column] == 1].sample(
+                    row_per_class, random_state=42
+                ),
             ]
         )
 
@@ -67,13 +69,22 @@ class LawDataset(AbstractDataset):
         y = self.data[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X.to_numpy(), y.to_numpy(), random_state=4, test_size=0.2, shuffle=True, stratify=y
+            X.to_numpy(),
+            y.to_numpy(),
+            random_state=4,
+            test_size=0.2,
+            shuffle=True,
+            stratify=y,
         )
 
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                ("OneHotEncoder", OneHotEncoder(drop="if_binary", sparse_output=False), self.categorical_columns),
+                (
+                    "OneHotEncoder",
+                    OneHotEncoder(drop="if_binary", sparse_output=False),
+                    self.categorical_columns,
+                ),
             ],
         )
         self.X_train = self.feature_transformer.fit_transform(X_train)
@@ -91,7 +102,9 @@ class LawDataset(AbstractDataset):
         self.y_test = self.y_test.astype(np.float32)
 
         self.numerical_features = list(range(0, len(self.numerical_columns)))
-        self.categorical_features = list(range(len(self.numerical_columns), self.X_train.shape[1]))
+        self.categorical_features = list(
+            range(len(self.numerical_columns), self.X_train.shape[1])
+        )
         self.actionable_features = list(range(0, self.X_train.shape[1]))
 
     def get_split_data(self) -> list:
