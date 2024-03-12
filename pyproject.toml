@@ -24,8 +24,8 @@ dependencies = [
   "ipykernel",
   "scikit-learn",
   "mlflow",
-  "black",
-  "isort",
+  "ruff",
+  "pre-commit"
 ]
 
 [build-system]
