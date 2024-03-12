@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from abc import ABC, abstractmethod
@@ -11,7 +10,6 @@ from autoencoder.cvae import ConditionalVariationalAutoencoderTimeSeries
 
 
 class Pooler(ABC):
-
     def __init__(self):
         pass
 
@@ -25,8 +23,15 @@ class Pooler(ABC):
 
 
 class ImageAutoencoder(Pooler):
-
-    def __init__(self, input_shape, latent_dim, n_classes=2, ae_type='cvae', path_ae='./', name='cvae'):
+    def __init__(
+        self,
+        input_shape,
+        latent_dim,
+        n_classes=2,
+        ae_type="cvae",
+        path_ae="./",
+        name="cvae",
+    ):
         super().__init__()
 
         kernel_size = (3, 3)
@@ -38,28 +43,50 @@ class ImageAutoencoder(Pooler):
         hidden_dim = 16
         use_mse = True
         if not use_mse:
-            optimizer = 'adam'
+            optimizer = "adam"
         else:
-            optimizer = 'rmsprop'
+            optimizer = "rmsprop"
 
         self.ae_type = ae_type
-        if self.ae_type == 'vae':
-            self.ae = VariationalAutoencoderImage(input_shape, latent_dim=latent_dim, num_conv_layers=num_conv_layers,
-                                                  filters=filters, kernel_size=kernel_size, strides=strides,
-                                                  hidden_dim=hidden_dim, use_mse=use_mse, optimizer=optimizer,
-                                                  store_intermediate=False, save_graph=False, path=path_ae,
-                                                  name=name, verbose=0)
+        if self.ae_type == "vae":
+            self.ae = VariationalAutoencoderImage(
+                input_shape,
+                latent_dim=latent_dim,
+                num_conv_layers=num_conv_layers,
+                filters=filters,
+                kernel_size=kernel_size,
+                strides=strides,
+                hidden_dim=hidden_dim,
+                use_mse=use_mse,
+                optimizer=optimizer,
+                store_intermediate=False,
+                save_graph=False,
+                path=path_ae,
+                name=name,
+                verbose=0,
+            )
         else:
-            self.ae = ConditionalVariationalAutoencoderImage(input_shape, n_classes, latent_dim=latent_dim,
-                                                             num_conv_layers=num_conv_layers, filters=filters,
-                                                             kernel_size=kernel_size, strides=strides,
-                                                             hidden_dim=hidden_dim, use_mse=use_mse,
-                                                             optimizer=optimizer, store_intermediate=False,
-                                                             save_graph=False, path=path_ae, name=name, verbose=0)
+            self.ae = ConditionalVariationalAutoencoderImage(
+                input_shape,
+                n_classes,
+                latent_dim=latent_dim,
+                num_conv_layers=num_conv_layers,
+                filters=filters,
+                kernel_size=kernel_size,
+                strides=strides,
+                hidden_dim=hidden_dim,
+                use_mse=use_mse,
+                optimizer=optimizer,
+                store_intermediate=False,
+                save_graph=False,
+                path=path_ae,
+                name=name,
+                verbose=0,
+            )
         self.ae.load_model()
 
     def transform(self, X, y=None):
-        if self.ae_type == 'vae':
+        if self.ae_type == "vae":
             X_p = self.ae.encode(X)[2]
         else:
             y = y if y is not None else np.random.choice(self.n_classes, len(X))
@@ -68,7 +95,7 @@ class ImageAutoencoder(Pooler):
         return X_p
 
     def inverse_transform(self, X, y=None):
-        if self.ae_type == 'vae':
+        if self.ae_type == "vae":
             X_tilde = self.ae.decode(X)
         else:
             y = y if y is not None else np.random.choice(self.n_classes, len(X))
@@ -78,7 +105,6 @@ class ImageAutoencoder(Pooler):
 
 
 class ImagePooler(Pooler):
-
     def __init__(self, dims, window):
         super().__init__()
         self.w, self.h = dims[0], dims[1]
@@ -93,8 +119,11 @@ class ImagePooler(Pooler):
                 X_p.append(x.flatten())
         else:
             for x in X:
-                x_v = view_as_windows(x.reshape(self.w, self.h),
-                                      window_shape=(self.w1, self.h1), step=(self.w1, self.h1))
+                x_v = view_as_windows(
+                    x.reshape(self.w, self.h),
+                    window_shape=(self.w1, self.h1),
+                    step=(self.w1, self.h1),
+                )
                 length = x_v.shape[0] * x_v.shape[1]
                 x_v = x_v.reshape(length, x_v.shape[2], x_v.shape[3])
                 x_p = np.zeros(len(x_v))
@@ -112,7 +141,7 @@ class ImagePooler(Pooler):
                 j = (idx // self.div_w) * self.w1
                 i = (idx % self.div_h) * self.h1
                 upv = np.zeros((self.w1, self.h1)) + v
-                x_tilde[j:j + self.h1, i:i + self.w1] = upv
+                x_tilde[j : j + self.h1, i : i + self.w1] = upv
             X_tilde.append(x_tilde)
         X_tilde = np.array(X_tilde)
         X_tilde = np.expand_dims(X_tilde, -1)
@@ -120,7 +149,6 @@ class ImagePooler(Pooler):
 
 
 class ImageIdentity(Pooler):
-
     def __init__(self, dims):
         self.w, self.h = dims[0], dims[1]
         super().__init__()
@@ -142,8 +170,15 @@ class ImageIdentity(Pooler):
 
 
 class TsAutoencoder(Pooler):
-
-    def __init__(self, input_shape, latent_dim, n_classes=2, ae_type='cvae', path_ae='./', name='cvae'):
+    def __init__(
+        self,
+        input_shape,
+        latent_dim,
+        n_classes=2,
+        ae_type="cvae",
+        path_ae="./",
+        name="cvae",
+    ):
         super().__init__()
 
         kernel_size = 4
@@ -155,29 +190,50 @@ class TsAutoencoder(Pooler):
         hidden_dim = 16
         use_mse = False
         if not use_mse:
-            optimizer = 'adam'
+            optimizer = "adam"
         else:
-            optimizer = 'rmsprop'
+            optimizer = "rmsprop"
 
         self.ae_type = ae_type
-        if self.ae_type == 'vae':
-            self.ae = VariationalAutoencoderTimeSeries(input_shape, latent_dim=latent_dim,
-                                                       num_conv_layers=num_conv_layers,
-                                                       filters=filters, kernel_size=kernel_size, strides=strides,
-                                                       hidden_dim=hidden_dim, use_mse=use_mse, optimizer=optimizer,
-                                                       store_intermediate=False, save_graph=False, path=path_ae,
-                                                       name=name, verbose=0)
+        if self.ae_type == "vae":
+            self.ae = VariationalAutoencoderTimeSeries(
+                input_shape,
+                latent_dim=latent_dim,
+                num_conv_layers=num_conv_layers,
+                filters=filters,
+                kernel_size=kernel_size,
+                strides=strides,
+                hidden_dim=hidden_dim,
+                use_mse=use_mse,
+                optimizer=optimizer,
+                store_intermediate=False,
+                save_graph=False,
+                path=path_ae,
+                name=name,
+                verbose=0,
+            )
         else:
-            self.ae = ConditionalVariationalAutoencoderTimeSeries(input_shape, n_classes, latent_dim=latent_dim,
-                                                             num_conv_layers=num_conv_layers,
-                                                             filters=filters, kernel_size=kernel_size, strides=strides,
-                                                             hidden_dim=hidden_dim, use_mse=use_mse, optimizer=optimizer,
-                                                             store_intermediate=False, save_graph=False,
-                                                             path=path_ae, name=name, verbose=0)
+            self.ae = ConditionalVariationalAutoencoderTimeSeries(
+                input_shape,
+                n_classes,
+                latent_dim=latent_dim,
+                num_conv_layers=num_conv_layers,
+                filters=filters,
+                kernel_size=kernel_size,
+                strides=strides,
+                hidden_dim=hidden_dim,
+                use_mse=use_mse,
+                optimizer=optimizer,
+                store_intermediate=False,
+                save_graph=False,
+                path=path_ae,
+                name=name,
+                verbose=0,
+            )
         self.ae.load_model()
 
     def transform(self, X, y=None):
-        if self.ae_type == 'vae':
+        if self.ae_type == "vae":
             X_p = self.ae.encode(X)[2]
         else:
             y = y if y is not None else np.random.choice(self.n_classes, len(X))
@@ -186,7 +242,7 @@ class TsAutoencoder(Pooler):
         return X_p
 
     def inverse_transform(self, X, y=None):
-        if self.ae_type == 'vae':
+        if self.ae_type == "vae":
             X_tilde = self.ae.decode(X)
         else:
             y = y if y is not None else np.random.choice(self.n_classes, len(X))
@@ -196,7 +252,6 @@ class TsAutoencoder(Pooler):
 
 
 class TsPooler(Pooler):
-
     def __init__(self, dims, window):
         super().__init__()
         self.dims = dims
@@ -212,8 +267,9 @@ class TsPooler(Pooler):
                 X_p.append(x.flatten())
         else:
             for x in X:
-                x_v = view_as_windows(x.reshape(self.w),
-                                      window_shape=self.w1, step=self.w1)
+                x_v = view_as_windows(
+                    x.reshape(self.w), window_shape=self.w1, step=self.w1
+                )
                 x_p = np.zeros(len(x_v))
                 for i, v in enumerate(x_v):
                     x_p[i] = agg(v)
@@ -228,7 +284,7 @@ class TsPooler(Pooler):
             for idx, v in enumerate(x):
                 i = (idx % self.div_w) * self.w1
                 upv = np.zeros(self.w1) + v
-                x_tilde[i:i + self.w1] = upv
+                x_tilde[i : i + self.w1] = upv
             X_tilde.append(x_tilde)
         X_tilde = np.array(X_tilde)
         X_tilde = np.expand_dims(X_tilde, -1)
@@ -236,7 +292,6 @@ class TsPooler(Pooler):
 
 
 class TsIdentity(Pooler):
-
     def __init__(self, dims):
         self.w = dims[0]
         super().__init__()

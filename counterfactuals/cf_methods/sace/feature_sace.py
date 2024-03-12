@@ -7,12 +7,31 @@ from counterfactuals.sace.sace import SACE
 
 
 class FeatureSACE(SACE):
-
-    def __init__(self, variable_features=None, weights=None, metric='euclidean', feature_names=None,
-                 continuous_features=None, categorical_features_lists=None, normalize=True, pooler=None, tol=0.01,
-                 nbr_intervals=5, nbr_features_to_test=2):
-        super().__init__(variable_features, weights, metric, feature_names,
-                         continuous_features, categorical_features_lists, normalize, pooler, tol)
+    def __init__(
+        self,
+        variable_features=None,
+        weights=None,
+        metric="euclidean",
+        feature_names=None,
+        continuous_features=None,
+        categorical_features_lists=None,
+        normalize=True,
+        pooler=None,
+        tol=0.01,
+        nbr_intervals=5,
+        nbr_features_to_test=2,
+    ):
+        super().__init__(
+            variable_features,
+            weights,
+            metric,
+            feature_names,
+            continuous_features,
+            categorical_features_lists,
+            normalize,
+            pooler,
+            tol,
+        )
         self.nbr_intervals = nbr_intervals
         self.nbr_features_to_test = nbr_features_to_test
 
@@ -36,9 +55,13 @@ class FeatureSACE(SACE):
                     self.min_val[y_val][fi] = np.min(X_cfc[:, fi])
                     self.max_val[y_val][fi] = np.max(X_cfc[:, fi])
                     if len(np.unique(X_cfc[:, fi])) <= 2:
-                        self.gap[y_val][fi] = self.max_val[y_val][fi] - self.min_val[y_val][fi]
+                        self.gap[y_val][fi] = (
+                            self.max_val[y_val][fi] - self.min_val[y_val][fi]
+                        )
                     else:
-                        self.gap[y_val][fi] = (self.max_val[y_val][fi] - self.min_val[y_val][fi]) / self.nbr_intervals
+                        self.gap[y_val][fi] = (
+                            self.max_val[y_val][fi] - self.min_val[y_val][fi]
+                        ) / self.nbr_intervals
 
     def binary_search(self, vx, vcf, cf, y_cf, j, eps=0.01):
         # print(vx, vcf, cf, y_cf, j)
@@ -83,9 +106,15 @@ class FeatureSACE(SACE):
 
         return cf_list
 
-    def get_counterfactuals(self, x, k=5, y_desiderd=None, constrain_into_ranges=True, search_diversity=False,
-                            refine_values=True):
-
+    def get_counterfactuals(
+        self,
+        x,
+        k=5,
+        y_desiderd=None,
+        constrain_into_ranges=True,
+        search_diversity=False,
+        refine_values=True,
+    ):
         # x = x.reshape(1, -1)
         x = np.expand_dims(x, 0)
         y_val = self.b.predict(x)[0]
@@ -96,8 +125,18 @@ class FeatureSACE(SACE):
             for vf in combinations(self.variable_features, nbr_features_tested):
                 # cfc = x.copy()
                 cfc = x.copy() if not self.pooler else self.pooler.transform(x)
-                self.__update_feature_values(x, y_val, cfc, vf, 0, len(vf), cf_score, y_desiderd,
-                                             constrain_into_ranges, cf_list_set)
+                self.__update_feature_values(
+                    x,
+                    y_val,
+                    cfc,
+                    vf,
+                    0,
+                    len(vf),
+                    cf_score,
+                    y_desiderd,
+                    constrain_into_ranges,
+                    cf_list_set,
+                )
 
         if len(cf_score) > k and search_diversity:
             cf_list = self._get_diverse(cf_score, k)
@@ -115,9 +154,19 @@ class FeatureSACE(SACE):
 
         return cf_list
 
-    def __update_feature_values(self, x, y_val, cfc, vf, fi, max_nf, cf_score, y_desiderd,
-                                constrain_into_ranges, cf_list_set):
-
+    def __update_feature_values(
+        self,
+        x,
+        y_val,
+        cfc,
+        vf,
+        fi,
+        max_nf,
+        cf_score,
+        y_desiderd,
+        constrain_into_ranges,
+        cf_list_set,
+    ):
         if fi < max_nf:
             min_val = self.min_val[y_val][vf[fi]]
             max_val = self.max_val[y_val][vf[fi]]
@@ -126,8 +175,18 @@ class FeatureSACE(SACE):
                 for new_val in np.arange(min_val, max_val + gap, gap):
                     # cfc[:, vf[fi]] = new_val
                     cfc[:, vf[fi]] = self._round_value(new_val)
-                    self.__update_feature_values(x, y_val, cfc, vf, fi + 1, max_nf, cf_score, y_desiderd,
-                                                 constrain_into_ranges, cf_list_set)
+                    self.__update_feature_values(
+                        x,
+                        y_val,
+                        cfc,
+                        vf,
+                        fi + 1,
+                        max_nf,
+                        cf_score,
+                        y_desiderd,
+                        constrain_into_ranges,
+                        cf_list_set,
+                    )
         else:
             cfc_tuple = tuple(cfc.flatten())
             if cfc_tuple in cf_list_set:
@@ -137,7 +196,6 @@ class FeatureSACE(SACE):
 
             y_cfc = self._predict(cfc)[0]
             if y_desiderd is None and y_cfc != y_val or y_cfc == y_desiderd:
-
                 if not self._respect_ranges(cfc):
                     if constrain_into_ranges:
                         cfc = self._contrain_into_ranges(cfc)
@@ -148,14 +206,24 @@ class FeatureSACE(SACE):
                     return
 
                 # nx = self.scaler.transform(x)
-                nx = self.scaler.transform(x) if not self.pooler else self.pooler.transform(x)
+                nx = (
+                    self.scaler.transform(x)
+                    if not self.pooler
+                    else self.pooler.transform(x)
+                )
                 ncfc = self.scaler.transform(cfc)
                 score = self.cdist(ncfc, nx, metric=self.metric, w=self.weights)
                 cf_score[len(cf_score)] = (score, cfc.copy().flatten())
 
-    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False,
-                       refine_values=True):
-
+    def get_prototypes(
+        self,
+        x,
+        k=5,
+        beta=0.5,
+        constrain_into_ranges=True,
+        search_diversity=False,
+        refine_values=True,
+    ):
         # x = x.reshape(1, -1)
         x = np.expand_dims(x, 0)
         y_val = self.b.predict(x)[0]
@@ -167,8 +235,19 @@ class FeatureSACE(SACE):
             for vf in combinations(self.variable_features, nbr_features_tested):
                 # prc = x.copy()
                 prc = x.copy() if not self.pooler else self.pooler.transform(x)
-                self.__update_feature_values_pr(x, y_val, y_prob, prc, vf, 0, len(vf), pr_score, beta,
-                                                constrain_into_ranges, pr_list_set)
+                self.__update_feature_values_pr(
+                    x,
+                    y_val,
+                    y_prob,
+                    prc,
+                    vf,
+                    0,
+                    len(vf),
+                    pr_score,
+                    beta,
+                    constrain_into_ranges,
+                    pr_list_set,
+                )
 
         if len(pr_score) > k and search_diversity:
             pr_list = self._get_diverse(pr_score, k)
@@ -183,9 +262,20 @@ class FeatureSACE(SACE):
 
         return pr_list
 
-    def __update_feature_values_pr(self, x, y_val, y_prob, prc, vf, fi, max_nf, pr_score, beta,
-                                   constrain_into_ranges, pr_list_set):
-
+    def __update_feature_values_pr(
+        self,
+        x,
+        y_val,
+        y_prob,
+        prc,
+        vf,
+        fi,
+        max_nf,
+        pr_score,
+        beta,
+        constrain_into_ranges,
+        pr_list_set,
+    ):
         if fi < max_nf:
             min_val = self.min_val[y_val][vf[fi]]
             max_val = self.max_val[y_val][vf[fi]]
@@ -194,8 +284,19 @@ class FeatureSACE(SACE):
                 for new_val in np.arange(min_val, max_val + gap, gap):
                     # prc[:, vf[fi]] = new_val
                     prc[:, vf[fi]] = self._round_value(new_val)
-                    self.__update_feature_values_pr(x, y_val, y_prob, prc, vf, fi + 1, max_nf, pr_score, beta,
-                                                    constrain_into_ranges, pr_list_set)
+                    self.__update_feature_values_pr(
+                        x,
+                        y_val,
+                        y_prob,
+                        prc,
+                        vf,
+                        fi + 1,
+                        max_nf,
+                        pr_score,
+                        beta,
+                        constrain_into_ranges,
+                        pr_list_set,
+                    )
         else:
             prc_tuple = tuple(prc.flatten())
             if prc_tuple in pr_list_set:
@@ -206,7 +307,6 @@ class FeatureSACE(SACE):
             y_prc_prob = self._predict_proba(prc)[:, y_prc][0]
 
             if y_prc == y_val and y_prc_prob > y_prob:
-
                 if not self._respect_ranges(prc):
                     if constrain_into_ranges:
                         prc = self._contrain_into_ranges(prc)
@@ -220,4 +320,3 @@ class FeatureSACE(SACE):
                 n_prc = self.scaler.transform(prc)
                 score = self._calculate_prototype_score(nx, n_prc, beta=beta)
                 pr_score[len(pr_score)] = (score, prc.copy().flatten())
-

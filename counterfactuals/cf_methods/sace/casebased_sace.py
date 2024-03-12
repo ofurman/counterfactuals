@@ -7,12 +7,30 @@ from counterfactuals.sace.sace import SACE
 
 
 class CaseBasedSACE(SACE):
-
-    def __init__(self, variable_features, weights=None, metric='euclidean', feature_names=None,
-                 continuous_features=None, categorical_features_lists=None, normalize=True, pooler=None,
-                 random_samples=None, diff_features=2, tolerance=0.01):
-        super().__init__(variable_features, weights, metric, feature_names,
-                         continuous_features, categorical_features_lists, normalize, pooler)
+    def __init__(
+        self,
+        variable_features,
+        weights=None,
+        metric="euclidean",
+        feature_names=None,
+        continuous_features=None,
+        categorical_features_lists=None,
+        normalize=True,
+        pooler=None,
+        random_samples=None,
+        diff_features=2,
+        tolerance=0.01,
+    ):
+        super().__init__(
+            variable_features,
+            weights,
+            metric,
+            feature_names,
+            continuous_features,
+            categorical_features_lists,
+            normalize,
+            pooler,
+        )
 
         self.random_samples = random_samples
         self.diff_features = diff_features
@@ -23,20 +41,46 @@ class CaseBasedSACE(SACE):
         self.XC_list = None
 
     def _diff_dist(self, XA, XB):
+        dist_continuous = (
+            (
+                cdist(
+                    XA[:, self.continuous_features],
+                    XB[:, self.continuous_features],
+                    metric="euclidean",
+                )
+                > self.tolerance
+            )
+            .flatten()
+            .astype(np.float64)
+        )
 
-        dist_continuous = (cdist(XA[:, self.continuous_features], XB[:, self.continuous_features],
-                                 metric='euclidean') > self.tolerance).flatten().astype(np.float64)
-
-        dist_categorical = np.sum(np.abs(XA[:, self.categorical_features] - XB[:, self.categorical_features]),
-                                  axis=1) / 2
+        dist_categorical = (
+            np.sum(
+                np.abs(
+                    XA[:, self.categorical_features] - XB[:, self.categorical_features]
+                ),
+                axis=1,
+            )
+            / 2
+        )
 
         dist = dist_continuous + dist_categorical
 
         return dist
 
     def _diff_dist0(self, XA, XB):
-        dist_continuous = (cdist(XA[:, self.continuous_features], XB[:, self.continuous_features],
-                                 metric='euclidean') > self.tolerance).flatten().astype(np.float)
+        dist_continuous = (
+            (
+                cdist(
+                    XA[:, self.continuous_features],
+                    XB[:, self.continuous_features],
+                    metric="euclidean",
+                )
+                > self.tolerance
+            )
+            .flatten()
+            .astype(np.float)
+        )
         dist = dist_continuous
 
         return dist
@@ -45,7 +89,9 @@ class CaseBasedSACE(SACE):
         super().fit(b, X)
 
         if self.random_samples and self.random_samples < len(self.X):
-            index_random_samples = np.random.choice(range(len(self.X)), self.random_samples)
+            index_random_samples = np.random.choice(
+                range(len(self.X)), self.random_samples
+            )
             self.X = self.X[index_random_samples]
             self.y = self.y[index_random_samples]
 
@@ -56,7 +102,11 @@ class CaseBasedSACE(SACE):
 
         self.XC_x = defaultdict(list)
         self.XC_list = defaultdict(list)
-        nX = self.scaler.transform(self.X) if not self.pooler else self.scaler.transform(self.pooler.transform(self.X))
+        nX = (
+            self.scaler.transform(self.X)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(self.X))
+        )
 
         for nx, label in zip(nX, self.y):
             nX_cfc = nX[self.y != label]
@@ -72,11 +122,21 @@ class CaseBasedSACE(SACE):
         for label in self.XC_x:
             self.XC_x[label] = np.array(self.XC_x[label])
 
-    def get_counterfactuals(self, x, k=5, y_desiderd=None, constrain_into_ranges=True, search_diversity=False):
-
+    def get_counterfactuals(
+        self,
+        x,
+        k=5,
+        y_desiderd=None,
+        constrain_into_ranges=True,
+        search_diversity=False,
+    ):
         # x = x.reshape(1, -1)
         x = np.expand_dims(x, 0)
-        nx = self.scaler.transform(x) if not self.pooler else self.scaler.transform(self.pooler.transform(x))
+        nx = (
+            self.scaler.transform(x)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(x))
+        )
         y_val = self.b.predict(x)[0]
 
         XC_sc = self.XC_x[y_val]
@@ -115,8 +175,11 @@ class CaseBasedSACE(SACE):
                             break
 
                 else:  # point 4 of algorithm
-                    ncfc = self.scaler.transform(cfc) if not self.pooler \
+                    ncfc = (
+                        self.scaler.transform(cfc)
+                        if not self.pooler
                         else self.scaler.transform(self.pooler.transform(cfc))
+                    )
 
                     if y_desiderd is None:
                         cond = self.y != y_val
@@ -124,16 +187,27 @@ class CaseBasedSACE(SACE):
                         cond = self.y == y_desiderd
 
                     X_cfc = self.X[cond]
-                    nX_cfc = self.scaler.transform(X_cfc) if not self.pooler else \
-                        self.scaler.transform(self.pooler.transform(X_cfc))
+                    nX_cfc = (
+                        self.scaler.transform(X_cfc)
+                        if not self.pooler
+                        else self.scaler.transform(self.pooler.transform(X_cfc))
+                    )
 
-                    dists_cfc = self.cdist(ncfc, nX_cfc, metric=self.metric, w=self.weights)
+                    dists_cfc = self.cdist(
+                        ncfc, nX_cfc, metric=self.metric, w=self.weights
+                    )
                     for cf_idx2 in np.argsort(dists_cfc)[0]:
                         cfc2 = x.copy() if not self.pooler else self.pooler.transform(x)
-                        cfc2[:, self.variable_features] = X_cfc[cf_idx2, self.variable_features]
+                        cfc2[:, self.variable_features] = X_cfc[
+                            cf_idx2, self.variable_features
+                        ]
                         y_cfc2 = self._predict(cfc2)[0]
                         # print(sc_idx, y_val, y_cfc2)
-                        if y_desiderd is None and y_cfc2 != y_val or y_cfc2 == y_desiderd:
+                        if (
+                            y_desiderd is None
+                            and y_cfc2 != y_val
+                            or y_cfc2 == y_desiderd
+                        ):
                             if not self._respect_ranges(cfc2):
                                 if constrain_into_ranges:
                                     cfc2 = self._contrain_into_ranges(cfc2)
@@ -172,18 +246,26 @@ class CaseBasedSACE(SACE):
 
         return cf_list
 
-    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False):
-
+    def get_prototypes(
+        self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False
+    ):
         x = np.expand_dims(x, 0)
-        nx = self.scaler.transform(x) if not self.pooler else self.scaler.transform(self.pooler.transform(x))
+        nx = (
+            self.scaler.transform(x)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(x))
+        )
         y_val = self.b.predict(x)[0]
         y_prob = self.b.predict_proba(x)[:, y_val][0]
 
         cond = self.y == y_val
 
         X_prc = self.X[cond]
-        nX_prc = self.scaler.transform(X_prc) if not self.pooler \
+        nX_prc = (
+            self.scaler.transform(X_prc)
+            if not self.pooler
             else self.scaler.transform(self.pooler.transform(X_prc))
+        )
 
         dists = self.cdist(nx, nX_prc, metric=self.metric, w=self.weights)
 
@@ -196,7 +278,6 @@ class CaseBasedSACE(SACE):
             y_prc_prob = self._predict_proba(prc)[:, y_prc][0]
 
             if y_prc == y_val and y_prc_prob > y_prob:
-
                 if not self._respect_ranges(prc):
                     if constrain_into_ranges:
                         prc = self._contrain_into_ranges(prc)
@@ -222,4 +303,3 @@ class CaseBasedSACE(SACE):
             pr_list = self.pooler.inverse_transform(pr_list)
 
         return pr_list
-
