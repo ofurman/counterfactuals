@@ -4,7 +4,9 @@ from counterfactuals.sace.sace import SACE
 
 
 def gaussian_matched_vicinity_sampling(x, epsilon, num_points=1):
-    return gaussian_vicinity_sampling(x, epsilon, num_points) / np.sqrt(1 + (epsilon ** 2))
+    return gaussian_vicinity_sampling(x, epsilon, num_points) / np.sqrt(
+        1 + (epsilon**2)
+    )
 
 
 def gaussian_vicinity_sampling(x, epsilon, num_points=1):
@@ -75,23 +77,34 @@ def translate(X, center):
         X[..., axis] += center[..., axis]
 
 
-def vicinity_sampling(x, nx, n=1000, threshold=None, kind='gaussian_matched', variable_features=None,
-                      categorical_features_lists=None, scaler=None, pooler=None, verbose=True, round_value=None):
+def vicinity_sampling(
+    x,
+    nx,
+    n=1000,
+    threshold=None,
+    kind="gaussian_matched",
+    variable_features=None,
+    categorical_features_lists=None,
+    scaler=None,
+    pooler=None,
+    verbose=True,
+    round_value=None,
+):
     if verbose:
-        print('\nSampling -->', kind)
+        print("\nSampling -->", kind)
 
-    if kind == 'gaussian':
+    if kind == "gaussian":
         Z = gaussian_vicinity_sampling(nx, threshold, n)
-    elif kind == 'gaussian_matched':
+    elif kind == "gaussian_matched":
         Z = gaussian_matched_vicinity_sampling(nx, threshold, n)
-    elif kind == 'gaussian_global':
+    elif kind == "gaussian_global":
         Z = gaussian_global_sampling(nx, n)
-    elif kind == 'uniform_sphere':
+    elif kind == "uniform_sphere":
         Z = uniform_sphere_vicinity_sampling(nx, n, threshold)
-    elif kind == 'uniform_sphere_scaled':
+    elif kind == "uniform_sphere_scaled":
         Z = uniform_sphere_scaled_vicinity_sampling(nx, n, threshold)
     else:
-        raise Exception('Vicinity sampling kind not valid')
+        raise Exception("Vicinity sampling kind not valid")
 
     if scaler:
         Z = scaler.inverse_transform(Z)
@@ -105,12 +118,10 @@ def vicinity_sampling(x, nx, n=1000, threshold=None, kind='gaussian_matched', va
 
 
 def correct_categorical(Z, categorical_features_lists):
-
     # if not categorical_features_lists:
     #     return Z
 
     for idx_list in categorical_features_lists:
-
         idx_set_to_one = np.argmax(Z[:, idx_list], axis=1)
         vals = np.zeros((len(Z), len(idx_list)))
         for i, j in zip(range(len(Z)), idx_set_to_one):
@@ -120,8 +131,9 @@ def correct_categorical(Z, categorical_features_lists):
     return Z
 
 
-def update_with_unmutable_feature(x, Z, variable_features, pooler=None, round_value=None):
-
+def update_with_unmutable_feature(
+    x, Z, variable_features, pooler=None, round_value=None
+):
     Z_updated = list()
     for cf_idx in range(len(Z)):
         cfc = x.copy() if not pooler else pooler.transform(x)
@@ -136,20 +148,45 @@ def update_with_unmutable_feature(x, Z, variable_features, pooler=None, round_va
     return Z_updated
 
 
-def binary_sampling_search(x, nx, label, predict, lower_threshold=0, upper_threshold=4, n_attempts=10000, n_batch=1000,
-                           stopping_eps=0.01, kind='gaussian_matched', downward_only=True, variable_features=None,
-                           categorical_features_lists=None, scaler=None, pooler=None, verbose=True, round_value=None,
-                           max_iter_count=10):
+def binary_sampling_search(
+    x,
+    nx,
+    label,
+    predict,
+    lower_threshold=0,
+    upper_threshold=4,
+    n_attempts=10000,
+    n_batch=1000,
+    stopping_eps=0.01,
+    kind="gaussian_matched",
+    downward_only=True,
+    variable_features=None,
+    categorical_features_lists=None,
+    scaler=None,
+    pooler=None,
+    verbose=True,
+    round_value=None,
+    max_iter_count=10,
+):
     if verbose:
-        print('Binary sampling search:')
+        print("Binary sampling search:")
 
     # sanity check for the upper threshold
     not_found = True
     for i in range(n_attempts):
-        Z = vicinity_sampling(x=x, nx=nx, n=n_batch, threshold=upper_threshold, kind=kind,
-                              variable_features=variable_features,
-                              categorical_features_lists=categorical_features_lists,
-                              scaler=scaler, pooler=pooler, verbose=verbose, round_value=round_value)
+        Z = vicinity_sampling(
+            x=x,
+            nx=nx,
+            n=n_batch,
+            threshold=upper_threshold,
+            kind=kind,
+            variable_features=variable_features,
+            categorical_features_lists=categorical_features_lists,
+            scaler=scaler,
+            pooler=pooler,
+            verbose=verbose,
+            round_value=round_value,
+        )
         y = predict(Z)
         if not np.all(y == label):
             not_found = False
@@ -177,13 +214,27 @@ def binary_sampling_search(x, nx, label, predict, lower_threshold=0, upper_thres
         change_lower = True
 
         if verbose:
-            print('   Testing threshold value:', threshold, upper_threshold, lower_threshold)
+            print(
+                "   Testing threshold value:",
+                threshold,
+                upper_threshold,
+                lower_threshold,
+            )
 
         for i in range(n_attempts):
-            Z = vicinity_sampling(x=x, nx=nx, n=n_batch, threshold=threshold, kind=kind,
-                                  variable_features=variable_features,
-                                  categorical_features_lists=categorical_features_lists,
-                                  scaler=scaler, pooler=pooler, verbose=verbose, round_value=round_value)
+            Z = vicinity_sampling(
+                x=x,
+                nx=nx,
+                n=n_batch,
+                threshold=threshold,
+                kind=kind,
+                variable_features=variable_features,
+                categorical_features_lists=categorical_features_lists,
+                scaler=scaler,
+                pooler=pooler,
+                verbose=verbose,
+                round_value=round_value,
+            )
             y = predict(Z)
             if not np.all(y == label):  # if we found already some counterfactuals
                 counterfactuals_idxs = np.argwhere(y != label).ravel()
@@ -197,20 +248,29 @@ def binary_sampling_search(x, nx, label, predict, lower_threshold=0, upper_thres
             break
 
     if verbose:
-        print('   Best threshold found:', latest_working_threshold)
+        print("   Best threshold found:", latest_working_threshold)
 
     if verbose:
-        print('   Final counterfactual search', end=' ')
+        print("   Final counterfactual search", end=" ")
 
-    Z = vicinity_sampling(x=x, nx=nx, n=n_batch, threshold=latest_working_threshold, kind=kind,
-                          variable_features=variable_features,
-                          categorical_features_lists=categorical_features_lists,
-                          scaler=scaler, pooler=pooler, verbose=verbose, round_value=round_value)
+    Z = vicinity_sampling(
+        x=x,
+        nx=nx,
+        n=n_batch,
+        threshold=latest_working_threshold,
+        kind=kind,
+        variable_features=variable_features,
+        categorical_features_lists=categorical_features_lists,
+        scaler=scaler,
+        pooler=pooler,
+        verbose=verbose,
+        round_value=round_value,
+    )
     y = predict(Z)
     counterfactuals_idxs = np.argwhere(y != label).ravel()
     Z_counterfactuals.append(Z[counterfactuals_idxs])
     if verbose:
-        print('Done!')
+        print("Done!")
 
     Z_counterfactuals = np.concatenate(Z_counterfactuals)
 
@@ -218,12 +278,33 @@ def binary_sampling_search(x, nx, label, predict, lower_threshold=0, upper_thres
 
 
 class DistrSACE(SACE):
-
-    def __init__(self, variable_features=None, weights=None, metric='euclidean', feature_names=None,
-                 continuous_features=None, categorical_features_lists=None, normalize=True, pooler=None, tol=0.01,
-                 n_attempts=10000, n_batch=1000, stopping_eps=0.01, kind='gaussian_matched'):
-        super().__init__(variable_features, weights, metric, feature_names,
-                         continuous_features, categorical_features_lists, normalize, pooler, tol)
+    def __init__(
+        self,
+        variable_features=None,
+        weights=None,
+        metric="euclidean",
+        feature_names=None,
+        continuous_features=None,
+        categorical_features_lists=None,
+        normalize=True,
+        pooler=None,
+        tol=0.01,
+        n_attempts=10000,
+        n_batch=1000,
+        stopping_eps=0.01,
+        kind="gaussian_matched",
+    ):
+        super().__init__(
+            variable_features,
+            weights,
+            metric,
+            feature_names,
+            continuous_features,
+            categorical_features_lists,
+            normalize,
+            pooler,
+            tol,
+        )
         self.n_attempts = n_attempts
         self.n_batch = n_batch
         self.stopping_eps = stopping_eps
@@ -232,41 +313,68 @@ class DistrSACE(SACE):
     def fit(self, b, X):
         super().fit(b, X)
 
-    def get_counterfactuals(self, x, k=5, y_desiderd=None, constrain_into_ranges=True, search_diversity=False,
-                            lower_threshold=0, upper_threshold=4):
-
+    def get_counterfactuals(
+        self,
+        x,
+        k=5,
+        y_desiderd=None,
+        constrain_into_ranges=True,
+        search_diversity=False,
+        lower_threshold=0,
+        upper_threshold=4,
+    ):
         # x = x.reshape(1, -1)
         verbose = False
         x = np.expand_dims(x, 0)
-        nx = self.scaler.transform(x) if not self.pooler else self.scaler.transform(self.pooler.transform(x))
+        nx = (
+            self.scaler.transform(x)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(x))
+        )
         y_val = self.b.predict(x)[0]
 
-        Z = binary_sampling_search(x, nx, y_val, self._predict,
-                                   lower_threshold=lower_threshold, upper_threshold=upper_threshold,
-                                   n_attempts=self.n_attempts, n_batch=self.n_batch, stopping_eps=self.stopping_eps,
-                                   kind=self.kind,
-                                   downward_only=True,
-                                   variable_features=self.variable_features,
-                                   categorical_features_lists=self.categorical_features_index_lists,
-                                   scaler=self.scaler,
-                                   pooler=self.pooler,
-                                   verbose=verbose,
-                                   round_value=self._round_value)
+        Z = binary_sampling_search(
+            x,
+            nx,
+            y_val,
+            self._predict,
+            lower_threshold=lower_threshold,
+            upper_threshold=upper_threshold,
+            n_attempts=self.n_attempts,
+            n_batch=self.n_batch,
+            stopping_eps=self.stopping_eps,
+            kind=self.kind,
+            downward_only=True,
+            variable_features=self.variable_features,
+            categorical_features_lists=self.categorical_features_index_lists,
+            scaler=self.scaler,
+            pooler=self.pooler,
+            verbose=verbose,
+            round_value=self._round_value,
+        )
 
         count_search = 1
         while Z is None:
             count_search += 1
-            Z = binary_sampling_search(x, nx, y_val, self._predict,
-                                       lower_threshold=lower_threshold, upper_threshold=upper_threshold * count_search,
-                                       n_attempts=self.n_attempts, n_batch=self.n_batch, stopping_eps=self.stopping_eps,
-                                       kind=self.kind,
-                                       downward_only=True,
-                                       variable_features=self.variable_features,
-                                       categorical_features_lists=self.categorical_features_index_lists,
-                                       scaler=self.scaler,
-                                       pooler=self.pooler,
-                                       verbose=verbose,
-                                       round_value=self._round_value)
+            Z = binary_sampling_search(
+                x,
+                nx,
+                y_val,
+                self._predict,
+                lower_threshold=lower_threshold,
+                upper_threshold=upper_threshold * count_search,
+                n_attempts=self.n_attempts,
+                n_batch=self.n_batch,
+                stopping_eps=self.stopping_eps,
+                kind=self.kind,
+                downward_only=True,
+                variable_features=self.variable_features,
+                categorical_features_lists=self.categorical_features_index_lists,
+                scaler=self.scaler,
+                pooler=self.pooler,
+                verbose=verbose,
+                round_value=self._round_value,
+            )
 
             if count_search >= 4:
                 break
@@ -276,7 +384,7 @@ class DistrSACE(SACE):
             return cf_list
 
         nZ = self.scaler.transform(Z)  # if not self.pooler else \
-            # self.scaler.transform(self.pooler.transform(Z))
+        # self.scaler.transform(self.pooler.transform(Z))
         dists = self.cdist(nx, nZ, metric=self.metric, w=self.weights)
 
         cf_score = dict()
@@ -305,18 +413,26 @@ class DistrSACE(SACE):
 
         return cf_list
 
-    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False):
-
+    def get_prototypes(
+        self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False
+    ):
         x = np.expand_dims(x, 0)
-        nx = self.scaler.transform(x) if not self.pooler else self.scaler.transform(self.pooler.transform(x))
+        nx = (
+            self.scaler.transform(x)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(x))
+        )
         y_val = self.b.predict(x)[0]
         y_prob = self.b.predict_proba(x)[:, y_val][0]
 
         cond = self.y == y_val
 
         X_prc = self.X[cond]
-        nX_prc = self.scaler.transform(X_prc) if not self.pooler \
+        nX_prc = (
+            self.scaler.transform(X_prc)
+            if not self.pooler
             else self.scaler.transform(self.pooler.transform(X_prc))
+        )
 
         dists = self.cdist(nx, nX_prc, metric=self.metric, w=self.weights)
 
@@ -329,7 +445,6 @@ class DistrSACE(SACE):
             y_prc_prob = self._predict_proba(prc)[:, y_prc][0]
 
             if y_prc == y_val and y_prc_prob > y_prob:
-
                 if not self._respect_ranges(prc):
                     if constrain_into_ranges:
                         prc = self._contrain_into_ranges(prc)
@@ -355,4 +470,3 @@ class DistrSACE(SACE):
             pr_list = self.pooler.inverse_transform(pr_list)
 
         return pr_list
-

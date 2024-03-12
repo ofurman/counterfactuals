@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -39,7 +38,7 @@ class BaseCounterfactualModel(ABC):
             float: The loss for the current training step.
         """
         pass
-    
+
     def search_batch(
         self,
         dataloader: DataLoader,
@@ -71,7 +70,7 @@ class BaseCounterfactualModel(ABC):
             contexts_origin = contexts_origin.to(self.device)
 
             contexts_origin = contexts_origin.reshape(-1, 1)
-            contexts_target = torch.abs(1-contexts_origin)
+            contexts_target = torch.abs(1 - contexts_origin)
 
             xs_origin = torch.as_tensor(xs_origin)
             xs = xs_origin.clone()
@@ -82,14 +81,22 @@ class BaseCounterfactualModel(ABC):
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
-                loss_components = self.search_step(xs, xs_origin, contexts_origin, contexts_target, **search_step_kwargs)
+                loss_components = self.search_step(
+                    xs,
+                    xs_origin,
+                    contexts_origin,
+                    contexts_target,
+                    **search_step_kwargs,
+                )
                 mean_loss = loss_components["loss"].mean()
                 mean_loss.backward()
                 optimizer.step()
 
                 if self.neptune_run:
                     for loss_name, loss in loss_components.items():
-                        self.neptune_run[f"cf_search/{loss_name}"].append(loss.mean().detach().cpu().numpy())
+                        self.neptune_run[f"cf_search/{loss_name}"].append(
+                            loss.mean().detach().cpu().numpy()
+                        )
                 if mean_loss.item() < min_loss:
                     min_loss = mean_loss.item()
                 else:
@@ -100,4 +107,8 @@ class BaseCounterfactualModel(ABC):
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
-        return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class, axis=0)
+        return (
+            np.concatenate(counterfactuals, axis=0),
+            np.concatenate(original, axis=0),
+            np.concatenate(original_class, axis=0),
+        )

@@ -5,13 +5,18 @@ import sklearn
 
 def get_leafs_from_tree(tree_, classifier=False):
     leafs = []
+
     def traversal(node, path):
         if tree_.feature[node] != sklearn.tree._tree.TREE_UNDEFINED:
             feature_id = tree_.feature[node]
             threshold = tree_.threshold[node]
 
-            traversal(tree_.children_left[node], path + [(node, feature_id, threshold, "<")])
-            traversal(tree_.children_right[node], path + [(node, feature_id, threshold, ">")])
+            traversal(
+                tree_.children_left[node], path + [(node, feature_id, threshold, "<")]
+            )
+            traversal(
+                tree_.children_right[node], path + [(node, feature_id, threshold, ">")]
+            )
         else:
             if classifier is False:
                 path += [(node, -1, tree_.value[node].flatten()[0])]
@@ -38,11 +43,11 @@ def compute_overlap_of_path(p1, p2):
 
 
 def compute_change(x, threshold, direction):
-    eps = 1.e-5
+    eps = 1.0e-5
 
     if direction == "<":
         if x >= threshold:
-            return -1. * np.abs(threshold - x) - eps
+            return -1.0 * np.abs(threshold - x) - eps
         else:
             return 0
     elif direction == ">":
@@ -58,7 +63,7 @@ def compute_path_adjustment(x_orig, x_orig_path, target_path):
     y = target_path[-1][2]
 
     for i in range(len(target_path) - 1):
-        if x_orig_path[i+1] != target_path[i+1][0]: # Starting point found?
+        if x_orig_path[i + 1] != target_path[i + 1][0]:  # Starting point found?
             for j in range(i, len(target_path) - 1):
                 feature_id = target_path[j][1]
                 threshold = target_path[j][2]
@@ -98,6 +103,6 @@ def score_adjustments(x_orig, x_orig_path, leafs_path, dist):
 
         r.append((cost, y, adjustment))
 
-    r.sort(key=lambda item: item[0])        
+    r.sort(key=lambda item: item[0])
 
     return r

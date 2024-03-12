@@ -1,6 +1,4 @@
-
 class DummyScaler:
-
     def __init__(self):
         pass
 
@@ -15,4 +13,3 @@ class DummyScaler:
 
     def inverse_transform(self, X):
         return X
-

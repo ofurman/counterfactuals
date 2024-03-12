@@ -4,12 +4,30 @@ from counterfactuals.sace.sace import SACE
 
 
 class RandomSACE(SACE):
-
-    def __init__(self, variable_features=None, weights=None, metric='euclidean', feature_names=None,
-                 continuous_features=None, categorical_features_lists=None, normalize=True, pooler=None,
-                 n_attempts=100, n_max_attempts=10000, proba=0.5):
-        super().__init__(variable_features, weights, metric, feature_names,
-                         continuous_features, categorical_features_lists, normalize, pooler)
+    def __init__(
+        self,
+        variable_features=None,
+        weights=None,
+        metric="euclidean",
+        feature_names=None,
+        continuous_features=None,
+        categorical_features_lists=None,
+        normalize=True,
+        pooler=None,
+        n_attempts=100,
+        n_max_attempts=10000,
+        proba=0.5,
+    ):
+        super().__init__(
+            variable_features,
+            weights,
+            metric,
+            feature_names,
+            continuous_features,
+            categorical_features_lists,
+            normalize,
+            pooler,
+        )
         self.n_attempts = n_attempts
         self.n_max_attempts = n_max_attempts
         self.proba = proba
@@ -22,11 +40,21 @@ class RandomSACE(SACE):
         for f_idx in self.variable_features:
             self.f_values[f_idx] = np.unique(self.X[:, f_idx])
 
-    def get_counterfactuals(self, x, k=5, y_desiderd=None, constrain_into_ranges=True, search_diversity=False):
-
+    def get_counterfactuals(
+        self,
+        x,
+        k=5,
+        y_desiderd=None,
+        constrain_into_ranges=True,
+        search_diversity=False,
+    ):
         # x = x.reshape(1, -1)
         x = np.expand_dims(x, 0)
-        nx = self.scaler.transform(x) if not self.pooler else self.scaler.transform(self.pooler.transform(x))
+        nx = (
+            self.scaler.transform(x)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(x))
+        )
         y_val = self.b.predict(x)[0]
 
         cf_list_set = set()
@@ -52,7 +80,12 @@ class RandomSACE(SACE):
                             cf_list_set.add(cfc_tuple)
 
                             nc = self.scaler.transform(cfc)
-                            score = self.cdist(nc.reshape(1, -1), nx, metric=self.metric, w=self.weights).flatten()[0]
+                            score = self.cdist(
+                                nc.reshape(1, -1),
+                                nx,
+                                metric=self.metric,
+                                w=self.weights,
+                            ).flatten()[0]
                             cf_score[len(cf_score)] = (score, cfc.flatten())
 
                             if len(cf_score) == self.n_attempts:
@@ -71,11 +104,16 @@ class RandomSACE(SACE):
 
         return cf_list
 
-    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False):
-
+    def get_prototypes(
+        self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False
+    ):
         # x = x.reshape(1, -1)
         x = np.expand_dims(x, 0)
-        nx = self.scaler.transform(x) if not self.pooler else self.scaler.transform(self.pooler.transform(x))
+        nx = (
+            self.scaler.transform(x)
+            if not self.pooler
+            else self.scaler.transform(self.pooler.transform(x))
+        )
         y_val = self.b.predict(x)[0]
         y_prob = self.b.predict_proba(x)[:, y_val][0]
 
@@ -90,7 +128,6 @@ class RandomSACE(SACE):
                     y_prc_prob = self._predict_proba(prc)[:, y_prc][0]
 
                     if y_prc == y_val and y_prc_prob > y_prob:
-
                         if not self._respect_ranges(prc):
                             if constrain_into_ranges:
                                 prc = self._contrain_into_ranges(prc)
@@ -104,7 +141,9 @@ class RandomSACE(SACE):
                         if prc_tuple not in pr_list_set:
                             pr_list_set.add(prc_tuple)
                             npre = self.scaler.transform(prc)
-                            score = self._calculate_prototype_score(npre.reshape(1, -1), nx, beta=beta)
+                            score = self._calculate_prototype_score(
+                                npre.reshape(1, -1), nx, beta=beta
+                            )
                             pr_score[len(pr_score)] = (score, prc.flatten())
 
                             if len(pr_score) == self.n_attempts:
@@ -122,4 +161,3 @@ class RandomSACE(SACE):
             pr_list = self.pooler.inverse_transform(pr_list)
 
         return pr_list
-
