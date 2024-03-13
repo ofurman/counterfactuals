@@ -68,6 +68,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
 
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
+                labels = labels.type(torch.float32)
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
                 loss = -log_likelihood.mean()
@@ -82,6 +83,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             min_test_loss = float("inf")
             with torch.no_grad():
                 for inputs, labels in test_loader:
+                    labels = labels.type(torch.float32)
                     log_likelihood = self(inputs, labels)
                     loss = -log_likelihood.mean().item()
                     test_loss += loss
@@ -110,6 +112,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
 
         with torch.no_grad():
             for inputs, labels in dataloader:
+                labels = labels.type(torch.float32)
                 outputs = self(inputs, labels)
                 log_probs.append(outputs)
 

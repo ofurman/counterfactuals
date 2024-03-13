@@ -78,6 +78,7 @@ class BaseCounterfactualModel(ABC):
             xs.requires_grad = True
 
             optimizer = optim.Adam([xs], lr=lr)
+            loss_components_logging = {}
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
@@ -92,8 +93,11 @@ class BaseCounterfactualModel(ABC):
                 mean_loss.backward()
                 optimizer.step()
 
-                if self.neptune_run:
-                    for loss_name, loss in loss_components.items():
+                for loss_name, loss in loss_components.items():
+                    loss_components_logging.setdefault(
+                        f"cf_search/{loss_name}", []
+                    ).append(loss.mean().detach().cpu().item())
+                    if self.neptune_run:
                         self.neptune_run[f"cf_search/{loss_name}"].append(
                             loss.mean().detach().cpu().numpy()
                         )
@@ -111,4 +115,5 @@ class BaseCounterfactualModel(ABC):
             np.concatenate(counterfactuals, axis=0),
             np.concatenate(original, axis=0),
             np.concatenate(original_class, axis=0),
+            loss_components_logging,
         )

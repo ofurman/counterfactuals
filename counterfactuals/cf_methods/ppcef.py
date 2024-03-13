@@ -39,7 +39,9 @@ class PPCEF(BaseCounterfactualModel):
 
         loss_disc = self.disc_model_criterion(outputs, context_target)
 
-        p_x_param_c_target = self.gen_model(x_param, context=context_target)
+        p_x_param_c_target = self.gen_model(
+            x_param, context=context_target.type(torch.float32)
+        )
         max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
 
         loss = dist + alpha * (max_inner + loss_disc)
