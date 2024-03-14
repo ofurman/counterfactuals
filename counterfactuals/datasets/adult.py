@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OrdinalEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -88,11 +88,12 @@ class AdultDataset(AbstractDataset):
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                (
-                    "OneHotEncoder",
-                    OneHotEncoder(drop="if_binary", sparse_output=False),
-                    self.categorical_columns,
-                ),
+                ("OrdinalEncoder", OrdinalEncoder(), self.categorical_columns),
+                # (
+                #     "OneHotEncoder",
+                #     OneHotEncoder(sparse_output=False),
+                #     self.categorical_columns,
+                # ),
             ],
         )
         # self.feature_transformer.set_output(transform='pandas')
