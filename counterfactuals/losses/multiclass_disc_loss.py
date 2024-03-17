@@ -11,4 +11,4 @@ class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         one_hot = torch.eye(3)[target][:,0,:]
         dot_product = torch.sum(input*one_hot, dim=1)
-        return torch.mean(dot_product - torch.max(input, dim=1).values)
+        return torch.norm(dot_product - torch.max(input, dim=1).values)
