@@ -296,20 +296,26 @@ def evaluate_cf(
         return dict(model_returned_smth=model_returned_smth)
 
     gen_log_probs_xs_zero = (
-        gen_model(torch.from_numpy(X), torch.zeros(X.shape[0], 1)).detach().numpy()
+        gen_model.log_prob_(torch.from_numpy(X), torch.zeros(X.shape[0], 1))
+        .detach()
+        .numpy()
     )
     gen_log_probs_xs_one = (
-        gen_model(torch.from_numpy(X), torch.ones(X.shape[0], 1)).detach().numpy()
+        gen_model.log_prob_(torch.from_numpy(X), torch.ones(X.shape[0], 1))
+        .detach()
+        .numpy()
     )
     gen_log_probs_xs = np.vstack([gen_log_probs_xs_zero, gen_log_probs_xs_one])
 
     gen_log_probs_cf_zero = (
-        gen_model(torch.from_numpy(X_cf), torch.zeros(X_cf.shape[0], 1))
+        gen_model.log_prob_(torch.from_numpy(X_cf), torch.zeros(X_cf.shape[0], 1))
         .detach()
         .numpy()
     )
     gen_log_probs_cf_one = (
-        gen_model(torch.from_numpy(X_cf), torch.ones(X_cf.shape[0], 1)).detach().numpy()
+        gen_model.log_prob_(torch.from_numpy(X_cf), torch.ones(X_cf.shape[0], 1))
+        .detach()
+        .numpy()
     )
     gen_log_probs_cf = np.vstack([gen_log_probs_cf_zero, gen_log_probs_cf_one])
 

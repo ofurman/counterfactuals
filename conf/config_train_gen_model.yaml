@@ -18,10 +18,10 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.AdultDataset
 
 gen_model:
-  batch_size: 128
+  batch_size: 2048
   epochs: 500
   patience: 20
   lr: 0.001

@@ -5,11 +5,18 @@ from counterfactuals.discriminative_models.base import BaseDiscModel
 
 
 class LogisticRegression(BaseDiscModel):
-    def __init__(self, input_size, target_size):
+    def __init__(
+        self, input_size, target_size
+    ):  # , category_counts, category_indices):
         super(LogisticRegression, self).__init__()
+        # calculate target size based on the number of categories and category indices
+        # self.category_counts = category_counts
+        # self.category_indices = category_indices
+        # input_size = input_size + sum(category_counts) - len(category_counts)
         self.linear = torch.nn.Linear(input_size, target_size)
 
     def forward(self, x):
+        # x = ordinal_to_one_hot(x, self.category_indices, self.category_counts)
         y_pred = torch.sigmoid(self.linear(x))
         return y_pred
 

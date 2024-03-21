@@ -54,6 +54,21 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             permutation_constructor = ReversePermutation
 
         layers = []
+        # layers.append(
+        #     VariationalDequantization(
+        #         category_counts=category_counts,
+        #         category_indices=category_indices,
+        #         features=features,
+        #         hidden_features=hidden_features,
+        #         context_features=features,
+        #         num_blocks_per_layer=num_blocks_per_layer,
+        #         use_residual_blocks=use_residual_blocks,
+        #         use_random_masks=use_random_masks,
+        #         activation=activation,
+        #         dropout_probability=dropout_probability,
+        #         batch_norm_within_layers=batch_norm_within_layers,
+        #     )
+        # )
         layers.append(
             Dequantization(
                 category_counts=category_counts,
@@ -83,10 +98,20 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             distribution=StandardNormal([features]),
         )
 
-    def forward(self, x, context=None):
+    def forward(self, inputs, context=None):
+        return self._transform(inputs, context=context)
+
+    def log_prob_(self, x, context=None, without_dequantization=False):
         if context is not None:
             context = context.view(-1, 1)
-        return self.log_prob(inputs=x, context=context)
+        if without_dequantization:
+            self._transform_all = self._transform._transforms
+            self._transform._transforms = self._transform._transforms[1:]
+            log_prob = self.log_prob(inputs=x, context=context)
+            self._transform._transforms = self._transform_all
+        else:
+            log_prob = self.log_prob(inputs=x, context=context)
+        return log_prob
 
     def fit(
         self,
@@ -108,7 +133,7 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 optimizer.zero_grad()
-                log_likelihood = self(inputs, labels)
+                log_likelihood = self.log_prob_(inputs, labels)
                 loss = -log_likelihood.mean()
                 loss.backward()
                 optimizer.step()
@@ -121,7 +146,7 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             min_test_loss = float("inf")
             with torch.no_grad():
                 for inputs, labels in test_loader:
-                    log_likelihood = self(inputs, labels)
+                    log_likelihood = self.log_prob_(inputs, labels)
                     loss = -log_likelihood.mean().item()
                     test_loss += loss
             test_loss /= len(test_loader)
@@ -149,7 +174,7 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
 
         with torch.no_grad():
             for inputs, labels in dataloader:
-                outputs = self(inputs, labels)
+                outputs = self.log_prob_(inputs, labels)
                 log_probs.append(outputs)
 
         return torch.hstack(log_probs)

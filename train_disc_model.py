@@ -44,7 +44,11 @@ def main(cfg: DictConfig):
 
     logger.info("Training discriminator model")
     disc_model = instantiate(
-        cfg.disc_model.model, input_size=X_train.shape[1], target_size=1
+        cfg.disc_model.model,
+        input_size=X_train.shape[1],
+        target_size=1,
+        # category_counts=[len(cat) for cat in dataset.categorical_features_lists],
+        # category_indices=dataset.categorical_columns,
     )
     train_dataloader = dataset.train_dataloader(
         batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0

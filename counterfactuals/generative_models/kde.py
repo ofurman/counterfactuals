@@ -184,6 +184,9 @@ class KDE(BaseGenModel):
             raise ValueError(f"Context {key} not found in the model.")
         return self.models[key]
 
+    def forward(self, x, context):
+        raise NotImplementedError("This model does not support forward pass.")
+
     def load_state_dict(
         self,
         state_dict: OrderedDict[str, Any],
@@ -222,7 +225,7 @@ class KDE(BaseGenModel):
         print(f"Train log-likelihood: {train_log_probs.mean()}")
         print(f"Test log-likelihood: {test_log_probs.mean()}")
 
-    def forward(self, x: torch.Tensor, context: torch.Tensor):
+    def log_prob_(self, x: torch.Tensor, context: torch.Tensor):
         preds = torch.zeros_like(context)
         for i in range(x.shape[0]):
             model = self._get_model_for_context(context[i].item())
@@ -231,7 +234,7 @@ class KDE(BaseGenModel):
 
     def predict_log_prob(self, dataloader: torch.utils.data.DataLoader):
         inputs, context = dataloader.dataset.tensors
-        preds = self(inputs, context)
+        preds = self.log_prob_(inputs, context)
         preds = torch.zeros_like(context)
         for i in range(inputs.shape[0]):
             model = self._get_model_for_context(context[i].item())

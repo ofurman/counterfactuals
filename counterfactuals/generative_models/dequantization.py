@@ -16,17 +16,18 @@ class Dequantization(Transform):
         self.category_indices = category_indices
 
     def forward(self, inputs, context=None):
-        ldj = torch.zeros(inputs.shape[0], device=inputs.device)
-        inputs_cat = inputs[:, self.category_indices]
+        inputs_all = torch.clone(inputs)
+        ldj = torch.zeros(inputs_all.shape[0], device=inputs_all.device)
+        inputs_cat = inputs_all[:, self.category_indices]
         inputs_cat, ldj = self.dequant(inputs_cat, ldj)
         inputs_cat, ldj = self.sigmoid(inputs_cat, ldj, reverse=True)
-        inputs[:, self.category_indices] = inputs_cat
-        ldj = torch.zeros(inputs.shape[0], device=inputs.device)
-        return inputs, ldj
+        inputs_all[:, self.category_indices] = inputs_cat
+        return inputs_all, ldj
 
     def inverse(self, inputs, context=None):
-        ldj = torch.zeros(inputs.shape[0], device=inputs.device)
-        inputs_cat = inputs[:, self.category_indices]
+        inputs_all = torch.clone(inputs)
+        ldj = torch.zeros(inputs_all.shape[0], device=inputs_all.device)
+        inputs_cat = inputs_all[:, self.category_indices]
 
         inputs_cat, ldj = self.sigmoid(inputs_cat, ldj, reverse=False)
 
@@ -37,13 +38,9 @@ class Dequantization(Transform):
                 .clamp(min=0, max=count - 1)
                 .to(torch.int32)
             )
-        ldj += sum(
-            torch.log(torch.Tensor([count])) * inputs_cat.shape[1]
-            for count in self.category_counts
-        )
-        inputs[:, self.category_indices] = inputs_cat
-        ldj = torch.zeros(inputs.shape[0], device=inputs.device)
-        return inputs, ldj
+        ldj += sum(torch.log(torch.Tensor([count])) for count in self.category_counts)
+        inputs_all[:, self.category_indices] = inputs_cat
+        return inputs_all, ldj
 
     def sigmoid(self, z, ldj, reverse=False):
         if not reverse:
@@ -63,8 +60,5 @@ class Dequantization(Transform):
         for i, count in enumerate(self.category_counts):
             z[:, i] = z[:, i] + torch.rand_like(z[:, i]).detach()
             z[:, i] = z[:, i] / count
-        ldj -= sum(
-            torch.log(torch.Tensor([count])) * z.shape[1]
-            for count in self.category_counts
-        )
+        ldj -= sum(torch.log(torch.Tensor([count])) for count in self.category_counts)
         return z, ldj

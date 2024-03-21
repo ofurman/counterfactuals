@@ -89,6 +89,7 @@ class AdultDataset(AbstractDataset):
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 ("OrdinalEncoder", OrdinalEncoder(), self.categorical_columns),
+                # ("DequantizationTransformer", DequantizationTransformer(), self.categorical_columns),
                 # (
                 #     "OneHotEncoder",
                 #     OneHotEncoder(sparse_output=False),

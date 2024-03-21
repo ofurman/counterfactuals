@@ -81,7 +81,11 @@ def main(cfg: DictConfig):
         batch_size=cfg.gen_model.batch_size, shuffle=False
     )
     gen_model = instantiate(
-        cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
+        cfg.gen_model.model,
+        features=dataset.X_train.shape[1],
+        context_features=1,
+        category_counts=[len(cat) for cat in dataset.categorical_features_lists],
+        category_indices=dataset.categorical_columns,
     )
     gen_model.fit(
         train_loader=train_dataloader,

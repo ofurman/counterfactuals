@@ -17,9 +17,9 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.AdultDataset
 
 disc_model:
   epochs: 500
-  batch_size: 64
-  lr: 0.0003
+  batch_size: 2048
+  lr: 0.001

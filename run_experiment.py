@@ -61,7 +61,11 @@ def main(cfg: DictConfig):
 
     logger.info("Loading discriminator model")
     disc_model = instantiate(
-        cfg.disc_model.model, input_size=dataset.X_train.shape[1], target_size=1
+        cfg.disc_model.model,
+        input_size=dataset.X_train.shape[1],
+        target_size=1,
+        # category_counts=[len(cat) for cat in dataset.categorical_features_lists],
+        # category_indices=dataset.categorical_columns,
     )
     disc_model.load(disc_model_path)
 
@@ -71,7 +75,11 @@ def main(cfg: DictConfig):
 
     logger.info("Loading generator model")
     gen_model: BaseGenModel = instantiate(
-        cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
+        cfg.gen_model.model,
+        features=dataset.X_train.shape[1],
+        context_features=1,
+        category_counts=[len(cat) for cat in dataset.categorical_features_lists],
+        category_indices=dataset.categorical_columns,
     )
     gen_model.load(gen_model_path)
     cf = PPCEF(
