@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 from scipy.stats import median_abs_deviation
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.ensemble import IsolationForest
 from scipy.spatial.distance import _validate_vector, cdist
 
 
@@ -26,7 +28,7 @@ def valid_cf(y, y_cf):
 
 
 def number_valid_cf(y, y_cf):
-    val = np.sum(valid_cf(y, y_cf))
+    val = torch.sum(valid_cf(y, y_cf))
     return val
 
 
@@ -94,7 +96,7 @@ def sparsity(X, X_cf, actionable_features=None):
     val = X != X_cf
     if actionable_features is not None:
         val = val[:, actionable_features]
-    val = np.sum(val)
+    val = np.sum(val.numpy())
     return val / (number_cf * number_features)
 
 
@@ -266,127 +268,154 @@ def calc_gen_model_density(gen_log_probs_cf, gen_log_probs_xs, ys):
     return np.mean(np.hstack(log_density_cfs)), np.mean(np.hstack(log_density_xs))
 
 
+def local_outlier_factor(X_train, X, X_cf, n_neighbors=20):
+    """
+    Calculate the Local Outlier Factor (LOF) for each sample in X and X_cf.
+    LOF(k) ~ 1 means Similar density as neighbors,
+
+    LOF(k) < 1 means Higher density than neighbors (Inlier),
+
+    LOF(k) > 1 means Lower density than neighbors (Outlier)
+    """
+    X_all = np.concatenate([X_train, X, X_cf], axis=0)
+    lof = LocalOutlierFactor(n_neighbors=n_neighbors)
+    lof.fit(X_all)
+    lof_scores = -lof.negative_outlier_factor_
+    return lof_scores[: len(X)], lof_scores[len(X) :]
+
+
+def isolation_forest_metric(X_train, X, X_cf, n_estimators=100):
+    """
+    Calculate the Isolation Forest score for each sample in X and X_cf.
+    The score is between -0.5 and 0.5, where smaller values mean more anomalous.
+    https://stackoverflow.com/questions/45223921/what-is-the-range-of-scikit-learns-isolationforest-decision-function-scores#51882974
+    """
+    X_all = np.concatenate([X, X_cf], axis=0)
+    clf = IsolationForest(n_estimators=n_estimators)
+    clf.fit(X_train)
+    scores = clf.score_samples(X_all)
+    return scores[: len(X)], scores[len(X) :]
+
+
 def evaluate_cf(
-    disc_model,
-    gen_model,
-    X,
-    X_cf,
-    model_returned,
-    continuous_features,
-    categorical_features,
-    X_train,
-    y_train,
-    X_test,
-    y_test,
-    delta=None,
+    disc_model: torch.nn.Module,
+    gen_model: torch.nn.Module,
+    X_cf: np.ndarray,
+    y_target: np.ndarray,
+    model_returned: np.ndarray,
+    continuous_features: list,
+    categorical_features: list,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    delta: np.ndarray,
 ):
-    assert X.shape[0] == len(model_returned)
-    assert X[model_returned].shape[0] == X_cf.shape[0]
     assert isinstance(X_cf, np.ndarray)
     assert X_cf.dtype == np.float32
-    assert X.dtype == np.float32
 
-    y_train = y_train.reshape(-1)
-    y_test = y_test.reshape(-1)
+    X_test = X_test[model_returned]
+    y_test = y_test[model_returned]
+    y_target = y_target[model_returned]
 
-    X = X[model_returned]
-    print(X.shape)
-    if X.shape[0] == 0:
-        model_returned_smth = np.sum(model_returned) / len(model_returned)
-        return dict(model_returned_smth=model_returned_smth)
+    X_train = torch.from_numpy(X_train)
+    X_test = torch.from_numpy(X_test)
+    X_cf = torch.from_numpy(X_cf)
 
-    gen_log_probs_xs_zero = (
-        gen_model(torch.from_numpy(X), torch.zeros(X.shape[0], 1)).detach().numpy()
-    )
-    gen_log_probs_xs_one = (
-        gen_model(torch.from_numpy(X), torch.ones(X.shape[0], 1)).detach().numpy()
-    )
-    gen_log_probs_xs = np.vstack([gen_log_probs_xs_zero, gen_log_probs_xs_one])
-
-    gen_log_probs_cf_zero = (
-        gen_model(torch.from_numpy(X_cf), torch.zeros(X_cf.shape[0], 1))
-        .detach()
-        .numpy()
-    )
-    gen_log_probs_cf_one = (
-        gen_model(torch.from_numpy(X_cf), torch.ones(X_cf.shape[0], 1)).detach().numpy()
-    )
-    gen_log_probs_cf = np.vstack([gen_log_probs_cf_zero, gen_log_probs_cf_one])
-
-    flow_prob_condition_acc = (
-        np.sum(delta < gen_log_probs_cf_zero) + np.sum(delta < gen_log_probs_cf_one)
-    ) / (len(gen_log_probs_cf_zero) + len(gen_log_probs_cf_one))
-
-    ys_gen_pred = np.array(np.argmax(gen_log_probs_xs, axis=0))
-    ys_cfs_gen_pred = np.array(np.argmax(gen_log_probs_cf, axis=0))
-    valid_cf_gen_metric = perc_valid_cf(ys_gen_pred, y_cf=ys_cfs_gen_pred)
-
-    # ys_disc_pred = np.array(disc_model.predict(X))
-    ys_cfs_disc_pred = np.array(disc_model.predict(X_cf))
+    y_train = torch.from_numpy(y_train.reshape(-1))
+    y_test = torch.from_numpy(y_test.reshape(-1))
+    y_target = torch.from_numpy(y_target.reshape(-1))
 
     # Define variables for metrics
+    ys_cfs_disc_pred = disc_model.predict(X_cf)
     model_returned_smth = np.sum(model_returned) / len(model_returned)
     valid_cf_disc_metric = perc_valid_cf(y_test, y_cf=ys_cfs_disc_pred)
-    if X.shape == 0:
+
+    if X_test.shape[1:] != X_cf.shape[1:]:
         return dict(
             valid_cf_disc_metric=valid_cf_disc_metric,
             model_returned_smth=model_returned_smth,
         )
+
+    # labels = np.unique(y_train).astype(np.float32)
+
+    lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_test, X_cf)
+    isolation_forest_scores_xs, isolation_forest_scores_cfs = isolation_forest_metric(
+        X_train, X_test, X_cf
+    )
+
+    # gen_log_probs_xs_all_classes = np.vstack([
+    #     gen_model(torch.from_numpy(X_test), torch.full((X_test.shape[0], 1), target_label)).detach().numpy()
+    #     for target_label in labels
+    # ])
+    # gen_log_probs_cf_all_classes = np.vstack([
+    #     gen_model(torch.from_numpy(X_cf), torch.full((X_cf.shape[0], 1), target_label)).detach().numpy()
+    #     for target_label in labels
+    # ])
+
+    gen_log_probs_xs = gen_model(X_test, y_test.type(torch.float32))
+    gen_log_probs_cf = gen_model(X_cf, y_target.type(torch.float32))
+    flow_prob_condition_acc = torch.sum(delta < gen_log_probs_cf) / len(
+        gen_log_probs_cf
+    )
+    # ys_disc_pred = np.array(disc_model.predict(X))
+    ys_cfs_disc_pred = disc_model.predict(X_cf)
+
     hamming_distance_metric = categorical_distance(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         categorical_features=categorical_features,
         metric="hamming",
         agg="mean",
     )
     jaccard_distance_metric = categorical_distance(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         categorical_features=categorical_features,
         metric="jaccard",
         agg="mean",
     )
     manhattan_distance_metric = continuous_distance(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         continuous_features=continuous_features,
         metric="cityblock",
         X_all=X_test,
     )
     euclidean_distance_metric = continuous_distance(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         continuous_features=continuous_features,
         metric="euclidean",
         X_all=X_test,
     )
     mad_distance_metric = continuous_distance(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         continuous_features=continuous_features,
         metric="mad",
         X_all=X_test,
     )
     l2_jaccard_distance_metric = distance_l2_jaccard(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         continuous_features=continuous_features,
         categorical_features=categorical_features,
     )
     mad_hamming_distance_metric = distance_mad_hamming(
-        X=X,
+        X=X_test,
         X_cf=X_cf,
         continuous_features=continuous_features,
         categorical_features=categorical_features,
         X_all=X_test,
         agg="mean",
     )
-    sparsity_metric = sparsity(X, X_cf)
+    sparsity_metric = sparsity(X_test, X_cf)
 
     # Create a dictionary of metrics
     metrics = {
         "model_returned_smth": model_returned_smth,
-        "valid_cf_disc": valid_cf_disc_metric,
+        "valid_cf_disc": valid_cf_disc_metric.item(),
         "dissimilarity_proximity_categorical_hamming": hamming_distance_metric,
         "dissimilarity_proximity_categorical_jaccard": jaccard_distance_metric,
         "dissimilarity_proximity_continuous_manhatan": manhattan_distance_metric,
@@ -399,18 +428,13 @@ def evaluate_cf(
 
     metrics.update(
         {
-            "valid_cf_gen": valid_cf_gen_metric,
-            "flow_log_density_cfs_zero": gen_log_probs_cf_zero.mean(),
-            "flow_log_density_cfs_one": gen_log_probs_cf_one.mean(),
-            "flow_log_density_cfs": np.concatenate(
-                [gen_log_probs_cf_zero, gen_log_probs_cf_one]
-            ).mean(),
-            "flow_log_density_xs_zero": gen_log_probs_xs_zero.mean(),
-            "flow_log_density_xs_one": gen_log_probs_xs_one.mean(),
-            "flow_log_density_xs": np.concatenate(
-                [gen_log_probs_xs_zero, gen_log_probs_xs_one]
-            ).mean(),
-            "flow_prob_condition_acc": flow_prob_condition_acc,
+            "flow_log_density_cfs": gen_log_probs_cf.mean().item(),
+            "flow_log_density_xs": gen_log_probs_xs.mean().item(),
+            "flow_prob_condition_acc": flow_prob_condition_acc.item(),
+            "lof_scores_xs": lof_scores_xs.mean(),
+            "lof_scores_cfs": lof_scores_cfs.mean(),
+            "isolation_forest_scores_xs": isolation_forest_scores_xs.mean(),
+            "isolation_forest_scores_cfs": isolation_forest_scores_cfs.mean(),
         }
     )
     return metrics

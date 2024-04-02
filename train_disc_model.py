@@ -2,6 +2,7 @@ import logging
 import os
 import hydra
 import neptune
+import numpy as np
 from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
@@ -40,11 +41,12 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    X_train = dataset.X_train
 
     logger.info("Training discriminator model")
     disc_model = instantiate(
-        cfg.disc_model.model, input_size=X_train.shape[1], target_size=1
+        cfg.disc_model.model,
+        input_size=dataset.X_train.shape[1],
+        target_size=len(np.unique(dataset.y_train)),
     )
     train_dataloader = dataset.train_dataloader(
         batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0

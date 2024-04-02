@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - disc_model: lr
+  - disc_model: mlr
 
 hydra:
   sweeper:
@@ -17,9 +17,9 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.DigitsDataset
 
 disc_model:
   epochs: 500
-  batch_size: 64
+  batch_size: 128
   lr: 0.0003

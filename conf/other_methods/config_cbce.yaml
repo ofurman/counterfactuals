@@ -1,6 +1,7 @@
 defaults:
   - _self_
-  - gen_model: small_flow
+  - gen_model: medium_maf
+  - disc_model: mlr
 
 hydra:
   sweeper:
@@ -8,27 +9,28 @@ hydra:
 
 neptune:
   enable: true
-  project: "/counterfactuals"
+  project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["CBCE", "other_methods"]
   
 
 experiment:
-  output_folder: output/
-  relabel_with_disc_model: true
-  models_folder: models/
+  output_folder: models/
+  relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.HelocDataset
-
-disc_model:
-  model: LR # MLP
+  _target_: counterfactuals.datasets.MoonsDataset
 
 reference_method: "CBCE"
+pca_dim: 25
 
-gen_model:
-  model: FLOW
-  checkpoint_path: null
-  batch_size: 128
-  epochs: 200
-  patience: 20
+counterfactuals:
+  epochs: 1000
+  batch_size: 2048
+
+# gen_model:
+#   batch_size: 256
+#   epochs: 500
+#   patience: 20
+#   lr: 0.001
+#   noise_lvl: 0

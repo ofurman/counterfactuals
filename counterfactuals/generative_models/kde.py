@@ -219,8 +219,8 @@ class KDE(BaseGenModel):
 
         train_log_probs = self.predict_log_prob(train_loader)
         test_log_probs = self.predict_log_prob(test_loader)
-        print(f"Train log-likelihood: {train_log_probs.mean()}")
-        print(f"Test log-likelihood: {test_log_probs.mean()}")
+        print(f"Train log-likelihood: {train_log_probs.float().mean()}")
+        print(f"Test log-likelihood: {test_log_probs.float().mean()}")
 
     def forward(self, x: torch.Tensor, context: torch.Tensor):
         preds = torch.zeros_like(context)
@@ -232,7 +232,7 @@ class KDE(BaseGenModel):
     def predict_log_prob(self, dataloader: torch.utils.data.DataLoader):
         inputs, context = dataloader.dataset.tensors
         preds = self(inputs, context)
-        preds = torch.zeros_like(context)
+        preds = torch.zeros_like(context, dtype=torch.float32)
         for i in range(inputs.shape[0]):
             model = self._get_model_for_context(context[i].item())
             preds[i] = model(inputs[i].unsqueeze(0))

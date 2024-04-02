@@ -1,14 +1,14 @@
 defaults:
   - _self_
   - gen_model: medium_maf
-  - disc_model: lr
+  - disc_model: mlr
 
 hydra:
   sweeper:
     max_batch_size: 10
 
 neptune:
-  enable: false
+  enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["exp_v1", "GEN_DISC_LOSS"]
@@ -20,13 +20,25 @@ experiment:
 dataset:
   _target_: counterfactuals.datasets.MoonsDataset
 
+disc_model:
+  epochs: 200
+  batch_size: 256
+  lr: 0.003
+
+gen_model:
+  batch_size: 256
+  epochs: 500
+  patience: 30
+  lr: 0.001
+  noise_lvl: 0.03
+
 counterfactuals:
-  epochs: 5000
-  batch_size: 2048
+  epochs: 10000
+  batch_size: 4096
   lr: 0.005
   alpha: 100
   beta: 0.01
   patience: 500
   disc_loss:
-    _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: counterfactuals.losses.MulticlassDiscLoss
     # _target_: torch.nn.BCEWithLogitsLoss

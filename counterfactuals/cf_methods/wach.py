@@ -3,7 +3,7 @@ import torch
 from counterfactuals.cf_methods.base import BaseCounterfactualModel
 
 
-class PPCEF(BaseCounterfactualModel):
+class WACH(BaseCounterfactualModel):
     def __init__(
         self, gen_model, disc_model, disc_model_criterion, device=None, neptune_run=None
     ):
@@ -27,7 +27,7 @@ class PPCEF(BaseCounterfactualModel):
         if delta is None:
             raise ValueError("Parameter 'delta' should be in kwargs")
 
-        dist = torch.linalg.norm(x_origin - x_param, axis=1)
+        dist = torch.linalg.norm(x_origin - x_param, axis=1, ord=2)
 
         disc_logits = self.disc_model.forward(x_param)
         disc_logits = (
@@ -40,15 +40,9 @@ class PPCEF(BaseCounterfactualModel):
         )
         loss_disc = self.disc_model_criterion(disc_logits, context_target)
 
-        p_x_param_c_target = self.gen_model(
-            x_param, context=context_target.type(torch.float32)
-        )
-        max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
-
-        loss = dist + alpha * (max_inner + loss_disc)
+        loss = dist + alpha * (loss_disc)
         return {
             "loss": loss,
             "dist": dist,
-            "max_inner": max_inner,
             "loss_disc": loss_disc,
         }

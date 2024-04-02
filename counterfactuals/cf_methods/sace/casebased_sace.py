@@ -3,7 +3,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from collections import defaultdict
 
-from counterfactuals.sace.sace import SACE
+from counterfactuals.cf_methods.sace.sace import SACE
 
 
 class CaseBasedSACE(SACE):
