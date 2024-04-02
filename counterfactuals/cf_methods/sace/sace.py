@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist, pdist, squareform
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
-from counterfactuals.sace.dummy_scaler import DummyScaler
+from counterfactuals.cf_methods.sace.dummy_scaler import DummyScaler
 
 
 class SACE(ABC):

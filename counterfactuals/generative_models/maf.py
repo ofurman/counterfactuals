@@ -61,11 +61,12 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         neptune_run: neptune.Run = None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        patience_counter = 0
+        min_test_loss = float("inf")
 
         for epoch in (pbar := tqdm(range(num_epochs))):
             self.train()
             train_loss = 0.0
-
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.type(torch.float32)
@@ -80,7 +81,6 @@ class MaskedAutoregressiveFlow(BaseGenModel):
 
             self.eval()
             test_loss = 0.0
-            min_test_loss = float("inf")
             with torch.no_grad():
                 for inputs, labels in test_loader:
                     labels = labels.type(torch.float32)
@@ -89,17 +89,15 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                     test_loss += loss
             test_loss /= len(test_loader)
             pbar.set_description(
-                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}"
+                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
             if neptune_run:
                 neptune_run["gen_train_nll"].append(train_loss)
                 neptune_run["gen_test_nll"].append(test_loss)
-
-            if test_loss - min_test_loss < eps:
+            if test_loss < (min_test_loss + eps):
                 min_test_loss = test_loss
                 patience_counter = 0
                 self.save(checkpoint_path)
-
             else:
                 patience_counter += 1
             if patience_counter > patience:

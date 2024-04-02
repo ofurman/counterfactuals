@@ -1,50 +1,23 @@
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
 
 class AdultDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/adult.csv", preprocess: bool = True):
-        super().__init__(data=None)
+    def __init__(self, file_path: str = "data/adult.csv"):
+        self.raw_data = self.load(file_path=file_path, index_col=False)
+        self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+            self.X, self.y
+        )
 
-        # TODO: make from_filepath class method
-        self.load(file_path=file_path)
-        if preprocess:
-            self.preprocess()
-
-    def load(self, file_path):
+    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """
-        Load data from a CSV file and store it in the 'data' attribute.
+        Preprocess the loaded data to X and y numpy arrays.
         """
-        try:
-            self.data = pd.read_csv(file_path)
-        except Exception as e:
-            print(f"Error loading data from {file_path}: {e}")
-
-    def save(self, file_path):
-        """
-        Save the processed data (including scaled features) to a CSV file.
-        """
-        if self.data is not None:
-            try:
-                self.data.to_csv(file_path, index=False)
-                print(f"Data saved to {file_path}")
-            except Exception as e:
-                print(f"Error saving data to {file_path}: {e}")
-        else:
-            print("No data to save.")
-
-    def preprocess(self):
-        """
-        Preprocess the loaded data by applying Min-Max scaling to all columns except the last one (target column).
-        """
-        if not isinstance(self.data, pd.DataFrame):
-            raise Exception("Data is empy. Nothing to preprocess!")
-
         self.feature_columns = [
             # Continuous
             "age",
@@ -62,29 +35,32 @@ class AdultDataset(AbstractDataset):
         target_column = "income"
 
         # Downsample to minor class
-        self.data = self.data.dropna(subset=self.feature_columns)
-        row_per_class = sum(self.data[target_column] == 1)
-        self.data = pd.concat(
+        raw_data = raw_data.dropna(subset=self.feature_columns)
+        row_per_class = sum(raw_data[target_column] == 1)
+        raw_data = pd.concat(
             [
-                self.data[self.data[target_column] == 0].sample(
+                raw_data[raw_data[target_column] == 0].sample(
                     row_per_class, random_state=42
                 ),
-                self.data[self.data[target_column] == 1],
+                raw_data[raw_data[target_column] == 1],
             ]
         )
 
-        X = self.data[self.feature_columns]
-        y = self.data[target_column]
+        X = raw_data[self.feature_columns].to_numpy()
+        y = raw_data[target_column].to_numpy()
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X.to_numpy(),
-            y.to_numpy(),
-            random_state=42,
-            test_size=0.1,
-            shuffle=True,
-            stratify=y,
-        )
+        return X, y
 
+    def transform(
+        self,
+        X_train: np.ndarray,
+        X_test: np.ndarray,
+        y_train: np.ndarray,
+        y_test: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Transform the loaded data by applying Min-Max scaling to the features.
+        """
         self.feature_transformer = ColumnTransformer(
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
@@ -97,22 +73,18 @@ class AdultDataset(AbstractDataset):
         )
         # self.feature_transformer.set_output(transform='pandas')
 
-        self.X_train = self.feature_transformer.fit_transform(X_train)
-        self.X_test = self.feature_transformer.transform(X_test)
+        X_train = self.feature_transformer.fit_transform(X_train)
+        X_test = self.feature_transformer.transform(X_test)
 
-        self.y_train = y_train
-        self.y_test = y_test
-
-        self.X_train = self.X_train.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-        self.y_train = self.y_train.astype(np.float32)
-        self.y_test = self.y_test.astype(np.float32)
+        X_train = X_train.astype(np.float32)
+        X_test = X_test.astype(np.float32)
+        y_train = y_train.astype(np.int64)
+        y_test = y_test.astype(np.int64)
 
         self.numerical_features = list(range(0, len(self.numerical_columns)))
         self.categorical_features = list(
-            range(len(self.numerical_columns), self.X_train.shape[1])
+            range(len(self.numerical_columns), X_train.shape[1])
         )
-        self.actionable_features = list(range(0, self.X_train.shape[1]))[1:-1]
+        self.actionable_features = list(range(0, X_train.shape[1]))[1:-1]
 
-    def get_split_data(self) -> list:
-        return self.X_train, self.X_test, self.y_train, self.y_test
+        return X_train, X_test, y_train, y_test

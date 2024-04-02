@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.impute import SimpleImputer
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -52,18 +53,28 @@ class PolishBankDataset(AbstractDataset):
         if not isinstance(self.data, pd.DataFrame):
             raise Exception("Data is empy. Nothing to preprocess!")
 
-        self.data = self.data.replace("?", np.nan)
-        self.data = self.data.loc[:, self.data.isnull().mean() < 0.01].dropna()
+        # self.data = self.data.replace("?", np.nan)
+        # self.data = self.data.loc[:, self.data.isnull().mean() < 0.01].dropna()
 
         # corr_matrix = self.data.corr().abs()
         # upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
         # to_drop = [column for column in upper.columns if any(upper[column] > 0.95)]
         # self.data.drop(to_drop, axis=1, inplace=True)
 
+        self.imputer = SimpleImputer(
+            strategy="constant", missing_values=np.nan, fill_value=0
+        )
+
         target_column = self.data.columns[-1]
         self.feature_columns = list(self.data.columns[:-1])
         self.numerical_columns = list(range(0, len(self.feature_columns)))
         self.categorical_columns = []
+
+        self.data.replace("?", np.nan, inplace=True)
+        self.data = pd.DataFrame(
+            self.imputer.fit_transform(self.data), columns=self.data.columns
+        )
+        # upsample data
 
         row_per_class = sum(self.data[target_column] == 1)
         self.data = pd.concat(

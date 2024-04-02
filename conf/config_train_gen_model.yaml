@@ -18,14 +18,14 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.WineDataset
 
 gen_model:
-  batch_size: 128
+  batch_size: 256
   epochs: 500
-  patience: 20
+  patience: 30
   lr: 0.001
-  noise_lvl: 0
+  noise_lvl: 0.03
 
 # to enable relabeling, comment this and use defaults above
 disc_model: null

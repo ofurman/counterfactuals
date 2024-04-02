@@ -9,10 +9,11 @@ from time import time
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from sklearn.metrics import classification_report
 
-from counterfactuals.generative_models import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ppcef import PPCEF
+from counterfactuals.utils import process_classification_report
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -34,14 +35,6 @@ def main(cfg: DictConfig):
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
-    disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}.pt")
-    if cfg.experiment.relabel_with_disc_model:
-        gen_model_path = os.path.join(
-            output_folder,
-            f"gen_model_{gen_model_name}_relabeled_by_{disc_model_name}.pt",
-        )
-    else:
-        gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}.pt")
     os.makedirs(output_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
@@ -54,28 +47,76 @@ def main(cfg: DictConfig):
     run["parameters/gen_model/model_name"] = gen_model_name
     run["parameters/gen_model"] = cfg.gen_model
     run["parameters/counterfactuals"] = cfg.counterfactuals
+    run["parameters/experiment"] = cfg.experiment
+    run["parameters/dataset"] = dataset_name
+    run["parameters/disc_model"] = stringify_unsupported(cfg.disc_model)
     run.wait()
+
+    log_df = pd.DataFrame()
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
+    disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}.pt")
+    if cfg.experiment.relabel_with_disc_model:
+        gen_model_path = os.path.join(
+            output_folder,
+            f"gen_model_{gen_model_name}_relabeled_by_{disc_model_name}.pt",
+        )
+    else:
+        gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}.pt")
 
-    logger.info("Loading discriminator model")
+    logger.info("Training discriminator model")
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],
         target_size=len(np.unique(dataset.y_train)),
     )
-    disc_model.load(disc_model_path)
+    train_dataloader = dataset.train_dataloader(
+        batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
+    )
+    # disc_model.load(disc_model_path)
+    disc_model.fit(train_dataloader, epochs=cfg.disc_model.epochs, lr=cfg.disc_model.lr)
+    disc_model.save(disc_model_path)
+
+    logger.info("Evaluating discriminator model")
+    print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
+    report = classification_report(
+        dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
+    )
+    run["metrics"] = process_classification_report(report, prefix="disc_test")
+
+    run["disc_model"].upload(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
 
-    logger.info("Loading generator model")
-    gen_model: BaseGenModel = instantiate(
+    logger.info("Training generative model")
+    time_start = time()
+    train_dataloader = dataset.train_dataloader(
+        batch_size=cfg.gen_model.batch_size,
+        shuffle=True,
+        noise_lvl=cfg.gen_model.noise_lvl,
+    )
+    test_dataloader = dataset.test_dataloader(
+        batch_size=cfg.gen_model.batch_size, shuffle=False
+    )
+    gen_model = instantiate(
         cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
     )
-    gen_model.load(gen_model_path)
+    # gen_model.load(gen_model_path)
+    gen_model.fit(
+        train_loader=train_dataloader,
+        test_loader=test_dataloader,
+        num_epochs=cfg.gen_model.epochs,
+        patience=cfg.gen_model.patience,
+        learning_rate=cfg.gen_model.lr,
+        checkpoint_path=gen_model_path,
+        neptune_run=run,
+    )
+    run["metrics/gen_model_train_time"] = time() - time_start
+    gen_model.save(gen_model_path)
+    run["gen_model"].upload(gen_model_path)
 
     logger.info("Handling counterfactual generation")
     cf = PPCEF(
@@ -88,6 +129,7 @@ def main(cfg: DictConfig):
         batch_size=cfg.counterfactuals.batch_size, shuffle=False
     )
     delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
+    # delta = torch.quantile(gen_model.predict_log_prob(train_dataloader_for_log_prob), 0.75)
     run["parameters/delta"] = delta
     print(delta)
 
@@ -104,8 +146,8 @@ def main(cfg: DictConfig):
         beta=cfg.counterfactuals.beta,
         delta=delta,
     )
-    cf_search_time = time() - time_start
-    run["metrics/eval_time"] = cf_search_time
+    cf_search_time = np.mean(time() - time_start)
+    run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
@@ -132,13 +174,14 @@ def main(cfg: DictConfig):
     )
     print(metrics)
     run["metrics/cf"] = stringify_unsupported(metrics)
+
     metrics["time"] = cf_search_time
 
     log_df = pd.DataFrame(metrics, index=[0])
     logger.info("Finalizing and stopping run")
 
-    log_df.to_csv(os.path.join(output_folder, "metrics_MLP.csv"), index=False)
-    logger.info("Finalizing and stopping run")
+    log_df.to_csv(os.path.join(output_folder, "metrics.csv"), index=False)
+    # run["metrics"].upload(os.path.join(output_folder, "metrics.csv"))
     run.stop()
 
 

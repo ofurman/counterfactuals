@@ -1,5 +1,8 @@
 # ruff: noqa: F401
-from counterfactuals.discriminative_models.logistic_regression import LogisticRegression
+from counterfactuals.discriminative_models.logistic_regression import (
+    LogisticRegression,
+    MultinomialLogisticRegression,
+)
 from counterfactuals.discriminative_models.multilayer_perceptron import (
     MultilayerPerceptron,
 )

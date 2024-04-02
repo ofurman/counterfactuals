@@ -1,6 +1,7 @@
 import logging
 import os
 
+from time import time
 import hydra
 import neptune
 from neptune.utils import stringify_unsupported
@@ -71,7 +72,8 @@ def main(cfg: DictConfig):
             batch_size=cfg.gen_model.batch_size, shuffle=False
         )
 
-    logger.info("Training generator model")
+    logger.info("Training generative model")
+    time_start = time()
     train_dataloader = dataset.train_dataloader(
         batch_size=cfg.gen_model.batch_size,
         shuffle=True,
@@ -92,11 +94,16 @@ def main(cfg: DictConfig):
         checkpoint_path=gen_model_path,
         neptune_run=run,
     )
+    run["metrics/eval_time"] = time() - time_start
     gen_model.save(gen_model_path)
     run["gen_model"].upload(gen_model_path)
 
-    logger.info("Evaluating generator model")
-    # TODO: Evaluate generator model
+    logger.info("Evaluating generative model")
+    train_ll = gen_model.predict_log_prob(train_dataloader).mean()
+    test_ll = gen_model.predict_log_prob(test_dataloader).mean()
+    run["metrics/test_ll"] = test_ll
+    run["metrics/train_ll"] = train_ll
+    # TODO: Evaluate generative model
     # report = gen_model.test_model(test_loader=test_dataloader)
     # print(report)
     # run["metrics"] = process_classification_report(report, prefix="gen_test_orig")

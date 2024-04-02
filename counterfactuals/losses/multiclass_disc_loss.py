@@ -9,6 +9,12 @@ class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
         self.eps = eps
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        one_hot = torch.eye(3)[target][:,0,:]
-        dot_product = torch.sum(input*one_hot, dim=1)
-        return torch.norm(dot_product - torch.max(input, dim=1).values)
+        one_hot = torch.eye(input.shape[-1])[target].squeeze(
+            1
+        )  # label 2 one-hot conversion
+        dot_product = torch.einsum(
+            "nc,nc->n", one_hot, input
+        )  # n - batch size, c - number of classes
+        loss = dot_product - torch.max(input, dim=1).values - self.eps
+        loss = torch.linalg.norm(loss.view(-1, 1), ord=1, dim=1)
+        return loss
