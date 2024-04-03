@@ -7,7 +7,11 @@ from counterfactuals.discriminative_models.base import BaseDiscModel
 
 class MultilayerPerceptron(BaseDiscModel):
     def __init__(
-        self, input_size: int, hidden_layer_sizes: List[int], target_size: int
+        self,
+        input_size: int,
+        hidden_layer_sizes: List[int],
+        target_size: int,
+        dropout: float = 0.2,
     ):
         super(MultilayerPerceptron, self).__init__()
         self.target_size = target_size
@@ -16,6 +20,7 @@ class MultilayerPerceptron(BaseDiscModel):
         for i in range(len(layer_sizes) - 1):
             self.layers.append(torch.nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
         self.relu = torch.nn.ReLU()
+        self.dropout = torch.nn.Dropout(dropout)
         if target_size == 1:
             self.final_activation = torch.nn.Sigmoid()
             self.criterion = torch.nn.BCEWithLogitsLoss()
@@ -25,7 +30,10 @@ class MultilayerPerceptron(BaseDiscModel):
 
     def forward(self, x):
         for i in range(len(self.layers)):
-            x = self.relu(self.layers[i](x))
+            if i == len(self.layers) - 1:
+                x = self.layers[i](x)
+            else:
+                x = self.relu(self.dropout(self.layers[i](x)))
         return x
 
     def fit(self, train_loader, test_loader=None, epochs=200, lr=0.001):
@@ -37,6 +45,7 @@ class MultilayerPerceptron(BaseDiscModel):
                 labels = labels.type(torch.int64)
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
+                labels = labels.reshape(-1).type(torch.int64)
                 loss = self.criterion(outputs, labels)
                 losses.append(loss.item())
                 loss.backward()
@@ -48,6 +57,9 @@ class MultilayerPerceptron(BaseDiscModel):
                         outputs = self.forward(examples)
                         loss = self.criterion(outputs, labels)
                         test_losses.append(loss.item())
+                        # Early stopping
+            if epoch > 10 and np.mean(test_losses[-10:]) > np.mean(test_losses[-5:]):
+                break
             pbar.set_description(
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}"
             )

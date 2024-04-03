@@ -13,6 +13,9 @@ class GermanCreditDataset(AbstractDataset):
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
+        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+            self.X_train, self.X_test, self.y_train, self.y_test
+        )
 
     def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -29,17 +32,17 @@ class GermanCreditDataset(AbstractDataset):
             "credits_this_bank",
             "people_under_maintenance",
             # Categorical
-            # "account_check_status",
-            # "credit_history",
-            # "purpose",
-            # "savings",
-            # "present_emp_since",
-            # "personal_status_sex",
-            # "other_debtors",
-            # "property",
-            # "other_installment_plans",
-            # "housing",
-            # "job",
+            "account_check_status",
+            "credit_history",
+            "purpose",
+            "savings",
+            "present_emp_since",
+            "personal_status_sex",
+            "other_debtors",
+            "property",
+            "other_installment_plans",
+            "housing",
+            "job",
             # "telephone",
             # "foreign_worker",
         ]
@@ -79,7 +82,7 @@ class GermanCreditDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(drop="if_binary", sparse_output=False),
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],

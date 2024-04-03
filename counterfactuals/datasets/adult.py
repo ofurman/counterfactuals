@@ -13,6 +13,9 @@ class AdultDataset(AbstractDataset):
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
+        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+            self.X_train, self.X_test, self.y_train, self.y_test
+        )
 
     def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -35,16 +38,16 @@ class AdultDataset(AbstractDataset):
         target_column = "income"
 
         # Downsample to minor class
-        raw_data = raw_data.dropna(subset=self.feature_columns)
-        row_per_class = sum(raw_data[target_column] == 1)
-        raw_data = pd.concat(
-            [
-                raw_data[raw_data[target_column] == 0].sample(
-                    row_per_class, random_state=42
-                ),
-                raw_data[raw_data[target_column] == 1],
-            ]
-        )
+        # raw_data = raw_data.dropna(subset=self.feature_columns)
+        # row_per_class = sum(raw_data[target_column] == 1)
+        # raw_data = pd.concat(
+        #     [
+        #         raw_data[raw_data[target_column] == 0].sample(
+        #             row_per_class, random_state=42
+        #         ),
+        #         raw_data[raw_data[target_column] == 1],
+        #     ]
+        # )
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
@@ -66,7 +69,7 @@ class AdultDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(drop="if_binary", sparse_output=False),
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],
@@ -85,6 +88,6 @@ class AdultDataset(AbstractDataset):
         self.categorical_features = list(
             range(len(self.numerical_columns), X_train.shape[1])
         )
-        self.actionable_features = list(range(0, X_train.shape[1]))[1:-1]
+        self.actionable_features = list(range(0, X_train.shape[1]))  # [1:-1]
 
         return X_train, X_test, y_train, y_test

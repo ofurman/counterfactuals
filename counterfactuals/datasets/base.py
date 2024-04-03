@@ -112,7 +112,7 @@ class AbstractDataset(ABC):
     def categorical_features_lists(self) -> list:
         categorical_features_lists = []
         for col in self.categorical_columns:
-            n_cat = self.data[self.feature_columns[col]].nunique()
+            n_cat = self.raw_data[self.feature_columns[col]].nunique()
             n_cat = 1 if n_cat == 2 else n_cat
             if len(categorical_features_lists) == 0:
                 categorical_features_lists.append(
