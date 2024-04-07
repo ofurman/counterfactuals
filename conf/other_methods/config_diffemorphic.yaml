@@ -1,0 +1,20 @@
+dataset:
+  name: MNIST
+
+disc_model:
+  unet_type: ultrasmall
+  classifier_path: null
+
+gen_model:
+  gen_path: null
+  g_type: Flow
+
+adv_attack:
+  attack_style: z
+  num_steps: 5000
+  lr: 5e-2
+  save_at: 0.99
+  target_class: 9
+  image_path: "counterfactuals/cf_methods/diffemorphic_explanations/images/MNIST_img_1.png"
+  result_dir: "results"
+  maximize: true
