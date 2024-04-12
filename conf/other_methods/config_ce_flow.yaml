@@ -8,10 +8,10 @@ hydra:
     max_batch_size: 10
 
 neptune:
-  enable: true
+  enable: false
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["CEM", "other_methods"]
+  tags: ["CE_FLOW", "other_methods"]
   
 
 experiment:
