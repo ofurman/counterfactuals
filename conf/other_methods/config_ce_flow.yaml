@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+  - gen_model: medium_maf
+  - disc_model: mlr
+
+hydra:
+  sweeper:
+    max_batch_size: 10
+
+neptune:
+  enable: true
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["CEM", "other_methods"]
+  
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: false
+
+dataset:
+  _target_: counterfactuals.datasets.HelocDataset
+
+reference_method: "CE_FLOW"
+
+data_name: simple_bn
+weight: 0.5
+
+counterfactuals:
+  epochs: 1000
+  batch_size: 2048
