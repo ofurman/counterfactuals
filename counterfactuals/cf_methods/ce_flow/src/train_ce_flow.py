@@ -48,16 +48,8 @@ if __name__ == "__main__":
 
     features = data_frame[feature_names].values.astype(np.float32)
     features = torch.Tensor(features)
-    features_cuda = features.cuda()
+    features_cuda = features
     labels = model_prediction(predictive_model, features_cuda).detach().cpu()
-
-    # flow = RealNVPTabular(num_coupling_layers=5, in_dim=3,
-    #                       num_layers=3, hidden_dim=32).cuda()
-    # loss_fn = FlowLoss(prior, k=3)
-    # loss_cefn = FlowCrossEntropyCELoss(margin=0.5)
-
-    # optimizer = torch.optim.Adam(
-    #     flow.parameters(), lr=LR_INIT, weight_decay=1e-2)
 
     negative_index = negative_prediction_index(labels)
     negative_instance_features = prediction_instances(features, negative_index)
@@ -74,60 +66,3 @@ if __name__ == "__main__":
         (positive_instance_features, positive_labels))
     positive_data = TensorDatasetTraning(positive_data)
     positive_loader = DataLoader(positive_data, batch_size=64, shuffle=True)
-
-    # for t in tqdm(range(EPOCHS)):
-    #     for local_batch, local_labels in (positive_loader):
-    #         local_batch = local_batch.cuda()
-    #         local_labels = local_labels.cuda()
-    #         z = flow(local_batch)
-    #         x = flow.inverse(z)
-    #         local_prediction = model_prediction(predictive_model, x)
-    #         sldj = flow.logdet()
-    #         # flow_loss = loss_fn(z, sldj)
-    #         ce_loss = loss_cefn.forward(local_prediction, positive=True)
-    #         # total_loss = flow_loss + ce_loss
-    #         total_loss = ce_loss
-    #         optimizer.zero_grad()
-    #         total_loss.backward()
-    #         optimizer.step()
-    #     if t % PRINT_FREQ == 0:
-    #         print('iter %s:' % t, 'loss = %.3f' % total_loss)
-
-    # for t in tqdm(range(EPOCHS)):
-    #     for local_batch, local_labels in (negative_loader):
-    #         local_batch = local_batch.cuda()
-    #         local_labels = local_labels.cuda()
-    #         z = flow(local_batch)
-    #         x = flow.inverse(z)
-    #         local_prediction = model_prediction(predictive_model, x)
-    #         sldj = flow.logdet()
-    #         flow_loss = loss_fn(z, sldj)
-    #         ce_loss = loss_cefn.forward(local_prediction)
-    #         # total_loss = flow_loss + ce_loss
-    #         total_loss = ce_loss
-    #         optimizer.zero_grad()
-    #         total_loss.backward()
-    #         optimizer.step()
-    #     if t % PRINT_FREQ == 0:
-    #         print('iter %s:' % t, 'loss = %.3f' % total_loss)
-
-
-    # for local_batch, local_labels in (negative_loader):
-    #     local_batch = local_batch.cuda()
-
-    #     z = flow(local_batch)
-    #     x = flow.inverse(z)
-
-        # z_value = get_latent_representation_from_flow(flow, local_batch)
-        # x_value = original_space_value_from_latent_representation(
-        #     flow, z_value)
-        # labels = model_prediction(
-        #     predictive_model, x).detach().cpu()
-        
-        # print(labels)
-        # print((labels > 0.5).sum() / len(labels))
-        # break
-
-
-    # save_pytorch_model_to_model_path(
-    #     flow, configuration_for_proj['flow_ce_' + DATA_NAME])

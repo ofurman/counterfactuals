@@ -119,70 +119,6 @@ class CouplingLayerBase(nn.Module):
     def logdet(self):
         return self._logdet
 
-    # def dequantization_forward(self, z, reverse=False):
-    #     quants = torch.Tensor(np.array([8,5,6])).cuda()
-    #     if not reverse:
-    #         z = self.dequant(z)
-    #         z = self.sigmoid(z, reverse=True)
-    #     else:
-    #         z = self.sigmoid(z, reverse=False)
-    #         z = z * quants
-    #         z[:,0] = torch.floor(z[:,0]).clamp(min=0, max=quants[0] - 1).to(torch.int32)
-    #         z[:,1] = torch.floor(z[:,1]).clamp(min=0, max=quants[1] - 1).to(torch.int32)
-    #         z[:,2] = torch.floor(z[:,2]).clamp(min=0, max=quants[2] - 1).to(torch.int32)
-
-    #         # z = torch.floor(z).clamp(min=0, max=quants - 1).to(torch.int32)
-    #     return z
-
-    # def sigmoid(self, z, reverse=False):
-    #     if not reverse:
-    #         z = torch.sigmoid(z)
-    #     else:
-    #         alpha = 1e-5
-    #         z = z * (1 - alpha) + 0.5 * alpha  # Scale to prevent boundaries 0 and 1
-    #         z = torch.log(z) - torch.log(1 - z)
-    #     return z
-
-    # def dequant(self, z):
-    #     quants = torch.Tensor(np.array([8,5,6])).cuda()
-    #     z = z.to(torch.float32)
-    #     z = z + torch.rand_like(z).detach()
-    #     z = z / quants
-    #     return z
-
-    # def dequant_forward(self, z, ldj, reverse=False):
-    #     z, ldj = self.dequant(z, ldj)
-    #     z, ldj = self.sigmoid(z, ldj, reverse=True)
-    #     return z, ldj
-
-    # def dequant_reverse_forward(self, z, ldj, reverse=False):
-    #     z, ldj = self.reverse_sigmoid(z, ldj, reverse=False)
-    #     z = z * self.quants
-    #     ldj += np.log(self.quants) * np.prod(z.shape[1:])
-    #     z = torch.floor(z).clamp(min=0, max=self.quants - 1).to(torch.int32)
-    #     return z, ldj
-    
-    # def sigmoid(self, z, ldj, reverse=False):
-    #     ldj += (-z - 2 * F.softplus(-z)).sum(dim=[1, 2, 3])
-    #     z = torch.sigmoid(z)
-    #     return z, ldj
-
-    # def reverse_sigmoid(self, z, ldj, reverse=False):
-    #     z = z * (1 - self.alpha) + 0.5 * self.alpha  # Scale to prevent boundaries 0 and 1
-    #     ldj += np.log(1 - self.alpha) * np.prod(z.shape[1:])
-    #     ldj += (-torch.log(z) - torch.log(1 - z)).sum(dim=[1, 2, 3])
-    #     z = torch.log(z) - torch.log(1 - z)
-    #     return z, ldj
-
-    # def dequant(self, x, ldj=0):
-    #     # Transform discrete values to continuous volumes
-    #     quants = 256
-    #     x = x.to(torch.float32)
-    #     x = x + torch.rand_like(x).detach()
-    #     x = x / self.quants
-    #     # ldj -= np.log(quants) * np.prod(x.shape[1:])
-    #     # return x, ldj
-    #     return x 
 
 class CouplingLayer(CouplingLayerBase):
     """Coupling layer in RealNVP for image data.
@@ -279,7 +215,7 @@ class Dequantization(nn.Module):
         """
         super().__init__()
         self.alpha = alpha
-        self.quants = torch.Tensor(np.array([8, 5, 6])).cuda()
+        self.quants = torch.Tensor(np.array([8, 5, 6]))
 
     def forward(self, z, reverse=False):
         if not reverse:
@@ -323,7 +259,7 @@ class DequantizationOriginal(nn.Module):
         super().__init__()
         self.alpha = alpha
         # self.quants = quants
-        self.quants = torch.Tensor(np.array([8, 5, 6])).cuda()
+        self.quants = torch.Tensor(np.array([8, 5, 6]))
 
     def forward(self, z, ldj=None, reverse=False):
         if not reverse:

@@ -56,7 +56,7 @@ if __name__ == '__main__':
     features = data_frame.drop(
         columns=[target], axis=1).values.astype(np.float32)
     features = torch.Tensor(features)
-    features = features.cuda()
+    features = features
 
     predictions = model_prediction(predictive_model, features)
     negative_index = negative_prediction_index(predictions)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     ).numpy(), columns=list(data_frame.columns)[:-1])
     counterfactual_df = pd.DataFrame(
         np.array(cf_sample), columns=list(data_frame.columns)[:-1])
-    cf_sample = torch.Tensor(cf_sample).cuda()
+    cf_sample = torch.Tensor(cf_sample)
 
     factual_df[target] = ''
     factual_df[target] = model_prediction(

@@ -52,9 +52,9 @@ def load_all_configuration_with_data_name(DATA_NAME):
     flow_model_path = configuration_for_proj['flow_model_' + DATA_NAME]
     
     predictive_model = load_pytorch_prediction_model_from_model_path(predictive_model_path)
-    predictive_model = predictive_model.cuda()
+    predictive_model = predictive_model
 
     flow_model = load_pytorch_prediction_model_from_model_path(flow_model_path)
-    flow_model = flow_model.cuda()
+    flow_model = flow_model
 
     return predictive_model, flow_model, encoder_normalize_data_catalog, configuration_for_proj

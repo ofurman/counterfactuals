@@ -50,11 +50,11 @@ if __name__ == "__main__":
 
     features = data_frame[feature_names].values.astype(np.float32)
     features = torch.Tensor(features)
-    features_cuda = features.cuda()
+    features_cuda = features
     labels = model_prediction(predictive_model, features_cuda).detach().cpu()
 
     flow_ce_model = RealNVPTabular(num_coupling_layers=5, in_dim=3,
-                                   num_layers=3, hidden_dim=32).cuda()
+                                   num_layers=3, hidden_dim=32)
     loss_fn = FlowLoss(prior, k=3)
     loss_cefn = FlowCrossEntropyCELoss(margin=0.5)
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     positive_loader = DataLoader(positive_data, batch_size=64, shuffle=True)
 
     for local_batch, local_labels in (negative_loader):
-        local_batch = local_batch.cuda()
+        local_batch = local_batch
         z = flow_model(local_batch)
         x = flow_model.inverse(z)
         print(x[0])

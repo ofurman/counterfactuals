@@ -44,10 +44,10 @@ class FlowSoftmaxCELoss(nn.Module):
         validity_loss = 0
         if positive:
             validity_loss += F.hinge_embedding_loss(F.sigmoid(local_batch[:, 1]) - F.sigmoid(
-                local_batch[:, 0]), torch.tensor(-1).cuda(), self.margin, reduction='mean')
+                local_batch[:, 0]), torch.tensor(-1), self.margin, reduction='mean')
         else:
             validity_loss += F.hinge_embedding_loss(F.sigmoid(local_batch[:, 0]) - F.sigmoid(
-                local_batch[:, 1]), torch.tensor(-1).cuda(), self.margin, reduction='mean')
+                local_batch[:, 1]), torch.tensor(-1), self.margin, reduction='mean')
         return validity_loss
 
 class FlowCrossEntropyCELoss(nn.Module):
@@ -62,14 +62,4 @@ class FlowCrossEntropyCELoss(nn.Module):
             target = torch.zeros(local_batch.shape)
         else:
             target = torch.ones(local_batch.shape)
-        return loss_fn(local_batch.reshape(-1), target.reshape(-1).cuda())
-
-
-# F.hinge_embedding_loss(x - y, torch.tensor(-1).to(cuda), margin, reduction='mean')
-# temp_logits = pred_model(x_pred)
-# #validity_loss = -F.cross_entropy(temp_logits, target_label)
-# validity_loss= torch.zeros(1).to(cuda)
-# temp_1= temp_logits[target_label==1,:]
-# temp_0= temp_logits[target_label==0,:]
-# validity_loss += F.hinge_embedding_loss( F.sigmoid(temp_1[:,1]).to(cuda) - F.sigmoid(temp_1[:,0]).to(cuda), torch.tensor(-1).to(cuda), margin, reduction='mean')
-# validity_loss += F.hinge_embedding_loss( F.sigmoid(temp_0[:,0]).to(cuda) - F.sigmoid(temp_0[:,1]).to(cuda), torch.tensor(-1).to(cuda), margin, reduction='mean')
+        return loss_fn(local_batch.reshape(-1), target.reshape(-1))

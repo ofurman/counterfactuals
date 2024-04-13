@@ -43,7 +43,7 @@ if __name__ == "__main__":
     flow_model_path = configuration_for_proj['flow_model_' + DATA_NAME]
 
     predictive_model = load_pytorch_prediction_model_from_model_path(predictive_model_path)
-    predictive_model = predictive_model.cuda()
+    predictive_model = predictive_model
 
     data_frame = encoder_normalize_data_catalog.data_frame
     target = encoder_normalize_data_catalog.target
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     features = data_frame.drop(
         columns=[target], axis=1).values.astype(np.float32)
     features = torch.Tensor(features)
-    features = features.cuda()
+    features = features
 
     predictions = model_prediction(predictive_model, features)
 
@@ -120,17 +120,16 @@ if __name__ == "__main__":
 
     # deq = Dequantization()
     deq = DequantizationOriginal()
-    flow = RealNVPTabular(num_coupling_layers=3, in_dim=5, num_layers=5, hidden_dim=8).cuda()
+    flow = RealNVPTabular(num_coupling_layers=3, in_dim=5, num_layers=5, hidden_dim=8)
     loss_fn = FlowLoss(prior)
     # optimizer = torch.optim.Adam(flow.parameters(), lr=LR_INIT, weight_decay=1e-3)
     optimizer = torch.optim.SGD(flow.parameters(), lr=LR_INIT, momentum=0.9)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 
-    # sldj = torch.zeros(batch_size).cuda()
 
     sldj_deq = torch.zeros(
         1,
-    ).cuda()
+    )
 
     cur_lr = scheduler.optimizer.param_groups[0]['lr']
 
@@ -138,7 +137,7 @@ if __name__ == "__main__":
 
     for t in range(EPOCHS):
         for local_batch, local_labels in train_loader:
-            local_batch = local_batch.cuda()
+            local_batch = local_batch
             discrete_batch = local_batch[:, :3]
             continuous_batch = local_batch[:, 3:]
             local_z, sldj_deq = deq(discrete_batch, sldj_deq, reverse=False)
@@ -157,28 +156,5 @@ if __name__ == "__main__":
         if t % PRINT_FREQ == 0:
             print('iter %s:' % t, 'loss = %.3f' % flow_loss, 'learning rate: %s' % cur_lr)
 
-    # for local_batch, local_labels in train_loader:
-    #     local_batch = local_batch.cuda()
-    #     break 
-
     save_pytorch_model_to_model_path(flow, configuration_for_proj['flow_model_' + DATA_NAME])
-
-    ## test
-    # dequant_module = Dequantization()
-
-    # discrete_value = local_batch[:,:3]
-    # continuous_transformation, _ = deq.forward(discrete_value, ldj=None, reverse=False)
-    # continuous_value = local_batch[:, 3:]
-    # continuous_representation = torch.hstack([continuous_transformation, continuous_value])
-
-    # z_value = flow(continuous_representation)
-    # continuous_representation_ = flow.inverse(z_value)
-    # continuous_transformation_ = continuous_representation_[:,:3]
-    # continuous_value_ = continuous_representation_[:, 3:]
-    # discrete_value_, _ = deq.forward(continuous_transformation_, ldj=None, reverse=True)
-    # input_value = torch.hstack([discrete_value_, continuous_value_])
-
-    # local_z = deq(local_batch)
-    # local_z = flow(local_batch)
-    # re_local_batch = flow.inverse(local_z)
     exit()

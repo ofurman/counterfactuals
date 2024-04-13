@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
-from torch._six import container_abcs
+import collections.abc as container_abcs
 from itertools import repeat
 
 # from .mixed_lipschitz import InducedNormLinear, InducedNormConv2d

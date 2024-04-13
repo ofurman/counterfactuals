@@ -66,7 +66,7 @@ if __name__ == "__main__":
     features = data_frame.drop(
         columns=[target], axis=1).values.astype(np.float32)
     features = torch.Tensor(features)
-    features = features.cuda()
+    features = features
 
     predictions = model_prediction(predictive_model, features)
     negative_index = negative_prediction_index(predictions)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     # processed_catalog.data_catalog.raw = data_frame
     model = MLModelCatalog(
         processed_catalog.data_catalog, predictive_model)
-    model.raw_model.cuda()
+    model.raw_model
 
     configuration_for_expr["data_name"] = DATA_NAME
     configuration_for_expr["vae_params"]["layers"] = [
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     stop = timeit.default_timer()
     run_time = stop - start
 
-    cf_sample = torch.Tensor(counterfactuals_gs.values).cuda()
+    cf_sample = torch.Tensor(counterfactuals_gs.values)
     counterfactuals_gs[target] = model_prediction(
         predictive_model, cf_sample).cpu().detach().numpy()
 

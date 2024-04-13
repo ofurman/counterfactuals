@@ -42,7 +42,7 @@ class iLeakyReLU(nn.LeakyReLU):
     def inverse(self,y):
         return F.leaky_relu(y,1/self.negative_slope,self.inplace)
     def logdet(self):
-        log_dets = (self._last_x<0).float()*torch.Tensor([self.negative_slope]).cuda().log()
+        log_dets = (self._last_x<0).float()*torch.Tensor([self.negative_slope]).log()
         if len(self._last_x.shape)==2: return log_dets.sum(1)
         else: return log_dets.sum(3).sum(2).sum(1)
 

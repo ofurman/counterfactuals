@@ -84,8 +84,8 @@ class TestFFTConv(unittest.TestCase):
         channels = 16
 
         torch.random.manual_seed(2019)
-        x = torch.randn(1,channels,h,w).cuda()
-        layer = iConv2d(channels,channels).cuda()
+        x = torch.randn(1,channels,h,w)
+        layer = iConv2d(channels,channels)
         #print(layer.conv.weight.data)
         conv_output = layer(x) - layer.conv.bias[None,:,None,None]
         clipped_np = Clip_OperatorNorm(layer.conv.weight.data,(h,w),(3,10))
