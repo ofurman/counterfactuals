@@ -79,9 +79,15 @@ def main(cfg: DictConfig):
         train_dataloader = dataset.train_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
         )
+        test_dataloader = dataset.test_dataloader(
+            batch_size=cfg.disc_model.batch_size, shuffle=False
+        )
         # disc_model.load(disc_model_path)
         disc_model.fit(
-            train_dataloader, epochs=cfg.disc_model.epochs, lr=cfg.disc_model.lr
+            train_dataloader,
+            test_dataloader,
+            epochs=cfg.disc_model.epochs,
+            lr=cfg.disc_model.lr,
         )
 
         logger.info("Evaluating discriminator model")
@@ -93,7 +99,7 @@ def main(cfg: DictConfig):
             report, prefix="disc_test"
         )
 
-        # disc_model.save(disc_model_path)
+        disc_model.save(disc_model_path)
         run[f"{fold_n}/disc_model"].upload(disc_model_path)
 
         if cfg.experiment.relabel_with_disc_model:

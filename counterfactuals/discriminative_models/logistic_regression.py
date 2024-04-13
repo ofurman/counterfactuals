@@ -22,7 +22,7 @@ class LogisticRegression(BaseDiscModel):
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
                 labels = labels.reshape(-1, 1)
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs, labels.float())
                 losses.append(loss.item())
                 loss.backward()
                 optimizer.step()

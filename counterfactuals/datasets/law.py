@@ -21,12 +21,12 @@ class LawDataset(AbstractDataset):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
-        # self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
-        self.feature_columns = ["lsat", "gpa", "zfygpa"]
+        self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
+        # self.feature_columns = ["lsat", "gpa", "zfygpa"]
         target_column = "pass_bar"
         self.numerical_columns = list(range(0, 3))
-        # self.categorical_columns = list(range(3, len(self.feature_columns)))
-        self.categorical_columns = []
+        self.categorical_columns = list(range(3, len(self.feature_columns)))
+        # self.categorical_columns = []
 
         # Downsample to minor class
         raw_data = raw_data.dropna(subset=self.feature_columns)
@@ -60,7 +60,7 @@ class LawDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(drop="if_binary", sparse_output=False),
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],
