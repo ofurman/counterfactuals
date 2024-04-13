@@ -5,18 +5,13 @@ import torch.nn as nn
 import torch.optim as optim
 import logging
 import timeit
-from time import time
 import numpy as np
-import pandas as pd
 import neptune
 from hydra.utils import instantiate
-from tqdm import tqdm
 
 from omegaconf import DictConfig
-from alibi.explainers import Counterfactual
 
 from counterfactuals.generative_models.base import BaseGenModel
-from counterfactuals.metrics.metrics import evaluate_cf
 
 from abc import ABC, abstractmethod
 
@@ -73,10 +68,11 @@ def main(cfg: DictConfig):
         gen_model_path = os.path.join(output_folder, f"gen_model_{gen_model_name}.pt")
 
     logger.info("Loading discriminator model")
+    num_features = len(np.unique(dataset.y_train))
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],
-        target_size=len(np.unique(dataset.y_train)),
+        target_size=1 if num_features==2 else num_features,
     )
     disc_model.load(disc_model_path)
 
@@ -112,6 +108,8 @@ def main(cfg: DictConfig):
     predictive_model = disc_model
     flow_model = gen_model
     features = X_train
+
+    features = torch.tensor(features)
     target = y_train
 
     predictions = model_prediction(predictive_model, features)

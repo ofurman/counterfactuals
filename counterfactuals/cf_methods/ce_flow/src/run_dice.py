@@ -1,10 +1,7 @@
 import pandas as pd
 import torch
 from counterfactual_explanation.utils.data_catalog import DataCatalog
-import pandas as pd
-import torch
 
-from counterfactual_explanation.utils.data_catalog import DataCatalog
 
 if __name__ == "__main__":
     # DATA_NAME = 'simple_bn'

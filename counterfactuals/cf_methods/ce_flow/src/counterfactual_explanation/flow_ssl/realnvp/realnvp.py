@@ -1,7 +1,4 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np 
 
 from ..realnvp.coupling_layer import CouplingLayer
 from ..realnvp.coupling_layer import CouplingLayerTabular
@@ -17,7 +14,7 @@ from ..invertible.parts import addZslot
 from ..invertible.parts import FlatJoin
 from ..invertible.parts import passThrough
 from ..invertible.coupling_layers import iConv1x1
-from ..invertible import Swish, ActNorm1d, ActNorm2d, iCategoricalFiLM
+from ..invertible import ActNorm2d, iCategoricalFiLM
 
 class RealNVPBase(nn.Module):
 

@@ -1,16 +1,8 @@
 import torch
 import numpy as np
-import torch.nn as nn
-import torch.optim as optim
-import torchvision.utils as vutils
-import itertools
-import os
-import torch.nn.functional as F
 from oil.model_trainers.trainer import Trainer
 from oil.model_trainers.classifier import Classifier
-import scipy.misc
 from itertools import islice
-import numpy as np
 from oil.utils.utils import Eval
 
 class Flow(Trainer):
@@ -98,9 +90,8 @@ from oil.architectures.img_classifiers import layer13s
 #from invertible.iresnet import iResnet,iResnetLarge
 from flow_ssl.icnn.icnn import iCNN
 from flow_ssl.iresnet import ResidualFlow
-from oil.utils.parallel import MyDataParallel, MyDistributedDataParallel,multigpu_parallelize
+from oil.utils.parallel import multigpu_parallelize
 import torchvision.transforms as transforms
-import collections
 
 
 def simpleiClassifierTrial(strict=False):

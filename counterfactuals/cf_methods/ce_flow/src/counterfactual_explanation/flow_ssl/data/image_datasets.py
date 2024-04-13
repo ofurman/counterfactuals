@@ -1,6 +1,4 @@
-import torchvision
 from torchvision.datasets import SVHN
-from torchvision.datasets import CIFAR10
 
 class SVHN_(SVHN):
     """

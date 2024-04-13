@@ -1,23 +1,17 @@
 import argparse
 import timeit
-from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from tqdm import tqdm
 
 from carla.evaluation.benchmark import Benchmark
 from counterfactual_explanation.flow_ce.flow_method import (
-    CounterfactualAdult, CounterfactualSimpleBn, FindCounterfactualSample)
+    CounterfactualAdult, CounterfactualSimpleBn)
 from counterfactual_explanation.flow_ssl.realnvp.coupling_layer import (
-    Dequantization, DequantizationOriginal)
-from counterfactual_explanation.models.classifier import Net
+    DequantizationOriginal)
 from counterfactual_explanation.utils.data_catalog import (
-    DataCatalog, EncoderNormalizeDataCatalog, LabelEncoderNormalizeDataCatalog,
-    TensorDatasetTraning)
+    DataCatalog, EncoderNormalizeDataCatalog, LabelEncoderNormalizeDataCatalog)
 from counterfactual_explanation.utils.helpers import (
     load_all_configuration_with_data_name, load_configuration_from_yaml)
 from counterfactual_explanation.utils.mlcatalog import (

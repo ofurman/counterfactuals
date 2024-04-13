@@ -45,7 +45,11 @@ class MultilayerPerceptron(BaseDiscModel):
                 labels = labels.type(torch.int64)
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
-                labels = labels.reshape(-1).type(torch.int64)
+                if self.target_size == 1:
+                    outputs = outputs.reshape(-1)
+                    labels = labels.reshape(-1).type(torch.float64)
+                else:
+                    labels = labels.reshape(-1).type(torch.int64)
                 loss = self.criterion(outputs, labels)
                 losses.append(loss.item())
                 loss.backward()

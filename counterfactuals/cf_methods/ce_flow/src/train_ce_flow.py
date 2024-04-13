@@ -1,26 +1,17 @@
 import numpy as np
 import torch
 
-from counterfactual_explanation.flow_ssl.flow_loss import FlowLoss, FlowCrossEntropyCELoss
-from counterfactual_explanation.flow_ssl.data import make_moons_ssl
 from counterfactual_explanation.flow_ssl.distributions import SSLGaussMixture
-from counterfactual_explanation.flow_ssl.realnvp.realnvp import RealNVPTabular
 from counterfactual_explanation.utils.data_catalog import (DataCatalog, EncoderNormalizeDataCatalog,
-                                                           TensorDatasetTraning, TensorDatasetTraningCE)
+                                                           TensorDatasetTraning)
 from counterfactual_explanation.utils.helpers import load_configuration_from_yaml
-from counterfactual_explanation.utils.mlcatalog import (save_pytorch_model_to_model_path,
-                                                        train_one_epoch_batch_data)
 from torch.utils.data import DataLoader
 from counterfactual_explanation.utils.helpers import \
     load_all_configuration_with_data_name
 from counterfactual_explanation.utils.mlcatalog import (
     model_prediction, negative_prediction_index, positive_prediction_index, prediction_instances)
 
-from counterfactual_explanation.utils.mlcatalog import (
-    get_latent_representation_from_flow,
-    original_space_value_from_latent_representation)
 
-from tqdm import tqdm
 
 if __name__ == "__main__":
     DATA_NAME = 'simple_bn'

@@ -1,11 +1,5 @@
-import torch
-from torch.autograd import Variable
-from torch.nn import Parameter
-import torch.nn.functional as F
 import torch.nn as nn
-import numpy as np
-from torch.nn.utils import weight_norm
-from oil.utils.utils import Expression,export,Named
+from oil.utils.utils import Expression,Named
 from ..utils import conv2d,ResBlock
 
 from .blocks import ConcatResBlock,ODEBlock,RNNBlock

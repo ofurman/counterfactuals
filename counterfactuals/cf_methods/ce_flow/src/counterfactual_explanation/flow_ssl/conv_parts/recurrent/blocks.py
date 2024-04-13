@@ -1,11 +1,9 @@
 import torch
-from torch.autograd import Variable
 from torch.nn import Parameter
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-from ..utils import conv2d,export
-import torchcontrib.nn.functional as contrib
+from ..utils import export
 from torchdiffeq import odeint_adjoint as odeint
 
 
@@ -119,7 +117,6 @@ class RNNBlock(nn.Module):
 # Curves. see https://github.com/timgaripov/dnn-mode-connectivity/blob/master/curves.py
 from scipy.special import binom
 from torch.nn.modules.utils import _pair
-import numpy as np
 import torch.nn.init as init
 import math
 

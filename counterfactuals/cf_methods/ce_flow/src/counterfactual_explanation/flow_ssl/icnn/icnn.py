@@ -1,16 +1,12 @@
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
 from torch.distributions.independent import Independent
 from torch.distributions.normal import Normal
-import numpy as np
 from ..utils import export, Named, Expression
-from ..conv_parts import ResBlock,conv2d
-from ..invertible import SqueezeLayer,padChannels,keepChannels,NNdownsample,iAvgPool2d#iSequential2
-from ..invertible import iLogits, iBN, MeanOnlyBN, iSequential, passThrough, addZslot, Join, pad_circular_nd
-from ..invertible import  iConv2d, iSLReLU,iConv1x1,Flatten,RandomPadChannels,iLeakyReLU,iCoordInjection,iSimpleCoords
-import scipy as sp
-import scipy.sparse
+from ..conv_parts import conv2d
+from ..invertible import keepChannels,NNdownsample,iAvgPool2d#iSequential2
+from ..invertible import iLogits, iBN, iSequential, passThrough, addZslot, Join
+from ..invertible import  iConv2d, iSLReLU,iConv1x1,Flatten,RandomPadChannels,iCoordInjection
 
 
 def iConvSelu(channels):

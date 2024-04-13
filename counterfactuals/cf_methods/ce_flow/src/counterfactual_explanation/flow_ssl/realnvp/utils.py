@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 
 
 #def squeeze_2x2(x, reverse=False, alt_order=False):

@@ -1,12 +1,9 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.init as init
-from torch.nn.functional import normalize
 from torch.nn.parameter import Parameter
 import numpy as np
 import torch.nn.functional as F
-from copy import deepcopy
 from ..utils import export
 @export
 class MeanOnlyBN(nn.BatchNorm2d):

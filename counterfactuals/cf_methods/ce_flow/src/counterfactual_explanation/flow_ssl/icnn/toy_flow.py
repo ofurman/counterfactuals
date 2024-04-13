@@ -2,16 +2,9 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-from oil.utils.utils import Expression,export,Named
-from oil.architectures.parts import ResBlock,conv2d
-from .downsample import SqueezeLayer,split,merge,padChannels,keepChannels,NNdownsample,iAvgPool2d
-from .clipped_BN import MeanOnlyBN, iBN
+from oil.utils.utils import Named
 #from torch.nn.utils import spectral_norm
 from .auto_inverse import iSequential
-import scipy as sp
-import scipy.sparse
-from .iresnet import both, I, addZslot, Join,flatten
-from .spectral_norm import pad_circular_nd
 from .iEluNetwork import iSLReLU
 
 

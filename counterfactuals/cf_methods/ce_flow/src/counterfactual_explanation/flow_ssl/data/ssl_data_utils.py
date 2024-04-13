@@ -9,7 +9,6 @@ import os.path
 import torchvision
 import torch
 
-from PIL import Image
 import numpy as np
 from torch.utils.data.sampler import Sampler
 from ..data.image_datasets import SVHN_

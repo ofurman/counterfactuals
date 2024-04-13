@@ -1,6 +1,5 @@
 import torch
 import torchvision
-import os
 from ..data.nlp_datasets import AG_News
 from ..data.image_datasets import SVHN_
 from ..data.image_datasets import OldInterface

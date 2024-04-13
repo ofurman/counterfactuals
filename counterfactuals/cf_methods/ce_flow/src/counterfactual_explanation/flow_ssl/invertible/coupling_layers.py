@@ -2,9 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-import scipy as sp
-import scipy.sparse
-from .normalizations import pad_circular_nd,flip
+from .normalizations import pad_circular_nd
 from ..utils import export
 from ..conv_parts import conv2d
 import itertools
@@ -140,7 +138,6 @@ class iSimpleCoords(nn.Module):
     def logdet(self):
         return self._log_mul.sum(3).sum(2).sum(1)
 
-import torchcontrib
 import torchcontrib.nn.functional as contrib
 
 @export

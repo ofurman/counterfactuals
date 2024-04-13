@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 from ..utils import export
-from torch.nn import functional as F
 
 @export
 class iSequential(torch.nn.Sequential):
