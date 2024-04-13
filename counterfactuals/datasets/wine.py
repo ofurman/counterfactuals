@@ -16,7 +16,7 @@ class WineDataset(AbstractDataset):
             self.X_train, self.X_test, self.y_train, self.y_test
         )
 
-    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, raw_data: pd.DataFrame):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
@@ -37,7 +37,7 @@ class WineDataset(AbstractDataset):
         X_test: np.ndarray,
         y_train: np.ndarray,
         y_test: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """

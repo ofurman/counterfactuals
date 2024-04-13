@@ -78,11 +78,11 @@ class MultinomialLogisticRegression(BaseDiscModel):
                         loss = criterion(outputs, labels)
                         test_losses.append(loss.item())
 
-                        # Early stopping
-                        if i > 10 and np.mean(test_losses[-10:]) > np.mean(
-                            test_losses[-5:]
-                        ):
-                            break
+            # Early stopping
+            # if epoch > 10 and np.mean(test_losses[-10:]) < np.mean(
+            #     test_losses[-5:]
+            # ):
+            #     break
             pbar.set_description(
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}"
             )

@@ -14,7 +14,7 @@ class CompasDataset(AbstractDataset):
             self.X, self.y
         )
 
-    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, raw_data: pd.DataFrame):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
@@ -85,7 +85,7 @@ class CompasDataset(AbstractDataset):
         X_test: np.ndarray,
         y_train: np.ndarray,
         y_test: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """

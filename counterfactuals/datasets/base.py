@@ -66,7 +66,7 @@ class AbstractDataset(ABC):
 
     def get_split_data(
         self, X: np.ndarray, y: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ):
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,

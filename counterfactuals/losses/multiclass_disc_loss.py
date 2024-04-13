@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 
 class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
@@ -9,12 +10,10 @@ class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
         self.eps = eps
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        one_hot = torch.eye(input.shape[-1])[target].squeeze(
-            1
-        )  # label 2 one-hot conversion
-        dot_product = torch.einsum(
-            "nc,nc->n", one_hot, input
-        )  # n - batch size, c - number of classes
-        loss = dot_product - torch.max(input, dim=1).values - self.eps
-        loss = torch.linalg.norm(loss.view(-1, 1), ord=1, dim=1)
+        target_mask = torch.eye(input.shape[-1])[target]
+        target_mask = target_mask.squeeze(1)  # label 2 one-hot conversion
+        non_target_mask = (~target_mask.bool()).float()
+        p_target = torch.sum(input * target_mask, dim=1)
+        p_max_non_target = torch.max(input * non_target_mask, dim=1).values
+        loss = F.relu(p_max_non_target + self.eps - p_target)
         return loss
