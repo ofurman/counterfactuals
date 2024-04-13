@@ -24,12 +24,12 @@ logger = logging.getLogger(__name__)
 @hydra.main(config_path="conf", config_name="config", version_base="1.2")
 def main(cfg: DictConfig):
     logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
+    # run = neptune.init_run(
+    #     mode="async" if cfg.neptune.enable else "offline",
+    #     project=cfg.neptune.project,
+    #     api_token=cfg.neptune.api_token,
+    #     tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
+    # )
 
     dataset_name = cfg.dataset._target_.split(".")[-1]
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
@@ -40,17 +40,17 @@ def main(cfg: DictConfig):
 
     # Log parameters using Hydra config
     logger.info("Logging parameters")
-    run["parameters/experiment"] = cfg.experiment
-    run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
-    run["parameters/disc_model/model_name"] = disc_model_name
-    run["parameters/disc_model"] = cfg.disc_model
-    run["parameters/gen_model/model_name"] = gen_model_name
-    run["parameters/gen_model"] = cfg.gen_model
-    run["parameters/counterfactuals"] = cfg.counterfactuals
-    run["parameters/experiment"] = cfg.experiment
-    run["parameters/dataset"] = dataset_name
-    run["parameters/disc_model"] = stringify_unsupported(cfg.disc_model)
-    run.wait()
+    # run["parameters/experiment"] = cfg.experiment
+    # run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
+    # run["parameters/disc_model/model_name"] = disc_model_name
+    # run["parameters/disc_model"] = cfg.disc_model
+    # run["parameters/gen_model/model_name"] = gen_model_name
+    # run["parameters/gen_model"] = cfg.gen_model
+    # run["parameters/counterfactuals"] = cfg.counterfactuals
+    # run["parameters/experiment"] = cfg.experiment
+    # run["parameters/dataset"] = dataset_name
+    # run["parameters/disc_model"] = stringify_unsupported(cfg.disc_model)
+    # run.wait()
 
     log_df = pd.DataFrame()
 
@@ -95,12 +95,12 @@ def main(cfg: DictConfig):
         report = classification_report(
             dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
         )
-        run[f"{fold_n}/metrics"] = process_classification_report(
-            report, prefix="disc_test"
-        )
+        # run[f"{fold_n}/metrics"] = process_classification_report(
+        #     report, prefix="disc_test"
+        # )
 
         disc_model.save(disc_model_path)
-        run[f"{fold_n}/disc_model"].upload(disc_model_path)
+        # run[f"{fold_n}/disc_model"].upload(disc_model_path)
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train)
@@ -127,25 +127,25 @@ def main(cfg: DictConfig):
             patience=cfg.gen_model.patience,
             learning_rate=cfg.gen_model.lr,
             checkpoint_path=gen_model_path,
-            neptune_run=run,
+            # neptune_run=run,
         )
-        run[f"{fold_n}/metrics/gen_model_train_time"] = time() - time_start
-        # gen_model.save(gen_model_path)
-        run[f"{fold_n}/gen_model"].upload(gen_model_path)
+        # run[f"{fold_n}/metrics/gen_model_train_time"] = time() - time_start
+        gen_model.save(gen_model_path)
+        # run[f"{fold_n}/gen_model"].upload(gen_model_path)
 
         logger.info("Handling counterfactual generation")
         cf = PPCEF(
             gen_model=gen_model,
             disc_model=disc_model,
             disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
-            neptune_run=run,
+            # neptune_run=run,
         )
         train_dataloader_for_log_prob = dataset.train_dataloader(
             batch_size=cfg.counterfactuals.batch_size, shuffle=False
         )
         delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
         # delta = torch.quantile(gen_model.predict_log_prob(train_dataloader_for_log_prob), 0.75)
-        run[f"{fold_n}/parameters/delta"] = delta
+        # run[f"{fold_n}/parameters/delta"] = delta
         print(delta)
 
         test_dataloader = dataset.test_dataloader(
@@ -162,10 +162,10 @@ def main(cfg: DictConfig):
             delta=delta,
         )
         cf_search_time = np.mean(time() - time_start)
-        run[f"{fold_n}/metrics/cf_search_time"] = cf_search_time
+        # run[f"{fold_n}/metrics/cf_search_time"] = cf_search_time
         counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-        run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
+        # run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
 
         model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
 
@@ -188,7 +188,7 @@ def main(cfg: DictConfig):
             delta=delta,
         )
         print(metrics)
-        run[f"{fold_n}/metrics/cf"] = stringify_unsupported(metrics)
+        # run[f"{fold_n}/metrics/cf"] = stringify_unsupported(metrics)
 
         metrics["time"] = cf_search_time
 
@@ -196,8 +196,8 @@ def main(cfg: DictConfig):
     logger.info("Finalizing and stopping run")
 
     log_df.to_csv(os.path.join(output_folder, "metrics.csv"), index=False)
-    run["metrics"].upload(os.path.join(output_folder, "metrics.csv"))
-    run.stop()
+    # run["metrics"].upload(os.path.join(output_folder, "metrics.csv"))
+    # run.stop()
 
 
 if __name__ == "__main__":
