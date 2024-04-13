@@ -186,7 +186,7 @@ class KDE(BaseGenModel):
 
     def load_state_dict(
         self,
-        state_dict: OrderedDict[str, Any],
+        state_dict,
         strict: bool = True,
         assign: bool = False,
     ):

@@ -17,12 +17,12 @@ class LawDataset(AbstractDataset):
             self.X_train, self.X_test, self.y_train, self.y_test
         )
 
-    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, raw_data: pd.DataFrame):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
-        self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
-        # self.feature_columns = ["lsat", "gpa", "zfygpa"]
+        # self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
+        self.feature_columns = ["lsat", "gpa", "zfygpa"]
         target_column = "pass_bar"
         self.numerical_columns = list(range(0, 3))
         self.categorical_columns = list(range(3, len(self.feature_columns)))
@@ -50,7 +50,7 @@ class LawDataset(AbstractDataset):
         X_test: np.ndarray,
         y_train: np.ndarray,
         y_test: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """

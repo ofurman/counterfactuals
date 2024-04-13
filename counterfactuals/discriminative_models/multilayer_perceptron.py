@@ -64,7 +64,7 @@ class MultilayerPerceptron(BaseDiscModel):
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}"
             )
 
-    def predict(self, X_test: np.ndarray | torch.Tensor):
+    def predict(self, X_test):
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test)
         with torch.no_grad():
@@ -75,7 +75,7 @@ class MultilayerPerceptron(BaseDiscModel):
                 probs = probs > 0.5
             return np.squeeze(probs)
 
-    def predict_proba(self, X_test: np.ndarray | torch.Tensor):
+    def predict_proba(self, X_test):
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test)
         with torch.no_grad():
