@@ -1,9 +1,28 @@
 import torch
 import numpy as np
-from scipy.stats import median_abs_deviation
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
 from scipy.spatial.distance import _validate_vector, cdist
+
+def median_absolute_deviation(data, axis=None):
+    """
+    Calculate the Median Absolute Deviation (MAD) of a dataset along a specified axis.
+    
+    Args:
+    data (list or numpy array): The input data for which the MAD is to be computed.
+    axis (int, optional): The axis along which the median should be computed. 
+                          The default is None, which computes the MAD of the flattened array.
+    
+    Returns:
+    numpy array or float: The MAD of the data along the given axis.
+    """
+    median = np.median(data, axis=axis)
+    if axis is None:
+        deviations = np.abs(data - median)
+    else:
+        deviations = np.abs(data - np.expand_dims(median, axis=axis))
+    mad = np.median(deviations, axis=axis)
+    return mad
 
 
 class DummyScaler:
