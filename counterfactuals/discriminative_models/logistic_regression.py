@@ -96,8 +96,10 @@ class MultinomialLogisticRegression(BaseDiscModel):
             return predicted
 
     def predict_proba(self, X_test):
+        if isinstance(X_test, np.ndarray):
+            X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
-            probs = self.forward(torch.from_numpy(X_test).type(torch.float32))
+            probs = self.forward(X_test)
             probs = torch.nn.functional.softmax(probs, dim=1)
             return probs.numpy().astype(np.float32)
 

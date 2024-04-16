@@ -36,6 +36,8 @@ def main(cfg: DictConfig):
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     os.makedirs(output_folder, exist_ok=True)
+    save_folder = os.path.join(output_folder, "ppcef")
+    os.makedirs(save_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
     # Log parameters using Hydra config
@@ -82,24 +84,27 @@ def main(cfg: DictConfig):
         test_dataloader = dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        # disc_model.load(disc_model_path)
-        disc_model.fit(
-            train_dataloader,
-            test_dataloader,
-            epochs=cfg.disc_model.epochs,
-            lr=cfg.disc_model.lr,
-        )
+        disc_model.load(disc_model_path)
+        # disc_model.fit(
+        #     train_dataloader,
+        #     test_dataloader,
+        #     epochs=cfg.disc_model.epochs,
+        #     lr=cfg.disc_model.lr,
+        # )
 
         logger.info("Evaluating discriminator model")
         print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
         report = classification_report(
             dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
         )
+        pd.DataFrame(report).transpose().to_csv(
+            os.path.join(save_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv")
+        )
         # run[f"{fold_n}/metrics"] = process_classification_report(
         #     report, prefix="disc_test"
         # )
 
-        disc_model.save(disc_model_path)
+        # disc_model.save(disc_model_path)
         # run[f"{fold_n}/disc_model"].upload(disc_model_path)
 
         if cfg.experiment.relabel_with_disc_model:
@@ -119,19 +124,26 @@ def main(cfg: DictConfig):
         gen_model = instantiate(
             cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
         )
-        # gen_model.load(gen_model_path)
-        gen_model.fit(
-            train_loader=train_dataloader,
-            test_loader=test_dataloader,
-            num_epochs=cfg.gen_model.epochs,
-            patience=cfg.gen_model.patience,
-            learning_rate=cfg.gen_model.lr,
-            checkpoint_path=gen_model_path,
-            # neptune_run=run,
-        )
+        gen_model.load(gen_model_path)
+        # gen_model.fit(
+        #     train_loader=train_dataloader,
+        #     test_loader=test_dataloader,
+        #     num_epochs=cfg.gen_model.epochs,
+        #     patience=cfg.gen_model.patience,
+        #     learning_rate=cfg.gen_model.lr,
+        #     checkpoint_path=gen_model_path,
+        #     # neptune_run=run,
+        # )
         # run[f"{fold_n}/metrics/gen_model_train_time"] = time() - time_start
-        gen_model.save(gen_model_path)
+        # gen_model.save(gen_model_path)
         # run[f"{fold_n}/gen_model"].upload(gen_model_path)
+
+        train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()
+        test_ll = gen_model.predict_log_prob(test_dataloader).mean().item()
+        pd.DataFrame({
+            "train_ll": [train_ll],
+            "test_ll": [test_ll]
+        }).to_csv(os.path.join(save_folder, f"eval_gen_model_{fold_n}_{gen_model_name}.csv"))
 
         logger.info("Handling counterfactual generation")
         cf = PPCEF(
@@ -163,7 +175,10 @@ def main(cfg: DictConfig):
         )
         cf_search_time = np.mean(time() - time_start)
         # run[f"{fold_n}/metrics/cf_search_time"] = cf_search_time
-        counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
+        counterfactuals_path = os.path.join(
+            save_folder,
+            f"counterfactuals_{disc_model_name}_{fold_n}.csv"
+        )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         # run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
 
@@ -195,7 +210,7 @@ def main(cfg: DictConfig):
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
     logger.info("Finalizing and stopping run")
 
-    log_df.to_csv(os.path.join(output_folder, "metrics.csv"), index=False)
+    log_df.to_csv(os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False)
     # run["metrics"].upload(os.path.join(output_folder, "metrics.csv"))
     # run.stop()
 

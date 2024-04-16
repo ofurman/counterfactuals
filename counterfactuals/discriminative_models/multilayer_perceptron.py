@@ -82,7 +82,7 @@ class MultilayerPerceptron(BaseDiscModel):
             logits = self.forward(X_test.type(torch.float32))
             probs = self.final_activation(logits)
             # probs = torch.hstack([1 - probs, probs]).detach().numpy().astype(np.float32)
-            return probs.type(torch.float32)
+            return probs.type(torch.float32).numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)
