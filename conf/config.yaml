@@ -5,7 +5,7 @@ defaults:
 
 hydra:
   sweeper:
-    max_batch_size: 10
+    max_batch_size: 1
 
 neptune:
   enable: false
@@ -18,27 +18,27 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
-  epochs: 200
+  epochs: 300
   batch_size: 256
   lr: 0.003
 
 gen_model:
-  batch_size: 256
-  epochs: 500
-  patience: 30
+  batch_size: 512
+  epochs: 2000
+  patience: 50
   lr: 0.001
-  noise_lvl: 0.03
+  noise_lvl: 0.02
 
 counterfactuals:
-  epochs: 10000
+  epochs: 200
   batch_size: 4096
   lr: 0.005
   alpha: 100
   beta: 0.01
-  patience: 500
+  patience: 100
   disc_loss:
     _target_: counterfactuals.losses.MulticlassDiscLoss
     # _target_: torch.nn.BCEWithLogitsLoss

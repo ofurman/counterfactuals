@@ -5,7 +5,7 @@ defaults:
 
 hydra:
   sweeper:
-    max_batch_size: 10
+    max_batch_size: 1
 
 neptune:
   enable: true
@@ -19,9 +19,9 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.WineDataset
 
-reference_method: "CBCE"
+reference_method: "cbce"
 pca_dim: 25
 
 counterfactuals:

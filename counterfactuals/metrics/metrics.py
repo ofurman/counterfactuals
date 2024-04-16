@@ -4,7 +4,7 @@ from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
 from scipy.spatial.distance import _validate_vector, cdist
 
-def median_absolute_deviation(data, axis=None):
+def median_abs_deviation(data, axis=None):
     """
     Calculate the Median Absolute Deviation (MAD) of a dataset along a specified axis.
     
@@ -308,11 +308,15 @@ def isolation_forest_metric(X_train, X, X_cf, n_estimators=100):
     Calculate the Isolation Forest score for each sample in X and X_cf.
     The score is between -0.5 and 0.5, where smaller values mean more anomalous.
     https://stackoverflow.com/questions/45223921/what-is-the-range-of-scikit-learns-isolationforest-decision-function-scores#51882974
+
+    The anomaly score of the input samples. The lower, the more abnormal.
+    Negative scores represent outliers, positive scores represent inliers.
+    See: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest.decision_function
     """
     X_all = np.concatenate([X, X_cf], axis=0)
     clf = IsolationForest(n_estimators=n_estimators)
     clf.fit(X_train)
-    scores = clf.score_samples(X_all)
+    scores = clf.decision_function(X_all)
     return scores[: len(X)], scores[len(X) :]
 
 
@@ -332,10 +336,15 @@ def evaluate_cf(
 ):
     assert isinstance(X_cf, np.ndarray)
     assert X_cf.dtype == np.float32
+    X_cf = np.atleast_2d(X_cf)
 
+    X_cf = X_cf[model_returned]
     X_test = X_test[model_returned]
     y_test = y_test[model_returned]
     y_target = y_target[model_returned]
+
+    if X_cf.shape[1] == 0:
+        return {"model_returned_smth": 0,}
 
     X_train = torch.from_numpy(X_train)
     X_test = torch.from_numpy(X_test)

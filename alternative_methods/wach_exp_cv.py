@@ -1,5 +1,6 @@
 import hydra
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import torch
 import logging
 from time import time
@@ -18,14 +19,108 @@ from counterfactuals.metrics.metrics import evaluate_cf
 
 logger = logging.getLogger(__name__)
 
+def generate_cf(dataset, disc_model):
+
+    X_train, X_test, y_train, y_test = (
+        dataset.X_train,
+        dataset.X_test,
+        dataset.y_train.reshape(-1),
+        dataset.y_test.reshape(-1),
+    )
+
+    logger.info("Handling counterfactual generation")
+    # cf = WACH(
+    #     gen_model=gen_model,
+    #     disc_model=disc_model,
+    #     disc_model_criterion=MulticlassDiscLoss(),
+    #     neptune_run=run,
+    # )
+    # train_dataloader_for_log_prob = dataset.train_dataloader(
+    #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
+    # )
+    # delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
+    # # run[f"parameters/delta"] = delta
+    # print(delta)
+
+    # test_dataloader = dataset.test_dataloader(
+    #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
+    # )
+
+    # Xs_cfs, Xs, ys_orig, ys_target, _ = cf.search_batch(
+    #     dataloader=test_dataloader,
+    #     epochs=cfg.counterfactuals.epochs,
+    #     lr=cfg.counterfactuals.lr,
+    #     patience=cfg.counterfactuals.patience,
+    #     alpha=cfg.counterfactuals.alpha,
+    #     beta=cfg.counterfactuals.beta,
+    #     delta=delta,
+    # )
+    # cf_search_time = np.mean(time() - time_start)
+    # # run[f"metrics/cf_search_time"] = cf_search_time
+    # counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
+    # pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    # # run[f"counterfactuals"].upload(counterfactuals_path)
+
+    # model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
+
+    target_proba = 1.0
+    tol = 0.49  # want counterfactuals with p(class)>0.99
+    target_class = "other"  # any class other than origin will do
+    max_iter = 1000
+    lam_init = 1e-1
+    max_lam_steps = 10
+    learning_rate_init = 0.1
+    feature_range = (X_train.min(), X_train.max())
+
+    Xs_cfs = []
+    model_returned = []
+    start_time = time()
+    shape = (1,) + X_train.shape[1:]
+    print(f"Shape: {shape}")
+    cf = Counterfactual(
+        disc_model.predict_proba,
+        shape=shape,
+        target_proba=target_proba,
+        tol=tol,
+        target_class=target_class,
+        max_iter=max_iter,
+        lam_init=lam_init,
+        max_lam_steps=max_lam_steps,
+        learning_rate_init=learning_rate_init,
+        feature_range=feature_range,
+    )
+    for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
+        # target_class = np.abs(y - 1).flatten().astype(int)[0]
+        try:
+            X = X.reshape((1,) + X.shape)
+            explanation = cf.explain(X).cf
+        except Exception as e:
+            explanation = None
+            print(e)
+        if explanation is None:
+            explanation = np.empty_like(X)
+            explanation[:] = np.nan
+            Xs_cfs.append(explanation)
+            model_returned.append(False)
+        else:
+            Xs_cfs.append(explanation["X"])
+            model_returned.append(True)
+
+    cf_search_time = time() - start_time
+    # run["metrics/avg_time_one_cf"] = (cf_search_time) / X_test.shape[0]
+    # run["metrics/eval_time"] = np.mean(cf_search_time)
+
+    Xs_cfs = np.array(Xs_cfs).squeeze()
+
+    return model_returned, Xs_cfs, cf_search_time
+
 
 @hydra.main(
     config_path="../conf/other_methods", config_name="config_wach", version_base="1.2"
 )
 def main(cfg: DictConfig):
-    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     tf.compat.v1.disable_eager_execution()
-
+    logger.info("Initializing Neptune run")
     # run = neptune.init_run(
     #     mode="async" if cfg.neptune.enable else "offline",
     #     project=cfg.neptune.project,
@@ -41,6 +136,8 @@ def main(cfg: DictConfig):
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     os.makedirs(output_folder, exist_ok=True)
+    save_folder = os.path.join(output_folder, cfg.reference_method)
+    os.makedirs(save_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
     # Log parameters using Hydra config
@@ -50,9 +147,11 @@ def main(cfg: DictConfig):
     # run["parameters/disc_model"] = cfg.disc_model
     # run["parameters/gen_model/model_name"] = gen_model_name
     # run["parameters/gen_model"] = cfg.gen_model
+    # # run["parameters/counterfactuals"] = cfg.counterfactuals
     # run["parameters/experiment"] = cfg.experiment
     # run["parameters/dataset"] = dataset_name
-    # run["parameters/reference_method"] = "WACH"
+    # run["parameters/reference_method"] = "Artelt"
+    # # run["parameters/pca_dim"] = cfg.pca_dim
     # run.wait()
 
     log_df = pd.DataFrame()
@@ -61,7 +160,6 @@ def main(cfg: DictConfig):
     dataset = instantiate(cfg.dataset)
     for fold_n, (_, _, _, _) in enumerate(dataset.get_cv_splits(n_splits=5)):
         tf.keras.backend.clear_session()
-
         disc_model_path = os.path.join(
             output_folder, f"disc_model_{fold_n}_{disc_model_name}.pt"
         )
@@ -93,113 +191,34 @@ def main(cfg: DictConfig):
         )
         gen_model.load(gen_model_path)
 
-        X_train, X_test, y_train, y_test = (
-            dataset.X_train,
-            dataset.X_test,
-            dataset.y_train.reshape(-1),
-            dataset.y_test.reshape(-1),
+        model_returned, Xs_cfs, cf_search_time = generate_cf(dataset, disc_model)
+        
+        counterfactuals_path = os.path.join(
+            save_folder,
+            f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
-
-        logger.info("Handling counterfactual generation")
-        # cf = WACH(
-        #     gen_model=gen_model,
-        #     disc_model=disc_model,
-        #     disc_model_criterion=MulticlassDiscLoss(),
-        #     neptune_run=run,
-        # )
-        # train_dataloader_for_log_prob = dataset.train_dataloader(
-        #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
-        # )
-        # delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
-        # # run[f"parameters/delta"] = delta
-        # print(delta)
-
-        # test_dataloader = dataset.test_dataloader(
-        #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
-        # )
-
-        # Xs_cfs, Xs, ys_orig, ys_target, _ = cf.search_batch(
-        #     dataloader=test_dataloader,
-        #     epochs=cfg.counterfactuals.epochs,
-        #     lr=cfg.counterfactuals.lr,
-        #     patience=cfg.counterfactuals.patience,
-        #     alpha=cfg.counterfactuals.alpha,
-        #     beta=cfg.counterfactuals.beta,
-        #     delta=delta,
-        # )
-        # cf_search_time = np.mean(time() - time_start)
-        # # run[f"metrics/cf_search_time"] = cf_search_time
-        # counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
-        # pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-        # # run[f"counterfactuals"].upload(counterfactuals_path)
-
-        # model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-
-        target_proba = 1.0
-        tol = 0.49  # want counterfactuals with p(class)>0.99
-        target_class = "other"  # any class other than origin will do
-        max_iter = 1000
-        lam_init = 1e-1
-        max_lam_steps = 10
-        learning_rate_init = 0.1
-        feature_range = (X_train.min(), X_train.max())
-
-        Xs_cfs = []
-        model_returned = []
-        start_time = time()
-        shape = (1,) + X_train.shape[1:]
-        cf = Counterfactual(
-            disc_model.predict_proba,
-            shape=shape,
-            target_proba=target_proba,
-            tol=tol,
-            target_class=target_class,
-            max_iter=max_iter,
-            lam_init=lam_init,
-            max_lam_steps=max_lam_steps,
-            learning_rate_init=learning_rate_init,
-            feature_range=feature_range,
-        )
-        for X, y in tqdm(zip(X_test, y_test), total=len(X_test)):
-            # target_class = np.abs(y - 1).flatten().astype(int)[0]
-            try:
-                X = X.reshape((1,) + X.shape)
-                explanation = cf.explain(X).cf
-            except Exception as e:
-                explanation = None
-                print(e)
-            if explanation is None:
-                model_returned.append(False)
-            else:
-                Xs_cfs.append(explanation["X"])
-                model_returned.append(True)
-
-        cf_search_time = time() - start_time
-        # run["metrics/avg_time_one_cf"] = (cf_search_time) / X_test.shape[0]
-        # run["metrics/eval_time"] = np.mean(cf_search_time)
-
-        Xs_cfs = np.array(Xs_cfs).squeeze()
-        counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         # run["counterfactuals"].upload(counterfactuals_path)
 
+        # Xs_cfs = pca.inverse_transform(Xs_cfs)
         train_dataloader_for_log_prob = dataset.train_dataloader(
             batch_size=cfg.counterfactuals.batch_size, shuffle=False
         )
         delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
         # run["parameters/delta"] = delta
+        print(delta)
         metrics = evaluate_cf(
             disc_model=disc_model,
             gen_model=gen_model,
             X_cf=Xs_cfs,
-            y_target=y_test,
+            y_target=dataset.y_test,
             model_returned=model_returned,
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            X_train=dataset.X_train,
+            y_train=dataset.y_train.reshape(-1),
+            X_test=dataset.X_test,
+            y_test=dataset.y_test.reshape(-1),
             delta=delta,
         )
         # run["metrics/cf"] = metrics
@@ -208,7 +227,7 @@ def main(cfg: DictConfig):
 
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
 
-    log_df.to_csv(os.path.join(output_folder, f"metrics_{disc_model_name}_wach_cv.csv"), index=False)
+        log_df.to_csv(os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False)
 
     # run.stop()
 
