@@ -1,11 +1,11 @@
 import logging
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+
 from time import time
 
 import hydra
 import torch
-import neptune
 import numpy as np
 import pandas as pd
 from hydra.utils import instantiate
@@ -23,7 +23,9 @@ from counterfactuals.cf_methods.artelth20.plausible_counterfactuals import (
 from counterfactuals.generative_models import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 logger = logging.getLogger(__name__)
+
 
 def generate_cf(dataset, disc_model):
     X_train, X_test, y_train, y_test = (
@@ -45,7 +47,6 @@ def generate_cf(dataset, disc_model):
 
     # Start ArteltH20 Method
     # For each class, fit density estimators
-
 
     logger.info("Fitting density estimators")
     density_estimators = {}
@@ -119,9 +120,7 @@ def generate_cf(dataset, disc_model):
             densities_training_samples[label].append(np.min(z))
             densities_training_samples_ex[label].append(z)
 
-        densities_training_samples[label] = np.array(
-            densities_training_samples[label]
-        )
+        densities_training_samples[label] = np.array(densities_training_samples[label])
         densities_training_samples_ex[label] = np.array(
             densities_training_samples_ex[label]
         )
@@ -140,9 +139,7 @@ def generate_cf(dataset, disc_model):
 
         # Compute counterfactul with proposed density constraint
         disc_model_coef_ = list(disc_model.parameters())[0].detach().cpu().numpy()
-        disc_model_intercept_ = (
-            list(disc_model.parameters())[1].detach().cpu().numpy()
-        )
+        disc_model_intercept_ = list(disc_model.parameters())[1].detach().cpu().numpy()
 
         cf[label] = PlausibleCounterfactualOfHyperplaneClassifier(
             disc_model_coef_,
@@ -167,8 +164,8 @@ def generate_cf(dataset, disc_model):
     for i in tqdm(range(X_test.shape[0])):
         # x_orig = X_test[i,:]
         x_orig_orig = X_test[i, :]
-        y_orig = y_test[i]
-        y_target = np.abs(1 - y_orig)
+        y_pred = disc_model.predict(np.array([x_orig_orig]))[0].item()
+        y_target = np.abs(1 - y_pred)
 
         # if disc_model.predict(np.array([x_orig_orig])) == y_target:  # Model already predicts target label!
         #     print("Requested prediction already satisfied")
@@ -203,7 +200,6 @@ def generate_cf(dataset, disc_model):
     Xs_cfs = np.array(Xs_cfs, dtype=np.float32).squeeze()
 
     return model_returned, Xs_cfs, cf_search_time
-
 
 
 @hydra.main(
@@ -281,10 +277,9 @@ def main(cfg: DictConfig):
         gen_model.load(gen_model_path)
 
         model_returned, Xs_cfs, cf_search_time = generate_cf(dataset, disc_model)
-        
+
         counterfactuals_path = os.path.join(
-            save_folder,
-            f"counterfactuals_{disc_model_name}_{fold_n}.csv"
+            save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         # run["counterfactuals"].upload(counterfactuals_path)
@@ -300,7 +295,6 @@ def main(cfg: DictConfig):
             disc_model=disc_model,
             gen_model=gen_model,
             X_cf=Xs_cfs,
-            y_target=dataset.y_test,
             model_returned=model_returned,
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
@@ -316,7 +310,9 @@ def main(cfg: DictConfig):
 
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
 
-        log_df.to_csv(os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False)
+        log_df.to_csv(
+            os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
+        )
 
     # run.stop()
 

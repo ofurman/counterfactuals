@@ -18,10 +18,10 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
-  epochs: 300
+  epochs: 1000
   batch_size: 256
   lr: 0.003
 
@@ -33,7 +33,7 @@ gen_model:
   noise_lvl: 0.02
 
 counterfactuals:
-  epochs: 200
+  epochs: 1000
   batch_size: 4096
   lr: 0.005
   alpha: 100

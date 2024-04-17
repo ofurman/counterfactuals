@@ -1,8 +1,6 @@
 import logging
 import os
 import hydra
-import neptune
-from neptune.utils import stringify_unsupported
 import numpy as np
 import pandas as pd
 from time import time
@@ -10,10 +8,10 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.metrics import classification_report
+import torch.utils
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.utils import process_classification_report
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -140,10 +138,9 @@ def main(cfg: DictConfig):
 
         train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()
         test_ll = gen_model.predict_log_prob(test_dataloader).mean().item()
-        pd.DataFrame({
-            "train_ll": [train_ll],
-            "test_ll": [test_ll]
-        }).to_csv(os.path.join(save_folder, f"eval_gen_model_{fold_n}_{gen_model_name}.csv"))
+        pd.DataFrame({"train_ll": [train_ll], "test_ll": [test_ll]}).to_csv(
+            os.path.join(save_folder, f"eval_gen_model_{fold_n}_{gen_model_name}.csv")
+        )
 
         logger.info("Handling counterfactual generation")
         cf = PPCEF(
@@ -160,12 +157,20 @@ def main(cfg: DictConfig):
         # run[f"{fold_n}/parameters/delta"] = delta
         print(delta)
 
-        test_dataloader = dataset.test_dataloader(
-            batch_size=cfg.counterfactuals.batch_size, shuffle=False
+        # test_dataloader = dataset.test_dataloader(
+        #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
+        # )
+        cf_dataloader = torch.utils.data.DataLoader(
+            torch.utils.data.TensorDataset(
+                torch.tensor(dataset.X_test).float(),
+                disc_model.predict(dataset.X_test).long(),
+            ),
+            batch_size=cfg.counterfactuals.batch_size,
+            shuffle=False,
         )
         time_start = time()
         Xs_cfs, Xs, ys_orig, ys_target, _ = cf.search_batch(
-            dataloader=test_dataloader,
+            dataloader=cf_dataloader,
             epochs=cfg.counterfactuals.epochs,
             lr=cfg.counterfactuals.lr,
             patience=cfg.counterfactuals.patience,
@@ -176,8 +181,7 @@ def main(cfg: DictConfig):
         cf_search_time = np.mean(time() - time_start)
         # run[f"{fold_n}/metrics/cf_search_time"] = cf_search_time
         counterfactuals_path = os.path.join(
-            save_folder,
-            f"counterfactuals_{disc_model_name}_{fold_n}.csv"
+            save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         # run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
@@ -190,9 +194,7 @@ def main(cfg: DictConfig):
         metrics = evaluate_cf(
             gen_model=gen_model,
             disc_model=disc_model,
-            # X=Xs,
             X_cf=Xs_cfs,
-            y_target=ys_target,
             model_returned=model_returned,
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
@@ -210,7 +212,9 @@ def main(cfg: DictConfig):
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
     logger.info("Finalizing and stopping run")
 
-    log_df.to_csv(os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False)
+    log_df.to_csv(
+        os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
+    )
     # run["metrics"].upload(os.path.join(output_folder, "metrics.csv"))
     # run.stop()
 
