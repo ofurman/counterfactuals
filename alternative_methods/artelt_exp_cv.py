@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_cf(dataset, disc_model):
-    X_train, X_test, y_train, y_test = (
+    X_train, X_test, y_train, _ = (
         dataset.X_train,
         dataset.X_test,
         dataset.y_train.reshape(-1),
@@ -164,7 +164,7 @@ def generate_cf(dataset, disc_model):
     for i in tqdm(range(X_test.shape[0])):
         # x_orig = X_test[i,:]
         x_orig_orig = X_test[i, :]
-        y_pred = disc_model.predict(np.array([x_orig_orig]))[0].item()
+        y_pred = disc_model.predict(x_orig_orig.reshape(1, -1))[0].item()
         y_target = np.abs(1 - y_pred)
 
         # if disc_model.predict(np.array([x_orig_orig])) == y_target:  # Model already predicts target label!
@@ -262,7 +262,7 @@ def main(cfg: DictConfig):
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=len(np.unique(dataset.y_train)),
+            target_size=1,  # len(np.unique(dataset.y_train)),
         )
         disc_model.load(disc_model_path)
 

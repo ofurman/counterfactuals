@@ -13,11 +13,12 @@ class LogisticRegression(BaseDiscModel):
         y_pred = torch.sigmoid(self.linear(x))
         return y_pred
 
-    def fit(self, train_loader, epochs=200, lr=0.003):
+    def fit(self, train_loader, test_loader=None, epochs=200, lr=0.003):
         optimizer = torch.optim.Adam(self.linear.parameters(), lr=lr)
         criterion = torch.nn.BCELoss()
         for epoch in (pbar := tqdm(range(epochs))):
             losses = []
+            test_losses = []
             for i, (examples, labels) in enumerate(train_loader):
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
@@ -26,17 +27,30 @@ class LogisticRegression(BaseDiscModel):
                 losses.append(loss.item())
                 loss.backward()
                 optimizer.step()
-            pbar.set_description(f"Epoch {epoch}, Loss: {np.mean(losses):.4f}")
+                if test_loader:
+                    with torch.no_grad():
+                        for i, (examples, labels) in enumerate(test_loader):
+                            outputs = self.forward(examples)
+                            labels = labels.reshape(-1, 1)
+                            loss = criterion(outputs, labels.float())
+                            test_losses.append(loss.item())
+            pbar.set_description(
+                f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}"
+            )
 
     def predict(self, X_test):
+        if not isinstance(X_test, torch.Tensor):
+            X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
-            probs = self.forward(torch.from_numpy(X_test))
+            probs = self.forward(X_test)
             probs = probs > 0.5
-            return np.squeeze(probs.numpy().astype(np.float32))
+            return probs.float().view(-1)
 
     def predict_proba(self, X_test):
+        if not isinstance(X_test, torch.Tensor):
+            X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
-            probs = self.forward(torch.from_numpy(X_test).type(torch.float32))
+            probs = self.forward(X_test).type(torch.float32)
             probs = torch.hstack([1 - probs, probs]).detach().numpy().astype(np.float32)
             return probs
 
