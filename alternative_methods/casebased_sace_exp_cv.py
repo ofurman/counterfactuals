@@ -1,10 +1,10 @@
 import logging
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from time import time
 
 import hydra
-import neptune
 import numpy as np
 import pandas as pd
 import torch
@@ -18,6 +18,7 @@ from counterfactuals.cf_methods.sace.blackbox import BlackBox
 from counterfactuals.cf_methods.sace.casebased_sace import CaseBasedSACE
 
 logger = logging.getLogger(__name__)
+
 
 def generate_cf(dataset, disc_model):
     X_train, X_test, y_train, y_test = (
@@ -138,10 +139,9 @@ def main(cfg: DictConfig):
         gen_model.load(gen_model_path)
 
         model_returned, Xs_cfs, cf_search_time = generate_cf(dataset, disc_model)
-        
+
         counterfactuals_path = os.path.join(
-            save_folder,
-            f"counterfactuals_{disc_model_name}_{fold_n}.csv"
+            save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         # run["counterfactuals"].upload(counterfactuals_path)
@@ -157,7 +157,6 @@ def main(cfg: DictConfig):
             disc_model=disc_model,
             gen_model=gen_model,
             X_cf=Xs_cfs,
-            y_target=dataset.y_test,
             model_returned=model_returned,
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
@@ -173,7 +172,9 @@ def main(cfg: DictConfig):
 
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
 
-        log_df.to_csv(os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False)
+        log_df.to_csv(
+            os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
+        )
 
     # run.stop()
 

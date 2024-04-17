@@ -4,15 +4,16 @@ from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
 from scipy.spatial.distance import _validate_vector, cdist
 
+
 def median_abs_deviation(data, axis=None):
     """
     Calculate the Median Absolute Deviation (MAD) of a dataset along a specified axis.
-    
+
     Args:
     data (list or numpy array): The input data for which the MAD is to be computed.
-    axis (int, optional): The axis along which the median should be computed. 
+    axis (int, optional): The axis along which the median should be computed.
                           The default is None, which computes the MAD of the flattened array.
-    
+
     Returns:
     numpy array or float: The MAD of the data along the given axis.
     """
@@ -324,7 +325,6 @@ def evaluate_cf(
     disc_model: torch.nn.Module,
     gen_model: torch.nn.Module,
     X_cf: np.ndarray,
-    y_target: np.ndarray,
     model_returned: np.ndarray,
     continuous_features: list,
     categorical_features: list,
@@ -341,10 +341,15 @@ def evaluate_cf(
     X_cf = X_cf[model_returned]
     X_test = X_test[model_returned]
     y_test = y_test[model_returned]
-    y_target = y_target[model_returned]
+
+    ys_pred = disc_model.predict(X_test)
+    # ys_pred = torch.from_numpy(ys_pred)
+    y_target = torch.abs(1 - ys_pred)
 
     if X_cf.shape[1] == 0:
-        return {"model_returned_smth": 0,}
+        return {
+            "model_returned_smth": 0,
+        }
 
     X_train = torch.from_numpy(X_train)
     X_test = torch.from_numpy(X_test)
@@ -352,42 +357,30 @@ def evaluate_cf(
 
     y_train = torch.from_numpy(y_train.reshape(-1))
     y_test = torch.from_numpy(y_test.reshape(-1))
-    y_target = torch.from_numpy(y_target.reshape(-1))
 
     # Define variables for metrics
-    ys_cfs_disc_pred = disc_model.predict(X_cf)
     model_returned_smth = np.sum(model_returned) / len(model_returned)
-    valid_cf_disc_metric = perc_valid_cf(y_test, y_cf=ys_cfs_disc_pred)
+    ys_cfs_disc_pred = disc_model.predict(X_cf)
+    valid_cfs = ys_cfs_disc_pred != ys_pred
+    valid_cf_disc_metric = valid_cfs.float().mean().item()
 
-    if X_test.shape[1:] != X_cf.shape[1:]:
-        return dict(
-            valid_cf_disc_metric=valid_cf_disc_metric,
-            model_returned_smth=model_returned_smth,
-        )
+    X_cf = X_cf[valid_cfs]
+    X_test = X_test[valid_cfs]
+    y_test = y_test[valid_cfs]
 
-    # labels = np.unique(y_train).astype(np.float32)
+    ys_pred = disc_model.predict(X_test)
+    y_target = torch.abs(1 - ys_pred)
 
     lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_test, X_cf)
     isolation_forest_scores_xs, isolation_forest_scores_cfs = isolation_forest_metric(
         X_train, X_test, X_cf
     )
 
-    # gen_log_probs_xs_all_classes = np.vstack([
-    #     gen_model(torch.from_numpy(X_test), torch.full((X_test.shape[0], 1), target_label)).detach().numpy()
-    #     for target_label in labels
-    # ])
-    # gen_log_probs_cf_all_classes = np.vstack([
-    #     gen_model(torch.from_numpy(X_cf), torch.full((X_cf.shape[0], 1), target_label)).detach().numpy()
-    #     for target_label in labels
-    # ])
-
     gen_log_probs_xs = gen_model(X_test, y_test.type(torch.float32))
     gen_log_probs_cf = gen_model(X_cf, y_target.type(torch.float32))
     flow_prob_condition_acc = torch.sum(delta < gen_log_probs_cf) / len(
         gen_log_probs_cf
     )
-    # ys_disc_pred = np.array(disc_model.predict(X))
-    ys_cfs_disc_pred = disc_model.predict(X_cf)
 
     hamming_distance_metric = categorical_distance(
         X=X_test,
@@ -443,7 +436,7 @@ def evaluate_cf(
     # Create a dictionary of metrics
     metrics = {
         "model_returned_smth": model_returned_smth,
-        "valid_cf_disc": valid_cf_disc_metric.item(),
+        "valid_cf_disc": valid_cf_disc_metric,
         "dissimilarity_proximity_categorical_hamming": hamming_distance_metric,
         "dissimilarity_proximity_categorical_jaccard": jaccard_distance_metric,
         "dissimilarity_proximity_continuous_manhatan": manhattan_distance_metric,

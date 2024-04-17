@@ -1,5 +1,6 @@
 import hydra
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import torch
 import logging
@@ -7,7 +8,6 @@ from time import time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import neptune
 from hydra.utils import instantiate
 from tqdm import tqdm
 
@@ -19,8 +19,8 @@ from counterfactuals.metrics.metrics import evaluate_cf
 
 logger = logging.getLogger(__name__)
 
-def generate_cf(dataset, disc_model):
 
+def generate_cf(dataset, disc_model):
     X_train, X_test, y_train, y_test = (
         dataset.X_train,
         dataset.X_test,
@@ -192,10 +192,9 @@ def main(cfg: DictConfig):
         gen_model.load(gen_model_path)
 
         model_returned, Xs_cfs, cf_search_time = generate_cf(dataset, disc_model)
-        
+
         counterfactuals_path = os.path.join(
-            save_folder,
-            f"counterfactuals_{disc_model_name}_{fold_n}.csv"
+            save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         # run["counterfactuals"].upload(counterfactuals_path)
@@ -211,7 +210,6 @@ def main(cfg: DictConfig):
             disc_model=disc_model,
             gen_model=gen_model,
             X_cf=Xs_cfs,
-            y_target=dataset.y_test,
             model_returned=model_returned,
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
@@ -227,7 +225,9 @@ def main(cfg: DictConfig):
 
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
 
-        log_df.to_csv(os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False)
+        log_df.to_csv(
+            os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
+        )
 
     # run.stop()
 

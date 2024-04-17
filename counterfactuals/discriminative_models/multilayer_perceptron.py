@@ -68,7 +68,7 @@ class MultilayerPerceptron(BaseDiscModel):
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test)
         with torch.no_grad():
-            probs = self.predict_proba(X_test)
+            probs = torch.from_numpy(self.predict_proba(X_test))
             if self.target_size > 1:
                 probs = torch.argmax(probs, dim=1)
             else:
