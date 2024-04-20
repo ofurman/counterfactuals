@@ -1,7 +1,5 @@
 import logging
 import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from time import time
 
 import hydra
@@ -12,21 +10,17 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.cf_methods.sace.blackbox import BlackBox
 from counterfactuals.cf_methods.sace.casebased_sace import CaseBasedSACE
+from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.metrics.metrics import evaluate_cf
 
 logger = logging.getLogger(__name__)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 def generate_cf(dataset, disc_model):
-    X_train, X_test, y_train, y_test = (
-        dataset.X_train,
-        dataset.X_test,
-        dataset.y_train.reshape(-1),
-        dataset.y_test.reshape(-1),
-    )
+    X_train, X_test = dataset.X_train, dataset.X_test
 
     time_start = time()
     # Start CBCE Method
@@ -124,7 +118,7 @@ def main(cfg: DictConfig):
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=len(np.unique(dataset.y_train)),
+            target_size=1,  # len(np.unique(dataset.y_train)),
         )
         disc_model.load(disc_model_path)
 

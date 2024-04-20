@@ -74,7 +74,7 @@ def main(cfg: DictConfig):
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=len(np.unique(dataset.y_train)),
+            target_size=1,
         )
         train_dataloader = dataset.train_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
@@ -82,14 +82,14 @@ def main(cfg: DictConfig):
         test_dataloader = dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        disc_model.load(disc_model_path)
-        # disc_model.fit(
-        #     train_dataloader,
-        #     test_dataloader,
-        #     epochs=cfg.disc_model.epochs,
-        #     lr=cfg.disc_model.lr,
-        # )
-
+        # disc_model.load(disc_model_path)
+        disc_model.fit(
+            train_dataloader,
+            test_dataloader,
+            epochs=cfg.disc_model.epochs,
+            lr=cfg.disc_model.lr,
+        )
+        disc_model.save(disc_model_path)
         logger.info("Evaluating discriminator model")
         print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
         report = classification_report(
@@ -102,7 +102,6 @@ def main(cfg: DictConfig):
         #     report, prefix="disc_test"
         # )
 
-        # disc_model.save(disc_model_path)
         # run[f"{fold_n}/disc_model"].upload(disc_model_path)
 
         if cfg.experiment.relabel_with_disc_model:
@@ -153,13 +152,9 @@ def main(cfg: DictConfig):
             batch_size=cfg.counterfactuals.batch_size, shuffle=False
         )
         delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
-        # delta = torch.quantile(gen_model.predict_log_prob(train_dataloader_for_log_prob), 0.75)
         # run[f"{fold_n}/parameters/delta"] = delta
         print(delta)
 
-        # test_dataloader = dataset.test_dataloader(
-        #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
-        # )
         cf_dataloader = torch.utils.data.DataLoader(
             torch.utils.data.TensorDataset(
                 torch.tensor(dataset.X_test).float(),

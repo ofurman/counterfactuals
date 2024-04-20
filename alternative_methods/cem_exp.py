@@ -1,13 +1,13 @@
-import hydra
-import os
 import logging
-import torch
+import os
+
+import hydra
+import neptune
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import neptune
+import torch
 from hydra.utils import instantiate
-
 from omegaconf import DictConfig
 
 from counterfactuals.generative_models.base import BaseGenModel

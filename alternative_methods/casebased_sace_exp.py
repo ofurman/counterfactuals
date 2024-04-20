@@ -11,10 +11,10 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.cf_methods.sace.blackbox import BlackBox
 from counterfactuals.cf_methods.sace.casebased_sace import CaseBasedSACE
+from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.metrics.metrics import evaluate_cf
 
 logger = logging.getLogger(__name__)
 

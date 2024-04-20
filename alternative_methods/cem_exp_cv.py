@@ -1,27 +1,29 @@
-import hydra
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+import hydra
+
+
 import logging
-import torch
+from time import time
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from time import time
-from tqdm import tqdm
+import torch
+from alibi.explainers import CEM
 from hydra.utils import instantiate
-
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
-from alibi.explainers import CEM
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 logger = logging.getLogger(__name__)
 
 
 def generate_cf(dataset, disc_model):
-    X_train, X_test, y_train, y_test = (
+    X_train, X_test, _, y_test = (
         dataset.X_train,
         dataset.X_test,
         dataset.y_train.reshape(-1),
@@ -146,7 +148,7 @@ def main(cfg: DictConfig):
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=len(np.unique(dataset.y_train)),
+            target_size=1,  # len(np.unique(dataset.y_train)),
         )
         disc_model.load(disc_model_path)
 

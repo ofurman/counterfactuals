@@ -1,27 +1,27 @@
-import hydra
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import torch
+import hydra
 import logging
 from time import time
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from hydra.utils import instantiate
-from tqdm import tqdm
-
-from omegaconf import DictConfig
+import torch
 from alibi.explainers import Counterfactual
+from hydra.utils import instantiate
+from omegaconf import DictConfig
+from tqdm import tqdm
 
 from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 logger = logging.getLogger(__name__)
 
 
 def generate_cf(dataset, disc_model):
-    X_train, X_test, y_train, y_test = (
+    X_train, X_test, _, y_test = (
         dataset.X_train,
         dataset.X_test,
         dataset.y_train.reshape(-1),
@@ -29,40 +29,6 @@ def generate_cf(dataset, disc_model):
     )
 
     logger.info("Handling counterfactual generation")
-    # cf = WACH(
-    #     gen_model=gen_model,
-    #     disc_model=disc_model,
-    #     disc_model_criterion=MulticlassDiscLoss(),
-    #     neptune_run=run,
-    # )
-    # train_dataloader_for_log_prob = dataset.train_dataloader(
-    #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
-    # )
-    # delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
-    # # run[f"parameters/delta"] = delta
-    # print(delta)
-
-    # test_dataloader = dataset.test_dataloader(
-    #     batch_size=cfg.counterfactuals.batch_size, shuffle=False
-    # )
-
-    # Xs_cfs, Xs, ys_orig, ys_target, _ = cf.search_batch(
-    #     dataloader=test_dataloader,
-    #     epochs=cfg.counterfactuals.epochs,
-    #     lr=cfg.counterfactuals.lr,
-    #     patience=cfg.counterfactuals.patience,
-    #     alpha=cfg.counterfactuals.alpha,
-    #     beta=cfg.counterfactuals.beta,
-    #     delta=delta,
-    # )
-    # cf_search_time = np.mean(time() - time_start)
-    # # run[f"metrics/cf_search_time"] = cf_search_time
-    # counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
-    # pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    # # run[f"counterfactuals"].upload(counterfactuals_path)
-
-    # model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-
     target_proba = 1.0
     tol = 0.49  # want counterfactuals with p(class)>0.99
     target_class = "other"  # any class other than origin will do
@@ -77,8 +43,12 @@ def generate_cf(dataset, disc_model):
     start_time = time()
     shape = (1,) + X_train.shape[1:]
     print(f"Shape: {shape}")
+
+    def predict_proba(x):
+        return disc_model.predict(x).numpy()
+
     cf = Counterfactual(
-        disc_model.predict_proba,
+        predict_proba,
         shape=shape,
         target_proba=target_proba,
         tol=tol,
@@ -177,7 +147,7 @@ def main(cfg: DictConfig):
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=len(np.unique(dataset.y_train)),
+            target_size=1,  # len(np.unique(dataset.y_train)),
         )
         disc_model.load(disc_model_path)
 

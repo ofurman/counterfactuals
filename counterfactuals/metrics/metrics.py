@@ -346,9 +346,9 @@ def evaluate_cf(
     # ys_pred = torch.from_numpy(ys_pred)
     y_target = torch.abs(1 - ys_pred)
 
-    if X_cf.shape[1] == 0:
+    if X_cf.shape[0] == 0:
         return {
-            "model_returned_smth": 0,
+            "model_returned_smth": 0.0,
         }
 
     X_train = torch.from_numpy(X_train)
