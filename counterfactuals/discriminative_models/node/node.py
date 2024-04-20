@@ -31,7 +31,7 @@ class NODE(nn.Module):
             layer_dim=hidden_features,
             num_layers=num_layers,
             tree_dim=target_size,
-            depth=6,
+            depth=depth,
             flatten_output=False,
         )
         self.output_layer = Lambda(lambda x: torch.mean(x, dim=1))
@@ -39,9 +39,11 @@ class NODE(nn.Module):
         if target_size == 1:
             self.final_activation = torch.nn.Sigmoid()
             self.criterion = torch.nn.BCEWithLogitsLoss()
+            self.prep_for_loss = lambda x: x.view(-1, 1).float()
         else:
             self.final_activation = torch.nn.Softmax(dim=1)
             self.criterion = torch.nn.CrossEntropyLoss()
+            self.prep_for_loss = lambda x: x.view(-1).long()
 
     def forward(self, x, y=None):
         x = self.dense_block(x)
@@ -64,10 +66,9 @@ class NODE(nn.Module):
             train_loss = 0
             test_loss = 0
             for i, (examples, labels) in enumerate(train_loader):
-                labels = labels.reshape(-1, 1).float()
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
-                loss = self.criterion(outputs, labels)
+                loss = self.criterion(outputs, self.prep_for_loss(labels))
                 train_loss += loss.item()
                 loss.backward()
                 optimizer.step()
@@ -75,11 +76,8 @@ class NODE(nn.Module):
             if test_loader:
                 with torch.no_grad():
                     for i, (examples, labels) in enumerate(test_loader):
-                        # examples = examples.to(self.device)
-                        # labels = labels.to(self.device)
-                        labels = labels.reshape(-1, 1).float()
                         outputs = self.forward(examples)
-                        loss = self.criterion(outputs, labels)
+                        loss = self.criterion(outputs, self.prep_for_loss(labels))
                         test_loss += loss.item()
                         # Early stopping
                     test_loss /= len(test_loader)
