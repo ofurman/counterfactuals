@@ -6,3 +6,5 @@ from counterfactuals.discriminative_models.logistic_regression import (
 from counterfactuals.discriminative_models.multilayer_perceptron import (
     MultilayerPerceptron,
 )
+
+from counterfactuals.discriminative_models.node import NODE

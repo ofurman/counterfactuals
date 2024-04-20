@@ -1,13 +1,11 @@
 import logging
 import os
-
-
 from time import time
 
 import hydra
-import torch
 import numpy as np
 import pandas as pd
+import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.mixture import GaussianMixture
@@ -19,7 +17,6 @@ from counterfactuals.cf_methods.artelth20.plausible_counterfactuals import (
     HighDensityEllipsoids,
     PlausibleCounterfactualOfHyperplaneClassifier,
 )
-
 from counterfactuals.generative_models import BaseGenModel
 from counterfactuals.metrics.metrics import evaluate_cf
 

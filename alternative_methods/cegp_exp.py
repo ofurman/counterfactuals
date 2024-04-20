@@ -1,22 +1,20 @@
-import hydra
-import os
-import torch
 import logging
+import os
 from time import time
+
+import hydra
+import neptune
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import neptune
+import torch
+from alibi.explainers import CounterFactualProto
 from hydra.utils import instantiate
+from omegaconf import DictConfig
 from tqdm import tqdm
 
-from omegaconf import DictConfig
-
-from alibi.explainers import CounterFactualProto
-
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.generative_models.base import BaseGenModel
-
+from counterfactuals.metrics.metrics import evaluate_cf
 
 logger = logging.getLogger(__name__)
 

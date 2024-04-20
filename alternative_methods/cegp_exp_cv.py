@@ -1,29 +1,28 @@
-import hydra
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-import torch
+import hydra
+
 import logging
 from time import time
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import torch
+from alibi.explainers import CounterFactualProto
 from hydra.utils import instantiate
+from omegaconf import DictConfig
 from tqdm import tqdm
 
-from omegaconf import DictConfig
-
-from alibi.explainers import CounterFactualProto
-
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.metrics.metrics import evaluate_cf
 
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 logger = logging.getLogger(__name__)
 
 
 def generate_cf(dataset, disc_model):
-    X_train, X_test, y_train, y_test = (
+    X_train, X_test, _, y_test = (
         dataset.X_train,
         dataset.X_test,
         dataset.y_train.reshape(-1),

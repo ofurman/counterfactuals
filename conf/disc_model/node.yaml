@@ -1,0 +1,5 @@
+model:
+  _target_: counterfactuals.discriminative_models.NODE
+  hidden_features: 128
+  depth: 4
+  num_layers: 1 
