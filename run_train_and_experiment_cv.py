@@ -17,6 +17,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 @hydra.main(config_path="conf", config_name="config", version_base="1.2")
@@ -71,10 +72,11 @@ def main(cfg: DictConfig):
             )
 
         logger.info("Training discriminator model")
+        num_classes = 1 if disc_model_name == "LogisticRegression" else len(np.unique(dataset.y_train))
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=1,
+            target_size=num_classes,
         )
         train_dataloader = dataset.train_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
@@ -82,14 +84,16 @@ def main(cfg: DictConfig):
         test_dataloader = dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        # disc_model.load(disc_model_path)
-        disc_model.fit(
-            train_dataloader,
-            test_dataloader,
-            epochs=cfg.disc_model.epochs,
-            lr=cfg.disc_model.lr,
-        )
-        disc_model.save(disc_model_path)
+        disc_model.load(disc_model_path)
+        # disc_model.fit(
+        #     train_dataloader,
+        #     test_dataloader,
+        #     epochs=cfg.disc_model.epochs,
+        #     lr=cfg.disc_model.lr,
+        #     patience=cfg.disc_model.patience,
+        #     checkpoint_path=disc_model_path,
+        # )
+        # disc_model.save(disc_model_path)
         logger.info("Evaluating discriminator model")
         print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
         report = classification_report(
@@ -179,12 +183,20 @@ def main(cfg: DictConfig):
             save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+
+
+        # Xs_cfs = pd.read_csv(counterfactuals_path).values.astype(np.float32)
+        # model_returned = ~np.isnan(Xs_cfs[:, 0])
+        # cf_search_time = pd.read_csv(
+        #     os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv")
+        # )["time"].iloc[fold_n]
+
+
         # run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
 
         model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
 
         logger.info("Calculating metrics")
-        ys_orig = ys_orig.flatten()
 
         metrics = evaluate_cf(
             gen_model=gen_model,

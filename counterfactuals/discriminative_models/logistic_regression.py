@@ -51,7 +51,7 @@ class LogisticRegression(BaseDiscModel):
             X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
             probs = self.forward(X_test).type(torch.float32)
-            probs = torch.hstack([1 - probs, probs]).detach().numpy().astype(np.float32)
+            probs = torch.hstack([1 - probs, probs]).detach().float()
             return probs
 
     def save(self, path):
@@ -106,8 +106,8 @@ class MultinomialLogisticRegression(BaseDiscModel):
             X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
             probs = self(X_test)
-            _, predicted = torch.max(probs, 1)
-            return predicted
+            predicted = torch.argmax(probs, 1)
+            return predicted.float()
 
     def predict_proba(self, X_test):
         if isinstance(X_test, np.ndarray):
@@ -115,7 +115,7 @@ class MultinomialLogisticRegression(BaseDiscModel):
         with torch.no_grad():
             probs = self.forward(X_test)
             probs = torch.nn.functional.softmax(probs, dim=1)
-            return probs.numpy().astype(np.float32)
+            return probs.float()
 
     def save(self, path):
         torch.save(self.state_dict(), path)
