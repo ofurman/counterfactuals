@@ -297,11 +297,14 @@ def local_outlier_factor(X_train, X, X_cf, n_neighbors=20):
 
     LOF(k) > 1 means Lower density than neighbors (Outlier)
     """
-    X_all = np.concatenate([X_train, X, X_cf], axis=0)
-    lof = LocalOutlierFactor(n_neighbors=n_neighbors)
-    lof.fit(X_all)
-    lof_scores = -lof.negative_outlier_factor_
-    return lof_scores[: len(X)], lof_scores[len(X) :]
+    lof = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True)
+    lof.fit(X_train)
+
+    # ORIG: It is the opposite as bigger is better, i.e. large values correspond to inliers.
+    # NEG: smaller is better, i.e. small values correspond to inliers.
+    lof_scores_x = -lof.score_samples(X)
+    lof_scores_x_cf = -lof.score_samples(X_cf)
+    return lof_scores_x, lof_scores_x_cf
 
 
 def isolation_forest_metric(X_train, X, X_cf, n_estimators=100):
@@ -314,11 +317,11 @@ def isolation_forest_metric(X_train, X, X_cf, n_estimators=100):
     Negative scores represent outliers, positive scores represent inliers.
     See: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest.decision_function
     """
-    X_all = np.concatenate([X, X_cf], axis=0)
-    clf = IsolationForest(n_estimators=n_estimators)
+    clf = IsolationForest(n_estimators=n_estimators, random_state=42)
     clf.fit(X_train)
-    scores = clf.decision_function(X_all)
-    return scores[: len(X)], scores[len(X) :]
+    lof_scores_x = clf.decision_function(X)
+    lof_scores_x_cf = clf.decision_function(X_cf)
+    return lof_scores_x, lof_scores_x_cf
 
 
 def evaluate_cf(
@@ -339,11 +342,16 @@ def evaluate_cf(
     X_cf = np.atleast_2d(X_cf)
 
     X_cf = X_cf[model_returned]
+
+    lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_test, X_cf)
+    isolation_forest_scores_xs, isolation_forest_scores_cfs = isolation_forest_metric(
+        X_train, X_test, X_cf
+    )
+
     X_test = X_test[model_returned]
     y_test = y_test[model_returned]
 
     ys_pred = disc_model.predict(X_test)
-    # ys_pred = torch.from_numpy(ys_pred)
     y_target = torch.abs(1 - ys_pred)
 
     if X_cf.shape[0] == 0:
@@ -371,10 +379,7 @@ def evaluate_cf(
     ys_pred = disc_model.predict(X_test)
     y_target = torch.abs(1 - ys_pred)
 
-    lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_test, X_cf)
-    isolation_forest_scores_xs, isolation_forest_scores_cfs = isolation_forest_metric(
-        X_train, X_test, X_cf
-    )
+    
 
     gen_log_probs_xs = gen_model(X_test, y_test.type(torch.float32))
     gen_log_probs_cf = gen_model(X_cf, y_target.type(torch.float32))

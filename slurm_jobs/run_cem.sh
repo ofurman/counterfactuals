@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=cem
+#SBATCH --job-name=cem-node-digits
 #SBATCH --time=0-12:00:00 # dni-godziny:minuty:sekundy
 #SBATCH --nodes=1 # ilosc nodow - duzy ruch sprawia ze lepiej czasem brac kilka nodeow po 1-2 gpu bo sa kolejki
 #SBATCH --ntasks-per-node=1
 #SBATCH --account=plgprobregtabdata-gpu-a100
 #SBATCH --partition=plgrid-gpu-a100
-#SBATCH --cpus-per-task=64
-#SBATCH --mem=16G
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=12G
 #SBATCH --gres=gpu:0 # ilość gpu per node ( jak wezmiesz 4 gpu i 2 nodes to bedzie 8 gpu)
 
 cd /net/tscratch/people/plgofurman/counterfactuals
@@ -14,7 +14,7 @@ cd /net/tscratch/people/plgofurman/counterfactuals
 source venv1/bin/activate
 srun python alternative_methods/cem_exp_cv.py --multirun \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
-    disc_model=mlp \
+    disc_model=node \
     gen_model=medium_maf
 
 # counterfactuals.datasets.MoonsDataset

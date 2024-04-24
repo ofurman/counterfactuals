@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: medium_maf
-  - disc_model: mlr
+  - disc_model: mlp
 
 hydra:
   sweeper:
@@ -18,11 +18,12 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
-  epochs: 1000
-  batch_size: 256
+  epochs: 300
+  batch_size: 512
+  patience: 300
   lr: 0.003
 
 gen_model:
@@ -33,12 +34,12 @@ gen_model:
   noise_lvl: 0.02
 
 counterfactuals:
-  epochs: 1000
+  epochs: 2000
   batch_size: 4096
   lr: 0.005
   alpha: 100
   beta: 0.01
-  patience: 100
+  patience: 500
   disc_loss:
     _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: torch.nn.BCEWithLogitsLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss

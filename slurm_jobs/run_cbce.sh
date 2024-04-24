@@ -13,8 +13,10 @@ cd /net/tscratch/people/plgofurman/counterfactuals
 # potencjalny wybor venva
 source venv1/bin/activate
 srun python alternative_methods/casebased_sace_exp_cv.py --multirun \
-    dataset._target_=counterfactuals.datasets.DigitsDataset \
-    disc_model=mlp \
+    dataset._target_=counterfactuals.datasets.MoonsDataset,counterfactuals.datasets.LawDataset,\
+counterfactuals.datasets.HelocDataset,\
+counterfactuals.datasets.BlobsDataset,counterfactuals.datasets.WineDataset,counterfactuals.datasets.DigitsDataset \
+    disc_model=node \
     gen_model=medium_maf
 
 # counterfactuals.datasets.MoonsDataset,counterfactuals.datasets.LawDataset,\

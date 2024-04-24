@@ -12,10 +12,10 @@
 cd /net/tscratch/people/plgofurman/counterfactuals
 # potencjalny wybor venva
 source venv1/bin/activate
-srun python alternative_methods/artelt_exp_cv.py --multirun \
-    dataset._target_=counterfactuals.datasets.AuditDataset \
-    disc_model=mlp \
-    gen_model=large_maf
+srun python alternative_methods/artelt_exp.py --multirun \
+    dataset._target_=counterfactuals.datasets.MoonsDataset \
+    disc_model=node \
+    gen_model=medium_maf
 
 # srun --job-name=interctive_nodeflow\
 #     --nodes=1\

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=cegp
+#SBATCH --job-name=cegp-mlp-digits
 #SBATCH --time=0-48:00:00 # dni-godziny:minuty:sekundy
 #SBATCH --nodes=1 # ilosc nodow - duzy ruch sprawia ze lepiej czasem brac kilka nodeow po 1-2 gpu bo sa kolejki
 #SBATCH --ntasks-per-node=1
@@ -13,8 +13,8 @@ cd /net/tscratch/people/plgofurman/counterfactuals
 # potencjalny wybor venva
 source venv1/bin/activate
 srun python alternative_methods/cegp_exp_cv.py --multirun \
-    dataset._target_=counterfactuals.datasets.DigitsDataset \
-    disc_model=mlp \
+    dataset._target_=counterfactuals.datasets.HelocDataset \
+    disc_model=mlr \
     gen_model=medium_maf
 
 # counterfactuals.datasets.MoonsDataset,counterfactuals.datasets.LawDataset,\

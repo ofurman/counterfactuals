@@ -161,7 +161,7 @@ def generate_cf(dataset, disc_model):
     for i in tqdm(range(X_test.shape[0])):
         # x_orig = X_test[i,:]
         x_orig_orig = X_test[i, :]
-        y_pred = disc_model.predict(x_orig_orig.reshape(1, -1))[0].item()
+        y_pred = disc_model.predict(x_orig_orig.reshape(1, -1)).item()
         y_target = np.abs(1 - y_pred)
 
         # if disc_model.predict(np.array([x_orig_orig])) == y_target:  # Model already predicts target label!
@@ -256,10 +256,11 @@ def main(cfg: DictConfig):
             )
 
         logger.info("Loading discriminator model")
+        num_classes = 1 if disc_model_name == "LogisticRegression" else len(np.unique(dataset.y_train))
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
-            target_size=1,  # len(np.unique(dataset.y_train)),
+            target_size=num_classes,
         )
         disc_model.load(disc_model_path)
 
@@ -279,6 +280,12 @@ def main(cfg: DictConfig):
             save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+        
+        # Xs_cfs = pd.read_csv(counterfactuals_path).values.astype(np.float32)
+        # model_returned = ~np.isnan(Xs_cfs[:, 0])
+        # cf_search_time = pd.read_csv(
+        #     os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv")
+        # )["time"].iloc[fold_n]
         # run["counterfactuals"].upload(counterfactuals_path)
 
         # Xs_cfs = pca.inverse_transform(Xs_cfs)
@@ -307,9 +314,9 @@ def main(cfg: DictConfig):
 
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
 
-        log_df.to_csv(
-            os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
-        )
+    log_df.to_csv(
+        os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
+    )
 
     # run.stop()
 
