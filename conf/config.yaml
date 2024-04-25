@@ -28,18 +28,18 @@ disc_model:
 
 gen_model:
   batch_size: 512
-  epochs: 2000
+  epochs: 500
   patience: 50
-  lr: 0.001
+  lr: 0.003
   noise_lvl: 0.02
 
 counterfactuals:
-  epochs: 2000
+  epochs: 500
   batch_size: 4096
   lr: 0.005
   alpha: 100
   beta: 0.01
   patience: 500
   disc_loss:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
+    # _target_: counterfactuals.losses.MulticlassDiscLoss
+    _target_: counterfactuals.losses.BinaryDiscLoss
