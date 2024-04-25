@@ -1,0 +1,5 @@
+model:
+  _target_: counterfactuals.generative_models.RealNVP
+  hidden_features: 16
+  num_blocks_per_layer: 4
+  num_layers: 5

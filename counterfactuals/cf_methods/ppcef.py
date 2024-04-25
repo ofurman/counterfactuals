@@ -88,7 +88,7 @@ class PPCEF(BaseCounterfactualModel):
             if context_target.shape[0] == 1
             else context_target
         )
-        loss_disc = self.disc_model_criterion(disc_logits, context_target)
+        loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
         p_x_param_c_target = self.gen_model(
             x_param, context=context_target.type(torch.float32)
