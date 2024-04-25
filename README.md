@@ -40,32 +40,35 @@ pip install -e .
 The following Python code snippet demonstrates how to use the PPCEF framework for generating counterfactual explanations:
 
 ```python
-from nflows.flows import MaskedAutoregressiveFlow
-
+import torch
 from counterfactuals.datasets import MoonsDataset
 from counterfactuals.cf_methods.ppcef import PPCEF
+from counterfactuals.generative_models import MaskedAutoregressiveFlow
 from counterfactuals.discriminative_models import LogisticRegression
 from counterfactuals.losses import BinaryDiscLoss
 
 
-dataset = MoonsDataset("../data/moons.csv")
+dataset = MoonsDataset("data/moons.csv")
 train_dataloader = dataset.train_dataloader(batch_size=16, shuffle=True)
 test_dataloader = dataset.test_dataloader(batch_size=16, shuffle=False)
 
 disc_model = LogisticRegression(dataset.X_test.shape[1], 1)
-disc_model.fit(train_dataloader)
+disc_model.fit(train_dataloader, test_dataloader)
 
-gen_model = MaskedAutoregressiveFlow(dataset.X_test.shape[1], 4, 1)
+gen_model = MaskedAutoregressiveFlow(features=dataset.X_train.shape[1], hidden_features=8, context_features=1)
+gen_model.fit(train_dataloader, test_dataloader)
+
 cf = PPCEF(
     gen_model=gen_model,
     disc_model=disc_model,
     disc_model_criterion=BinaryDiscLoss(),
     neptune_run=None,
-    checkpoint_path="model.pt"
 )
-cf.train_model(train_dataloader,test_dataloader)
-median_log_prob = cf.calculate_median_log_prob(train_dataloader)
-X_cf, X_orig, y_orig = cf.search_batch(test_dataloader, alpha=100, delta=median_log_prob)
+median_log_prob = torch.median(gen_model.predict_log_prob(test_dataloader))
+X_cf, X_orig, y_orig, y_target, _ = cf.search_batch(
+    test_dataloader, alpha=100, delta=median_log_prob
+)
+print(X_cf)
 ```
 
 ### Pre-trained Models
