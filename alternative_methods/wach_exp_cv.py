@@ -144,7 +144,11 @@ def main(cfg: DictConfig):
             )
 
         logger.info("Loading discriminator model")
-        num_classes = 1 if disc_model_name == "LogisticRegression" else len(np.unique(dataset.y_train))
+        num_classes = (
+            1
+            if disc_model_name == "LogisticRegression"
+            else len(np.unique(dataset.y_train))
+        )
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],

@@ -256,7 +256,11 @@ def main(cfg: DictConfig):
             )
 
         logger.info("Loading discriminator model")
-        num_classes = 1 if disc_model_name == "LogisticRegression" else len(np.unique(dataset.y_train))
+        num_classes = (
+            1
+            if disc_model_name == "LogisticRegression"
+            else len(np.unique(dataset.y_train))
+        )
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
@@ -280,7 +284,7 @@ def main(cfg: DictConfig):
             save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-        
+
         # Xs_cfs = pd.read_csv(counterfactuals_path).values.astype(np.float32)
         # model_returned = ~np.isnan(Xs_cfs[:, 0])
         # cf_search_time = pd.read_csv(

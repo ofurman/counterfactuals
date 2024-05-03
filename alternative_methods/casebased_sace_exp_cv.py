@@ -115,7 +115,11 @@ def main(cfg: DictConfig):
             )
 
         logger.info("Loading discriminator model")
-        num_classes = 1 if disc_model_name == "LogisticRegression" else len(np.unique(dataset.y_train))
+        num_classes = (
+            1
+            if disc_model_name == "LogisticRegression"
+            else len(np.unique(dataset.y_train))
+        )
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],
@@ -132,7 +136,6 @@ def main(cfg: DictConfig):
             cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
         )
         gen_model.load(gen_model_path)
-
 
         model_returned, Xs_cfs, cf_search_time = generate_cf(dataset, disc_model)
 

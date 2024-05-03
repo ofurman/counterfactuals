@@ -5,8 +5,6 @@ import abc
 import numpy as np
 import torch
 from torch import distributions, nn
-from collections import OrderedDict
-from typing import Any
 
 from counterfactuals.generative_models.base import BaseGenModel
 

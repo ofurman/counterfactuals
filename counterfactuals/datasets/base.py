@@ -64,9 +64,7 @@ class AbstractDataset(ABC):
             )
             yield self.X_train, self.X_test, self.y_train, self.y_test
 
-    def get_split_data(
-        self, X: np.ndarray, y: np.ndarray
-    ):
+    def get_split_data(self, X: np.ndarray, y: np.ndarray):
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
