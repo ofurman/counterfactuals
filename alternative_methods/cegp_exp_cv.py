@@ -41,7 +41,9 @@ def generate_cf(dataset, disc_model):
         X_train.max(axis=0).reshape(shape),
     )
 
-    predict_proba = lambda x: disc_model.predict_proba(x).numpy()
+    def predict_proba(x):
+        return disc_model.predict_proba(x).numpy()
+
     cf = CounterFactualProto(
         predict_proba,
         shape,
@@ -140,7 +142,11 @@ def main(cfg: DictConfig):
             )
 
         logger.info("Loading discriminator model")
-        num_classes = 1 if disc_model_name == "LogisticRegression" else len(np.unique(dataset.y_train))
+        num_classes = (
+            1
+            if disc_model_name == "LogisticRegression"
+            else len(np.unique(dataset.y_train))
+        )
         disc_model = instantiate(
             cfg.disc_model.model,
             input_size=dataset.X_train.shape[1],

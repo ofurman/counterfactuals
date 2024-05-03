@@ -379,8 +379,6 @@ def evaluate_cf(
     ys_pred = disc_model.predict(X_test)
     y_target = torch.abs(1 - ys_pred)
 
-    
-
     gen_log_probs_xs = gen_model(X_test, y_test.type(torch.float32))
     gen_log_probs_cf = gen_model(X_cf, y_target.type(torch.float32))
     flow_prob_condition_acc = torch.sum(delta < gen_log_probs_cf) / len(

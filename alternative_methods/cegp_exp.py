@@ -41,7 +41,9 @@ def generate_cf(dataset, disc_model):
         X_train.max(axis=0).reshape(shape),
     )
 
-    predict_proba = lambda x: disc_model.predict_proba(x).numpy()
+    def predict_proba(x):
+        return disc_model.predict_proba(x).numpy()
+
     cf = CounterFactualProto(
         predict_proba,
         shape,

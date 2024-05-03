@@ -1,1 +1,1 @@
-from .node import NODE
+from .node import NODE  # noqa: F401
