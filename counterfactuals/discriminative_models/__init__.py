@@ -3,6 +3,7 @@ from counterfactuals.discriminative_models.logistic_regression import (
     LogisticRegression,
     MultinomialLogisticRegression,
 )
+from counterfactuals.discriminative_models.linear_regression import LinearRegression
 from counterfactuals.discriminative_models.multilayer_perceptron import (
     MultilayerPerceptron,
 )

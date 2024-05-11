@@ -10,3 +10,4 @@ from counterfactuals.datasets.law import LawDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.polish_bankruptcy import PolishBankDataset
 from counterfactuals.datasets.wine import WineDataset
+from counterfactuals.datasets.wine_quality import WineQualityDataset

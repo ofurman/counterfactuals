@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Union
 
 import numpy as np
 import torch
@@ -42,6 +43,7 @@ class BaseCounterfactualModel(ABC):
     def search_batch(
         self,
         dataloader: DataLoader,
+        target: Union[int, float] = None,
         epochs: int = 1000,
         lr: float = 0.0005,
         patience: int = 100,
@@ -71,7 +73,15 @@ class BaseCounterfactualModel(ABC):
             contexts_origin = contexts_origin.to(self.device)
 
             contexts_origin = contexts_origin.reshape(-1, 1)
-            contexts_target = torch.abs(1 - contexts_origin)
+            if target is None:
+                contexts_target = torch.abs(1 - contexts_origin)
+            elif isinstance(target, (torch.Tensor, np.ndarray)):
+                contexts_target = target
+                assert contexts_target.shape == contexts_origin.shape
+
+            elif isinstance(target, (int, float)):
+                contexts_target = contexts_origin.clone().detach()
+                contexts_target = torch.clamp(contexts_target + 0.2, 0, 1)
 
             xs_origin = torch.as_tensor(xs_origin)
             xs = xs_origin.clone()
