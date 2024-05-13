@@ -335,7 +335,10 @@ def evaluate_cf(
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
-    delta: np.ndarray,
+    median_log_prob: np.ndarray,
+    S_matrix: np.ndarray = None,
+    M_matrix: np.ndarray = None,
+    D_matrix: np.ndarray = None,
 ):
     assert isinstance(X_cf, np.ndarray)
     assert X_cf.dtype == np.float32
@@ -381,7 +384,7 @@ def evaluate_cf(
 
     gen_log_probs_xs = gen_model(X_test, y_test.type(torch.float32))
     gen_log_probs_cf = gen_model(X_cf, y_target.type(torch.float32))
-    flow_prob_condition_acc = torch.sum(delta < gen_log_probs_cf) / len(
+    flow_prob_condition_acc = torch.sum(median_log_prob < gen_log_probs_cf) / len(
         gen_log_probs_cf
     )
 
@@ -461,4 +464,15 @@ def evaluate_cf(
             "isolation_forest_scores_cfs": isolation_forest_scores_cfs.mean(),
         }
     )
+
+    if S_matrix is not None:
+        cf_belongs_to_group = (
+            np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
+        )
+        metrics.update(
+            {
+                "cf_belongs_to_group": cf_belongs_to_group,
+                "K_vectors": (S_matrix.sum(axis=0) != 0).sum(),
+            }
+        )
     return metrics

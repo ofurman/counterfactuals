@@ -49,7 +49,7 @@ class PPCEF(BaseCounterfactualModel):
         return x_param
 
     def search_step(
-        self, x_param, x_origin, contexts_origin, context_target, **search_step_kwargs
+        self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
     ) -> dict:
         """Search step for the cf search process.
         :param x_param: point to be optimized
@@ -59,27 +59,27 @@ class PPCEF(BaseCounterfactualModel):
         :return: dict with loss and additional components to log.
         """
         alpha = search_step_kwargs.get("alpha", None)
-        delta = search_step_kwargs.get("delta", None)
-        categorical_features_lists = search_step_kwargs.get(
-            "categorical_features_lists", None
-        )
+        median_log_prob = search_step_kwargs.get("median_log_prob", None)
+        # categorical_features_lists = search_step_kwargs.get(
+        #     "categorical_features_lists", None
+        # )
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
-        if delta is None:
-            raise ValueError("Parameter 'delta' should be in kwargs")
+        if median_log_prob is None:
+            raise ValueError("Parameter 'median_log_prob' should be in kwargs")
 
-        if categorical_features_lists:
-            # x_param = self.one_hot_softmax(x_param)
-            new_tensor = torch.zeros_like(x_param)
-            first_cat_feature = categorical_features_lists[0][0]
-            new_tensor[:, :first_cat_feature] = x_param[:, :first_cat_feature]
-            for feature in categorical_features_lists:
-                new_tensor[:, feature] = self.one_hot_softmax(x_param[:, feature])
-                # new_tensor[:, feature] = F.softmax(x_param[:, feature] / 0.1, dim=1)
+        # if categorical_features_lists:
+        #     # x_param = self.one_hot_softmax(x_param)
+        #     new_tensor = torch.zeros_like(x_param)
+        #     first_cat_feature = categorical_features_lists[0][0]
+        #     new_tensor[:, :first_cat_feature] = x_param[:, :first_cat_feature]
+        #     for feature in categorical_features_lists:
+        #         new_tensor[:, feature] = self.one_hot_softmax(x_param[:, feature])
+        #         # new_tensor[:, feature] = F.softmax(x_param[:, feature] / 0.1, dim=1)
 
-        dist = torch.linalg.norm(x_origin - x_param, axis=1)
+        dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
 
-        disc_logits = self.disc_model.forward(x_param)
+        disc_logits = self.disc_model.forward(x_origin + delta)
         disc_logits = (
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
@@ -91,11 +91,11 @@ class PPCEF(BaseCounterfactualModel):
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
         p_x_param_c_target = self.gen_model(
-            x_param, context=context_target.type(torch.float32)
+            x_origin + delta, context=context_target.type(torch.float32)
         )
-        max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
+        max_inner = torch.nn.functional.relu(median_log_prob - p_x_param_c_target)
 
-        loss = dist + alpha * (max_inner + loss_disc)
+        loss = dist + alpha * (max_inner + 10 * loss_disc)
         return {
             "loss": loss,
             "dist": dist,
