@@ -27,7 +27,7 @@ class BaseCounterfactualModel(ABC):
         self.neptune_run = neptune_run
 
     @abstractmethod
-    def search_step(self, x_param, x_origin, context_origin, context_target):
+    def search_step(self, delta, x_origin, context_origin, context_target):
         """
         Performs a single training step on a batch of data.
 
@@ -44,8 +44,7 @@ class BaseCounterfactualModel(ABC):
         dataloader: DataLoader,
         epochs: int = 1000,
         lr: float = 0.0005,
-        patience: int = 100,
-        verbose: bool = False,
+        patience_eps: int = 1e-5,
         **search_step_kwargs,
     ):
         """
@@ -60,13 +59,11 @@ class BaseCounterfactualModel(ABC):
             for param in self.disc_model.parameters():
                 param.requires_grad = False
 
-        counterfactuals = []
+        deltas = []
         target_class = []
         original = []
         original_class = []
-        min_loss = np.inf
-        no_improve = 0
-        for xs_origin, contexts_origin in tqdm(dataloader):
+        for xs_origin, contexts_origin in dataloader:
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
 
@@ -74,17 +71,16 @@ class BaseCounterfactualModel(ABC):
             contexts_target = torch.abs(1 - contexts_origin)
 
             xs_origin = torch.as_tensor(xs_origin)
-            xs = xs_origin.clone()
             xs_origin.requires_grad = False
-            xs.requires_grad = True
+            delta = torch.zeros_like(xs_origin, requires_grad=True)
 
-            optimizer = optim.Adam([xs], lr=lr)
+            optimizer = optim.Adam([delta], lr=lr)
             loss_components_logging = {}
 
-            for epoch in range(epochs):
+            for _ in (epoch_pbar := tqdm(range(epochs))):
                 optimizer.zero_grad()
                 loss_components = self.search_step(
-                    xs,
+                    delta,
                     xs_origin,
                     contexts_origin,
                     contexts_target,
@@ -102,20 +98,21 @@ class BaseCounterfactualModel(ABC):
                         self.neptune_run[f"cf_search/{loss_name}"].append(
                             loss.mean().detach().cpu().numpy()
                         )
-                if mean_loss.item() < min_loss:
-                    min_loss = mean_loss.item()
-                    no_improve = 0
-                else:
-                    no_improve += 1
-                if no_improve > patience:
+
+                disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
+                prob_loss = loss_components["max_inner"].detach().cpu().mean().item()
+                epoch_pbar.set_description(
+                    f"Discriminator loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f}"
+                )
+                if disc_loss < patience_eps and prob_loss < patience_eps:
                     break
 
-            counterfactuals.append(xs.detach().cpu().numpy())
+            deltas.append(delta.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
             target_class.append(contexts_target.detach().cpu().numpy())
         return (
-            np.concatenate(counterfactuals, axis=0),
+            np.concatenate(deltas, axis=0),
             np.concatenate(original, axis=0),
             np.concatenate(original_class, axis=0),
             np.concatenate(target_class, axis=0),

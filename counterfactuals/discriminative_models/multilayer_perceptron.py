@@ -70,7 +70,7 @@ class MultilayerPerceptron(BaseDiscModel):
                         test_loss += loss.item()
                         # Early stopping
                     test_loss /= len(test_loader)
-                if test_loss < (min_test_loss + eps):
+                if test_loss < (min_test_loss - eps):
                     min_test_loss = test_loss
                     patience_counter = 0
                     self.save(checkpoint_path)
@@ -80,7 +80,7 @@ class MultilayerPerceptron(BaseDiscModel):
                     break
                 self.load(checkpoint_path)
             pbar.set_description(
-                f"Epoch {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}"
+                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
 
     def predict(self, X_test):
