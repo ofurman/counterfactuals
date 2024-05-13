@@ -13,30 +13,54 @@ class LogisticRegression(BaseDiscModel):
         y_pred = torch.sigmoid(self.linear(x))
         return y_pred
 
-    def fit(self, train_loader, test_loader=None, epochs=200, lr=0.003):
+    def fit(
+        self,
+        train_loader,
+        test_loader=None,
+        epochs=200,
+        lr=0.003,
+        patience=20,
+        eps=1e-3,
+        checkpoint_path="checkpoint.pth",
+    ):
         optimizer = torch.optim.Adam(self.linear.parameters(), lr=lr)
         criterion = torch.nn.BCELoss()
+        patience_counter = 0
+        min_test_loss = float("inf")
+        self.train()
         for epoch in (pbar := tqdm(range(epochs))):
-            losses = []
-            test_losses = []
+            train_loss = 0.0
             for i, (examples, labels) in enumerate(train_loader):
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
                 labels = labels.reshape(-1, 1)
                 loss = criterion(outputs, labels.float())
-                losses.append(loss.item())
                 loss.backward()
                 optimizer.step()
-                if test_loader:
-                    with torch.no_grad():
-                        for i, (examples, labels) in enumerate(test_loader):
-                            outputs = self.forward(examples)
-                            labels = labels.reshape(-1, 1)
-                            loss = criterion(outputs, labels.float())
-                            test_losses.append(loss.item())
+                train_loss += loss.item()
+            train_loss /= len(train_loader)
+            if test_loader:
+                self.eval()
+                test_loss = 0.0
+                with torch.no_grad():
+                    for i, (examples, labels) in enumerate(test_loader):
+                        outputs = self.forward(examples)
+                        labels = labels.reshape(-1, 1)
+                        loss = criterion(outputs, labels.float())
+                        test_loss += loss
+                test_loss /= len(test_loader)
             pbar.set_description(
-                f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}"
+                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
+            if test_loss < (min_test_loss - eps):
+                min_test_loss = test_loss
+                patience_counter = 0
+                self.save(checkpoint_path)
+            else:
+                patience_counter += 1
+            if patience_counter > patience:
+                break
+        self.load(checkpoint_path)
 
     def predict(self, X_test):
         if not isinstance(X_test, torch.Tensor):
@@ -70,36 +94,52 @@ class MultinomialLogisticRegression(BaseDiscModel):
         y_pred = self.linear(x)
         return y_pred
 
-    def fit(self, train_loader, test_loader=None, epochs=200, lr=0.003):
+    def fit(
+        self,
+        train_loader,
+        test_loader=None,
+        epochs=200,
+        lr=0.003,
+        patience=20,
+        eps=1e-3,
+        checkpoint_path="checkpoint.pth",
+    ):
         optimizer = torch.optim.Adam(self.linear.parameters(), lr=lr)
         criterion = torch.nn.CrossEntropyLoss()
+        patience_counter = 0
+        min_test_loss = float("inf")
         for epoch in (pbar := tqdm(range(epochs))):
-            losses = []
-            test_losses = []
+            train_loss = 0.0
             for i, (examples, labels) in enumerate(train_loader):
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
                 labels = labels.reshape(-1).type(torch.int64)
                 loss = criterion(outputs, labels)
-                losses.append(loss.item())
                 loss.backward()
                 optimizer.step()
+                train_loss += loss.item()
+            train_loss /= len(train_loader)
             if test_loader:
                 with torch.no_grad():
+                    test_loss = 0.0
                     for i, (examples, labels) in enumerate(test_loader):
                         labels = labels.type(torch.int64)
                         outputs = self.forward(examples)
                         loss = criterion(outputs, labels)
-                        test_losses.append(loss.item())
-
-            # Early stopping
-            # if epoch > 10 and np.mean(test_losses[-10:]) < np.mean(
-            #     test_losses[-5:]
-            # ):
-            #     break
+                        test_loss += loss
+                test_loss /= len(test_loader)
             pbar.set_description(
-                f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}"
+                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
+            if test_loss < (min_test_loss - eps):
+                min_test_loss = test_loss
+                patience_counter = 0
+                self.save(checkpoint_path)
+            else:
+                patience_counter += 1
+            if patience_counter > patience:
+                break
+        self.load(checkpoint_path)
 
     def predict(self, X_test: np.ndarray):
         if not isinstance(X_test, torch.Tensor):
