@@ -154,8 +154,8 @@ def main(cfg: DictConfig):
     dataset.X_test = dataset.X_test[dataset.y_test == cfg.counterfactuals.origin_class]
     dataset.y_test = dataset.y_test[dataset.y_test == cfg.counterfactuals.origin_class]
     cf = RPPCEF(
-        # K=cfg.counterfactuals.K,
-        K=dataset.X_test.shape[0],
+        K=cfg.counterfactuals.K,
+        # K=dataset.X_test.shape[0],
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
