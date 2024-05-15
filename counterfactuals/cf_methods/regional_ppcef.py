@@ -9,6 +9,26 @@ from counterfactuals.cf_methods.base import BaseCounterfactualModel
 from counterfactuals.sparsemax import Sparsemax
 
 
+class PPCEF_2(torch.nn.Module):
+    def __init__(self, N, D, K):
+        super(PPCEF_2, self).__init__()
+        assert K == N, "Assumption of the method!"
+        assert N >= 1
+        assert D >= 1
+
+        self.N = N
+        self.D = D
+        self.K = K
+
+        self.d = torch.nn.Parameter(torch.zeros((N, D)))
+
+    def forward(self):
+        return self.d
+
+    def get_matrices(self):
+        return torch.ones(self.N, 1), torch.ones(self.N, self.K), self.d
+
+
 class AReS(torch.nn.Module):
     def __init__(self, N, D, K=1):
         super(AReS, self).__init__()
@@ -126,21 +146,23 @@ class RPPCEF(BaseCounterfactualModel):
 
         sparse_loss = self._entropy_loss(delta.sparsemax(delta.s))
 
-        s_col_prob = (
-            delta.sparsemax(delta.s).sum(axis=0) / delta.sparsemax(delta.s).sum()
-        )
-        s_col_prob = s_col_prob.clamp(min=1e-9)
-        col_wise_entropy = -torch.sum(s_col_prob * torch.log(s_col_prob))
+        # s_col_prob = (
+        #     delta.sparsemax(delta.s).sum(axis=0) / delta.sparsemax(delta.s).sum()
+        # )
+        # s_col_prob = s_col_prob.clamp(min=1e-9)
+        # col_wise_entropy = -torch.sum(s_col_prob * torch.log(s_col_prob))
 
+        # loss = dist + alpha * (loss_disc + max_inner) # + sparse_loss + col_wise_entropy)
+        loss = dist + alpha * (max_inner + loss_disc + sparse_loss)  # col_wise_entropy
         # loss = dist + alpha * (max_inner + loss_disc) + alpha/10 * (sparse_loss + col_wise_entropy)
-        loss = dist + alpha * (max_inner + loss_disc + sparse_loss + col_wise_entropy)
+
         return {
             "loss": loss,
             "dist": dist,
             "max_inner": max_inner,
             "loss_disc": loss_disc,
             "sparse_loss": sparse_loss,
-            "k_loss": col_wise_entropy,
+            # "k_loss": col_wise_entropy,
         }
 
     def _entropy_loss(self, prob_dist):
@@ -212,22 +234,14 @@ class RPPCEF(BaseCounterfactualModel):
                         )
 
                 loss = loss_components["loss"].detach().cpu().mean().item()
-                disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
-                prob_loss = loss_components["max_inner"].detach().cpu().mean().item()
-                sparse_loss = (
-                    loss_components["sparse_loss"].detach().cpu().mean().item()
-                )
-                k_loss = loss_components["k_loss"].detach().cpu().mean().item()
                 epoch_pbar.set_description(
-                    f"Loss: {loss:.4f}, Disc loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f} , Sparse loss: {sparse_loss:.4f}, K loss: {k_loss:.4f}"
+                    ", ".join(
+                        [
+                            f"{k}: {v.detach().cpu().mean().item():.4f}"
+                            for k, v in loss_components.items()
+                        ]
+                    )
                 )
-                if (
-                    (disc_loss < patience_eps)
-                    and (prob_loss < patience_eps)
-                    and (sparse_loss < patience_eps)
-                    and (epoch > 500)
-                ):
-                    break
                 if (loss < (min_loss - patience_eps)) or (epoch < 1000):
                     min_loss = loss
                     patience_counter = 0
