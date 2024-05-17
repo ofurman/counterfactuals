@@ -50,7 +50,7 @@ class MultilayerPerceptron(BaseDiscModel):
         checkpoint_path: str = "best_model.pth",
     ):
         min_test_loss = float("inf")
-        optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        optimizer = torch.optim.RAdam(self.parameters(), lr=lr)
         for epoch in (pbar := tqdm(range(epochs))):
             train_loss = 0
             test_loss = 0
