@@ -96,20 +96,20 @@ class Delta(torch.nn.Module):
 
 class RPPCEF(BaseCounterfactualModel):
     def __init__(
-        self,
-        K,
-        gen_model,
-        disc_model,
-        disc_model_criterion,
-        device=None,
-        neptune_run=None,
+            self,
+            K,
+            gen_model,
+            disc_model,
+            disc_model_criterion,
+            device=None,
+            neptune_run=None,
     ):
         self.K = K
         self.disc_model_criterion = disc_model_criterion
         super().__init__(gen_model, disc_model, device, neptune_run)
 
     def search_step(
-        self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
+            self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
     ) -> dict:
         """Search step for the cf search process.
         :param x_param: point to be optimized
@@ -119,10 +119,14 @@ class RPPCEF(BaseCounterfactualModel):
         :return: dict with loss and additional components to log.
         """
         alpha = search_step_kwargs.get("alpha", None)
+        alpha_plausability = search_step_kwargs.get("alpha_plausability", None)
+        alpha_search = search_step_kwargs.get("alpha_search", 0.0)
         median_log_prob = search_step_kwargs.get("median_log_prob", None)
 
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
+        if alpha_plausability is None:
+            alpha_plausability = alpha
         if median_log_prob is None:
             raise ValueError("Parameter 'median_log_prob' should be in kwargs")
 
@@ -141,19 +145,19 @@ class RPPCEF(BaseCounterfactualModel):
 
         p_x_param_c_target = self.gen_model(
             x_origin + delta(), context=context_target.type(torch.float32)
-        ).clamp(max=10**3)
+        ).clamp(max=10 ** 3)
         max_inner = torch.nn.functional.relu(median_log_prob - p_x_param_c_target)
 
         sparse_loss = self._entropy_loss(delta.sparsemax(delta.s))
 
-        # s_col_prob = (
-        #     delta.sparsemax(delta.s).sum(axis=0) / delta.sparsemax(delta.s).sum()
-        # )
-        # s_col_prob = s_col_prob.clamp(min=1e-9)
-        # col_wise_entropy = -torch.sum(s_col_prob * torch.log(s_col_prob))
+        s_col_prob = (
+                delta.sparsemax(delta.s).sum(axis=0) / delta.sparsemax(delta.s).sum()
+        )
+        s_col_prob = s_col_prob.clamp(min=1e-9)
+        col_wise_entropy = -torch.sum(s_col_prob * torch.log(s_col_prob))
 
         # loss = dist + alpha * (loss_disc + max_inner) # + sparse_loss + col_wise_entropy)
-        loss = dist + alpha * (max_inner + loss_disc + sparse_loss)  # col_wise_entropy
+        loss = dist + alpha * (loss_disc + sparse_loss) + alpha_plausability * max_inner + alpha_search * col_wise_entropy
         # loss = dist + alpha * (max_inner + loss_disc) + alpha/10 * (sparse_loss + col_wise_entropy)
 
         return {
@@ -171,13 +175,13 @@ class RPPCEF(BaseCounterfactualModel):
         return row_wise_entropy
 
     def search_batch(
-        self,
-        dataloader: DataLoader,
-        epochs: int = 1000,
-        lr: float = 0.0005,
-        patience: int = 100,
-        patience_eps: int = 1e-3,
-        **search_step_kwargs,
+            self,
+            dataloader: DataLoader,
+            epochs: int = 1000,
+            lr: float = 0.0005,
+            patience: int = 100,
+            patience_eps: int = 1e-3,
+            **search_step_kwargs,
     ):
         """
         Trains the model for a specified number of epochs.
