@@ -10,6 +10,8 @@ import torch
 from PIL import Image
 from sklearn.inspection import DecisionBoundaryDisplay
 
+from counterfactuals.datasets import BlobsDataset, DigitsDataset, MoonsDataset
+from counterfactuals.discriminative_models import LogisticRegression, MultinomialLogisticRegression, NODE
 from counterfactuals.datasets import BlobsDataset, MoonsDataset
 from counterfactuals.discriminative_models import (
     LogisticRegression,
@@ -47,7 +49,7 @@ def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
                 zgrid,
                 levels=[prob_threshold_exp, prob_threshold_exp * 10.00],
                 alpha=0.1,
-                colors="#DC143C",
+                colors='#DC143C'
             )  # 10.00 is an arbitrary huge value to colour the whole distribution.
 
     return ax
@@ -183,6 +185,8 @@ def load_dataset(name):
         return MoonsDataset(file_path="data/moons.csv")
     elif name == "BlobsDataset":
         return BlobsDataset(file_path="data/blobs.csv")
+    elif name == "DigitsDataset":
+        return DigitsDataset(file_path="data/digits.csv")
     else:
         raise ValueError(f"Unknown dataset name: {name}.")
 
@@ -247,6 +251,22 @@ def load_models(name, dataset, classifier, index):
             context_features=1,
         )
         flow.load(f"models/BlobsDataset/gen_model_{index}_MaskedAutoregressiveFlow.pt")
+        return disc_model, flow
+    elif name == "DigitsDataset":
+        if classifier == "MultinomialLogisticRegression":
+            disc_model = MultinomialLogisticRegression(dataset.X_train.shape[1], 10)
+            disc_model.load(f"models/DigitsDataset/disc_model_{index}_MultinomialLogisticRegression.pt")
+        else:
+            raise ValueError(f"Classifier {classifier} not supported for dataset {name}.")
+
+        flow = MaskedAutoregressiveFlow(
+            dataset.X_train.shape[1],
+            hidden_features=4,
+            num_blocks_per_layer=2,
+            num_layers=5,
+            context_features=1,
+        )
+        flow.load(f"models/DigitsDataset/gen_model_{index}_MaskedAutoregressiveFlow.pt")
         return disc_model, flow
     else:
         raise ValueError(f"Unknown dataset name: {name}.")
