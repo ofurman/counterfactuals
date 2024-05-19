@@ -170,3 +170,6 @@ env.sh
 .vscode/
 .neptune/
 .ruff_cache/
+
+#notebooks
+notebooks/*.pdf
