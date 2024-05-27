@@ -32,12 +32,13 @@ def main(cfg: DictConfig):
         tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
     )
 
+    cf_method = cfg.counterfactuals.delta._target_.split(".")[-1]
     dataset_name = cfg.dataset._target_.split(".")[-1]
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     os.makedirs(output_folder, exist_ok=True)
-    save_folder = os.path.join(output_folder, "ppcef")
+    save_folder = os.path.join(output_folder, "GCE_CV")
     os.makedirs(save_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
@@ -52,6 +53,7 @@ def main(cfg: DictConfig):
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = dataset_name
     run["parameters/disc_model"] = stringify_unsupported(cfg.disc_model)
+    run["parameters/method"] = cf_method
     run.wait()
 
     log_df = pd.DataFrame()
@@ -93,34 +95,34 @@ def main(cfg: DictConfig):
         test_dataloader = dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        # disc_model.load(disc_model_path)
-        disc_model.fit(
-            train_dataloader,
-            test_dataloader,
-            epochs=cfg.disc_model.epochs,
-            lr=cfg.disc_model.lr,
-            patience=cfg.disc_model.patience,
-            checkpoint_path=disc_model_path,
-        )
-        disc_model.save(disc_model_path)
+        disc_model.load(disc_model_path)
+        disc_model.eval()
+        # disc_model.fit(
+        #     train_dataloader,
+        #     test_dataloader,
+        #     epochs=cfg.disc_model.epochs,
+        #     lr=cfg.disc_model.lr,
+        #     patience=cfg.disc_model.patience,
+        #     checkpoint_path=disc_model_path,
+        # )
+        # disc_model.save(disc_model_path)
         logger.info("Evaluating discriminator model")
         print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
         report = classification_report(
             dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
         )
         pd.DataFrame(report).transpose().to_csv(
-            os.path.join(save_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv")
+            os.path.join(save_folder, f"eval_disc_model_{disc_model_name}.csv")
         )
-        # run[f"{fold_n}/metrics"] = process_classification_report(
+        # run[f"metrics"] = process_classification_report(
         #     report, prefix="disc_test"
         # )
 
-        run[f"{fold_n}/disc_model"].upload(disc_model_path)
+        # run[f"disc_model"].upload(disc_model_path)
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
-
         logger.info("Training generative model")
         time_start = time()
         train_dataloader = dataset.train_dataloader(
@@ -134,32 +136,48 @@ def main(cfg: DictConfig):
         gen_model = instantiate(
             cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
         )
-        # gen_model.load(gen_model_path)
-        gen_model.fit(
-            train_loader=train_dataloader,
-            test_loader=test_dataloader,
-            num_epochs=cfg.gen_model.epochs,
-            patience=cfg.gen_model.patience,
-            learning_rate=cfg.gen_model.lr,
-            checkpoint_path=gen_model_path,
-            # neptune_run=run,
-        )
-        # run[f"{fold_n}/metrics/gen_model_train_time"] = time() - time_start
-        gen_model.save(gen_model_path)
-        run[f"{fold_n}/gen_model"].upload(gen_model_path)
+        gen_model.load(gen_model_path)
+        # gen_model.fit(
+        #     train_loader=train_dataloader,
+        #     test_loader=test_dataloader,
+        #     num_epochs=cfg.gen_model.epochs,
+        #     patience=cfg.gen_model.patience,
+        #     learning_rate=cfg.gen_model.lr,
+        #     checkpoint_path=gen_model_path,
+        #     # neptune_run=run,
+        # )
+        # run[f"metrics/gen_model_train_time"] = time() - time_start
+        # gen_model.save(gen_model_path)
+        # run[f"gen_model"].upload(gen_model_path)
 
         train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()
         test_ll = gen_model.predict_log_prob(test_dataloader).mean().item()
         pd.DataFrame({"train_ll": [train_ll], "test_ll": [test_ll]}).to_csv(
-            os.path.join(save_folder, f"eval_gen_model_{fold_n}_{gen_model_name}.csv")
+            os.path.join(save_folder, f"eval_gen_model_{gen_model_name}.csv")
         )
 
         logger.info("Handling counterfactual generation")
-
-        dataset.X_test = dataset.X_test[dataset.y_test == 0]
-        dataset.y_test = dataset.y_test[dataset.y_test == 0]
+        origin_class = cfg.counterfactuals.origin_class
+        target_class = np.abs(1 - origin_class)
+        logger.info("Origin class: %s", origin_class)
+        X_test_origin = dataset.X_test[dataset.y_test == origin_class]
+        y_test_origin = dataset.y_test[dataset.y_test == origin_class]
+        X_test_target = dataset.X_test[dataset.y_test == target_class]
+        # y_test_target = dataset.y_test[dataset.y_test == target_class]
+        if cf_method in ["ARES", "GLOBAL_CE"]:
+            K = 1
+        elif cfg.counterfactuals.K is not None:
+            K = cfg.counterfactuals.K
+        else:
+            K = X_test_origin.shape[0]
+        delta = instantiate(
+            cfg.counterfactuals.delta,
+            N=X_test_origin.shape[0],
+            D=X_test_origin.shape[1],
+            K=K,
+        )
         cf = RPPCEF(
-            K=cfg.counterfactuals.K,
+            delta=delta,
             gen_model=gen_model,
             disc_model=disc_model,
             disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
@@ -168,16 +186,17 @@ def main(cfg: DictConfig):
         train_dataloader_for_log_prob = dataset.train_dataloader(
             batch_size=cfg.counterfactuals.batch_size, shuffle=False
         )
-        median_log_prob = torch.median(
-            gen_model.predict_log_prob(train_dataloader_for_log_prob)
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(train_dataloader_for_log_prob),
+            cfg.counterfactuals.log_prob_quantile,
         )
-        run[f"{fold_n}/parameters/median_log_prob"] = median_log_prob
-        print(median_log_prob)
+        run["parameters/log_prob_threshold"] = log_prob_threshold
+        print(log_prob_threshold)
 
         cf_dataloader = torch.utils.data.DataLoader(
             torch.utils.data.TensorDataset(
-                torch.tensor(dataset.X_test).float(),
-                disc_model.predict(dataset.X_test).long(),
+                torch.tensor(X_test_origin).float(),
+                torch.tensor(y_test_origin).float(),
             ),
             batch_size=cfg.counterfactuals.batch_size,
             shuffle=False,
@@ -189,17 +208,27 @@ def main(cfg: DictConfig):
             lr=cfg.counterfactuals.lr,
             patience=cfg.counterfactuals.patience,
             alpha=cfg.counterfactuals.alpha,
+            alpha_s=cfg.counterfactuals.alpha_s,
+            alpha_k=cfg.counterfactuals.alpha_k,
             beta=cfg.counterfactuals.beta,
-            median_log_prob=median_log_prob,
+            median_log_prob=log_prob_threshold,
         )
         cf_search_time = np.mean(time() - time_start)
-        run[f"{fold_n}/metrics/cf_search_time"] = cf_search_time
+        run["metrics/cf_search_time"] = cf_search_time
         counterfactuals_path = os.path.join(
-            save_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv"
+            save_folder,
+            f"counterfactuals_no_no_plaus_{cf_method}_{disc_model_name}_origin_class_{origin_class}_fold_{fold_n}.csv",
         )
+        M, S, D = deltas[0].get_matrices()
         Xs_cfs = Xs + deltas[0]().detach().numpy()
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-        run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
+        run["counterfactuals"].upload(counterfactuals_path)
+
+        x_origin_path = os.path.join(
+            save_folder,
+            f"x_origin_no_plaus_{cf_method}_{disc_model_name}_origin_class_{origin_class}_fold_{fold_n}.csv",
+        )
+        pd.DataFrame(Xs).to_csv(x_origin_path, index=False)
 
         # Xs_cfs = pd.read_csv(counterfactuals_path).values.astype(np.float32)
         # model_returned = ~np.isnan(Xs_cfs[:, 0])
@@ -222,22 +251,27 @@ def main(cfg: DictConfig):
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
             y_test=ys_orig,
-            delta=median_log_prob,
+            median_log_prob=log_prob_threshold,
+            S_matrix=S.detach().numpy(),
+            X_test_target=X_test_target,
         )
         print(metrics)
-        run[f"{fold_n}/metrics/cf"] = stringify_unsupported(metrics)
+        run["metrics/cf"] = stringify_unsupported(metrics)
 
         metrics["time"] = cf_search_time
+        logger.info("Finalizing and stopping run")
 
-        log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
-    logger.info("Finalizing and stopping run")
+        df_metrics = pd.DataFrame(metrics, index=[0])
 
-    log_df.to_csv(
-        os.path.join(save_folder, f"metrics_{disc_model_name}_cv.csv"), index=False
-    )
-    run["metrics"].upload(
-        os.path.join(output_folder, f"metrics_{disc_model_name}_cv.csv")
-    )
+        log_df = pd.concat([log_df, df_metrics], axis=0)
+
+        log_df.to_csv(
+            os.path.join(
+                save_folder,
+                f"metrics_no_plaus_{disc_model_name}_{cf_method}_{origin_class}_cv.csv",
+            ),
+            index=False,
+        )
     run.stop()
 
 

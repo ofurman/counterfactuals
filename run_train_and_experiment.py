@@ -15,6 +15,8 @@ import torch.utils
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.regional_ppcef import RPPCEF
 
+
+torch.manual_seed(0)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
@@ -32,12 +34,13 @@ def main(cfg: DictConfig):
         tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
     )
 
+    cf_method = cfg.counterfactuals.delta._target_.split(".")[-1]
     dataset_name = cfg.dataset._target_.split(".")[-1]
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     os.makedirs(output_folder, exist_ok=True)
-    save_folder = os.path.join(output_folder, "ppcef")
+    save_folder = os.path.join(output_folder, "GCE")
     os.makedirs(save_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
@@ -52,6 +55,7 @@ def main(cfg: DictConfig):
     run["parameters/experiment"] = cfg.experiment
     run["parameters/dataset"] = dataset_name
     run["parameters/disc_model"] = stringify_unsupported(cfg.disc_model)
+    run["parameters/method"] = cf_method
     run.wait()
 
     log_df = pd.DataFrame()
@@ -90,6 +94,7 @@ def main(cfg: DictConfig):
         batch_size=cfg.disc_model.batch_size, shuffle=False
     )
     disc_model.load(disc_model_path)
+    disc_model.eval()
     # disc_model.fit(
     #     train_dataloader,
     #     test_dataloader,
@@ -150,12 +155,26 @@ def main(cfg: DictConfig):
     )
 
     logger.info("Handling counterfactual generation")
-
-    dataset.X_test = dataset.X_test[dataset.y_test == cfg.counterfactuals.origin_class]
-    dataset.y_test = dataset.y_test[dataset.y_test == cfg.counterfactuals.origin_class]
+    origin_class = cfg.counterfactuals.origin_class
+    target_class = np.abs(1 - origin_class)
+    X_test_origin = dataset.X_test[dataset.y_test == origin_class]
+    y_test_origin = dataset.y_test[dataset.y_test == origin_class]
+    X_test_target = dataset.X_test[dataset.y_test == target_class]
+    # y_test_target = dataset.y_test[dataset.y_test == target_class]
+    if cf_method in ["ARES", "GLOBAL_CE"]:
+        K = 1
+    elif cfg.counterfactuals.K is not None:
+        K = cfg.counterfactuals.K
+    else:
+        K = X_test_origin.shape[0]
+    delta = instantiate(
+        cfg.counterfactuals.delta,
+        N=X_test_origin.shape[0],
+        D=X_test_origin.shape[1],
+        K=K,
+    )
     cf = RPPCEF(
-        K=cfg.counterfactuals.K,
-        # K=dataset.X_test.shape[0],
+        delta=delta,
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
@@ -164,16 +183,17 @@ def main(cfg: DictConfig):
     train_dataloader_for_log_prob = dataset.train_dataloader(
         batch_size=cfg.counterfactuals.batch_size, shuffle=False
     )
-    median_log_prob = torch.median(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob)
+    log_prob_threshold = torch.quantile(
+        gen_model.predict_log_prob(train_dataloader_for_log_prob),
+        cfg.counterfactuals.log_prob_quantile,
     )
-    run["parameters/median_log_prob"] = median_log_prob
-    print(median_log_prob)
+    run["parameters/log_prob_threshold"] = log_prob_threshold
+    print(log_prob_threshold)
 
     cf_dataloader = torch.utils.data.DataLoader(
         torch.utils.data.TensorDataset(
-            torch.tensor(dataset.X_test).float(),
-            disc_model.predict(dataset.X_test).long(),
+            torch.tensor(X_test_origin).float(),
+            torch.tensor(y_test_origin).float(),
         ),
         batch_size=cfg.counterfactuals.batch_size,
         shuffle=False,
@@ -185,17 +205,21 @@ def main(cfg: DictConfig):
         lr=cfg.counterfactuals.lr,
         patience=cfg.counterfactuals.patience,
         alpha=cfg.counterfactuals.alpha,
+        alpha_s=cfg.counterfactuals.alpha_s,
+        alpha_k=cfg.counterfactuals.alpha_k,
         beta=cfg.counterfactuals.beta,
-        median_log_prob=median_log_prob,
+        median_log_prob=log_prob_threshold,
     )
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_no_plaus_{cf_method}_{disc_model_name}.csv"
     )
     M, S, D = deltas[0].get_matrices()
     Xs_cfs = Xs + deltas[0]().detach().numpy()
+    print(Xs_cfs.shape, Xs.shape, X_test_origin.shape)
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    print(Xs_cfs.shape, Xs.shape, X_test_origin.shape)
     run["counterfactuals"].upload(counterfactuals_path)
 
     # Xs_cfs = pd.read_csv(counterfactuals_path).values.astype(np.float32)
@@ -219,8 +243,9 @@ def main(cfg: DictConfig):
         y_train=dataset.y_train.reshape(-1),
         X_test=Xs,
         y_test=ys_orig,
-        median_log_prob=median_log_prob,
+        median_log_prob=log_prob_threshold,
         S_matrix=S.detach().numpy(),
+        X_test_target=X_test_target,
     )
     print(metrics)
     run["metrics/cf"] = stringify_unsupported(metrics)

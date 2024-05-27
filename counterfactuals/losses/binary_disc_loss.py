@@ -3,7 +3,7 @@ import torch
 
 class BinaryDiscLoss(torch.nn.modules.loss._Loss):
     def __init__(
-        self, size_average=None, reduce=None, reduction: str = "mean", eps=0.02
+        self, size_average=None, reduce=None, reduction: str = "mean", eps=0.05
     ) -> None:
         super().__init__(size_average, reduce, reduction)
         self.eps = eps
