@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - gen_model: medium_maf
+  - gen_model: large_maf
   - disc_model: mlp
 
 hydra:
@@ -8,10 +8,10 @@ hydra:
     max_batch_size: 1
 
 neptune:
-  enable: true
+  enable: false
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["exp_v8", "GLOBAL_PPCEF", "plausability", "OUR", "k_ablation"]
+  tags: ["19.05", "GCE", "no_plausability", "Q1_log_prob_threshold", "all_methods", "lambda_ablation"]
 
 experiment:
   output_folder: models/
@@ -22,26 +22,31 @@ dataset:
 
 disc_model:
   epochs: 5000
-  batch_size: 64
+  batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
   batch_size: 1024
   epochs: 2000
-  patience: 70
+  patience: 100
   lr: 0.003
   noise_lvl: 0.02
 
 counterfactuals:
   K: 5
+  log_prob_quantile: 0.25
   origin_class: 0
   epochs: 20000
   batch_size: 4096
-  lr: 0.003
-  alpha: 100
+  lr: 0.001
+  alpha: 1000
+  alpha_s: 1000
+  alpha_k: 100
   beta: 0.01
-  patience: 500
+  patience: 1000
+  delta:
+    _target_: counterfactuals.cf_methods.regional_ppcef.GCE
   disc_loss:
     # _target_: counterfactuals.losses.MulticlassDiscLoss
     _target_: counterfactuals.losses.BinaryDiscLoss
