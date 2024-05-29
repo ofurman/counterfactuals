@@ -16,6 +16,7 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.global_cfs_utils.ares import AReS
 from counterfactuals.global_cfs_utils.datasets_split import dataset_loader_split
 import counterfactuals.global_cfs_utils.models as models
+from counterfactuals.metrics.metrics import continuous_distance, categorical_distance, distance_l2_jaccard, distance_mad_hamming, sparsity, perc_valid_cf
 
 
 NORMALISERS = {
@@ -43,7 +44,6 @@ def main(cfg: DictConfig):
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     disc_model_path = os.path.join(f"{cfg.model_path}/{dataset_name}_{disc_model_name}.pkl")
     logger.info(disc_model_path)
-    # disc_model_path = "/home/lukasz/genwro/counterfactuals/counterfactuals/global_cfs_utils/models/german_credit_lr.pkl"
 
     os.makedirs(output_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
@@ -95,7 +95,8 @@ def main(cfg: DictConfig):
 
     logger.info("Calculating metrics")
 
-    # TODO: add evaluation
+    X_aff = ares.X_aff_original.values
+    evaluate_ares_cfs(Xs_cfs, X_aff, X_test.values, disc_model, model_returned)
 
     run["metrics/cf"] = stringify_unsupported({})
     logger.info("Finalizing and stopping run")
@@ -112,6 +113,62 @@ def generate_ares_counterfactuals(ares):
     Xs_cfs = ares.V.cfx_matrix[-1]
     return Xs_cfs
 
+
+def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
+    categorical_features = range(X_cf.shape[1])
+    continuous_features = range(X_cf.shape[1])
+
+    model_returned_smth = np.sum(model_returned) / len(model_returned)
+
+    ys_cfs_disc_pred = np.array(model.predict(X_cf))
+
+    valid_cf_disc_metric = perc_valid_cf(np.zeros_like(ys_cfs_disc_pred), y_cf=ys_cfs_disc_pred)
+
+
+    hamming_distance_metric = categorical_distance(
+        X=X_aff, X_cf=X_cf, categorical_features=categorical_features, metric="hamming", agg="mean"
+    )
+    jaccard_distance_metric = categorical_distance(
+        X=X_aff, X_cf=X_cf, categorical_features=categorical_features, metric="jaccard", agg="mean"
+    )
+    manhattan_distance_metric = continuous_distance(
+        X=X_aff, X_cf=X_cf, continuous_features=continuous_features, metric="cityblock", X_all=X_test
+    )
+    euclidean_distance_metric = continuous_distance(
+        X=X_aff, X_cf=X_cf, continuous_features=continuous_features, metric="euclidean", X_all=X_test
+    )
+    mad_distance_metric = continuous_distance(
+        X=X_aff, X_cf=X_cf, continuous_features=continuous_features, metric="mad", X_all=X_test
+    )
+    l2_jaccard_distance_metric = distance_l2_jaccard(
+        X=X_aff,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+    )
+    mad_hamming_distance_metric = distance_mad_hamming(
+        X=X_aff,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+        X_all=X_test,
+        agg="mean",
+    )
+    sparsity_metric = sparsity(X_aff, X_cf)
+
+    metrics = {
+        "model_returned_smth": model_returned_smth,
+        "valid_cf_disc": valid_cf_disc_metric,
+        "dissimilarity_proximity_categorical_hamming": hamming_distance_metric,
+        "dissimilarity_proximity_categorical_jaccard": jaccard_distance_metric,
+        "dissimilarity_proximity_continuous_manhatan": manhattan_distance_metric,
+        "dissimilarity_proximity_continuous_euclidean": euclidean_distance_metric,
+        "dissimilarity_proximity_continuous_mad": mad_distance_metric,
+        "distance_l2_jaccard": l2_jaccard_distance_metric,
+        "distance_mad_hamming": mad_hamming_distance_metric,
+        "sparsity": sparsity_metric,
+    }
+    return metrics
 
 if __name__ == "__main__":
     main()
