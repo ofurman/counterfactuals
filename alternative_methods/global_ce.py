@@ -91,21 +91,13 @@ def main(cfg: DictConfig):
     time_start = time()
 
     best_delta = get_best_delta(globe_ce)
-
-    min_costs = np.zeros(globe_ce.x_aff.shape[0])
-    _, cos_s, k_s = globe_ce.scale(best_delta, disable_tqdm=False, vector=True)  # Algorithm 1, Line 3
-    min_costs, min_costs_idxs = globe_ce.min_scalar_costs(cos_s, return_idxs=True, inf=True)  # Implicitly computes Algorithm 1, Lines 4-6, returning minimum costs per input and their indices in the k vector
-    min_costs = min_costs.min(axis=0)
-
-    Xs_cfs = np.zeros((k_s.shape[0], globe_ce.x_aff.shape[0], globe_ce.x_aff.shape[1]))
-    for i, k_val in enumerate(k_s):
-        Xs_cfs[i] = globe_ce.x_aff + k_val*best_delta
-
+    best_k_s = get_best_k_s(globe_ce, best_delta)
+    Xs_cfs = get_counterfactuals(globe_ce, best_delta, best_k_s)
 
     run["metrics/eval_time"] = np.mean(time() - time_start)
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
-    # pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    # run["counterfactuals"].upload(counterfactuals_path)
+    pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    run["counterfactuals"].upload(counterfactuals_path)
 
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
 
@@ -118,6 +110,19 @@ def main(cfg: DictConfig):
     run.stop()
 
 
+def get_best_k_s(globe_ce, best_delta):
+    _, cos_s, k_s = globe_ce.scale(best_delta, disable_tqdm=False, vector=True)  # Algorithm 1, Line 3
+    _, min_costs_idxs = globe_ce.min_scalar_costs(cos_s, return_idxs=True, inf=True)  # Implicitly computes Algorithm 1, Lines 4-6, returning minimum costs per input and their indices in the k vector
+    best_k_s = k_s[min_costs_idxs.astype(np.int16)]
+    return best_k_s
+
+
+def get_counterfactuals(globe_ce, best_delta, best_k_s):
+    muls_ = best_k_s.reshape(-1, 1) @ best_delta.reshape(1, -1)
+    Xs_cfs = globe_ce.x_aff+muls_
+    return Xs_cfs
+
+
 def get_best_delta(globe_ce):
     globe_ce.sample(n_sample=1000, magnitude=2, sparsity_power=1,
                     idxs=None, n_features=2, disable_tqdm=False,  # 2 random features chosen at each sample, no sparsity smoothing (p=1)
@@ -125,8 +130,8 @@ def get_best_delta(globe_ce):
     delta = globe_ce.best_delta  # pick best delta
     return delta
 
+
 def evaluate_globe_ce(X_cf, X_aff, X_test, model, model_returned):
-    return
     categorical_features = range(X_cf.shape[1])
     continuous_features = range(X_cf.shape[1])
 
