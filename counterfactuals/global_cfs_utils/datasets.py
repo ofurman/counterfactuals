@@ -128,15 +128,18 @@ class dataset_loader():
             os.makedirs(self.data_path)
             
         url = self.datasets[self.name]
-        file_name = '{}.data'.format(self.name.split('_')[0])  # e.g. german.data
+        csv_ext = ["heloc", "compas", "adult", "german_credit"]
+        filename = self.name.split('_')[0]
+        ext = "csv" if filename in csv_ext else "data"
+        file_name = '{}.{}'.format(filename, ext)  # e.g. german.data
         file_address = self.data_path+file_name
-        if not path.exists(file_address):
+        if not path.exists(file_address) and filename not in csv_ext:
             print('Downloading {} Dataset...'.format(self.name.replace('_', ' ').title()))
             urllib.request.urlretrieve(self.datasets[self.name], file_address)
             print('Dataset Successfully Downloaded.')
             
         if self.name == "compas":
-            data = pd.read_csv(file_address)
+            data = pd.read_csv(f"{self.data_path}compas_two_years.csv")
             data = data.dropna(subset=["days_b_screening_arrest"])  # drop missing vals
             data = data.rename(columns={data.columns[-1]:"status"})
             data = self.process_compas(data)
@@ -147,28 +150,23 @@ class dataset_loader():
             data[data.columns[-1]] = 1 - data[data.columns[-1]]
         
         elif self.name == "german_credit":
-            data = pd.read_csv(file_address, header = None, delim_whitespace = True)
+            data = pd.read_csv(f"{self.data_path}german_credit.csv")
+            data = data[data.columns[1:].to_list() + data.columns[:1].to_list()]
             data.columns = self.columns[self.name]
-            # Prepocess targets to Bad = 0, Good = 1
-            data[data.columns[-1]] = 2 - data[data.columns[-1]]
             
         elif self.name == 'adult_income':
-            data = pd.read_csv(file_address, header = None, delim_whitespace = True)
-            # remove redundant education num column (education processed in one_hot)
+            data = pd.read_csv(f"{self.data_path}adult_raw.csv")
+            data.columns = pd.RangeIndex(data.shape[1])
             data = data.drop(4, axis=1)
-            # remove rows with missing values: '?,'
-            data = data.replace('?,', np.nan); data = data.dropna() 
+            data = data.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+            mask = data == "?"
+            data = data.replace('?', np.nan); data = data.dropna() 
             data.columns = self.columns[self.name]
             for col in data.columns[:-1]:
-                #print(col)
                 if col not in self.categorical_features[self.name]:
-                    data[col] = data[col].apply(lambda x: float(x[:-1]))
-                else:
-                    data[col] = data[col].apply(lambda x: x[:-1])
-            # Prepocess Targets to <=50K = 0, >50K = 1
-            data[data.columns[-1]] = data[data.columns[-1]].replace(['<=50K', '>50K'],
-                                                                    [0, 1])
-            
+                    data[col] = data[col].apply(lambda x: float(x))
+            data[data.columns[-1]] = data[data.columns[-1]].replace(['<=50K', '>50K'], [0, 1])
+
         elif self.name == 'default_credit':
             data = pd.read_excel(file_address, header=1)
             data = data.drop('ID', axis=1)
@@ -176,7 +174,7 @@ class dataset_loader():
             data[data.columns[-1]] = 1 - data[data.columns[-1]]
 
         elif self.name == "heloc":
-            data = pd.read_csv(file_address)
+            data = pd.read_csv(f"{self.data_path}heloc.csv")
             # Remove rows where all NaN
             data = data[(data.iloc[:, 1:]>=0).any(axis=1)]
             # Encode string labels
