@@ -12,8 +12,7 @@ import pickle
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.global_cfs_utils.ares import AReS
+from counterfactuals.cf_methods.ares import AReS
 from counterfactuals.global_cfs_utils.datasets_split import dataset_loader_split
 import counterfactuals.global_cfs_utils.models as models
 from counterfactuals.metrics.metrics import continuous_distance, categorical_distance, distance_l2_jaccard, distance_mad_hamming, sparsity, perc_valid_cf

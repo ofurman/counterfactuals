@@ -13,8 +13,8 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.global_cfs_utils.ares import AReS
-from counterfactuals.global_cfs_utils.global_ce import GLOBE_CE
+from counterfactuals.cf_methods.ares import AReS
+from counterfactuals.cf_methods.global_ce import GLOBE_CE
 
 from counterfactuals.global_cfs_utils.datasets_split import dataset_loader_split
 import counterfactuals.global_cfs_utils.models as models
