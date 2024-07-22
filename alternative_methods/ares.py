@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf/other_methods", config_name="config_ares", version_base="1.2")
+@hydra.main(config_path="../conf", config_name="config_ares", version_base="1.2")
 def main(cfg: DictConfig):
     logger.info("Initializing Neptune run")
     run = neptune.init_run(
@@ -96,9 +96,11 @@ def main(cfg: DictConfig):
     logger.info("Calculating metrics")
 
     X_aff = ares.X_aff_original.values
-    evaluate_ares_cfs(Xs_cfs, X_aff, X_test.values, disc_model, model_returned)
+    metrics = evaluate_ares_cfs(Xs_cfs, X_aff, X_test.values, disc_model, model_returned)
 
-    run["metrics/cf"] = stringify_unsupported({})
+    print(metrics)
+
+    run["metrics/cf"] = stringify_unsupported(metrics)
     logger.info("Finalizing and stopping run")
     run.stop()
 
@@ -120,9 +122,9 @@ def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
 
     model_returned_smth = np.sum(model_returned) / len(model_returned)
 
-    ys_cfs_disc_pred = np.array(model.predict(X_cf))
+    ys_cfs_disc_pred = torch.tensor(model.predict(X_cf))
 
-    valid_cf_disc_metric = perc_valid_cf(np.zeros_like(ys_cfs_disc_pred), y_cf=ys_cfs_disc_pred)
+    valid_cf_disc_metric = perc_valid_cf(torch.zeros_like(ys_cfs_disc_pred), y_cf=ys_cfs_disc_pred)
 
 
     hamming_distance_metric = categorical_distance(
@@ -154,7 +156,9 @@ def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
         X_all=X_test,
         agg="mean",
     )
-    sparsity_metric = sparsity(X_aff, X_cf)
+
+
+    sparsity_metric = sparsity(torch.tensor(X_aff), torch.tensor(X_cf))
 
     metrics = {
         "model_returned_smth": model_returned_smth,

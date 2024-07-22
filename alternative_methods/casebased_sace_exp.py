@@ -60,7 +60,7 @@ def generate_cf(dataset, disc_model):
 
 
 @hydra.main(
-    config_path="../conf/other_methods", config_name="config_cbce", version_base="1.2"
+    config_path="../conf", config_name="config_cbce", version_base="1.2"
 )
 def main(cfg: DictConfig):
     logger.info("Initializing Neptune run")
@@ -145,9 +145,9 @@ def main(cfg: DictConfig):
         train_dataloader_for_log_prob = dataset.train_dataloader(
             batch_size=cfg.counterfactuals.batch_size, shuffle=False
         )
-        delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
+        median_log_prob = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
         # run["parameters/delta"] = delta
-        print(delta)
+        print(median_log_prob)
         metrics = evaluate_cf(
             disc_model=disc_model,
             gen_model=gen_model,
@@ -159,7 +159,7 @@ def main(cfg: DictConfig):
             y_train=dataset.y_train.reshape(-1),
             X_test=dataset.X_test,
             y_test=dataset.y_test.reshape(-1),
-            delta=delta,
+            median_log_prob=median_log_prob,
         )
         # run["metrics/cf"] = metrics
 

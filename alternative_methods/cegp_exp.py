@@ -85,7 +85,7 @@ def generate_cf(dataset, disc_model):
 
 
 @hydra.main(
-    config_path="../conf/other_methods", config_name="config_cegp", version_base="1.2"
+    config_path="../conf", config_name="config_cegp", version_base="1.2"
 )
 def main(cfg: DictConfig):
     tf.compat.v1.disable_eager_execution()

@@ -1,3 +1,0 @@
-model:
-  _target_: counterfactuals.discriminative_models.MultilayerPerceptron
-  hidden_layer_sizes: [256, 256, 256]

@@ -1,3 +1,0 @@
-model:
-  _target_: counterfactuals.generative_models.KDE
-  bandwidth: 0.1

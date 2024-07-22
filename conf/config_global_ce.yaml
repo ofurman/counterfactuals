@@ -6,7 +6,7 @@ hydra:
     max_batch_size: 10
 
 neptune:
-  enable: false
+  enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["exp_v1", "GEN_DISC_LOSS"]
@@ -17,7 +17,7 @@ experiment:
 
 
 dataset_name: 'german_credit'
-model_path: '../counterfactuals/global_cfs_utils/models'
+model_path: './counterfactuals/global_cfs_utils/models'
 
 model: lr
 
