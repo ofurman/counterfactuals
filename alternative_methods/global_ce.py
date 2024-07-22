@@ -60,7 +60,7 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dropped_features = []
-    dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None)
+    dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None, data_path="./data/")
     X_train, y_train, X_test, y_test, x_means, x_std = dataset.get_split(normalise=False, shuffle=False,
                                                                      return_mean_std=True)
     
@@ -105,6 +105,7 @@ def main(cfg: DictConfig):
 
     X_aff = ares.X_aff_original.values
     metrics = evaluate_globe_ce(Xs_cfs, X_aff, X_test.values, disc_model, model_returned)
+    print(metrics)
     run["metrics/cf"] = stringify_unsupported(metrics)
     logger.info("Finalizing and stopping run")
     run.stop()

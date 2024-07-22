@@ -58,7 +58,7 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dropped_features = []
-    dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None, data_path="../data/")
+    dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None, data_path="./data/")
     X_train, y_train, X_test, y_test, x_means, x_std = dataset.get_split(normalise=False, shuffle=False,
                                                                      return_mean_std=True)
     

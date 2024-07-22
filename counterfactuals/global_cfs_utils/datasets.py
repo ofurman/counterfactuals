@@ -21,7 +21,7 @@ import urllib.request
 import datetime
 
 class dataset_loader():
-    def __init__(self,  name=None,  data_path="datasets/",
+    def __init__(self,  name=None,  data_path="data/",
                  dropped_features=[], n_bins=None):
         """
         Class for downloading and pre-processing datasets

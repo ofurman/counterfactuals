@@ -6,7 +6,7 @@ hydra:
     max_batch_size: 10
 
 neptune:
-  enable: true
+  enable: false
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["exp_v1", "GEN_DISC_LOSS"]
