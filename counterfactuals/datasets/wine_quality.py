@@ -4,12 +4,13 @@ import pandas as pd
 
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
 
 from counterfactuals.datasets.base import AbstractDataset
 
 
 class WineQualityDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/regression/winequality.csv"):
+    def __init__(self, file_path: str = "data/regression/winequality-red.csv"):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
@@ -18,6 +19,16 @@ class WineQualityDataset(AbstractDataset):
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test
         )
+
+    def get_split_data(self, X: np.ndarray, y: np.ndarray):
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            random_state=4,
+            test_size=0.2,
+            shuffle=True,
+        )
+        return X_train, X_test, y_train, y_test
 
     def preprocess(self, raw_data: pd.DataFrame):
         """

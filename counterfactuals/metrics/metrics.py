@@ -462,3 +462,136 @@ def evaluate_cf(
         }
     )
     return metrics
+
+
+def evaluate_regression_cf(
+    disc_model: torch.nn.Module,
+    gen_model: torch.nn.Module,
+    X_cf: np.ndarray,
+    target_delta: float,
+    model_returned: np.ndarray,
+    continuous_features: list,
+    categorical_features: list,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    delta: np.ndarray,
+):
+    assert isinstance(X_cf, np.ndarray)
+    assert X_cf.dtype == np.float32
+    X_cf = np.atleast_2d(X_cf)
+
+    X_cf = X_cf[model_returned]
+
+    lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_test, X_cf)
+    isolation_forest_scores_xs, isolation_forest_scores_cfs = isolation_forest_metric(
+        X_train, X_test, X_cf
+    )
+
+    X_test = X_test[model_returned]
+    y_test = y_test[model_returned]
+
+    ys_pred = disc_model.predict(X_test)
+    y_target = ys_pred + target_delta
+
+    if X_cf.shape[0] == 0:
+        return {
+            "model_returned_smth": 0.0,
+        }
+
+    X_train = torch.from_numpy(X_train)
+    X_test = torch.from_numpy(X_test)
+    X_cf = torch.from_numpy(X_cf)
+
+    y_train = torch.from_numpy(y_train.reshape(-1))
+    y_test = torch.from_numpy(y_test.reshape(-1))
+
+    # Define variables for metrics
+    model_returned_smth = np.sum(model_returned) / len(model_returned)
+    ys_cfs_disc_pred = disc_model.predict(X_cf).numpy()
+    target_mae = np.mean(np.abs(ys_cfs_disc_pred - y_target.numpy()))
+
+    gen_log_probs_xs = gen_model(X_test, y_test.type(torch.float32))
+    gen_log_probs_cf = gen_model(X_cf, y_target.type(torch.float32))
+    flow_prob_condition_acc = torch.sum(delta < gen_log_probs_cf) / len(
+        gen_log_probs_cf
+    )
+
+    hamming_distance_metric = categorical_distance(
+        X=X_test,
+        X_cf=X_cf,
+        categorical_features=categorical_features,
+        metric="hamming",
+        agg="mean",
+    )
+    jaccard_distance_metric = categorical_distance(
+        X=X_test,
+        X_cf=X_cf,
+        categorical_features=categorical_features,
+        metric="jaccard",
+        agg="mean",
+    )
+    manhattan_distance_metric = continuous_distance(
+        X=X_test,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="cityblock",
+        X_all=X_test,
+    )
+    euclidean_distance_metric = continuous_distance(
+        X=X_test,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="euclidean",
+        X_all=X_test,
+    )
+    mad_distance_metric = continuous_distance(
+        X=X_test,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="mad",
+        X_all=X_test,
+    )
+    l2_jaccard_distance_metric = distance_l2_jaccard(
+        X=X_test,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+    )
+    mad_hamming_distance_metric = distance_mad_hamming(
+        X=X_test,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+        X_all=X_test,
+        agg="mean",
+    )
+    sparsity_metric = sparsity(X_test, X_cf)
+
+    # Create a dictionary of metrics
+    metrics = {
+        "model_returned_smth": model_returned_smth,
+        "valid_mae": target_mae,
+        "dissimilarity_proximity_categorical_hamming": hamming_distance_metric,
+        "dissimilarity_proximity_categorical_jaccard": jaccard_distance_metric,
+        "dissimilarity_proximity_continuous_manhatan": manhattan_distance_metric,
+        "dissimilarity_proximity_continuous_euclidean": euclidean_distance_metric,
+        "dissimilarity_proximity_continuous_mad": mad_distance_metric,
+        "distance_l2_jaccard": l2_jaccard_distance_metric,
+        "distance_mad_hamming": mad_hamming_distance_metric,
+        "sparsity": sparsity_metric,
+    }
+
+    metrics.update(
+        {
+            "flow_log_density_cfs": gen_log_probs_cf.mean().item(),
+            "flow_log_density_xs": gen_log_probs_xs.mean().item(),
+            "flow_prob_condition_acc": flow_prob_condition_acc.item(),
+            "lof_scores_xs": lof_scores_xs.mean(),
+            "lof_scores_cfs": lof_scores_cfs.mean(),
+            "isolation_forest_scores_xs": isolation_forest_scores_xs.mean(),
+            "isolation_forest_scores_cfs": isolation_forest_scores_cfs.mean(),
+        }
+    )
+    return metrics

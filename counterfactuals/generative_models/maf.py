@@ -29,6 +29,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         super(MaskedAutoregressiveFlow, self).__init__()
         self.device = device
         self.neptune_run = neptune_run
+        self.context_features = context_features
         self.model = _MaskedAutoregressiveFlow(
             features=features,
             hidden_features=hidden_features,
@@ -46,7 +47,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
 
     def forward(self, x, context=None):
         if context is not None:
-            context = context.view(-1, 1)
+            context = context.view(-1, self.context_features)
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(

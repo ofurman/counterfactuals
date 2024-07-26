@@ -72,7 +72,7 @@ class BaseCounterfactualModel(ABC):
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
 
-            contexts_origin = contexts_origin.reshape(-1, 1)
+            # contexts_origin = contexts_origin.reshape(-1, 1)
             if target is None:
                 contexts_target = torch.abs(1 - contexts_origin)
             elif isinstance(target, (torch.Tensor, np.ndarray)):

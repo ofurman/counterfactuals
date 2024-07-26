@@ -9,11 +9,9 @@ from time import time
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from sklearn.metrics import classification_report
 
-from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.utils import process_classification_report
+from counterfactuals.metrics.metrics import evaluate_regression_cf
+from counterfactuals.cf_methods.ppcefr import PPCEFR
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -69,31 +67,35 @@ def main(cfg: DictConfig):
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],
-        target_size=len(np.unique(dataset.y_train)),
+        target_size=dataset.y_train.shape[1] if len(dataset.y_train.shape) > 1 else 1,
     )
     train_dataloader = dataset.train_dataloader(
         batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
     )
-    # disc_model.load(disc_model_path)
-    disc_model.fit(train_dataloader, epochs=cfg.disc_model.epochs, lr=cfg.disc_model.lr)
-    disc_model.save(disc_model_path)
+
+    test_dataloader = dataset.test_dataloader(
+        batch_size=cfg.disc_model.batch_size, shuffle=False
+    )
+    disc_model.load(disc_model_path)
+    # disc_model.fit(train_dataloader, test_dataloader, epochs=cfg.disc_model.epochs, lr=cfg.disc_model.lr)
+    # disc_model.save(disc_model_path)
 
     logger.info("Evaluating discriminator model")
-    print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
-    report = classification_report(
-        dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
-    )
-    run["metrics"] = process_classification_report(report, prefix="disc_test")
+    # print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
+    # report = classification_report(
+    #     dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
+    # )
+    # run["metrics"] = process_classification_report(report, prefix="disc_test")
 
     run["disc_model"].upload(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = disc_model.predict(dataset.X_train)
-        dataset.y_test = disc_model.predict(dataset.X_test)
+        dataset.y_train = disc_model.predict(dataset.X_train).numpy()
+        dataset.y_test = disc_model.predict(dataset.X_test).numpy()
 
     logger.info("Training generative model")
     time_start = time()
-    train_dataloader = dataset.train_dataloader(
+    train_dataloader = dataset.train_dataloader(  # noqa: F841
         batch_size=cfg.gen_model.batch_size,
         shuffle=True,
         noise_lvl=cfg.gen_model.noise_lvl,
@@ -101,25 +103,28 @@ def main(cfg: DictConfig):
     test_dataloader = dataset.test_dataloader(
         batch_size=cfg.gen_model.batch_size, shuffle=False
     )
+    num_targets = dataset.y_train.shape[1] if len(dataset.y_train.shape) > 1 else 1
     gen_model = instantiate(
-        cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
+        cfg.gen_model.model,
+        features=dataset.X_train.shape[1],
+        context_features=num_targets,
     )
-    # gen_model.load(gen_model_path)
-    gen_model.fit(
-        train_loader=train_dataloader,
-        test_loader=test_dataloader,
-        num_epochs=cfg.gen_model.epochs,
-        patience=cfg.gen_model.patience,
-        learning_rate=cfg.gen_model.lr,
-        checkpoint_path=gen_model_path,
-        neptune_run=run,
-    )
-    run["metrics/gen_model_train_time"] = time() - time_start
-    gen_model.save(gen_model_path)
-    run["gen_model"].upload(gen_model_path)
+    gen_model.load(gen_model_path)
+    # gen_model.fit(
+    #     train_loader=train_dataloader,
+    #     test_loader=test_dataloader,
+    #     num_epochs=cfg.gen_model.epochs,
+    #     patience=cfg.gen_model.patience,
+    #     learning_rate=cfg.gen_model.lr,
+    #     checkpoint_path=gen_model_path,
+    #     neptune_run=run,
+    # )
+    # run["metrics/gen_model_train_time"] = time() - time_start
+    # gen_model.save(gen_model_path)
+    # run["gen_model"].upload(gen_model_path)
 
     logger.info("Handling counterfactual generation")
-    cf = PPCEF(
+    cf = PPCEFR(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=instantiate(cfg.counterfactuals.disc_loss),
@@ -128,10 +133,15 @@ def main(cfg: DictConfig):
     train_dataloader_for_log_prob = dataset.train_dataloader(
         batch_size=cfg.counterfactuals.batch_size, shuffle=False
     )
-    delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
-    # delta = torch.quantile(gen_model.predict_log_prob(train_dataloader_for_log_prob), 0.75)
+    # delta = torch.median(gen_model.predict_log_prob(train_dataloader_for_log_prob))
+    delta = torch.quantile(
+        gen_model.predict_log_prob(train_dataloader_for_log_prob), 0.25
+    )
     run["parameters/delta"] = delta
     print(delta)
+
+    dataset.X_test = dataset.X_test[dataset.y_test.min(axis=1) <= 0.8]
+    dataset.y_test = dataset.y_test[dataset.y_test.min(axis=1) <= 0.8]
 
     test_dataloader = dataset.test_dataloader(
         batch_size=cfg.counterfactuals.batch_size, shuffle=False
@@ -139,6 +149,7 @@ def main(cfg: DictConfig):
     time_start = time()
     Xs_cfs, Xs, ys_orig, ys_target, _ = cf.search_batch(
         dataloader=test_dataloader,
+        target=0.2,
         epochs=cfg.counterfactuals.epochs,
         lr=cfg.counterfactuals.lr,
         patience=cfg.counterfactuals.patience,
@@ -157,12 +168,11 @@ def main(cfg: DictConfig):
     logger.info("Calculating metrics")
     ys_orig = ys_orig.flatten()
 
-    metrics = evaluate_cf(
+    metrics = evaluate_regression_cf(
         gen_model=gen_model,
         disc_model=disc_model,
-        # X=Xs,
         X_cf=Xs_cfs,
-        y_target=ys_target,
+        target_delta=0.2,
         model_returned=model_returned,
         categorical_features=dataset.categorical_features,
         continuous_features=dataset.numerical_features,
@@ -180,7 +190,9 @@ def main(cfg: DictConfig):
     log_df = pd.DataFrame(metrics, index=[0])
     logger.info("Finalizing and stopping run")
 
-    log_df.to_csv(os.path.join(output_folder, "metrics.csv"), index=False)
+    log_df.to_csv(
+        os.path.join(output_folder, f"metrics_wach_{disc_model_name}.csv"), index=False
+    )
     # run["metrics"].upload(os.path.join(output_folder, "metrics.csv"))
     run.stop()
 
