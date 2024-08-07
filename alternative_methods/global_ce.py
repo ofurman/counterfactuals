@@ -12,7 +12,6 @@ import pickle
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ares import AReS
 from counterfactuals.cf_methods.global_ce import GLOBE_CE
 

@@ -56,29 +56,28 @@ def main(cfg: DictConfig):
     run.wait()
 
     logger.info("Loading dataset")
-    dropped_features = []
-    dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None, data_path="./data/")
-    X_train, y_train, X_test, y_test, x_means, x_std = dataset.get_split(normalise=False, shuffle=False,
-                                                                     return_mean_std=True)
-    
-    X = pd.DataFrame(X_train)
-    X.columns = dataset.features[:-1]
-    X_test = pd.DataFrame(X_test)
-    X_test.columns = dataset.features[:-1]
+    # dropped_features = []
+    # dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None, data_path="./data/")
+    # X_train, y_train, X_test, y_test, x_means, x_std = dataset.get_split(normalise=False, shuffle=False,
+    #                                                                  return_mean_std=True)
+    cf_dataset = instantiate(cfg.dataset, method="ares")
+
+    X = cf_dataset.X_train
+    X_test = cf_dataset.X_test
 
     logger.info("Loading discriminator model")
     with open(disc_model_path, 'rb') as f:
         disc_model = pickle.load(f)
 
     if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = disc_model.predict(dataset.X_train)
-        dataset.y_test = disc_model.predict(dataset.X_test)
+        cf_dataset.y_train = disc_model.predict(cf_dataset.X_train)
+        cf_dataset.y_test = disc_model.predict(cf_dataset.X_test)
 
     normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 
-    ares = AReS(model=disc_model, dataset=dataset, X=X, dropped_features=[],
+    ares = AReS(model=disc_model, dataset=cf_dataset, X=X, dropped_features=[],
             n_bins=10, ordinal_features=[], normalise=normalisers[dataset_name],
-            constraints=[20,7,10])
+            constraints=[20,7,10], dataset_name=cfg.dataset_name)
 
     logger.info("Handling counterfactual generation")
     time_start = time()
@@ -118,13 +117,13 @@ def generate_ares_counterfactuals(ares):
 def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
     categorical_features = range(X_cf.shape[1])
     continuous_features = range(X_cf.shape[1])
+    X_aff = X_aff.astype(np.float64)
 
     model_returned_smth = np.sum(model_returned) / len(model_returned)
 
     ys_cfs_disc_pred = torch.tensor(model.predict(X_cf))
 
     valid_cf_disc_metric = perc_valid_cf(torch.zeros_like(ys_cfs_disc_pred), y_cf=ys_cfs_disc_pred)
-
 
     hamming_distance_metric = categorical_distance(
         X=X_aff, X_cf=X_cf, categorical_features=categorical_features, metric="hamming", agg="mean"

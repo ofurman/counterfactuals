@@ -8,6 +8,21 @@ import matplotlib.pyplot as plt
 import itertools
 import warnings
 
+categorical_features = {
+    "compas": ["Sex", "Age_Cat", "Race", "C_Charge_Degree"],
+    "german_credit": [
+                    "account_check_status", "credit_history", "purpose",
+                    "savings", "present_emp_since", "personal_status_sex",
+                    "other_debtors", "property", "other_installment_plans",
+                    "housing", "job", "telephone", "foreign_worker",
+                    # new
+                    "installment_as_income_perc", "other_installment_plans",
+                    "credits_this_bank", "people_under_maintenance", "present_res_since"],
+    "default_credit": ['Sex', 'Education', 'Marriage', 'Pay_0', 'Pay_2', 'Pay_3',
+                        'Pay_4', 'Pay_5', 'Pay_6'],
+    "heloc": []
+}
+
 
 def create_feature_values_tree(features_tree, use_values=False):
     """
@@ -43,7 +58,7 @@ def create_features_tree(feature_values):
 class AReS:
     def __init__(self, model, dataset, X, dropped_features=[],
                  n_bins=10, ordinal_features=[], normalise=False,
-                 constraints=[20, 7, 10], correctness=False):
+                 constraints=[20, 7, 10], correctness=False, dataset_name=None):
         """
         Normalise is implemented differently to GLOBE_CE
         AReS Implementation:
@@ -124,7 +139,7 @@ class AReS:
         self.features = self.dataset.features  # list of feature values (includes class label)
         # list of categorical features (not values)
         # if a continuous feature was binned before model training, then it's treated as categorical (though ordinal)
-        self.categorical_features = self.dataset.categorical_features[self.dataset.name]
+        self.categorical_features = categorical_features[dataset_name]
                 
         # Bin continuous features and store resulting data (dimensionality of input data increases)
         self.X, self.binned_features, self.binned_features_continuous = self.bin_continuous_features(self.X)

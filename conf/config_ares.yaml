@@ -19,6 +19,9 @@ experiment:
 dataset_name: 'german_credit'
 model_path: './counterfactuals/global_cfs_utils/models'
 
+dataset:
+  _target_: counterfactuals.datasets.GermanCreditDataset
+
 model: lr
 
 counterfactuals:

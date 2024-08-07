@@ -129,7 +129,7 @@ class dataset_loader():
             
         url = self.datasets[self.name]
         csv_ext = ["heloc", "compas", "adult", "german_credit"]
-        filename = self.name.split('_')[0]
+        filename = self.name#.split('_')[0]
         ext = "csv" if filename in csv_ext else "data"
         file_name = '{}.{}'.format(filename, ext)  # e.g. german.data
         file_address = self.data_path+file_name
