@@ -13,7 +13,7 @@ from sklearn.metrics import classification_report
 import torch.utils
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.cf_methods.regional_ppcef import RPPCEF
+from counterfactuals.cf_methods.rppcef import RPPCEF
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

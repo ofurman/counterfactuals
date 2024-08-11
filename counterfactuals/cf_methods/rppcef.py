@@ -1,11 +1,15 @@
 import numpy as np
+from sklearn.cluster import KMeans
+
 
 import torch
 from torch.utils.data import DataLoader
 
 from tqdm.auto import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactualModel
+from counterfactuals.cf_methods.ppcef_base import BasePPCEF
+from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.discriminative_models.base import BaseDiscModel
 from counterfactuals.sparsemax import Sparsemax
 
 
@@ -80,7 +84,7 @@ class GLOBAL_CE(torch.nn.Module):
 
 
 class GCE(torch.nn.Module):
-    def __init__(self, N, D, K):
+    def __init__(self, N, D, K, init_from_kmeans=False, X=None):
         super(GCE, self).__init__()
         assert 1 <= K and K <= N, "Assumption of the method!"
         assert N >= 1
@@ -91,10 +95,23 @@ class GCE(torch.nn.Module):
         self.K = K
 
         self.m = torch.nn.Parameter(0 * torch.rand(self.N, 1))
-        self.s = torch.nn.Parameter(0.01 * torch.rand(self.N, self.K))
         self.d = torch.nn.Parameter(0 * torch.rand((self.K, self.D)))
 
+        if init_from_kmeans:
+            assert X is not None, "X should be provided for KMeans initialization"
+            self.s = self._init_from_kmeans(X, K)
+        else:
+            self.s = torch.nn.Parameter(0.01 * torch.rand(self.N, self.K))
         self.sparsemax = Sparsemax(dim=1)
+
+    def _init_from_kmeans(self, X, K):
+        kmeans = KMeans(n_clusters=K, random_state=42).fit(X)
+        group_labels = kmeans.labels_
+        group_labels_one_hot = np.zeros((group_labels.size, group_labels.max() + 1))
+        group_labels_one_hot[np.arange(group_labels.size), group_labels] = 1
+        assert group_labels_one_hot.shape[1] == K
+        assert group_labels_one_hot.shape[0] == X.shape[0]
+        return torch.from_numpy(group_labels_one_hot).float()
 
     def _entropy_loss(self, prob_dist):
         prob_dist = torch.clamp(prob_dist, min=1e-9)
@@ -121,22 +138,46 @@ class GCE(torch.nn.Module):
         return torch.exp(self.m), self.sparsemax(self.s), self.d
 
 
-class RPPCEF(BaseCounterfactualModel):
+class RPPCEF(BasePPCEF):
     def __init__(
         self,
-        delta,
-        gen_model,
-        disc_model,
-        disc_model_criterion,
+        cf_method_type: str,
+        N: int,
+        D: int,
+        K: int,
+        gen_model: BaseGenModel,
+        disc_model: BaseDiscModel,
+        disc_model_criterion: torch.nn.modules.loss._Loss,
+        init_cf_method_from_kmeans: bool = False,
+        X=None,
         device=None,
         neptune_run=None,
     ):
-        self.delta = delta
+        self.delta = self._init_cf_method(
+            cf_method_type, N, D, K, init_cf_method_from_kmeans, X
+        )
         self.disc_model_criterion = disc_model_criterion
-        super().__init__(gen_model, disc_model, device, neptune_run)
+        self.gen_model = gen_model
+        self.disc_model = disc_model
+        self.device = device if device else "cpu"
+        self.neptune_run = neptune_run
 
-    def search_step(
-            self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
+    def _init_cf_method(
+        self, cf_method_type, N, D, K, init_cf_method_from_kmeans=False, X=None
+    ):
+        if cf_method_type == "ARES":
+            return ARES(N, D, K)
+        elif cf_method_type == "GLOBAL_CE":
+            return GLOBAL_CE(N, D, K)
+        elif cf_method_type == "GCE":
+            return GCE(N, D, K, init_cf_method_from_kmeans, X)
+        elif cf_method_type == "PPCEF_2":
+            return PPCEF_2(N, D, K)
+        else:
+            raise ValueError(f"Unknown cf_method: {cf_method_type}")
+
+    def _search_step(
+        self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
     ) -> dict:
         """Search step for the cf search process.
         :param x_param: point to be optimized
@@ -148,14 +189,19 @@ class RPPCEF(BaseCounterfactualModel):
         alpha = search_step_kwargs.get("alpha", None)
         alpha_s = search_step_kwargs.get("alpha_s", None)
         alpha_k = search_step_kwargs.get("alpha_k", None)
-        median_log_prob = search_step_kwargs.get("median_log_prob", None)
+        log_prob_threshold = search_step_kwargs.get("log_prob_threshold", None)
+        dist_flag = search_step_kwargs.get("dist_flag", None)
 
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
-        if alpha_plausability is None:
-            alpha_plausability = alpha
-        if median_log_prob is None:
-            raise ValueError("Parameter 'median_log_prob' should be in kwargs")
+        if alpha_s is None:
+            raise ValueError("Parameter 'alpha_s' should be in kwargs")
+        if alpha_k is None:
+            raise ValueError("Parameter 'alpha_k' should be in kwargs")
+        if log_prob_threshold is None:
+            raise ValueError("Parameter 'log_prob_threshold' should be in kwargs")
+        if dist_flag is None:
+            raise ValueError("Parameter 'dist_flag' should be in kwargs")
 
         dist = torch.linalg.vector_norm(delta(), dim=1, ord=2)
 
@@ -172,14 +218,12 @@ class RPPCEF(BaseCounterfactualModel):
 
         p_x_param_c_target = self.gen_model(
             x_origin + delta(), context=context_target.type(torch.float32)
-        ).clamp(max=10 ** 3)
-        max_inner = torch.nn.functional.relu(median_log_prob - p_x_param_c_target)
+        ).clamp(max=10**5)
+        max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
 
         delta_loss = delta.loss(alpha_s, alpha_k)
-
-        # loss = dist + alpha * (loss_disc + max_inner) # + sparse_loss + col_wise_entropy)
+        # dist = dist if dist_flag else torch.Tensor([0])
         loss = dist + alpha * (loss_disc + max_inner) + delta_loss
-        # loss = dist + alpha * (max_inner + loss_disc) + alpha/10 * (sparse_loss + col_wise_entropy)
 
         return {
             "loss": loss,
@@ -189,14 +233,27 @@ class RPPCEF(BaseCounterfactualModel):
             "delta_loss": delta_loss,
         }
 
-    def search_batch(
-            self,
-            dataloader: DataLoader,
-            epochs: int = 1000,
-            lr: float = 0.0005,
-            patience: int = 100,
-            patience_eps: int = 1e-3,
-            **search_step_kwargs,
+    def explain(
+        self,
+        X: np.ndarray,
+        y_origin: np.ndarray,
+        y_target: np.ndarray,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+    ):
+        """
+        Explains the model's prediction for a given input.
+        """
+        raise NotImplementedError("This method is not implemented for this class.")
+
+    def explain_dataloader(
+        self,
+        dataloader: DataLoader,
+        epochs: int = 1000,
+        lr: float = 0.0005,
+        patience: int = 100,
+        patience_eps: int = 1e-3,
+        **search_step_kwargs,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -210,7 +267,6 @@ class RPPCEF(BaseCounterfactualModel):
             for param in self.disc_model.parameters():
                 param.requires_grad = False
 
-        deltas = []
         target_class = []
         original = []
         original_class = []
@@ -228,14 +284,16 @@ class RPPCEF(BaseCounterfactualModel):
 
             loss_components_logging = {}
             min_loss = float("inf")
+            dist_flag = False
 
             for epoch in (epoch_pbar := tqdm(range(epochs), dynamic_ncols=True)):
                 optimizer.zero_grad()
-                loss_components = self.search_step(
+                loss_components = self._search_step(
                     self.delta,
                     xs_origin,
                     contexts_origin,
                     contexts_target,
+                    dist_flag=dist_flag,
                     **search_step_kwargs,
                 )
                 mean_loss = loss_components["loss"].mean()
@@ -252,6 +310,7 @@ class RPPCEF(BaseCounterfactualModel):
                         )
 
                 loss = loss_components["loss"].detach().cpu().mean().item()
+                # Progress bar description
                 epoch_pbar.set_description(
                     ", ".join(
                         [
@@ -260,20 +319,24 @@ class RPPCEF(BaseCounterfactualModel):
                         ]
                     )
                 )
+                # Early stopping handling
                 if (loss < (min_loss - patience_eps)) or (epoch < 1000):
                     min_loss = loss
                     patience_counter = 0
                 else:
                     patience_counter += 1
                     if patience_counter > patience:
-                        break
+                        if not dist_flag:
+                            patience_counter = 0
+                            dist_flag = True
+                        else:
+                            break
 
-            deltas.append(self.delta)
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
             target_class.append(contexts_target.detach().cpu().numpy())
         return (
-            deltas,
+            self.delta,
             np.concatenate(original, axis=0),
             np.concatenate(original_class, axis=0),
             np.concatenate(target_class, axis=0),

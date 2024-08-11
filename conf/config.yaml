@@ -21,22 +21,28 @@ dataset:
   _target_: counterfactuals.datasets.BlobsDataset
 
 disc_model:
+  train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
+  train_model: false
   batch_size: 1024
   epochs: 2000
   patience: 100
   lr: 0.003
   noise_lvl: 0.02
 
-counterfactuals:
-  K: 5
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.RPPCEF
+    cf_method_type: "ARES"
+    K: 1
+
   log_prob_quantile: 0.25
-  origin_class: 0
+  target_class: 0
   epochs: 20000
   batch_size: 4096
   lr: 0.001
@@ -45,8 +51,6 @@ counterfactuals:
   alpha_k: 100
   beta: 0.01
   patience: 1000
-  delta:
-    _target_: counterfactuals.cf_methods.regional_ppcef.GCE
   disc_loss:
-    # _target_: counterfactuals.losses.MulticlassDiscLoss
-    _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss

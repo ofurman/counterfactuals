@@ -67,11 +67,12 @@ def plot_counterfactuals(ax, counterfactuals):
     return ax
 
 
-def plot_observations(ax, observations, targets):
+def plot_observations(ax, observations, targets, colors=None):
+    # colors is a list of colors for each observation
     ax.scatter(
         observations[:, 0],
         observations[:, 1],
-        c=targets,
+        c=colors if colors is not None else targets,
         cmap=matplotlib.colormaps["tab10"],
         s=50,
         alpha=0.8,
