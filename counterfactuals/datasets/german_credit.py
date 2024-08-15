@@ -7,17 +7,36 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class GermanCreditDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/german_credit.csv", method=None, n_bins=None, train=False):
+    def __init__(
+        self,
+        file_path: str = "data/german_credit.csv",
+        method=None,
+        n_bins=None,
+        train=False,
+    ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         if method == "ares":
             self.categorical_features = [
-                        "account_check_status", "credit_history", "purpose",
-                        "savings", "present_emp_since", "personal_status_sex",
-                        "other_debtors", "property", "other_installment_plans",
-                        "housing", "job", "telephone", "foreign_worker",
-                        # new
-                        "installment_as_income_perc", "other_installment_plans",
-                        "credits_this_bank", "people_under_maintenance", "present_res_since"]
+                "account_check_status",
+                "credit_history",
+                "purpose",
+                "savings",
+                "present_emp_since",
+                "personal_status_sex",
+                "other_debtors",
+                "property",
+                "other_installment_plans",
+                "housing",
+                "job",
+                "telephone",
+                "foreign_worker",
+                # new
+                "installment_as_income_perc",
+                "other_installment_plans",
+                "credits_this_bank",
+                "people_under_maintenance",
+                "present_res_since",
+            ]
             self.n_bins = n_bins
             self.X, self.y = self.one_hot(self.raw_data)
             if train:
@@ -125,7 +144,7 @@ class GermanCreditDataset(AbstractDataset):
     def one_hot(self, data):
         """
         Improvised method for one-hot encoding the data
-        
+
         Input: data (whole dataset)
         Outputs: data_oh (one-hot encoded data)
                  features (list of feature values after one-hot encoding)
@@ -146,15 +165,16 @@ class GermanCreditDataset(AbstractDataset):
                 data_encode[x] = label_encoder.fit_transform(data_encode[x])
                 cols = label_encoder.classes_
             elif self.n_bins is not None:
-                data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)),
-                                        bins=self.n_bins)
+                data_encode[x] = pd.cut(
+                    data_encode[x].apply(lambda x: float(x)), bins=self.n_bins
+                )
                 cols = data_encode[x].cat.categories
                 self.bins_tree[x] = {}
             else:
                 data_oh.append(data[x])
                 features.append(x)
                 continue
-                
+
             one_hot = pd.get_dummies(data_encode[x])
             data_oh.append(one_hot)
             for col in cols:
@@ -164,7 +184,7 @@ class GermanCreditDataset(AbstractDataset):
                 if not categorical:
                     self.bins[feature_value] = col.mid
                     self.bins_tree[x][feature_value] = col.mid
-                
+
         data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
         data_oh.columns = features
         self.features = features

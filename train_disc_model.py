@@ -51,7 +51,7 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
 
-    if cfg.method=="ares":
+    if cfg.method == "ares":
         dataset = instantiate(cfg.dataset, method="ares", train=True)
         disc_model_name += "_ares"
 
@@ -66,7 +66,7 @@ def main(cfg: DictConfig):
         "LawDataset",
         "HelocDataset",
         "AuditDataset",
-        "GermanCreditDataset"
+        "GermanCreditDataset",
     ]
     num_classes = (
         1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))

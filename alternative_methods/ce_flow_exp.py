@@ -29,9 +29,15 @@ from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.utils.mlc
     save_pytorch_model_to_model_path,
 )
 
-from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.flow_ssl.realnvp.realnvp import RealNVPTabular
-from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.flow_ssl import FlowLoss
-from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.flow_ssl.distributions import SSLGaussMixture
+from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.flow_ssl.realnvp.realnvp import (
+    RealNVPTabular,
+)
+from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.flow_ssl import (
+    FlowLoss,
+)
+from counterfactuals.cf_methods.ce_flow.src.counterfactual_explanation.flow_ssl.distributions import (
+    SSLGaussMixture,
+)
 
 from abc import ABC, abstractmethod
 
@@ -46,7 +52,9 @@ def train_flow(input_features, means, train_loader):
     MEAN_VALUE = 0.5
     prior = SSLGaussMixture(means=means)
     # deq = DequantizationOriginal()
-    flow = RealNVPTabular(num_coupling_layers=3, in_dim=input_features, num_layers=5, hidden_dim=8)
+    flow = RealNVPTabular(
+        num_coupling_layers=3, in_dim=input_features, num_layers=5, hidden_dim=8
+    )
     loss_fn = FlowLoss(prior)
     # optimizer = torch.optim.Adam(flow.parameters(), lr=LR_INIT, weight_decay=1e-3)
     optimizer = torch.optim.SGD(flow.parameters(), lr=LR_INIT, momentum=0.9)
@@ -58,7 +66,7 @@ def train_flow(input_features, means, train_loader):
         1,
     )
 
-    cur_lr = scheduler.optimizer.param_groups[0]['lr']
+    cur_lr = scheduler.optimizer.param_groups[0]["lr"]
 
     print("Learning rate ", cur_lr)
 
@@ -72,17 +80,21 @@ def train_flow(input_features, means, train_loader):
             flow_loss.backward()
             optimizer.step()
 
-        cur_lr = scheduler.optimizer.param_groups[0]['lr']
+        cur_lr = scheduler.optimizer.param_groups[0]["lr"]
         scheduler.step()
 
         if t % PRINT_FREQ == 0:
-            print('iter %s:' % t, 'loss = %.3f' % flow_loss, 'learning rate: %s' % cur_lr)
+            print(
+                "iter %s:" % t, "loss = %.3f" % flow_loss, "learning rate: %s" % cur_lr
+            )
 
     return flow
 
 
 @hydra.main(
-    config_path="../conf/other_methods", config_name="config_ce_flow", version_base="1.2"
+    config_path="../conf/other_methods",
+    config_name="config_ce_flow",
+    version_base="1.2",
 )
 def main(cfg: DictConfig):
     DATA_NAME = cfg.data_name
@@ -135,7 +147,7 @@ def main(cfg: DictConfig):
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],
-        target_size=1 if num_features==2 else num_features,
+        target_size=1 if num_features == 2 else num_features,
     )
     disc_model.load(disc_model_path)
 
@@ -171,32 +183,39 @@ def main(cfg: DictConfig):
 
     predictions = predictive_model(features)
     negative_index = negative_prediction_index(predictions)
-    negative_instance_features = prediction_instances(
-        features, negative_index)
+    negative_instance_features = prediction_instances(features, negative_index)
 
     positive_index = positive_prediction_index(predictions)
-    positive_instance_features = prediction_instances(
-        features, positive_index)
+    positive_instance_features = prediction_instances(features, positive_index)
 
     factual_sample = negative_instance_features[0:2, :]
 
     mean_z0, mean_z1 = find_latent_mean_two_classes(
-        flow_model, negative_instance_features, positive_instance_features)
+        flow_model, negative_instance_features, positive_instance_features
+    )
 
-    if DATA_NAME == 'simple_bn':
+    if DATA_NAME == "simple_bn":
         counterfactual_instance = CounterfactualSimpleBn(
-            predictive_model, flow_model, mean_z0, mean_z1, weight)
-    elif DATA_NAME == 'adult':
+            predictive_model, flow_model, mean_z0, mean_z1, weight
+        )
+    elif DATA_NAME == "adult":
         deq = DequantizationOriginal()
         counterfactual_instance = CounterfactualAdult(
-            predictive_model, flow_model, mean_z0, mean_z1, weight, deq)
+            predictive_model, flow_model, mean_z0, mean_z1, weight, deq
+        )
 
     # Run algorithm
     start = timeit.default_timer()
     cf_sample = []
     for single_factual in factual_sample:
-        counterfactual = counterfactual_instance.find_counterfactual_via_optimizer(
-            single_factual.reshape(1, -1)).cpu().detach().numpy()
+        counterfactual = (
+            counterfactual_instance.find_counterfactual_via_optimizer(
+                single_factual.reshape(1, -1)
+            )
+            .cpu()
+            .detach()
+            .numpy()
+        )
         cf_sample.append(counterfactual)
     stop = timeit.default_timer()
     run_time = stop - start

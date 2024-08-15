@@ -46,13 +46,13 @@ class BaseCounterfactualModel(ABC):
         pass
 
     def search_batch(
-            self,
-            dataloader: DataLoader,
-            epochs: int = 1000,
-            lr: float = 0.0005,
-            patience: int = 100,
-            verbose: bool = False,
-            **search_step_kwargs,
+        self,
+        dataloader: DataLoader,
+        epochs: int = 1000,
+        lr: float = 0.0005,
+        patience: int = 100,
+        verbose: bool = False,
+        **search_step_kwargs,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -87,15 +87,22 @@ class BaseCounterfactualModel(ABC):
 
             for epoch in range(epochs):
                 optimizer.zero_grad()
-                loss_components = self.search_step(xs, xs_origin, contexts_origin, contexts_target,
-                                                   **search_step_kwargs)
+                loss_components = self.search_step(
+                    xs,
+                    xs_origin,
+                    contexts_origin,
+                    contexts_target,
+                    **search_step_kwargs,
+                )
                 mean_loss = loss_components["loss"].mean()
                 mean_loss.backward()
                 optimizer.step()
 
                 if self.neptune_run:
                     for loss_name, loss in loss_components.items():
-                        self.neptune_run[f"cf_search/{loss_name}"].append(loss.mean().detach().cpu().numpy())
+                        self.neptune_run[f"cf_search/{loss_name}"].append(
+                            loss.mean().detach().cpu().numpy()
+                        )
                 if mean_loss.item() < min_loss:
                     min_loss = mean_loss.item()
                 else:
@@ -106,8 +113,11 @@ class BaseCounterfactualModel(ABC):
             counterfactuals.append(xs.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
-        return np.concatenate(counterfactuals, axis=0), np.concatenate(original, axis=0), np.concatenate(original_class,
-                                                                                                         axis=0)
+        return (
+            np.concatenate(counterfactuals, axis=0),
+            np.concatenate(original, axis=0),
+            np.concatenate(original_class, axis=0),
+        )
 
     def predict_gen_log_prob(self, x: np.ndarray):
         if isinstance(x, np.ndarray):
@@ -147,7 +157,11 @@ class BaseCounterfactualModel(ABC):
         log_probs = self.gen_model.predict_log_prob(train_dataloader)
         return np.median(log_probs)
 
-    def predict(self, test_data: Union[DataLoader, torch.Tensor, np.ndarray], batch_size: int = 64) -> np.ndarray:
+    def predict(
+        self,
+        test_data: Union[DataLoader, torch.Tensor, np.ndarray],
+        batch_size: int = 64,
+    ) -> np.ndarray:
         """
         Predict class using generative model.
         """
@@ -157,9 +171,7 @@ class BaseCounterfactualModel(ABC):
         if isinstance(test_data, (np.ndarray, torch.Tensor)):
             test_data = torch.Tensor(test_data)
             dataloader = DataLoader(
-                dataset=TensorDataset(test_data),
-                shuffle=False,
-                batch_size=batch_size
+                dataset=TensorDataset(test_data), shuffle=False, batch_size=batch_size
             )
         else:
             dataloader = test_data

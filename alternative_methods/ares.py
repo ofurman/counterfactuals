@@ -13,7 +13,14 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.ares import AReS, dnn_normalisers, lr_normalisers
-from counterfactuals.metrics.metrics import continuous_distance, categorical_distance, distance_l2_jaccard, distance_mad_hamming, sparsity, perc_valid_cf
+from counterfactuals.metrics.metrics import (
+    continuous_distance,
+    categorical_distance,
+    distance_l2_jaccard,
+    distance_mad_hamming,
+    sparsity,
+    perc_valid_cf,
+)
 
 
 NORMALISERS = {
@@ -21,7 +28,9 @@ NORMALISERS = {
     "lr": lr_normalisers,
 }
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +48,9 @@ def main(cfg: DictConfig):
     dataset_name = cfg.dataset._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-    disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}_ares.pt")
+    disc_model_path = os.path.join(
+        output_folder, f"disc_model_{disc_model_name}_ares.pt"
+    )
     logger.info(disc_model_path)
 
     os.makedirs(output_folder, exist_ok=True)
@@ -74,16 +85,26 @@ def main(cfg: DictConfig):
 
     normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 
-    ares = AReS(model=disc_model, dataset=cf_dataset, X=X, dropped_features=[],
-            n_bins=10, ordinal_features=[], normalise=normalisers[dataset_name],
-            constraints=[20,7,10], dataset_name=dataset_name)
+    ares = AReS(
+        model=disc_model,
+        dataset=cf_dataset,
+        X=X,
+        dropped_features=[],
+        n_bins=10,
+        ordinal_features=[],
+        normalise=normalisers[dataset_name],
+        constraints=[20, 7, 10],
+        dataset_name=dataset_name,
+    )
 
     logger.info("Handling counterfactual generation")
     time_start = time()
 
     Xs_cfs = generate_ares_counterfactuals(ares)
 
-    run["metrics/eval_time"] = np.mean(time() - time_start)  # probably pointless because many versions of counterfactuals are generated
+    run["metrics/eval_time"] = np.mean(
+        time() - time_start
+    )  # probably pointless because many versions of counterfactuals are generated
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
@@ -93,7 +114,9 @@ def main(cfg: DictConfig):
     logger.info("Calculating metrics")
 
     X_aff = ares.X_aff_original.values
-    metrics = evaluate_ares_cfs(Xs_cfs, X_aff, X_test.values, disc_model, model_returned)
+    metrics = evaluate_ares_cfs(
+        Xs_cfs, X_aff, X_test.values, disc_model, model_returned
+    )
 
     print(metrics)
 
@@ -103,12 +126,15 @@ def main(cfg: DictConfig):
 
 
 def generate_ares_counterfactuals(ares):
-    ares.generate_itemsets(apriori_threshold=0.2, max_width=None,
-                        affected_subgroup=None, save_copy=True)
-    ares.generate_groundset(max_width=None, RL_reduction=True,
-                            then_generation=None, save_copy=False)
-    ares.evaluate_groundset(lams=[1, 0], r=3000, save_mode=1,
-                            disable_tqdm=False, plot_accuracy=False)
+    ares.generate_itemsets(
+        apriori_threshold=0.2, max_width=None, affected_subgroup=None, save_copy=True
+    )
+    ares.generate_groundset(
+        max_width=None, RL_reduction=True, then_generation=None, save_copy=False
+    )
+    ares.evaluate_groundset(
+        lams=[1, 0], r=3000, save_mode=1, disable_tqdm=False, plot_accuracy=False
+    )
     Xs_cfs = ares.V.cfx_matrix[-1]
     return Xs_cfs
 
@@ -122,22 +148,44 @@ def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
 
     ys_cfs_disc_pred = torch.tensor(model.predict(X_cf))
 
-    valid_cf_disc_metric = perc_valid_cf(torch.zeros_like(ys_cfs_disc_pred), y_cf=ys_cfs_disc_pred)
+    valid_cf_disc_metric = perc_valid_cf(
+        torch.zeros_like(ys_cfs_disc_pred), y_cf=ys_cfs_disc_pred
+    )
 
     hamming_distance_metric = categorical_distance(
-        X=X_aff, X_cf=X_cf, categorical_features=categorical_features, metric="hamming", agg="mean"
+        X=X_aff,
+        X_cf=X_cf,
+        categorical_features=categorical_features,
+        metric="hamming",
+        agg="mean",
     )
     jaccard_distance_metric = categorical_distance(
-        X=X_aff, X_cf=X_cf, categorical_features=categorical_features, metric="jaccard", agg="mean"
+        X=X_aff,
+        X_cf=X_cf,
+        categorical_features=categorical_features,
+        metric="jaccard",
+        agg="mean",
     )
     manhattan_distance_metric = continuous_distance(
-        X=X_aff, X_cf=X_cf, continuous_features=continuous_features, metric="cityblock", X_all=X_test
+        X=X_aff,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="cityblock",
+        X_all=X_test,
     )
     euclidean_distance_metric = continuous_distance(
-        X=X_aff, X_cf=X_cf, continuous_features=continuous_features, metric="euclidean", X_all=X_test
+        X=X_aff,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="euclidean",
+        X_all=X_test,
     )
     mad_distance_metric = continuous_distance(
-        X=X_aff, X_cf=X_cf, continuous_features=continuous_features, metric="mad", X_all=X_test
+        X=X_aff,
+        X_cf=X_cf,
+        continuous_features=continuous_features,
+        metric="mad",
+        X_all=X_test,
     )
     l2_jaccard_distance_metric = distance_l2_jaccard(
         X=X_aff,
@@ -154,7 +202,6 @@ def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
         agg="mean",
     )
 
-
     sparsity_metric = sparsity(torch.tensor(X_aff), torch.tensor(X_cf))
 
     metrics = {
@@ -170,6 +217,7 @@ def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
         "sparsity": sparsity_metric,
     }
     return metrics
+
 
 if __name__ == "__main__":
     main()

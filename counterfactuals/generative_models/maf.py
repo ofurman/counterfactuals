@@ -52,15 +52,15 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(
-            self,
-            train_loader: torch.utils.data.DataLoader,
-            test_loader: torch.utils.data.DataLoader,
-            num_epochs: int = 100,
-            learning_rate: float = 1e-3,
-            patience: int = 20,
-            eps: float = 1e-3,
-            checkpoint_path: str = "best_model.pth",
-            neptune_run: neptune.Run = None,
+        self,
+        train_loader: torch.utils.data.DataLoader,
+        test_loader: torch.utils.data.DataLoader,
+        num_epochs: int = 100,
+        learning_rate: float = 1e-3,
+        patience: int = 20,
+        eps: float = 1e-3,
+        checkpoint_path: str = "best_model.pth",
+        neptune_run: neptune.Run = None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
@@ -138,8 +138,10 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             log_p_one = self(X, y_one)
         result = torch.vstack([log_p_zero, log_p_one])
 
-        assert result.T.shape[0] == X.shape[0], f"Shape of results don't match. " \
-                                                f"Shape of result: {result.shape}, shape of input: {X.shape}"
+        assert result.T.shape[0] == X.shape[0], (
+            f"Shape of results don't match. "
+            f"Shape of result: {result.shape}, shape of input: {X.shape}"
+        )
         return result
 
     def save(self, path):

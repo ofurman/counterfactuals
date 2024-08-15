@@ -84,9 +84,7 @@ def generate_cf(dataset, disc_model):
     return model_returned, Xs_cfs, cf_search_time
 
 
-@hydra.main(
-    config_path="../conf", config_name="config_cegp", version_base="1.2"
-)
+@hydra.main(config_path="../conf", config_name="config_cegp", version_base="1.2")
 def main(cfg: DictConfig):
     tf.compat.v1.disable_eager_execution()
     logger.info("Initializing Neptune run")
