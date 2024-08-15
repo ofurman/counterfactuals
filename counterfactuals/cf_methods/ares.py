@@ -8,9 +8,11 @@ import matplotlib.pyplot as plt
 import itertools
 import warnings
 
+import torch
+
 categorical_features = {
     "compas": ["Sex", "Age_Cat", "Race", "C_Charge_Degree"],
-    "german_credit": [
+    "GermanCreditDataset": [
                     "account_check_status", "credit_history", "purpose",
                     "savings", "present_emp_since", "personal_status_sex",
                     "other_debtors", "property", "other_installment_plans",
@@ -20,7 +22,29 @@ categorical_features = {
                     "credits_this_bank", "people_under_maintenance", "present_res_since"],
     "default_credit": ['Sex', 'Education', 'Marriage', 'Pay_0', 'Pay_2', 'Pay_3',
                         'Pay_4', 'Pay_5', 'Pay_6'],
-    "heloc": []
+    "HelocDataset": [],
+    "LawDataset": [],
+    "MoonsDataset": [],
+}
+
+
+dnn_normalisers = {
+    'compas': False,
+    'GermanCreditDataset': True,
+    'adult_income': True,
+    'default_credit': True,
+    'HelocDataset': False,
+    'MoonsDataset': True
+}
+
+
+lr_normalisers = {
+    'compas': False,
+    'GermanCreditDataset': True,
+    'adult_income': True,
+    'default_credit': True,
+    'HelocDataset': False,
+    'MoonsDataset': True
 }
 
 
@@ -120,6 +144,8 @@ class AReS:
             self.preds = self.model.predict((X.values-self.means)/self.stds)
         else:
             self.preds = self.model.predict(X.values)  # to determine affected inputs
+        if isinstance(self.preds, torch.Tensor):
+            self.preds = self.preds.numpy()
         self.X_original = X  # store original inputs
         # copy is needed since continuous features are binned for apriori
         self.X = self.X_original.copy()
@@ -144,8 +170,11 @@ class AReS:
         # Bin continuous features and store resulting data (dimensionality of input data increases)
         self.X, self.binned_features, self.binned_features_continuous = self.bin_continuous_features(self.X)
         self.continuous_features = []  # list of continuous features
-        self.feature_costs_vector = np.zeros(len(self.features)-1)
-        self.non_ordinal_categories_idx = np.ones(len(self.features)-1, dtype=bool)
+
+        # self.feature_costs_vector = np.zeros(len(self.features)-1)
+        self.feature_costs_vector = np.zeros(len(self.features))
+        self.non_ordinal_categories_idx = np.ones(len(self.features), dtype=bool)
+        # self.non_ordinal_categories_idx = np.ones(len(self.features)-1, dtype=bool)
         i = 0
         for feature in self.features_tree:
             if feature not in self.categorical_features:
@@ -910,6 +939,8 @@ class TwoLevelRecourseSet:
                 corrects = ares.model.predict(cfx_norm)
             else:
                 corrects = ares.model.predict(cfx.values)
+            if isinstance(corrects, torch.Tensor):
+                corrects = corrects.numpy()
             triple_corrects[triple_cover] = corrects * 100
             triple_costs[triple_cover] = featurechange
             triple_cfx[triple_cover] = cfx

@@ -7,11 +7,21 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class GermanCreditDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/german_credit.csv", method=None, n_bins=None):
+    def __init__(self, file_path: str = "data/german_credit.csv", method=None, n_bins=None, train=False):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         if method == "ares":
+            self.categorical_features = [
+                        "account_check_status", "credit_history", "purpose",
+                        "savings", "present_emp_since", "personal_status_sex",
+                        "other_debtors", "property", "other_installment_plans",
+                        "housing", "job", "telephone", "foreign_worker",
+                        # new
+                        "installment_as_income_perc", "other_installment_plans",
+                        "credits_this_bank", "people_under_maintenance", "present_res_since"]
             self.n_bins = n_bins
             self.X, self.y = self.one_hot(self.raw_data)
+            if train:
+                self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
             self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
                 self.X, self.y
             )
@@ -120,14 +130,6 @@ class GermanCreditDataset(AbstractDataset):
         Outputs: data_oh (one-hot encoded data)
                  features (list of feature values after one-hot encoding)
         """
-        self.categorical_features = [
-                    "account_check_status", "credit_history", "purpose",
-                    "savings", "present_emp_since", "personal_status_sex",
-                    "other_debtors", "property", "other_installment_plans",
-                    "housing", "job", "telephone", "foreign_worker",
-                    # new
-                    "installment_as_income_perc", "other_installment_plans",
-                    "credits_this_bank", "people_under_maintenance", "present_res_since"]
 
         label_encoder = LabelEncoder()
         data_encode = data.copy()

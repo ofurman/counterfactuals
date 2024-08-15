@@ -7,11 +7,15 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class LawDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/german_credit.csv", method=None, n_bins=None):
+    def __init__(self, file_path: str = "data/law.csv", method=None, n_bins=None, train=False):
         self.raw_data = self.load(file_path=file_path)
         if method == "ares":
+            self.categorical_features = []
+            self.raw_data = self.raw_data[["lsat", "gpa", "zfygpa", "pass_bar"]]
             self.n_bins = n_bins
             self.X, self.y = self.one_hot(self.raw_data)
+            if train:
+                self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.astype(np.int64).to_numpy()
             self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
                 self.X, self.y
             )
@@ -105,6 +109,7 @@ class LawDataset(AbstractDataset):
         self.categorical_features = []
 
         label_encoder = LabelEncoder()
+        data = data.dropna()
         data_encode = data.copy()
         self.bins = {}
         self.bins_tree = {}
@@ -112,7 +117,7 @@ class LawDataset(AbstractDataset):
 
         # Assign encoded features to one hot columns
         data_oh, features = [], []
-        for x in data.columns[1:]:
+        for x in data.columns[:-1]:
             self.features_tree[x] = []
             categorical = x in self.categorical_features
             if categorical:
@@ -141,4 +146,4 @@ class LawDataset(AbstractDataset):
         data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
         data_oh.columns = features
         self.features = features
-        return data_oh, data["default"]
+        return data_oh, data["pass_bar"]

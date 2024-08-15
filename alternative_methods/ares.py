@@ -12,16 +12,13 @@ import pickle
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.ares import AReS
-from counterfactuals.global_cfs_utils.datasets_split import dataset_loader_split
-import counterfactuals.global_cfs_utils.models as models
+from counterfactuals.cf_methods.ares import AReS, dnn_normalisers, lr_normalisers
 from counterfactuals.metrics.metrics import continuous_distance, categorical_distance, distance_l2_jaccard, distance_mad_hamming, sparsity, perc_valid_cf
 
 
 NORMALISERS = {
-    "dnn": models.dnn_normalisers,
-    "lr": models.lr_normalisers,
-    "xgboost": 3
+    "dnn": dnn_normalisers,
+    "lr": lr_normalisers,
 }
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -38,10 +35,11 @@ def main(cfg: DictConfig):
         tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
     )
 
-    dataset_name = cfg.dataset_name
-    disc_model_name = cfg.model
+    disc_model_name = cfg.disc_model
+    dataset_name = cfg.dataset._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
-    disc_model_path = os.path.join(f"{cfg.model_path}/{dataset_name}_{disc_model_name}.pkl")
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}_ares.pt")
     logger.info(disc_model_path)
 
     os.makedirs(output_folder, exist_ok=True)
@@ -50,24 +48,25 @@ def main(cfg: DictConfig):
     # Log parameters using Hydra config
     logger.info("Logging parameters")
     run["parameters/experiment"] = cfg.experiment
-    run["parameters/dataset"] = cfg.dataset_name
-    run["parameters/disc_model"] = cfg.model
+    run["parameters/dataset"] = dataset_name
+    run["parameters/disc_model"] = cfg.disc_model
     run["parameters/counterfactuals"] = cfg.counterfactuals
     run.wait()
 
     logger.info("Loading dataset")
-    # dropped_features = []
-    # dataset = dataset_loader_split(dataset_name, dropped_features=dropped_features, n_bins=None, data_path="./data/")
-    # X_train, y_train, X_test, y_test, x_means, x_std = dataset.get_split(normalise=False, shuffle=False,
-    #                                                                  return_mean_std=True)
     cf_dataset = instantiate(cfg.dataset, method="ares")
 
-    X = cf_dataset.X_train
+    X = pd.DataFrame(cf_dataset.X_train).astype(np.float32)
     X_test = cf_dataset.X_test
 
     logger.info("Loading discriminator model")
-    with open(disc_model_path, 'rb') as f:
-        disc_model = pickle.load(f)
+
+    disc_model = instantiate(
+        cfg.disc_model.model,
+        input_size=cf_dataset.X_train.shape[1],
+        target_size=1,
+    )
+    disc_model.load(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
         cf_dataset.y_train = disc_model.predict(cf_dataset.X_train)
@@ -77,7 +76,7 @@ def main(cfg: DictConfig):
 
     ares = AReS(model=disc_model, dataset=cf_dataset, X=X, dropped_features=[],
             n_bins=10, ordinal_features=[], normalise=normalisers[dataset_name],
-            constraints=[20,7,10], dataset_name=cfg.dataset_name)
+            constraints=[20,7,10], dataset_name=dataset_name)
 
     logger.info("Handling counterfactual generation")
     time_start = time()

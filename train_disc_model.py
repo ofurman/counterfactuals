@@ -32,7 +32,7 @@ def main(cfg: DictConfig):
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     os.makedirs(output_folder, exist_ok=True)
-    save_folder = os.path.join(output_folder, "ppcef")
+    save_folder = os.path.join(output_folder, "ares")
     os.makedirs(save_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
 
@@ -50,7 +50,13 @@ def main(cfg: DictConfig):
     run.wait()
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+
+    if cfg.method=="ares":
+        dataset = instantiate(cfg.dataset, method="ares", train=True)
+        disc_model_name += "_ares"
+
+    else:
+        dataset = instantiate(cfg.dataset)
 
     disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}.pt")
 
@@ -60,6 +66,7 @@ def main(cfg: DictConfig):
         "LawDataset",
         "HelocDataset",
         "AuditDataset",
+        "GermanCreditDataset"
     ]
     num_classes = (
         1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
