@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.HelocDataset
   # _target_: counterfactuals.datasets.GermanCreditDataset
 
 disc_model:
