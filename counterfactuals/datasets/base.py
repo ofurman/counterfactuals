@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -130,3 +131,52 @@ class AbstractDataset(ABC):
                     )
                 )
         return categorical_features_lists
+
+    def ares_one_hot(self, data):
+        """
+        Improvised method for one-hot encoding the data
+
+        Input: data (whole dataset)
+        Outputs: data_oh (one-hot encoded data)
+                 features (list of feature values after one-hot encoding)
+        """
+
+        label_encoder = LabelEncoder()
+        data_encode = data.copy()
+        self.bins = {}
+        self.bins_tree = {}
+        self.features_tree = {}
+
+        # Assign encoded features to one hot columns
+        data_oh, features = [], []
+        for x in data.columns[:-1]:
+            self.features_tree[x] = []
+            categorical = x in self.categorical_features
+            if categorical:
+                data_encode[x] = label_encoder.fit_transform(data_encode[x])
+                cols = label_encoder.classes_
+            elif self.n_bins is not None:
+                data_encode[x] = pd.cut(
+                    data_encode[x].apply(lambda x: float(x)), bins=self.n_bins
+                )
+                cols = data_encode[x].cat.categories
+                self.bins_tree[x] = {}
+            else:
+                data_oh.append(data[x])
+                features.append(x)
+                continue
+
+            one_hot = pd.get_dummies(data_encode[x])
+            data_oh.append(one_hot)
+            for col in cols:
+                feature_value = x + " = " + str(col)
+                features.append(feature_value)
+                self.features_tree[x].append(feature_value)
+                if not categorical:
+                    self.bins[feature_value] = col.mid
+                    self.bins_tree[x][feature_value] = col.mid
+
+        data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
+        data_oh.columns = features
+        self.features = features
+        return data_oh
