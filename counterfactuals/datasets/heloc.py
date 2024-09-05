@@ -6,13 +6,18 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class HelocDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/heloc.csv", method=None, n_bins=None, train=False):
+    def __init__(
+        self, file_path: str = "data/heloc.csv", method=None, n_bins=None, train=False
+    ):
         self.raw_data = self.load(file_path=file_path)
         if method == "ares":
             self.raw_data = self.ares_prepro(self.raw_data)
             self.n_bins = n_bins
             self.categorical_features = []
-            self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["RiskPerformance"]
+            self.X, self.y = (
+                self.ares_one_hot(self.raw_data),
+                self.raw_data["RiskPerformance"],
+            )
             if train:
                 self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
             self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
@@ -71,12 +76,13 @@ class HelocDataset(AbstractDataset):
         return X_train, X_test, y_train, y_test
 
     def ares_prepro(self, data):
-        data = data[(data.iloc[:, 1:]>=0).any(axis=1)]
-        data['RiskPerformance'] = data['RiskPerformance'].replace(['Bad', 'Good'],
-                                                                    [0, 1])
-        y = data.pop('RiskPerformance')
-        data['RiskPerformance'] = y
-        data = data[data>=0]
+        data = data[(data.iloc[:, 1:] >= 0).any(axis=1)]
+        data["RiskPerformance"] = data["RiskPerformance"].replace(
+            ["Bad", "Good"], [0, 1]
+        )
+        y = data.pop("RiskPerformance")
+        data["RiskPerformance"] = y
+        data = data[data >= 0]
         nan_cols = data.isnull().any(axis=0)
         for col in data.columns:
             if nan_cols[col]:
