@@ -15,7 +15,7 @@ class GermanCreditDataset(AbstractDataset):
         train=False,
     ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
-        if method == "ares":
+        if method in ["ares", "globe-ce"]:
             self.categorical_features = [
                 "account_check_status",
                 "credit_history",

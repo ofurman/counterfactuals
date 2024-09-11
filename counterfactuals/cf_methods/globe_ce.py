@@ -5,6 +5,46 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+categorical_features = {
+    "compas": ["Sex", "Age_Cat", "Race", "C_Charge_Degree"],
+    "GermanCreditDataset": [
+        "account_check_status",
+        "credit_history",
+        "purpose",
+        "savings",
+        "present_emp_since",
+        "personal_status_sex",
+        "other_debtors",
+        "property",
+        "other_installment_plans",
+        "housing",
+        "job",
+        "telephone",
+        "foreign_worker",
+        # new
+        "installment_as_income_perc",
+        "other_installment_plans",
+        "credits_this_bank",
+        "people_under_maintenance",
+        "present_res_since",
+    ],
+    "default_credit": [
+        "Sex",
+        "Education",
+        "Marriage",
+        "Pay_0",
+        "Pay_2",
+        "Pay_3",
+        "Pay_4",
+        "Pay_5",
+        "Pay_6",
+    ],
+    "HelocDataset": [],
+    "LawDataset": [],
+    "MoonsDataset": [],
+}
+
+
 class GLOBE_CE:
     def __init__(
         self,
@@ -19,6 +59,7 @@ class GLOBE_CE:
         bin_widths=None,
         monotonicity=None,
         p=1,
+        dataset_name=None,
     ):
         """GLOBE_CE class. This class is used to generate GCE directions and evaluate scaling.
 
@@ -44,11 +85,10 @@ class GLOBE_CE:
         self.dataset = copy.deepcopy(dataset)
         self.X = copy.deepcopy(X)
         self.affected_subgroup = affected_subgroup
-        self.name = self.dataset.name
         self.monotonicity = np.array(monotonicity) if monotonicity is not None else None
         self.features = np.array(list(self.dataset.features_tree))
         self.n_f = len(self.features)
-        self.feature_values = self.dataset.features[:-1]
+        self.feature_values = self.dataset.features
 
         # Refer normalisation to model?
         if normalise is not None:
@@ -95,9 +135,10 @@ class GLOBE_CE:
             self.dataset.features_tree
         )  # dictionary of form 'feature: [feature values]'
         # list of categorical features (not values)
-        self.categorical_features = self.dataset.categorical_features[self.name]
+        self.categorical_features = categorical_features[dataset_name]
         # list of continuous features
-        self.continuous_features = self.dataset.continuous_features[self.name]
+        self.continuous_features = self.prepare_continuous_features()
+
         # Number of categorical or continuous features
         self.n_categorical = len(self.categorical_features)
         self.n_continuous = len(self.continuous_features)
@@ -116,6 +157,7 @@ class GLOBE_CE:
         # Costs Masks and Feature Idx to Values Indexes Dictionary
         i = 0
         self.features_tree_idx = {}
+
         for j, feature in enumerate(self.features_tree):
             if feature in self.continuous_features:
                 if self.bin_widths is not None:
@@ -163,6 +205,13 @@ class GLOBE_CE:
         self.correct_vector, self.cost_vector = None, None
         self.correct_max, self.cost_max = None, None
         self.scalars = None
+
+    def prepare_continuous_features(self):
+        continuous_features = []
+        for column in self.dataset.raw_data.columns[:-1]:
+            if column not in self.categorical_features:
+                continuous_features.append(column)
+        return continuous_features
 
     def round_categorical(self, cf):
         """

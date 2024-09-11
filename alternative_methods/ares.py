@@ -1,6 +1,5 @@
 import logging
 import os
-import json
 import hydra
 import neptune
 from neptune.utils import stringify_unsupported
@@ -8,7 +7,6 @@ import numpy as np
 import pandas as pd
 from time import time
 import torch
-import pickle
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
@@ -80,8 +78,9 @@ def main(cfg: DictConfig):
     disc_model.load(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
-        cf_dataset.y_train = disc_model.predict(cf_dataset.X_train)
-        cf_dataset.y_test = disc_model.predict(cf_dataset.X_test)
+        print(cf_dataset.X_train.values)
+        cf_dataset.y_train = disc_model.predict(cf_dataset.X_train.values.astype(np.int16))
+        cf_dataset.y_test = disc_model.predict(cf_dataset.X_test.values.astype(np.int16))
 
     normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 

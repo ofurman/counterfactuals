@@ -11,7 +11,7 @@ class LawDataset(AbstractDataset):
         self, file_path: str = "data/law.csv", method=None, n_bins=None, train=False
     ):
         self.raw_data = self.load(file_path=file_path)
-        if method == "ares":
+        if method in ["ares", "globe-ce"]:
             self.categorical_features = []
             self.raw_data = self.raw_data[["lsat", "gpa", "zfygpa", "pass_bar"]]
             self.n_bins = n_bins

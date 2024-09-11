@@ -10,7 +10,7 @@ class HelocDataset(AbstractDataset):
         self, file_path: str = "data/heloc.csv", method=None, n_bins=None, train=False
     ):
         self.raw_data = self.load(file_path=file_path)
-        if method == "ares":
+        if method in ["ares", "globe-ce"]:
             self.raw_data = self.ares_prepro(self.raw_data)
             self.n_bins = n_bins
             self.categorical_features = []
