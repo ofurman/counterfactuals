@@ -78,9 +78,12 @@ def main(cfg: DictConfig):
     disc_model.load(disc_model_path)
 
     if cfg.experiment.relabel_with_disc_model:
-        print(cf_dataset.X_train.values)
-        cf_dataset.y_train = disc_model.predict(cf_dataset.X_train.values.astype(np.int16))
-        cf_dataset.y_test = disc_model.predict(cf_dataset.X_test.values.astype(np.int16))
+        cf_dataset.y_train = disc_model.predict(
+            cf_dataset.X_train.values.astype(np.int16)
+        )
+        cf_dataset.y_test = disc_model.predict(
+            cf_dataset.X_test.values.astype(np.int16)
+        )
 
     normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 

@@ -8,3 +8,4 @@ from counterfactuals.discriminative_models.multilayer_perceptron import (
 )
 
 from counterfactuals.discriminative_models.node import NODE
+from counterfactuals.discriminative_models.soft_decision_tree import SDT
