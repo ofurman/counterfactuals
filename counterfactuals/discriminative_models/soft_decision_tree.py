@@ -95,7 +95,7 @@ class SDT(nn.Module):
             test_loss = 0
             self.train()
             for batch_idx, (data, labels) in enumerate(train_loader):
-                output, penalty = self.forward(data)
+                output, penalty = self.forward(data, return_penalty=True)
 
                 loss = self.criterion(output, self.prep_for_loss(labels))
                 loss += penalty
@@ -109,7 +109,7 @@ class SDT(nn.Module):
                 self.eval()
                 with torch.no_grad():
                     for batch_idx, (data, labels) in enumerate(test_loader):
-                        output, penalty = self.forward(data)
+                        output, penalty = self.forward(data, return_penalty=True)
                         loss = self.criterion(output, self.prep_for_loss(labels))
                         loss += penalty
                         test_loss += loss.item()
@@ -128,13 +128,15 @@ class SDT(nn.Module):
                 break
         self.load(checkpoint_path)
 
-    def forward(self, X):
+    def forward(self, X, return_penalty=False):
         _mu, _penalty = self._forward(X)
         y_pred = self.leaf_nodes(_mu)
 
         # When `X` is the training data, the model also returns the penalty
         # to compute the training loss.
-        return y_pred, _penalty
+        if return_penalty:
+            return y_pred, _penalty
+        return y_pred
 
     def _forward(self, X):
         """Implementation on the data forwarding process."""
@@ -226,7 +228,7 @@ class SDT(nn.Module):
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test).float()
         with torch.no_grad():
-            logits, _ = self.forward(X_test)
+            logits = self.forward(X_test)
 
             probs = self.final_activation(logits)
             if self.target_size == 1:

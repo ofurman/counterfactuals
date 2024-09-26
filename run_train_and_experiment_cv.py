@@ -222,7 +222,7 @@ def main(cfg: DictConfig):
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
             y_test=ys_orig,
-            delta=median_log_prob,
+            median_log_prob=median_log_prob,
         )
         print(metrics)
         run[f"{fold_n}/metrics/cf"] = stringify_unsupported(metrics)
