@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: medium_maf
-  - disc_model: sdt
+  - disc_model: mlp
 
 hydra:
   sweeper:
@@ -18,8 +18,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
+  _target_: counterfactuals.datasets.LawDataset
   # _target_: counterfactuals.datasets.HelocDataset
-  _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
   epochs: 5000
@@ -44,7 +44,7 @@ counterfactuals:
   beta: 0.01
   patience: 500
   disc_loss:
-    # _target_: counterfactuals.losses.MulticlassDiscLoss
-    _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss
 
 method: null

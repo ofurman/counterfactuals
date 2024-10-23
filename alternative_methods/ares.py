@@ -47,7 +47,8 @@ def main(cfg: DictConfig):
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model_path = os.path.join(
-        output_folder, f"disc_model_{disc_model_name}_ares.pt"
+        output_folder, f"disc_model_{disc_model_name}.pt"
+        # output_folder, f"disc_model_{disc_model_name}_ares.pt"
     )
     logger.info(disc_model_path)
 

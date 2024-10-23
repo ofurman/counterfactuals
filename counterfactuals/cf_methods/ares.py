@@ -47,6 +47,7 @@ categorical_features = {
     "HelocDataset": [],
     "LawDataset": [],
     "MoonsDataset": [],
+    "AuditDataset": [],
 }
 
 
@@ -57,6 +58,8 @@ dnn_normalisers = {
     "default_credit": True,
     "HelocDataset": False,
     "MoonsDataset": True,
+    "LawDataset": False,
+    "AuditDataset": False,
 }
 
 
@@ -67,6 +70,8 @@ lr_normalisers = {
     "default_credit": True,
     "HelocDataset": False,
     "MoonsDataset": True,
+    "LawDataset": False,
+    "AuditDataset": False,
 }
 
 
