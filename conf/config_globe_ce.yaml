@@ -1,18 +1,18 @@
 defaults:
   - _self_
-  - disc_model: mlp
+  - disc_model: lr
 
-model: mlp
+model: lr
 
 hydra:
   sweeper:
     max_batch_size: 10
 
 neptune:
-  enable: true
+  enable: false
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["GLOBE_CE", "german_credit", "MLP", "relabeling"]
+  tags: ["GLOBE_CE", "heloc", "lr", "relabeling"]
 
 experiment:
   output_folder: models/
@@ -20,8 +20,8 @@ experiment:
 
 
 dataset:
-  # _target_: counterfactuals.datasets.LawDataset
-  _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.MoonsDataset
+  # _target_: counterfactuals.datasets.HelocDataset
 
 
 counterfactuals:
@@ -34,3 +34,9 @@ counterfactuals:
   disc_loss:
     _target_: counterfactuals.losses.BinaryDiscLoss
     # _target_: torch.nn.BCEWithLogitsLoss
+
+disc_model:
+  epochs: 5000
+  batch_size: 64
+  patience: 300
+  lr: 0.001

@@ -6,29 +6,21 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class MoonsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/moons.csv", method=None, train=False):
+    def __init__(self, file_path: str = "data/moons.csv", n_bins=None, method=None, train=False, grid=False):
         self.raw_data = self.load(file_path=file_path, header=None)
+        self.raw_data.columns = ["0", "1", "2"]
+        self.feature_columns = ["0", "1"]
+        self.n_bins = n_bins
+        self.categorical_features = []
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
-
+        self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["2"]
+        self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
-        if method == "ares" and not train:
-            self.X_train = pd.DataFrame(self.X_train)
-            self.X_train.columns = [str(col) for col in self.X_train.columns]
-
-            self.X_test = pd.DataFrame(self.X_test)
-            self.X_test.columns = [str(col) for col in self.X_test.columns]
-
-            self.bins = {}
-            self.bins_tree = {}
-            self.features_tree = {}
-            self.features = self.X_train.columns
-            for x in self.X_train.columns:
-                self.features_tree[x] = []
+        # self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+        #     self.X_train, self.X_test, self.y_train, self.y_test
+        # )
 
     def preprocess(self, raw_data: pd.DataFrame):
         """

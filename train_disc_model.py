@@ -51,12 +51,7 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
 
-    if cfg.method == "ares":
-        dataset = instantiate(cfg.dataset, method="ares", train=True)
-        disc_model_name += "_ares"
-
-    else:
-        dataset = instantiate(cfg.dataset)
+    dataset = instantiate(cfg.dataset)
 
     disc_model_path = os.path.join(output_folder, f"disc_model_{disc_model_name}.pt")
 

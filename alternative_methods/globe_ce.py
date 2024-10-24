@@ -44,7 +44,7 @@ def main(cfg: DictConfig):
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model_path = os.path.join(
-        output_folder, f"disc_model_{disc_model_name}_ares.pt"
+        output_folder, f"disc_model_{disc_model_name}.pt"
     )
     logger.info(disc_model_path)
 
@@ -62,7 +62,6 @@ def main(cfg: DictConfig):
     logger.info("Loading dataset")
     cf_dataset = instantiate(cfg.dataset, method="globe-ce")
 
-    X = pd.DataFrame(cf_dataset.X_train).astype(np.float32)
     X_test = cf_dataset.X_test
 
     logger.info("Loading discriminator model")
@@ -76,13 +75,17 @@ def main(cfg: DictConfig):
 
     if cfg.experiment.relabel_with_disc_model:
         cf_dataset.y_train = disc_model.predict(
-            cf_dataset.X_train.values.astype(np.int16)
+            cf_dataset.X_train
         )
         cf_dataset.y_test = disc_model.predict(
-            cf_dataset.X_test.values.astype(np.int16)
+            cf_dataset.X_test
         )
 
     normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
+
+    X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(np.float32)
+    cf_dataset.X_train = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns)
+    cf_dataset.X_test = pd.DataFrame(cf_dataset.X_test, columns=cf_dataset.feature_columns)
 
     ares = AReS(
         model=disc_model,
@@ -132,7 +135,7 @@ def main(cfg: DictConfig):
 
     X_aff = globe_ce.x_aff
     metrics = evaluate_globe_ce(
-        Xs_cfs, X_aff, X_test.values, disc_model, model_returned
+        Xs_cfs, X_aff, X_test, disc_model, model_returned
     )
     print(metrics)
     run["metrics/cf"] = stringify_unsupported(metrics)

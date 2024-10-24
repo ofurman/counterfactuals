@@ -10,20 +10,33 @@ class HelocDataset(AbstractDataset):
         self, file_path: str = "data/heloc.csv", method=None, n_bins=None, train=False, grid=False
     ):
         self.raw_data = self.load(file_path=file_path)
-        self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        target_column = "RiskPerformance"
+        self.feature_columns = self.raw_data.columns.drop(target_column)
+        self.raw_data = self.ares_prepro(self.raw_data)
+        self.n_bins = n_bins
+        self.categorical_features = []
+        self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["RiskPerformance"]
+
+        self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
+
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
-        if not train and method in ["ares", "globe-ce"]:
-            self.base_ares_setup(n_bins)
-            self.X_train = pd.DataFrame(self.X_train, columns=self.feature_columns)
-            self.X_test = pd.DataFrame(self.X_test, columns=self.feature_columns)
+
+        # self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        # self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+        #     self.X, self.y
+        # )
+        # self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+        #     self.X_train, self.X_test, self.y_train, self.y_test
+        # )
+        # if not train and method in ["ares", "globe-ce"]:
+        #     self.base_ares_setup(n_bins)
+        #     self.X_train = pd.DataFrame(self.X_train, columns=self.feature_columns)
+        #     self.X_test = pd.DataFrame(self.X_test, columns=self.feature_columns)
         
-        if grid:
-            self.base_ares_setup(n_bins)
+        # if grid:
+        #     self.base_ares_setup(n_bins)
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
