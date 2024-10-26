@@ -7,6 +7,8 @@ from counterfactuals.discriminative_models.base import BaseDiscModel
 class LogisticRegression(BaseDiscModel):
     def __init__(self, input_size, target_size):
         super(LogisticRegression, self).__init__()
+        self.input_size = input_size
+        self.target_size = target_size
         self.linear = torch.nn.Linear(input_size, target_size)
 
     def forward(self, x):

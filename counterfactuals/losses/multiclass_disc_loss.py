@@ -1,5 +1,8 @@
+import logging
 import torch
 import torch.nn.functional as F
+
+logger = logging.getLogger(__name__)
 
 
 class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
@@ -10,6 +13,8 @@ class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
         self.eps = eps
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        if target.type() != torch.LongTensor:
+            target = target.long()
         target_mask = torch.eye(input.shape[-1])[target]
         target_mask = target_mask.squeeze(1)  # label 2 one-hot conversion
         non_target_mask = (~target_mask.bool()).float()
