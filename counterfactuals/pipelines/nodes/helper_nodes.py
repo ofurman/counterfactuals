@@ -36,7 +36,7 @@ def log_parameters(cfg: DictConfig, run: neptune.Run):
     run.wait()
 
 
-def set_model_paths(cfg: DictConfig):
+def set_model_paths(cfg: DictConfig, fold: str = None):
     """
     Saves results in the output folder with the following structure:
     output_folder/dataset_name/_disc_model_name.pt
@@ -53,9 +53,12 @@ def set_model_paths(cfg: DictConfig):
     output_folder = os.path.join(
         os.path.abspath(cfg.experiment.output_folder), dataset_name
     )
+    save_folder = os.path.join(output_folder, cf_method_name)
+    if fold is not None:
+        save_folder = os.path.join(save_folder, f"fold_{fold}")
+        output_folder = os.path.join(output_folder, f"fold_{fold}")
     os.makedirs(output_folder, exist_ok=True)
     logger.info("Creatied output folder %s", output_folder)
-    save_folder = os.path.join(output_folder, cf_method_name)
     os.makedirs(save_folder, exist_ok=True)
     logger.info("Created save folder %s", save_folder)
 

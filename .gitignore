@@ -173,6 +173,7 @@ env.sh
 
 #notebooks
 notebooks/*.pdf
+notebooks/*.csv
 
 
 # models
