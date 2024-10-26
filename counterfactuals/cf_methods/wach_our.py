@@ -1,6 +1,6 @@
 import torch
 
-from counterfactuals.cf_methods.ppcef_base import BaseCounterfactualModel
+from counterfactuals.cf_methods.ppcef.ppcef_base import BaseCounterfactualModel
 
 
 class WACH(BaseCounterfactualModel):

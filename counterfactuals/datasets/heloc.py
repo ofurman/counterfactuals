@@ -20,6 +20,7 @@ class HelocDataset(AbstractDataset):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
+        raw_data = raw_data.replace(-9, np.nan).dropna()
         target_column = "RiskPerformance"
         self.feature_columns = raw_data.columns.drop(target_column)
 

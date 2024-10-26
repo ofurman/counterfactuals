@@ -1,3 +1,4 @@
+from typing import Tuple
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -50,7 +51,7 @@ class AbstractDataset(ABC):
 
     def get_cv_splits(self, n_splits: int = 5):
         """
-        Return a list of (train, test) indices for cross-validation.
+        Sets and return the train and test splits for cross-validation.
         """
         cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=4)
         for train_idx, test_idx in cv.split(self.X, self.y):
@@ -63,6 +64,42 @@ class AbstractDataset(ABC):
                 y_test=self.y_test,
             )
             yield self.X_train, self.X_test, self.y_train, self.y_test
+
+    def get_target_class_splits(self, target_class: int) -> Tuple[np.ndarray]:
+        """
+        Sets and return the train and test splits for cross-validation.
+        """
+        try:
+            target_train_idx = np.where(self.y_train == target_class)[0]
+            target_test_idx = np.where(self.y_test == target_class)[0]
+            return (
+                self.X_train[target_train_idx],
+                self.X_test[target_test_idx],
+                self.y_train[target_train_idx],
+                self.y_test[target_test_idx],
+            )
+        except AttributeError:
+            raise AttributeError(
+                "X_train, X_test, y_train, and y_test must be set before calling this method."
+            )
+
+    def get_non_target_class_splits(self, target_class: int) -> Tuple[np.ndarray]:
+        """
+        Sets and return the train and test splits for cross-validation.
+        """
+        try:
+            non_target_train_idx = np.where(self.y_train != target_class)[0]
+            non_target_test_idx = np.where(self.y_test != target_class)[0]
+            return (
+                self.X_train[non_target_train_idx],
+                self.X_test[non_target_test_idx],
+                self.y_train[non_target_train_idx],
+                self.y_test[non_target_test_idx],
+            )
+        except AttributeError:
+            raise AttributeError(
+                "X_train, X_test, y_train, and y_test must be set before calling this method."
+            )
 
     def get_split_data(self, X: np.ndarray, y: np.ndarray):
         X_train, X_test, y_train, y_test = train_test_split(

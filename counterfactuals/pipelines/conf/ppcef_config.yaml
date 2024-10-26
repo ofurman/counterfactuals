@@ -11,7 +11,7 @@ neptune:
   enable: false
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["19.05", "GCE", "no_plausability", "Q1_log_prob_threshold", "all_methods", "lambda_ablation"]
+  tags: ["PPCEF"]
 
 experiment:
   output_folder: models/
@@ -37,9 +37,12 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.RPPCEF
-    cf_method_type: "ARES"
-    K: 1
+    # specific parameters besides standard ones should be passed here
+    _target_: counterfactuals.cf_methods.PPCEF
+
+  disc_model_criterion:
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0
@@ -51,6 +54,5 @@ counterfactuals_params:
   alpha_k: 100
   beta: 0.01
   patience: 1000
-  disc_loss:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
+  
+    
