@@ -80,7 +80,15 @@ class CFMetrics:
         # write class properties
         self.gen_model = gen_model
         self.disc_model = disc_model
-        self.prob_plausibility_threshold = prob_plausibility_threshold
+        self.prob_plausibility_threshold = (
+            prob_plausibility_threshold.item()
+            if isinstance(prob_plausibility_threshold, torch.Tensor)
+            else prob_plausibility_threshold
+        )
+
+        # set models to evaluation mode
+        self.gen_model = self.gen_model.eval()
+        self.disc_model = self.disc_model.eval()
 
         self.continuous_features = continuous_features
         self.categorical_features = categorical_features
@@ -119,7 +127,7 @@ class CFMetrics:
             float: Coverage metric value.
         """
         # check how many vectors of dim 0 contain NaN in X_cf
-        return np.isnan(self.X_cf).any(axis=1).mean()
+        return 1 - np.isnan(self.X_cf).any(axis=1).mean()
 
     def validity(self) -> float:
         """
@@ -128,7 +136,7 @@ class CFMetrics:
         Returns:
             float: Validity metric value.
         """
-        y_cf = self.disc_model.predict(self.X_cf)
+        y_cf = self.disc_model.predict(self.X_cf).numpy()
         return (y_cf != self.y_test).mean()
 
     def actionability(self) -> float:
@@ -160,7 +168,9 @@ class CFMetrics:
             float: Avg number of counterfactuals that are more plausible than the threshold.
         """
         X = self.X_cf if cf else self.X_test
-        gen_log_probs = self.gen_model(X, self.y_target.astype(float))
+        gen_log_probs = (
+            self.gen_model(X, torch.from_numpy(self.y_target)).detach().numpy()
+        )
         return (gen_log_probs > self.prob_plausibility_threshold).mean()
 
     def log_density(self, cf: bool = True) -> float:
@@ -174,8 +184,9 @@ class CFMetrics:
             float: Average log density of the counterfactuals.
         """
         X = self.X_cf if cf else self.X_test
-        gen_log_probs = self.gen_model(X, self.y_target.astype(float))
-        gen_log_probs = self._convert_to_numpy(gen_log_probs)
+        gen_log_probs = (
+            self.gen_model(X, torch.from_numpy(self.y_target)).detach().numpy()
+        )
         return gen_log_probs.mean()
 
     def lof_scores(self, cf: bool = True, n_neighbors: int = 20) -> float:
@@ -348,6 +359,85 @@ class CFMetrics:
             "isolation_forest_scores_test": self.isolation_forest_scores(cf=False),
         }
         return metrics
+
+
+def evaluate_cf(
+    disc_model: torch.nn.Module,
+    gen_model: torch.nn.Module,
+    X_cf: np.ndarray,
+    model_returned: np.ndarray,
+    continuous_features: list,
+    categorical_features: list,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    median_log_prob: np.ndarray,
+    y_target: np.ndarray = None,
+):
+    y_target = torch.abs(1 - torch.from_numpy(y_test)) if y_target is None else y_target
+    y_target = y_target.numpy() if isinstance(y_target, torch.Tensor) else y_target
+
+    metrics_cf = CFMetrics(
+        disc_model=disc_model,
+        gen_model=gen_model,
+        X_cf=X_cf,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        y_target=y_target,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+        ratio_cont=None,
+        prob_plausibility_threshold=median_log_prob,
+    )
+    metrics = metrics_cf.calc_all_metrics()
+    return metrics
+
+
+def evaluate_cf_for_rppcef(
+    disc_model: torch.nn.Module,
+    gen_model: torch.nn.Module,
+    X_cf: np.ndarray,
+    model_returned: np.ndarray,
+    continuous_features: list,
+    categorical_features: list,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    y_target: np.ndarray,
+    median_log_prob: np.ndarray,
+    S_matrix: np.ndarray = None,
+    X_test_target: np.ndarray = None,
+):
+    metrics = evaluate_cf(
+        disc_model=disc_model,
+        gen_model=gen_model,
+        X_cf=X_cf,
+        model_returned=model_returned,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        y_target=y_target,
+        median_log_prob=median_log_prob,
+    )
+
+    if S_matrix is not None:
+        cf_belongs_to_group = (
+            np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
+        )
+        metrics.update(
+            {
+                "cf_belongs_to_group": cf_belongs_to_group,
+                "K_vectors": (S_matrix.sum(axis=0) != 0).sum(),
+            }
+        )
+    return metrics
 
 
 # def median_abs_deviation(data, axis=None):

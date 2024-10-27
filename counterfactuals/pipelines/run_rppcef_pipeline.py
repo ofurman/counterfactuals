@@ -147,6 +147,7 @@ def main(cfg: DictConfig):
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
             y_test=ys_orig,
+            y_target=ys_target,
             median_log_prob=log_prob_threshold,
             S_matrix=S.detach().numpy(),
             X_test_target=Xs,

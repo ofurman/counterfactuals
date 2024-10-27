@@ -102,6 +102,7 @@ def calculate_metrics(
     y_test: np.ndarray,
     median_log_prob: float,
     run: neptune.Run,
+    y_target: np.ndarray = None,
 ):
     """
     Calculate metrics for counterfactuals
@@ -119,6 +120,7 @@ def calculate_metrics(
         X_test=X_test,
         y_test=y_test,
         median_log_prob=median_log_prob,
+        y_target=y_target,
     )
     run["metrics/cf"] = stringify_unsupported(metrics)
     logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
@@ -170,6 +172,7 @@ def main(cfg: DictConfig):
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
             y_test=ys_orig,
+            y_target=ys_target,
             median_log_prob=log_prob_threshold,
             run=run,
         )
