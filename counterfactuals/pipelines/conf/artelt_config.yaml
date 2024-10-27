@@ -1,0 +1,52 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+neptune:
+  enable: false
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["19.05", "GCE", "Artelt", "Q1_log_prob_threshold", "all_methods"]
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.MoonsDataset
+
+disc_model:
+  train_model: true
+  epochs: 5000
+  batch_size: 128
+  patience: 100
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.artelt.Artelt
+
+  log_prob_quantile: 0.25
+  target_class: 0
+  batch_size: 4096
+
+  # Artelt-specific parameters (hardcoded in artelt.py)
+  n_components: 5  # Number of components for Gaussian Mixture Model
+  bandwidth: 0.5  # Bandwidth for Kernel Density Estimation
+  density_threshold: 0.1  # Threshold for high-density regions
+  max_iter: 1000  # Maximum number of iterations for counterfactual search
+  tol: 0.01  # Tolerance for convergence
+  feature_range: [0, 1]  # Range of feature values
