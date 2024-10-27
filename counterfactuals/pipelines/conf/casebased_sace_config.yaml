@@ -1,0 +1,49 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+neptune:
+  enable: false
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["19.05", "GCE", "CaseBasedSACE", "Q1_log_prob_threshold", "all_methods"]
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.BlobsDataset
+
+disc_model:
+  train_model: false
+  epochs: 5000
+  batch_size: 128
+  patience: 100
+  lr: 0.001
+
+gen_model:
+  train_model: false
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.casebased_sace.CaseBasedSACE
+    metric: ["euclidean", "jaccard"]
+    normalize: false
+    random_samples: null
+    diff_features: 10
+    tolerance: 0.001
+
+  log_prob_quantile: 0.25
+  target_class: 0
+  batch_size: 4096
