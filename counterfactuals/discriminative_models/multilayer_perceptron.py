@@ -15,6 +15,7 @@ class MultilayerPerceptron(BaseDiscModel):
     ):
         super(MultilayerPerceptron, self).__init__()
         self.target_size = target_size
+        self.input_size = input_size
         layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
         self.layers = torch.nn.ModuleList()
         for i in range(len(layer_sizes) - 1):

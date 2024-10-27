@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 import torch.utils
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.cf_methods.wach.wach import WACH
+from counterfactuals.cf_methods.artelt.artelt import Artelt
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -41,10 +41,9 @@ def search_counterfactuals(
     target_class = cfg.counterfactuals_params.target_class
     X_test_origin = dataset.X_test[dataset.y_test != target_class]
     y_test_origin = dataset.y_test[dataset.y_test != target_class]
-    # X_test_target = dataset.X_test[dataset.y_test == target_class]
 
     logger.info("Creating counterfactual model")
-    cf_method: WACH = WACH(disc_model=disc_model)
+    cf_method: Artelt = Artelt(disc_model=disc_model)
 
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -67,14 +66,15 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
+    cf_method.fit_density_estimators(X_train=dataset.X_train, y_train=dataset.y_train)
     Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
-        dataloader=cf_dataloader, target_class=target_class
+        dataloader=cf_dataloader, X_train=dataset.X_train, y_train=dataset.y_train
     )
 
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
@@ -118,7 +118,7 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="wach_config", version_base="1.2")
+@hydra.main(config_path="./conf", config_name="artelt_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -151,6 +151,9 @@ def main(cfg: DictConfig):
                 cfg, dataset, gen_model, disc_model, run, save_folder
             )
         )
+        if not any(model_returned):
+            logger.info("No counterfactuals found, skipping metrics calculation")
+            continue
 
         metrics = calculate_metrics(
             gen_model=gen_model,

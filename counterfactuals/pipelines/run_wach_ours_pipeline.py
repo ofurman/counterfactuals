@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 import torch.utils
 
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.cf_methods.wach.wach import WACH
+from counterfactuals.cf_methods.wach.wach_ours import WACH_OURS
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -41,10 +41,15 @@ def search_counterfactuals(
     target_class = cfg.counterfactuals_params.target_class
     X_test_origin = dataset.X_test[dataset.y_test != target_class]
     y_test_origin = dataset.y_test[dataset.y_test != target_class]
-    # X_test_target = dataset.X_test[dataset.y_test == target_class]
 
     logger.info("Creating counterfactual model")
-    cf_method: WACH = WACH(disc_model=disc_model)
+    disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
+    cf_method: WACH_OURS = WACH_OURS(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        disc_model_criterion=disc_model_criterion,
+        neptune_run=run,
+    )
 
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -67,8 +72,11 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
-        dataloader=cf_dataloader, target_class=target_class
+    Xs_cfs, Xs, ys_orig, ys_target, logs = cf_method.explain_dataloader(
+        dataloader=cf_dataloader,
+        epochs=cfg.counterfactuals_params.epochs,
+        lr=cfg.counterfactuals_params.lr,
+        alpha=cfg.counterfactuals_params.alpha,
     )
 
     cf_search_time = np.mean(time() - time_start)
@@ -79,7 +87,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold
 
 
 def calculate_metrics(
@@ -118,7 +126,7 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="wach_config", version_base="1.2")
+@hydra.main(config_path="./conf", config_name="wach_ours_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -146,24 +154,22 @@ def main(cfg: DictConfig):
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+        Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, run, save_folder
         )
 
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
-            model_returned=model_returned,
+            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
             y_test=ys_orig,
-            median_log_prob=log_prob_threshold,
+            median_log_prob=log_prob_threshold,  # Remove this parameter if not needed for WACH_OURS
             run=run,
         )
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
