@@ -5,7 +5,6 @@ import torch.nn.functional as F
 from counterfactuals.generative_models import BaseGenModel
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
 
-from typing import Union
 from tqdm import tqdm
 
 
@@ -51,15 +50,15 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(
-            self,
-            train_loader: torch.utils.data.DataLoader,
-            test_loader: torch.utils.data.DataLoader,
-            num_epochs: int = 100,
-            learning_rate: float = 1e-3,
-            patience: int = 20,
-            eps: float = 1e-3,
-            checkpoint_path: str = "best_model.pth",
-            neptune_run: neptune.Run = None,
+        self,
+        train_loader: torch.utils.data.DataLoader,
+        test_loader: torch.utils.data.DataLoader,
+        num_epochs: int = 100,
+        learning_rate: float = 1e-3,
+        patience: int = 20,
+        eps: float = 1e-3,
+        checkpoint_path: str = "best_model.pth",
+        neptune_run: neptune.Run = None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
