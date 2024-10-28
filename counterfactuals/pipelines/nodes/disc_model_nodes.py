@@ -7,6 +7,7 @@ from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.metrics import classification_report
+from sklearn.metrics import r2_score
 import torch.utils
 import pandas as pd
 
@@ -23,11 +24,18 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         "LawDataset",
         "HelocDataset",
         "AuditDataset",
+        "ToyRegressionDataset",
+        "ConcreteDataset",
+        "DiabetesDataset",
+        "YachtDataset",
+        "WineQualityDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
     num_classes = (
         1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
     )
+    num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
+
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],
@@ -70,10 +78,18 @@ def evaluate_disc_model(disc_model: torch.nn.Module, dataset: DictConfig) -> dic
     Evaluate a discriminator model
     """
     logger.info("Evaluating discriminator model")
-    print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
-    report = classification_report(
-        dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
-    )
+    try:
+        print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
+        report = classification_report(
+            dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
+        )
+    except ValueError:
+        # evaluate regression model on R1 score
+        report = [
+            {"r2_score": r2_score(dataset.y_test, disc_model.predict(dataset.X_test))}
+        ]
+        print(report)
+
     return report
 
 

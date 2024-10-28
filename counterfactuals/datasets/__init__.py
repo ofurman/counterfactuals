@@ -10,3 +10,9 @@ from counterfactuals.datasets.law import LawDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.polish_bankruptcy import PolishBankDataset
 from counterfactuals.datasets.wine import WineDataset
+from counterfactuals.datasets.wine_quality_regression import WineQualityDataset
+from counterfactuals.datasets.yacht_regression import YachtDataset
+from counterfactuals.datasets.concrete_regression import ConcreteDataset
+from counterfactuals.datasets.diabetes_regression import DiabetesDataset
+from counterfactuals.datasets.scm20d_regression import Scm20dDataset
+from counterfactuals.datasets.toy_regression import ToyRegressionDataset

@@ -96,9 +96,6 @@ class CFMetrics:
 
         # filter only valid counterfactuals and test instances
         self.y_cf_pred = self._convert_to_numpy(self.disc_model.predict(self.X_cf))
-        print(self.y_cf_pred.shape)
-        print(self.y_target.shape)
-        print(self.X_cf.shape)
         self.X_cf_valid = self.X_cf[self.y_cf_pred == self.y_target]
         self.X_test_valid = self.X_test[self.y_cf_pred == self.y_target]
 

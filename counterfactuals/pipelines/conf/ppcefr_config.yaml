@@ -1,0 +1,50 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: nn_regression
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+neptune:
+  enable: false
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["exp_v2", "REGRESSION", "PPCEFR"]
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.YachtDataset
+
+disc_model:
+  train_model: false
+  epochs: 2000
+  batch_size: 512
+  patience: 300
+  lr: 0.001
+
+gen_model:
+  train_model: false
+  batch_size: 512
+  epochs: 2000
+  patience: 50
+  lr: 0.001
+  noise_lvl: 0.03
+
+counterfactuals_params:
+  target_change: 0.2
+  cf_method:
+    _target_: counterfactuals.cf_methods.regression_ppcef.PPCEFR
+  epochs: 5000
+  batch_size: 4096
+  lr: 0.005
+  alpha: 100
+  patience: 300
+  log_prob_quantile: 0.25
+  disc_loss:
+    # _target_: counterfactuals.losses.MulticlassDiscLoss
+    _target_: counterfactuals.losses.ThresholdRegressionLoss
