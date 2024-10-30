@@ -6,20 +6,22 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class HelocDataset(AbstractDataset):
-    def __init__(
-        self, file_path: str = "data/heloc.csv", method=None, n_bins=None, train=False, grid=False
-    ):
+    def __init__(self, file_path: str = "data/heloc.csv", method=None, n_bins=None):
         self.raw_data = self.load(file_path=file_path)
 
-        if method == "ares":
+        if method in ["ares", "globe-ce"]:
             target_column = "RiskPerformance"
             self.feature_columns = self.raw_data.columns.drop(target_column)
-            self.raw_data = self.ares_prepro(self.raw_data)
             self.n_bins = n_bins
             self.categorical_features = []
-            self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["RiskPerformance"]
-
+            self.raw_data = self.ares_prepro(self.raw_data)
+            self.X, self.y = (
+                self.ares_one_hot(self.raw_data),
+                self.raw_data["RiskPerformance"],
+            )
             self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
+        else:
+            self.X, self.y = self.preprocess(raw_data=self.raw_data)
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
@@ -27,21 +29,6 @@ class HelocDataset(AbstractDataset):
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test
         )
-
-        # self.X, self.y = self.preprocess(raw_data=self.raw_data)
-        # self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-        #     self.X, self.y
-        # )
-        # self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-        #     self.X_train, self.X_test, self.y_train, self.y_test
-        # )
-        # if not train and method in ["ares", "globe-ce"]:
-        #     self.base_ares_setup(n_bins)
-        #     self.X_train = pd.DataFrame(self.X_train, columns=self.feature_columns)
-        #     self.X_test = pd.DataFrame(self.X_test, columns=self.feature_columns)
-        
-        # if grid:
-        #     self.base_ares_setup(n_bins)
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
@@ -99,9 +86,3 @@ class HelocDataset(AbstractDataset):
             if nan_cols[col]:
                 data[col] = data[col].replace(np.nan, np.nanmedian(data[col]))
         return data
-
-    def base_ares_setup(self, n_bins):
-        self.n_bins = n_bins
-        data = self.ares_prepro(self.raw_data)
-        self.ares_one_hot(data)
-        self.categorical_features = []

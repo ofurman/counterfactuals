@@ -47,7 +47,8 @@ def main(cfg: DictConfig):
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model_path = os.path.join(
-        output_folder, f"disc_model_{disc_model_name}.pt"
+        output_folder,
+        f"disc_model_{disc_model_name}.pt",
         # output_folder, f"disc_model_{disc_model_name}_ares.pt"
     )
     logger.info(disc_model_path)
@@ -80,10 +81,10 @@ def main(cfg: DictConfig):
 
     if cfg.experiment.relabel_with_disc_model:
         cf_dataset.y_train = disc_model.predict(
-            cf_dataset.X_train#.values.astype(np.int16)
+            cf_dataset.X_train  # .values.astype(np.int16)
         )
         cf_dataset.y_test = disc_model.predict(
-            cf_dataset.X_test#.values.astype(np.int16)
+            cf_dataset.X_test  # .values.astype(np.int16)
         )
 
     normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
@@ -105,9 +106,7 @@ def main(cfg: DictConfig):
 
     Xs_cfs = generate_ares_counterfactuals(ares)
 
-    run["metrics/eval_time"] = np.mean(
-        time() - time_start
-    )  # probably pointless because many versions of counterfactuals are generated
+    run["metrics/eval_time"] = np.mean(time() - time_start)
     counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)

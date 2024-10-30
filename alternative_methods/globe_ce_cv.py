@@ -62,7 +62,9 @@ def main(cfg: DictConfig):
     cf_dataset = instantiate(cfg.dataset, method="ares")
 
     for fold_n, (_, _, _, _) in enumerate(cf_dataset.get_cv_splits(n_splits=5)):
-        X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(np.float32)
+        X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(
+            np.float32
+        )
         X_test = cf_dataset.X_test
         disc_model_path = os.path.join(
             output_folder, f"disc_model_{fold_n}_{disc_model_name}.pt"
@@ -102,16 +104,19 @@ def main(cfg: DictConfig):
         )
         disc_model.save(disc_model_path)
         logger.info("Evaluating discriminator model")
-        print(classification_report(cf_dataset.y_test, disc_model.predict(cf_dataset.X_test)))
+        print(
+            classification_report(
+                cf_dataset.y_test, disc_model.predict(cf_dataset.X_test)
+            )
+        )
         report = classification_report(
             cf_dataset.y_test, disc_model.predict(cf_dataset.X_test), output_dict=True
         )
         pd.DataFrame(report).transpose().to_csv(
-            os.path.join(output_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv")
+            os.path.join(
+                output_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv"
+            )
         )
-        # run[f"{fold_n}/metrics"] = process_classification_report(
-        #     report, prefix="disc_test"
-        # )
 
         run[f"{fold_n}/disc_model"].upload(disc_model_path)
 
@@ -119,22 +124,19 @@ def main(cfg: DictConfig):
             cf_dataset.y_train = disc_model.predict(cf_dataset.X_train).detach().numpy()
             cf_dataset.y_test = disc_model.predict(cf_dataset.X_test).detach().numpy()
 
-
         if cfg.experiment.relabel_with_disc_model:
-            # cf_dataset.y_train = disc_model.predict(
-            #     cf_dataset.X_train.values.astype(np.int16)
-            # )
-            # cf_dataset.y_test = disc_model.predict(
-            #     cf_dataset.X_test.values.astype(np.int16)
-            # )
             cf_dataset.y_train = disc_model.predict(cf_dataset.X_train).detach().numpy()
             cf_dataset.y_test = disc_model.predict(cf_dataset.X_test).detach().numpy()
 
         normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 
-        cf_dataset.X_train = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns)
-        cf_dataset.X_test = pd.DataFrame(cf_dataset.X_test, columns=cf_dataset.feature_columns)
-        
+        cf_dataset.X_train = pd.DataFrame(
+            cf_dataset.X_train, columns=cf_dataset.feature_columns
+        )
+        cf_dataset.X_test = pd.DataFrame(
+            cf_dataset.X_test, columns=cf_dataset.feature_columns
+        )
+
         cf_dataset.X_train.columns = [str(col) for col in cf_dataset.X_train.columns]
         cf_dataset.X_test.columns = [str(col) for col in cf_dataset.X_test.columns]
         X.columns = [str(col) for col in X.columns]
@@ -151,9 +153,10 @@ def main(cfg: DictConfig):
             dataset_name=dataset_name,
         )
         bin_widths = ares.bin_widths
-        continuous_features = ares.continuous_features
 
-        ordinal_features = ["Present-Employment"] if dataset_name == "german_credit" else []
+        ordinal_features = (
+            ["Present-Employment"] if dataset_name == "german_credit" else []
+        )
         globe_ce = GLOBE_CE(
             model=disc_model,
             dataset=cf_dataset,
@@ -187,15 +190,12 @@ def main(cfg: DictConfig):
         logger.info("Calculating metrics")
 
         X_aff = globe_ce.x_aff
-        metrics = evaluate_globe_ce(
-            Xs_cfs, X_aff, X_test, disc_model, model_returned
-        )
+        metrics = evaluate_globe_ce(Xs_cfs, X_aff, X_test, disc_model, model_returned)
 
         print(metrics)
         run[f"{fold_n}/metrics/cf"] = stringify_unsupported(metrics)
         metrics["time"] = cf_search_time
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
-
 
     logger.info("Finalizing and stopping run")
     log_df.to_csv(

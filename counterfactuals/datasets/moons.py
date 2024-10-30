@@ -6,17 +6,17 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class MoonsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/moons.csv", n_bins=None, method=None, train=False, grid=False):
+    def __init__(self, file_path: str = "data/moons.csv", method=None, n_bins=None):
         self.raw_data = self.load(file_path=file_path, header=None)
 
         if method in ["ares", "globe-ce"]:
-            self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["2"]
             self.raw_data.columns = ["0", "1", "2"]
             self.feature_columns = ["0", "1"]
             self.n_bins = n_bins
             self.numerical_features = [0, 1]
             self.categorical_features = []
             self.actionable_features = [0, 1]
+            self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["2"]
             self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
         else:
             self.X, self.y = self.preprocess(raw_data=self.raw_data)

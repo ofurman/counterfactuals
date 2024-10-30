@@ -61,7 +61,9 @@ def main(cfg: DictConfig):
     cf_dataset = instantiate(cfg.dataset, method="ares")
 
     for fold_n, (_, _, _, _) in enumerate(cf_dataset.get_cv_splits(n_splits=5)):
-        X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(np.float32)
+        X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(
+            np.float32
+        )
         X_test = cf_dataset.X_test
         disc_model_path = os.path.join(
             output_folder, f"disc_model_{fold_n}_{disc_model_name}.pt"
@@ -99,12 +101,18 @@ def main(cfg: DictConfig):
         )
         disc_model.save(disc_model_path)
         logger.info("Evaluating discriminator model")
-        print(classification_report(cf_dataset.y_test, disc_model.predict(cf_dataset.X_test)))
+        print(
+            classification_report(
+                cf_dataset.y_test, disc_model.predict(cf_dataset.X_test)
+            )
+        )
         report = classification_report(
             cf_dataset.y_test, disc_model.predict(cf_dataset.X_test), output_dict=True
         )
         pd.DataFrame(report).transpose().to_csv(
-            os.path.join(output_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv")
+            os.path.join(
+                output_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv"
+            )
         )
         # run[f"{fold_n}/metrics"] = process_classification_report(
         #     report, prefix="disc_test"
@@ -115,7 +123,6 @@ def main(cfg: DictConfig):
         if cfg.experiment.relabel_with_disc_model:
             cf_dataset.y_train = disc_model.predict(cf_dataset.X_train).detach().numpy()
             cf_dataset.y_test = disc_model.predict(cf_dataset.X_test).detach().numpy()
-
 
         if cfg.experiment.relabel_with_disc_model:
             # cf_dataset.y_train = disc_model.predict(
@@ -129,8 +136,12 @@ def main(cfg: DictConfig):
 
         normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 
-        cf_dataset.X_train = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns)
-        cf_dataset.X_test = pd.DataFrame(cf_dataset.X_test, columns=cf_dataset.feature_columns)
+        cf_dataset.X_train = pd.DataFrame(
+            cf_dataset.X_train, columns=cf_dataset.feature_columns
+        )
+        cf_dataset.X_test = pd.DataFrame(
+            cf_dataset.X_test, columns=cf_dataset.feature_columns
+        )
 
         ares = AReS(
             model=disc_model,
@@ -150,7 +161,9 @@ def main(cfg: DictConfig):
         Xs_cfs = generate_ares_counterfactuals(ares)
 
         cf_search_time = np.mean(time() - time_start)
-        run[f"{fold_n}/metrics/cf_search_time"] = cf_search_time  # probably pointless because many versions of counterfactuals are generated
+        run[f"{fold_n}/metrics/cf_search_time"] = (
+            cf_search_time  # probably pointless because many versions of counterfactuals are generated
+        )
         counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
         run["counterfactuals"].upload(counterfactuals_path)
@@ -160,15 +173,12 @@ def main(cfg: DictConfig):
         logger.info("Calculating metrics")
 
         X_aff = ares.X_aff_original.values
-        metrics = evaluate_ares_cfs(
-            Xs_cfs, X_aff, X_test, disc_model, model_returned
-        )
+        metrics = evaluate_ares_cfs(Xs_cfs, X_aff, X_test, disc_model, model_returned)
 
         print(metrics)
         run[f"{fold_n}/metrics/cf"] = stringify_unsupported(metrics)
         metrics["time"] = cf_search_time
         log_df = pd.concat([log_df, pd.DataFrame(metrics, index=[fold_n])])
-
 
     logger.info("Finalizing and stopping run")
     log_df.to_csv(
@@ -272,6 +282,7 @@ def evaluate_ares_cfs(X_cf, X_aff, X_test, model, model_returned):
         "sparsity": sparsity_metric,
     }
     return metrics
+
 
 if __name__ == "__main__":
     main()

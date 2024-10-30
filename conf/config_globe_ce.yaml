@@ -1,8 +1,8 @@
 defaults:
   - _self_
-  - disc_model: node
+  - disc_model: lr
 
-model: node
+model: lr
 
 hydra:
   sweeper:
@@ -12,7 +12,7 @@ neptune:
   enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["GLOBE_CE", "heloc", "node"]
+  tags: ["GLOBE_CE", "moons", "lr"]
 
 experiment:
   output_folder: models/
@@ -20,7 +20,7 @@ experiment:
 
 
 dataset:
-  _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.LawDataset
   # _target_: counterfactuals.datasets.BlobsDataset
 
 
