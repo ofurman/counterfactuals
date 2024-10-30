@@ -42,6 +42,9 @@ categorical_features = {
     "HelocDataset": [],
     "LawDataset": [],
     "MoonsDataset": [],
+    "AuditDataset": [],
+    "DigitsDataset": [],
+    "BlobsDataset": [],
 }
 
 

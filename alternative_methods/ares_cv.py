@@ -58,7 +58,7 @@ def main(cfg: DictConfig):
     log_df = pd.DataFrame()
 
     logger.info("Loading dataset")
-    cf_dataset = instantiate(cfg.dataset, grid=True)
+    cf_dataset = instantiate(cfg.dataset, method="ares")
 
     for fold_n, (_, _, _, _) in enumerate(cf_dataset.get_cv_splits(n_splits=5)):
         X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(np.float32)

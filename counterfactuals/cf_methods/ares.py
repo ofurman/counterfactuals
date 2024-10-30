@@ -48,6 +48,8 @@ categorical_features = {
     "LawDataset": [],
     "MoonsDataset": [],
     "AuditDataset": [],
+    "DigitsDataset": [],
+    "BlobsDataset": [],
 }
 
 
@@ -60,6 +62,8 @@ dnn_normalisers = {
     "MoonsDataset": True,
     "LawDataset": False,
     "AuditDataset": False,
+    "DigitsDataset": False,
+    "BlobsDataset": False,
 }
 
 
@@ -72,6 +76,8 @@ lr_normalisers = {
     "MoonsDataset": True,
     "LawDataset": False,
     "AuditDataset": False,
+    "DigitsDataset": False,
+    "BlobsDataset": False,
 }
 
 

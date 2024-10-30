@@ -7,9 +7,29 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class DigitsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/digits.csv"):
+    def __init__(
+        self,
+        file_path: str = "data/digits.csv",
+        method=None,
+        n_bins=None,
+        train=False,
+        grid=False,
+    ):
         self.raw_data = pd.DataFrame()
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        
+        self.n_bins = n_bins
+        self.categorical_features = []
+        self.raw_data = pd.DataFrame(self.X)
+        self.raw_data["label"] = self.y
+        self.raw_data = self.raw_data[(self.raw_data["label"]==0) | (self.raw_data["label"]==1)]
+
+        self.y = self.raw_data["label"].to_numpy()
+        self.raw_data.columns = self.raw_data.columns.astype(str)
+        self.X = self.ares_one_hot(self.raw_data)
+        self.X = self.X.to_numpy().astype(np.float32)
+        self.feature_columns = self.raw_data.columns[:-1]
+
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )

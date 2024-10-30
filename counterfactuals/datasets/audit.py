@@ -16,19 +16,36 @@ class AuditDataset(AbstractDataset):
     ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+
+        self.n_bins = n_bins
+        self.categorical_features = []
+        self.raw_data = pd.DataFrame(self.X, columns=self.feature_columns)
+        self.raw_data["Detection_Risk"] = self.y
+
+        self.X = self.ares_one_hot(self.raw_data)
+        self.X = self.X.to_numpy().astype(np.float32)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test
         )
-        if not train and method in ["ares", "globe-ce"]:
-            self.base_ares_setup(n_bins)
-            self.X_train = pd.DataFrame(self.X_train, columns=self.feature_columns)
-            self.X_test = pd.DataFrame(self.X_test, columns=self.feature_columns)
+
+        # self.raw_data = self.load(file_path=file_path, index_col=False)
+        # self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        # self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+        #     self.X, self.y
+        # )
+        # self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+        #     self.X_train, self.X_test, self.y_train, self.y_test
+        # )
+        # if not train and method in ["ares", "globe-ce"]:
+        #     self.base_ares_setup(n_bins)
+        #     self.X_train = pd.DataFrame(self.X_train, columns=self.feature_columns)
+        #     self.X_test = pd.DataFrame(self.X_test, columns=self.feature_columns)
         
-        if grid:
-            self.base_ares_setup(n_bins)
+        # if grid:
+        #     self.base_ares_setup(n_bins)
 
     def preprocess(self, raw_data: pd.DataFrame):
         """

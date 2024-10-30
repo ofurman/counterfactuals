@@ -11,6 +11,17 @@ class LawDataset(AbstractDataset):
         self, file_path: str = "data/law.csv", method=None, n_bins=None, train=False, grid=False
     ):
         self.raw_data = self.load(file_path=file_path)
+        self.n_bins = n_bins
+        self.categorical_features = []
+        self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        self.raw_data = pd.DataFrame(self.X, columns=["lsat", "gpa", "zfygpa"])
+        self.raw_data["pass_bar"] = self.y
+        self.X = self.ares_one_hot(self.raw_data)
+        self.X = self.X.to_numpy().astype(np.float32)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+            self.X, self.y
+        )
+
         # self.X, self.y = self.preprocess(raw_data=self.raw_data)
         # self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
         #     self.X, self.y
@@ -18,43 +29,6 @@ class LawDataset(AbstractDataset):
         # self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
         #     self.X_train, self.X_test, self.y_train, self.y_test
         # )
-
-        # if not train and method in ["ares", "globe-ce"]:
-        #     self.categorical_features = []
-        #     self.raw_data = self.raw_data[["lsat", "gpa", "zfygpa", "pass_bar"]]
-        #     self.n_bins = n_bins
-        #     self.ares_one_hot(self.raw_data)
-        #     self.X_train = pd.DataFrame(self.X_train, columns=self.feature_columns)
-        #     self.X_test = pd.DataFrame(self.X_test, columns=self.feature_columns)
-        
-        # if grid:
-        #     self.categorical_features = []
-        #     self.raw_data = self.raw_data[["lsat", "gpa", "zfygpa", "pass_bar"]]
-        #     self.n_bins = n_bins
-        #     self.ares_one_hot(self.raw_data)
-
-        if method in ["ares", "globe-ce"]:
-            self.categorical_features = []
-            self.raw_data = self.raw_data[["lsat", "gpa", "zfygpa", "pass_bar"]]
-            self.n_bins = n_bins
-            self.raw_data = self.raw_data.copy()
-            self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["pass_bar"]
-            if train:
-                self.X, self.y = (
-                    self.X.to_numpy().astype(np.float32),
-                    self.y.astype(np.int64).to_numpy(),
-                )
-            self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-                self.X, self.y
-            )
-        else:
-            self.X, self.y = self.preprocess(raw_data=self.raw_data)
-            self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-                self.X, self.y
-            )
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                self.X_train, self.X_test, self.y_train, self.y_test
-            )
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
