@@ -137,7 +137,7 @@ class CFMetrics:
             float: Validity metric value.
         """
         y_cf = self.disc_model.predict(self.X_cf).numpy()
-        return (y_cf != self.y_test).mean()
+        return (y_cf != self.y_test.squeeze()).mean()
 
     def actionability(self) -> float:
         """
@@ -168,9 +168,9 @@ class CFMetrics:
             float: Avg number of counterfactuals that are more plausible than the threshold.
         """
         X = self.X_cf if cf else self.X_test
-        gen_log_probs = (
-            self.gen_model(X, torch.from_numpy(self.y_target)).detach().numpy()
-        )
+        X = torch.from_numpy(X).float()
+        y = torch.from_numpy(self.y_target).float()
+        gen_log_probs = self.gen_model(X, y).detach().numpy()
         return (gen_log_probs > self.prob_plausibility_threshold).mean()
 
     def log_density(self, cf: bool = True) -> float:
@@ -184,9 +184,9 @@ class CFMetrics:
             float: Average log density of the counterfactuals.
         """
         X = self.X_cf if cf else self.X_test
-        gen_log_probs = (
-            self.gen_model(X, torch.from_numpy(self.y_target)).detach().numpy()
-        )
+        X = torch.from_numpy(X).float()
+        y = torch.from_numpy(self.y_target).float()
+        gen_log_probs = self.gen_model(X, y).detach().numpy()
         return gen_log_probs.mean()
 
     def lof_scores(self, cf: bool = True, n_neighbors: int = 20) -> float:

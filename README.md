@@ -31,9 +31,9 @@ Counterfactual explanations offer a way to understand machine learning model dec
 This section details the environment setup, including necessary libraries and frameworks. To clone the repository and set up the environment, use the following commands:
 
 ```shell
-git clone https://github.com/{repository}/ppcef.git
-cd ppcef
-pip install -e .
+git clone git@github.com:ofurman/counterfactuals.git
+cd counterfactuals
+./setup_env.sh
 ```
 
 ## Getting Started
@@ -41,22 +41,35 @@ The following Python code snippet demonstrates how to use the PPCEF framework fo
 
 ```python
 import torch
+from matplotlib import pyplot as plt
+
 from counterfactuals.datasets import MoonsDataset
 from counterfactuals.cf_methods.ppcef import PPCEF
 from counterfactuals.generative_models import MaskedAutoregressiveFlow
-from counterfactuals.discriminative_models import LogisticRegression
+from counterfactuals.discriminative_models import MultilayerPerceptron
 from counterfactuals.losses import BinaryDiscLoss
+from counterfactuals.metrics import evaluate_cf
 
 
-dataset = MoonsDataset("data/moons.csv")
-train_dataloader = dataset.train_dataloader(batch_size=16, shuffle=True)
-test_dataloader = dataset.test_dataloader(batch_size=16, shuffle=False)
+dataset = MoonsDataset("../data/moons.csv")
+train_dataloader = dataset.train_dataloader(batch_size=128, shuffle=True)
+test_dataloader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
-disc_model = LogisticRegression(dataset.X_test.shape[1], 1)
-disc_model.fit(train_dataloader, test_dataloader)
+disc_model = MultilayerPerceptron(
+    input_size=2, hidden_layer_sizes=[256, 256], target_size=1, dropout=0.2
+)
+disc_model.fit(
+    train_dataloader,
+    test_dataloader,
+    epochs=5000,
+    patience=300,
+    lr=1e-3,
+)
 
-gen_model = MaskedAutoregressiveFlow(features=dataset.X_train.shape[1], hidden_features=8, context_features=1)
-gen_model.fit(train_dataloader, test_dataloader)
+gen_model = MaskedAutoregressiveFlow(
+    features=dataset.X_train.shape[1], hidden_features=8, context_features=1
+)
+gen_model.fit(train_dataloader, test_dataloader, num_epochs=1000)
 
 cf = PPCEF(
     gen_model=gen_model,
@@ -64,12 +77,30 @@ cf = PPCEF(
     disc_model_criterion=BinaryDiscLoss(),
     neptune_run=None,
 )
-median_log_prob = torch.median(gen_model.predict_log_prob(test_dataloader))
-X_cf, X_orig, y_orig, y_target, _ = cf.search_batch(
-    test_dataloader, alpha=100, delta=median_log_prob
+cf_dataloader = dataset.test_dataloader(batch_size=1024, shuffle=False)
+log_prob_threshold = torch.quantile(gen_model.predict_log_prob(cf_dataloader), 0.25)
+deltas, X_orig, y_orig, y_target, logs = cf.explain_dataloader(
+    cf_dataloader, alpha=100, log_prob_threshold=log_prob_threshold, epochs=4000
 )
+X_cf = X_orig + deltas
 print(X_cf)
+evaluate_cf(
+    disc_model=disc_model,
+    gen_model=gen_model,
+    X_cf=X_cf,
+    model_returned=np.ones(X_cf.shape[0]),
+    continuous_features=dataset.numerical_features,
+    categorical_features=dataset.categorical_features,
+    X_train=dataset.X_train,
+    y_train=dataset.y_train,
+    X_test=X_orig,
+    y_test=y_orig,
+    median_log_prob=log_prob_threshold,
+    y_target=y_target,
+)
 ```
+### Jupyter notebook
+You can find the example of running algorithm in the jupyter notebook at: [here](notebooks/ppcef.ipynb)
 
 ### Pre-trained Models
 
@@ -80,28 +111,20 @@ We publish pre-trained models in the `./models/` directory for immediate use and
 The repository is organized as follows to facilitate ease of use and contribution:
 
 ```
-|── conf/                 # Configuration files
-|── data/                 # Datasets
-|── models/               # Trained models
-|── notebooks/            # Jupyter notebooks for analysis and examples
-├── counterfactuals/      # Source code for the framework
-|── README.md             # This document
-|── alternative_methods/  # Referense methods experiments code
-|── train_disc_model.py   # Discriminative models training code
-|── train_gen_model.py    # Generative models training code
-|── run_experiment.py     # File that contains experiments with PPCEF method
+|── conf/                  # Configuration files
+|── data/                  # Datasets
+|── models/                # Trained models
+|── notebooks/             # Jupyter notebooks for analysis and examples
+|── counterfactuals/       # Source code for the framework
+|   ├── cf_methods/        # Counterfactual methods
+|   ├── discriminative_models/  # Discriminative models for analysis
+|   ├── generative_models/      # Generative models for analysis
+|   ├── losses/            # Loss functions
+|   ├── metrics/           # Evaluation metrics
+|   └── pipelines/         # Data and model pipelines
+|── README.md              # This document
 └── ...
 ```
-
-Source code in `counterfactuals/` directory contains the following:
-  * `datasets` - Wrappers for the datasets. 
-  * `discriminative_models` - Discriminative models implementations.
-  * `generative_models` - Generative models implementations.
-  * `losses` - Implementation of the proposed loss function.
-  * `metrics` - Calculations of metrics.
-  * `optimizers` - Implementation of **PPCEF** method
-  * `artelth20` - Plausible Counterfactual Explanations by [André Artelt and Barbara Hammer](https://github.com/andreArtelt/ConvexDensityConstraintsForPlausibleCounterfactuals/tree/master).
-  * `sace` - Implementations of refenrence methods by [Riccardo Guidotti](https://github.com/riccotti/Scamander/tree/main/sace)
 
 ## Data
 
@@ -109,24 +132,26 @@ The full data folder can be found under the following link: [Link](data). More d
 
 ## Experiments
 
-To run experiments, prepare the configuration files located in the conf/ directory:
-
-- [config_train_disc_model.yaml](conf/config_train_disc_model.yaml)
-- [config_train_gen_model.yaml](conf/config_train_gen_model.yaml)
-- [config.yaml](conf/config.yaml)
+To run experiments, prepare the configuration files located in the `counterfactuals/pipelines/conf/` directory:
 
 Execute the following scripts to train models and run experiments:
 
 ```shell
-python3 train_disc_model.py # train disc model
-python3 train_gen_model.py # train gen model
-python3 run_experiment.py # run experiment
+python3 counterfactuals/pipelines/run_ppcef_pipeline.py
 ```
 
 ## Citation
-
-TBA
-
+```
+@inbook{inbook,
+  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zięba, Maciej},
+  year = {2024},
+  month = {10},
+  pages = {},
+  title = {Probabilistically Plausible Counterfactual Explanations with Normalizing Flows},
+  isbn = {9781643685489},
+  doi = {10.3233/FAIA240584}
+}
+```
 ## Contact
 
 In case of questions or comments please contact using LinkedIn: TBA
