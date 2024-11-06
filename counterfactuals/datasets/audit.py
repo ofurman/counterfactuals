@@ -13,16 +13,16 @@ class AuditDataset(AbstractDataset):
         n_bins=None,
     ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
+        self.X, self.y = self.preprocess(raw_data=self.raw_data)
+
         if method in ["ares", "globe-ce"]:
             self.n_bins = n_bins
-            self.y = self.raw_data["Detection_Risk"].to_numpy()
             self.categorical_features = []
+
             self.raw_data = pd.DataFrame(self.X, columns=self.feature_columns)
             self.raw_data["Detection_Risk"] = self.y
             self.X = self.ares_one_hot(self.raw_data)
             self.X = self.X.to_numpy().astype(np.float32)
-        else:
-            self.X, self.y = self.preprocess(raw_data=self.raw_data)
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y

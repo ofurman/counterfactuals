@@ -32,6 +32,10 @@ NORMALISERS = {
     "lr": lr_normalisers,
 }
 
+r_values = {
+    "HelocDataset": 3000
+}
+
 
 @hydra.main(config_path="../conf", config_name="config_ares", version_base="1.2")
 def main(cfg: DictConfig):
@@ -75,6 +79,8 @@ def main(cfg: DictConfig):
             "LawDataset",
             "HelocDataset",
             "AuditDataset",
+            "BlobsDataset",  # temoporary
+            "DigitsDataset",  # temoporary
         ]
         num_classes = (
             1 if dataset_name in binary_datasets else len(np.unique(cf_dataset.y_train))
@@ -90,7 +96,6 @@ def main(cfg: DictConfig):
         test_dataloader = cf_dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        # disc_model.load(disc_model_path)
         disc_model.fit(
             train_dataloader,
             test_dataloader,
@@ -100,7 +105,10 @@ def main(cfg: DictConfig):
             checkpoint_path=disc_model_path,
         )
         disc_model.save(disc_model_path)
+
         logger.info("Evaluating discriminator model")
+        # disc_model.load(disc_model_path)
+
         print(
             classification_report(
                 cf_dataset.y_test, disc_model.predict(cf_dataset.X_test)
@@ -114,9 +122,6 @@ def main(cfg: DictConfig):
                 output_folder, f"eval_disc_model_{fold_n}_{disc_model_name}.csv"
             )
         )
-        # run[f"{fold_n}/metrics"] = process_classification_report(
-        #     report, prefix="disc_test"
-        # )
 
         run[f"{fold_n}/disc_model"].upload(disc_model_path)
 
@@ -125,12 +130,6 @@ def main(cfg: DictConfig):
             cf_dataset.y_test = disc_model.predict(cf_dataset.X_test).detach().numpy()
 
         if cfg.experiment.relabel_with_disc_model:
-            # cf_dataset.y_train = disc_model.predict(
-            #     cf_dataset.X_train.values.astype(np.int16)
-            # )
-            # cf_dataset.y_test = disc_model.predict(
-            #     cf_dataset.X_test.values.astype(np.int16)
-            # )
             cf_dataset.y_train = disc_model.predict(cf_dataset.X_train).detach().numpy()
             cf_dataset.y_test = disc_model.predict(cf_dataset.X_test).detach().numpy()
 
@@ -158,15 +157,15 @@ def main(cfg: DictConfig):
         logger.info("Handling counterfactual generation")
         time_start = time()
 
-        Xs_cfs = generate_ares_counterfactuals(ares)
+        Xs_cfs = generate_ares_counterfactuals(ares, r_values.get(dataset_name))
 
         cf_search_time = np.mean(time() - time_start)
         run[f"{fold_n}/metrics/cf_search_time"] = (
             cf_search_time  # probably pointless because many versions of counterfactuals are generated
         )
-        counterfactuals_path = os.path.join(output_folder, "counterfactuals.csv")
+        counterfactuals_path = os.path.join(output_folder, f"counterfactuals_{disc_model_name}_{fold_n}.csv")
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-        run["counterfactuals"].upload(counterfactuals_path)
+        run[f"{fold_n}/counterfactuals"].upload(counterfactuals_path)
 
         model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
 
@@ -190,7 +189,7 @@ def main(cfg: DictConfig):
     run.stop()
 
 
-def generate_ares_counterfactuals(ares):
+def generate_ares_counterfactuals(ares, r=None):
     ares.generate_itemsets(
         apriori_threshold=0.2, max_width=None, affected_subgroup=None, save_copy=True
     )
@@ -198,7 +197,7 @@ def generate_ares_counterfactuals(ares):
         max_width=None, RL_reduction=True, then_generation=None, save_copy=False
     )
     ares.evaluate_groundset(
-        lams=[1, 0], r=3000, save_mode=1, disable_tqdm=False, plot_accuracy=False
+        lams=[1, 0], r=r, save_mode=1, disable_tqdm=False, plot_accuracy=False
     )
     Xs_cfs = ares.V.cfx_matrix[-1]
     return Xs_cfs

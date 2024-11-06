@@ -47,7 +47,7 @@ def main(cfg: DictConfig):
     disc_model_name = cfg.disc_model
     dataset_name = cfg.dataset._target_.split(".")[-1]
     output_folder = os.path.join(cfg.experiment.output_folder, dataset_name)
-    save_folder = os.path.join(output_folder, "ares")
+    save_folder = os.path.join(output_folder, "globe_ce")
     os.makedirs(save_folder, exist_ok=True)
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -93,7 +93,7 @@ def main(cfg: DictConfig):
         test_dataloader = cf_dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        # disc_model.load(disc_model_path)
+
         disc_model.fit(
             train_dataloader,
             test_dataloader,
@@ -104,6 +104,8 @@ def main(cfg: DictConfig):
         )
         disc_model.save(disc_model_path)
         logger.info("Evaluating discriminator model")
+        # disc_model.load(disc_model_path)
+
         print(
             classification_report(
                 cf_dataset.y_test, disc_model.predict(cf_dataset.X_test)

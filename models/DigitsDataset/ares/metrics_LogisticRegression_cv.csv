@@ -1,0 +1,6 @@
+model_returned_smth,valid_cf_disc,dissimilarity_proximity_categorical_hamming,dissimilarity_proximity_categorical_jaccard,dissimilarity_proximity_continuous_manhatan,dissimilarity_proximity_continuous_euclidean,dissimilarity_proximity_continuous_mad,distance_l2_jaccard,distance_mad_hamming,sparsity,time
+1.0,tensor(0.),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1374044418334961
+1.0,tensor(0.),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.13728761672973633
+1.0,tensor(1.),0.03125,0.05439728212113012,1.8559514195581184,1.486090395616868,2.8127988873521264,1.540487677737998,2.8440488873521264,0.03125,0.15172576904296875
+1.0,tensor(0.),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.1398003101348877
+1.0,tensor(0.),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.13221263885498047
