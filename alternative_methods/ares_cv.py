@@ -264,8 +264,8 @@ def evaluate_ares_cfs(
     model_returned,
     median_log_prob,
 ):
-    categorical_features = range(X_cf.shape[1])
-    continuous_features = range(X_cf.shape[1])
+    categorical_features = []
+    continuous_features = list(range(X_cf.shape[1]))
 
     model_returned_smth = np.sum(model_returned) / len(model_returned)
 

@@ -147,7 +147,6 @@ def main(cfg: DictConfig):
             checkpoint_path=gen_model_path,
             # neptune_run=run,
         )
-        run[f"{fold_n}/metrics/gen_model_train_time"] = time() - time_start
         gen_model.save(gen_model_path)
         run[f"{fold_n}/gen_model"].upload(gen_model_path)
 
@@ -303,14 +302,14 @@ def evaluate_globe_ce(
     model_returned,
     median_log_prob,
 ):
-    categorical_features = range(X_cf.shape[1])
-    continuous_features = range(X_cf.shape[1])
+    categorical_features = []
+    continuous_features = list(range(X_cf.shape[1]))
 
     model_returned_smth = np.sum(model_returned) / len(model_returned)
 
-    lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_test, X_cf)
+    lof_scores_xs, lof_scores_cfs = local_outlier_factor(X_train, X_aff, X_cf)
     isolation_forest_scores_xs, isolation_forest_scores_cfs = isolation_forest_metric(
-        X_train, X_test, X_cf
+        X_train, X_aff, X_cf
     )
 
     ys_cfs_disc_pred = torch.tensor(disc_model.predict(X_cf))
