@@ -36,7 +36,7 @@ NORMALISERS = {
     "lr": lr_normalisers,
 }
 
-r_values = {"HelocDataset": 3000}
+r_values = {"HelocDataset": 3000, "AuditDataset": 100}
 
 
 @hydra.main(config_path="../conf", config_name="config_ares", version_base="1.2")
@@ -68,15 +68,18 @@ def main(cfg: DictConfig):
     cf_dataset = instantiate(cfg.dataset, method="ares")
 
     for fold_n, (_, _, _, _) in enumerate(cf_dataset.get_cv_splits(n_splits=5)):
-        X = pd.DataFrame(cf_dataset.X_train, columns=cf_dataset.feature_columns).astype(
-            np.float32
-        )
         disc_model_path = os.path.join(
             output_folder, f"disc_model_{fold_n}_{disc_model_name}.pt"
         )
-        gen_model_path = os.path.join(
-            output_folder, f"gen_model_{fold_n}_{gen_model_name}.pt"
-        )
+        if cfg.experiment.relabel_with_disc_model:
+            gen_model_path = os.path.join(
+                output_folder,
+                f"gen_model_{fold_n}_{gen_model_name}_relabeled_by_{disc_model_name}.pt",
+            )
+        else:
+            gen_model_path = os.path.join(
+                output_folder, f"gen_model_{fold_n}_{gen_model_name}.pt"
+            )
 
         logger.info("Training discriminator model")
         binary_datasets = [
@@ -101,18 +104,18 @@ def main(cfg: DictConfig):
         test_dataloader = cf_dataset.test_dataloader(
             batch_size=cfg.disc_model.batch_size, shuffle=False
         )
-        disc_model.fit(
-            train_dataloader,
-            test_dataloader,
-            epochs=cfg.disc_model.epochs,
-            lr=cfg.disc_model.lr,
-            patience=cfg.disc_model.patience,
-            checkpoint_path=disc_model_path,
-        )
-        disc_model.save(disc_model_path)
+        # disc_model.fit(
+        #     train_dataloader,
+        #     test_dataloader,
+        #     epochs=cfg.disc_model.epochs,
+        #     lr=cfg.disc_model.lr,
+        #     patience=cfg.disc_model.patience,
+        #     checkpoint_path=disc_model_path,
+        # )
+        # disc_model.save(disc_model_path)
 
         logger.info("Evaluating discriminator model")
-        # disc_model.load(disc_model_path)
+        disc_model.load(disc_model_path)
 
         print(
             classification_report(
@@ -143,18 +146,17 @@ def main(cfg: DictConfig):
             features=cf_dataset.X_train.shape[1],
             context_features=1,
         )
-        # gen_model.load(gen_model_path)
-        gen_model.fit(
-            train_loader=train_dataloader,
-            test_loader=test_dataloader,
-            num_epochs=cfg.gen_model.epochs,
-            patience=cfg.gen_model.patience,
-            learning_rate=cfg.gen_model.lr,
-            checkpoint_path=gen_model_path,
-            # neptune_run=run,
-        )
-        run[f"{fold_n}/metrics/gen_model_train_time"] = time() - time_start
-        gen_model.save(gen_model_path)
+        # gen_model.fit(
+        #     train_loader=train_dataloader,
+        #     test_loader=test_dataloader,
+        #     num_epochs=cfg.gen_model.epochs,
+        #     patience=cfg.gen_model.patience,
+        #     learning_rate=cfg.gen_model.lr,
+        #     checkpoint_path=gen_model_path,
+        #     # neptune_run=run,
+        # )
+        # gen_model.save(gen_model_path)
+        gen_model.load(gen_model_path)
         run[f"{fold_n}/gen_model"].upload(gen_model_path)
 
         train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()
@@ -164,6 +166,10 @@ def main(cfg: DictConfig):
         )
 
         normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
+
+        X = pd.DataFrame(cf_dataset.X_test, columns=cf_dataset.feature_columns).astype(
+            np.float32
+        )
 
         cf_dataset.X_train = pd.DataFrame(
             cf_dataset.X_train, columns=cf_dataset.feature_columns

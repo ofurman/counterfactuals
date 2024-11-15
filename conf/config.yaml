@@ -8,17 +8,17 @@ hydra:
     max_batch_size: 1
 
 neptune:
-  enable: false
+  enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["REGIONAL_PPCEF", soft_decision_tree, "WineDataset"]
+  tags: ["REGIONAL_PPCEF", "lr", "LawDataset"]
 
 experiment:
   output_folder: models/
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.LawDataset
   # _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:

@@ -70,9 +70,15 @@ def main(cfg: DictConfig):
         disc_model_path = os.path.join(
             output_folder, f"disc_model_{fold_n}_{disc_model_name}.pt"
         )
-        gen_model_path = os.path.join(
-            output_folder, f"gen_model_{fold_n}_{gen_model_name}.pt"
-        )
+        if cfg.experiment.relabel_with_disc_model:
+            gen_model_path = os.path.join(
+                output_folder,
+                f"gen_model_{fold_n}_{gen_model_name}_relabeled_by_{disc_model_name}.pt",
+            )
+        else:
+            gen_model_path = os.path.join(
+                output_folder, f"gen_model_{fold_n}_{gen_model_name}.pt"
+            )
 
         logger.info("Training discriminator model")
         binary_datasets = [
@@ -137,7 +143,6 @@ def main(cfg: DictConfig):
             features=cf_dataset.X_train.shape[1],
             context_features=1,
         )
-        # gen_model.load(gen_model_path)
         gen_model.fit(
             train_loader=train_dataloader,
             test_loader=test_dataloader,
@@ -148,6 +153,7 @@ def main(cfg: DictConfig):
             # neptune_run=run,
         )
         gen_model.save(gen_model_path)
+        gen_model.load(gen_model_path)
         run[f"{fold_n}/gen_model"].upload(gen_model_path)
 
         train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()

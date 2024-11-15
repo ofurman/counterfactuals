@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - gen_model: medium_maf
   - disc_model: node
 
 model: node
@@ -21,7 +22,7 @@ experiment:
 
 dataset:
   _target_: counterfactuals.datasets.HelocDataset
-  # _target_: counterfactuals.datasets.MoonsDataset
+  # _target_: counterfactuals.datasets.LawDataset
 
 
 counterfactuals:
@@ -40,3 +41,10 @@ disc_model:
   batch_size: 64
   patience: 300
   lr: 0.001
+
+gen_model:
+  batch_size: 1024
+  epochs: 2000
+  patience: 70
+  lr: 0.003
+  noise_lvl: 0.02
