@@ -19,7 +19,7 @@ class LawDataset(AbstractDataset):
             self.raw_data = pd.DataFrame(self.X, columns=["lsat", "gpa", "zfygpa"])
             self.raw_data["pass_bar"] = self.y
             self.X = self.ares_one_hot(self.raw_data)
-            self.X = self.X.to_numpy().astype(np.float32)
+            self.X = self.X.to_numpy()
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y

@@ -74,13 +74,11 @@ class HelocDataset(AbstractDataset):
         return X_train, X_test, y_train, y_test
 
     def ares_prepro(self, data):
-        data = data[(data.iloc[:, 1:] >= 0).any(axis=1)]
         data["RiskPerformance"] = data["RiskPerformance"].replace(
             ["Bad", "Good"], [0, 1]
         )
         y = data.pop("RiskPerformance")
         data["RiskPerformance"] = y
-        data = data[data >= 0]
         nan_cols = data.isnull().any(axis=0)
         for col in data.columns:
             if nan_cols[col]:
