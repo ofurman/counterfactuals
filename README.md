@@ -40,8 +40,8 @@ cd counterfactuals
 The following Python code snippet demonstrates how to use the PPCEF framework for generating counterfactual explanations:
 
 ```python
+import numpy as np
 import torch
-from matplotlib import pyplot as plt
 
 from counterfactuals.datasets import MoonsDataset
 from counterfactuals.cf_methods.ppcef import PPCEF
