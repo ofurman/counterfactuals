@@ -20,7 +20,7 @@ class AbstractDataset(ABC):
         X_test: np.ndarray,
         y_train: np.ndarray,
         y_test: np.ndarray,
-    ):
+    ) -> Tuple[np.ndarray]:
         """
         Preprocess the loaded data, if necessary.
         """
