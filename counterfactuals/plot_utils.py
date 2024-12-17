@@ -10,17 +10,25 @@ from PIL import Image
 from sklearn.inspection import DecisionBoundaryDisplay
 
 
-def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
+def plot_generative_model_distribution(
+    ax,
+    model,
+    prob_threshold,
+    context: torch.Tensor = None,
+    contourf: bool = False,
+):
     xline = torch.linspace(-0, 1, 200)
     yline = torch.linspace(-0, 1, 200)
     xgrid, ygrid = torch.meshgrid(xline, yline)
     xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
 
-    for i in range(num_classes):
+    if context is not None:
         with torch.no_grad():
-            zgrid = model(xyinput, i * torch.ones(40000, 1)).exp().reshape(200, 200)
+            # zgrid = model(xyinput, i * torch.ones(40000, 1)).exp().reshape(200, 200)
+            zgrid = model(xyinput, context.repeat(40000, 1)).exp().reshape(200, 200)
             zgrid = zgrid.numpy()
-            _ = ax.contour(
+            plot_func = ax.contourf if contourf else ax.contour
+            _ = plot_func(
                 xgrid.numpy(),
                 ygrid.numpy(),
                 zgrid,
