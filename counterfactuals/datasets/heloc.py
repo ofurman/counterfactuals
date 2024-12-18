@@ -25,6 +25,8 @@ class HelocDataset(AbstractDataset):
         self.feature_columns = raw_data.columns.drop(target_column)
 
         self.numerical_columns = list(range(0, len(self.feature_columns)))
+        self.actionable_features = list(range(0, 6))
+        self.not_actionable_features = list(range(6, len(self.feature_columns)))
         self.categorical_columns = []
 
         X = raw_data[self.feature_columns].to_numpy()

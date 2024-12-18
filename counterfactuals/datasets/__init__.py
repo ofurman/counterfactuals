@@ -7,6 +7,7 @@ from counterfactuals.datasets.digits import DigitsDataset
 from counterfactuals.datasets.german_credit import GermanCreditDataset
 from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.law import LawDataset
+from counterfactuals.datasets.mnist import MnistDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.polish_bankruptcy import PolishBankDataset
 from counterfactuals.datasets.wine import WineDataset
