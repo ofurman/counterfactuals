@@ -26,6 +26,8 @@ class AuditDataset(AbstractDataset):
         self.feature_columns.remove("Detection_Risk")
         self.numerical_columns = list(range(0, len(self.feature_columns)))
         self.categorical_columns = []
+        self.actionable_features = list(range(0, 6))
+        self.not_actionable_features = list(range(6, len(self.feature_columns)))
 
         row_per_class = sum(raw_data[target_column] == 1)
         raw_data = pd.concat(

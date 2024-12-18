@@ -76,7 +76,7 @@ class GLOBAL_CE(torch.nn.Module):
 
 
 class GCE(torch.nn.Module):
-    def __init__(self, N, D, K, init_from_kmeans=False, X=None):
+    def __init__(self, N, D, K, init_from_kmeans=False, X=None, zero_grad_dims=None):
         super(GCE, self).__init__()
         assert 1 <= K and K <= N, "Assumption of the method!"
         assert N >= 1
@@ -88,6 +88,9 @@ class GCE(torch.nn.Module):
 
         self.m = torch.nn.Parameter(0 * torch.rand(self.N, 1))
         self.d = torch.nn.Parameter(0 * torch.rand((self.K, self.D)))
+        self.zero_grad_dims = zero_grad_dims
+        if self.zero_grad_dims is not None:
+            self.d.register_hook(self._zero_grad_hook)
 
         if init_from_kmeans:
             assert X is not None, "X should be provided for KMeans initialization"
@@ -95,6 +98,40 @@ class GCE(torch.nn.Module):
         else:
             self.s = torch.nn.Parameter(0.01 * torch.rand(self.N, self.K))
         self.sparsemax = Sparsemax(dim=1)
+
+    def _zero_grad_hook(self, grad):
+        """
+        Hook to zero gradients for specified dimensions of d.
+        """
+        if self.zero_grad_dims is not None:
+            grad[:, self.zero_grad_dims] = 0
+        return grad
+
+    def determinant_diversity_penalty(self, vectors):
+        """
+        Computes the determinant-based diversity penalty for a set of vectors.
+        Args:
+            vectors (torch.Tensor): Tensor of shape [6, 23] where each row is a vector.
+
+        Returns:
+            torch.Tensor: Penalty term encouraging diversity.
+        """
+        # Compute Gram matrix: G = V @ V.T
+        gram_matrix = torch.mm(vectors, vectors.T)  # Shape: [6, 6]
+
+        # Add small regularization for numerical stability (ensure positive semi-definite)
+        epsilon = 1e-5
+        gram_matrix_regularized = gram_matrix + epsilon * torch.eye(
+            gram_matrix.size(0)
+        ).to(vectors.device)
+
+        # Compute the log-determinant of the Gram matrix
+        log_det = torch.logdet(gram_matrix_regularized)
+
+        # The penalty term: Negative log-determinant (we want to maximize det)
+        penalty = -log_det
+
+        return penalty
 
     def _init_from_kmeans(self, X, K):
         kmeans = KMeans(n_clusters=K, random_state=42).fit(X)
@@ -124,7 +161,10 @@ class GCE(torch.nn.Module):
         return col_wise_entropy
 
     def loss(self, alpha_s, alpha_k):
-        return alpha_s * self.rows_entropy() + alpha_k * self.cols_entropy()
+        # return alpha_s * self.rows_entropy() + alpha_s * torch.norm(self.d, p=0, dim=1).sum() # + alpha_k * self.cols_entropy()
+        return alpha_s * self.rows_entropy() + torch.relu(
+            alpha_s / 10 * self.determinant_diversity_penalty(self.d)
+        )  # + torch.norm(self.d, p=1, dim=1).sum() # + alpha_k * self.cols_entropy()
 
     def get_matrices(self):
         return torch.exp(self.m), self.sparsemax(self.s), self.d
