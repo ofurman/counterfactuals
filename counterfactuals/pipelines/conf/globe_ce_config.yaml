@@ -1,0 +1,70 @@
+defaults:
+  - _self_
+  - gen_model: medium_maf
+  - disc_model: lr
+
+model: lr
+
+hydra:
+  sweeper:
+    max_batch_size: 10
+
+neptune:
+  enable: false
+  project: "ofurman/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["ares", "heloc", "node"]
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+
+dataset:
+  _target_: counterfactuals.datasets.AuditDataset
+  # _target_: counterfactuals.datasets.LawDataset
+
+
+counterfactuals:
+  epochs: 5000
+  batch_size: 2048
+  lr: 0.005
+  alpha: 100
+  beta: 0.01
+  patience: 500
+  disc_loss:
+    _target_: counterfactuals.losses.BinaryDiscLoss
+    # _target_: torch.nn.BCEWithLogitsLoss
+
+disc_model:
+  train_model: true
+  epochs: 5000
+  batch_size: 64
+  patience: 300
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  batch_size: 1024
+  epochs: 2000
+  patience: 70
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    # specific parameters besides standard ones should be passed here
+    _target_: counterfactuals.cf_methods.GLOBE_CE
+
+  log_prob_quantile: 0.25
+  target_class: 0
+  epochs: 20000
+  batch_size: 4096
+  lr: 0.001
+  alpha: 1000
+  alpha_s: 1000
+  alpha_k: 100
+  beta: 0.01
+  patience: 1000
+  
+    
