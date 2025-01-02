@@ -63,6 +63,8 @@ class GLOBE_CE:
         monotonicity=None,
         p=1,
         dataset_name=None,
+        target_class=1,
+        logger=None
     ):
         """GLOBE_CE class. This class is used to generate GCE directions and evaluate scaling.
 
@@ -103,9 +105,12 @@ class GLOBE_CE:
             self.normalise = False
             self.preds = self.model.predict(X.values)  # to determine affected inputs
 
+        if logger is not None:
+            logger.info("Filtering out target class data for counterfactual generation")
+
         # X
         self.x_aff = copy.deepcopy(self.X.values)
-        self.x_aff = self.x_aff[self.preds == 0]
+        self.x_aff = self.x_aff[self.preds != target_class]
         if self.affected_subgroup is not None:
             self.subgroup_idx = self.x_aff[self.affected_subgroup] == 1
             self.x_aff = self.x_aff[self.subgroup_idx]

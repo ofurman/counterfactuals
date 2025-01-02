@@ -103,8 +103,8 @@ def search_counterfactuals(
     run["counterfactuals"].upload(counterfactuals_path)
 
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-    ys_orig = np.zeros(Xs_cfs.shape[0])
-    ys_target = np.ones(Xs_cfs.shape[0])
+    ys_orig = np.ones(Xs_cfs.shape[0])*target_class
+    ys_target = 1 - ys_orig
     return Xs_cfs, Xs, log_prob_threshold, model_returned, ys_orig, ys_target
 
 

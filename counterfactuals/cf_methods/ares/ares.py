@@ -124,7 +124,7 @@ class AReS:
         constraints=[20, 7, 10],
         correctness=False,
         dataset_name=None,
-        target_class=0,
+        target_class=1,
         logger=None,
     ):
         """
@@ -269,12 +269,12 @@ class AReS:
 
         # Compute affected features
         self.X_aff_original = (
-            self.X_original.iloc[self.preds == target_class]
+            self.X_original.iloc[self.preds != target_class]
             .copy()
             .reset_index(drop=True)
         )  # original dat
         self.X_aff = (
-            self.X.iloc[self.preds == target_class].copy().reset_index(drop=True)
+            self.X.iloc[self.preds != target_class].copy().reset_index(drop=True)
         )  # data with continuous variables binned
         self.U = self.n_bins * self.e2  # custom objective function
         self.U1 = self.X_aff.shape[0] * self.e1  # incorrectrecourse

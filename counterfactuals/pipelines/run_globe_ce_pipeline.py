@@ -89,6 +89,7 @@ def search_counterfactuals(
         monotonicity=None,
         p=1,
         dataset_name=dataset_name,
+        target_class=target_class,
     )
     dataset.X_train = dataset.X_train.to_numpy()
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -122,8 +123,8 @@ def search_counterfactuals(
     run["counterfactuals"].upload(counterfactuals_path)
 
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-    ys_orig = np.zeros(Xs_cfs.shape[0])
-    ys_target = np.ones(Xs_cfs.shape[0])
+    ys_orig = np.ones(Xs_cfs.shape[0])*target_class
+    ys_target = 1 - ys_orig
     return Xs_cfs, Xs, log_prob_threshold, model_returned, ys_orig, ys_target
 
 
