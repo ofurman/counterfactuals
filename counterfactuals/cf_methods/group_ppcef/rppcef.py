@@ -22,6 +22,7 @@ class RPPCEF(BaseCounterfactual):
         K: int = None,
         X: np.ndarray = None,
         device: str = None,
+        # TODO: poprawa nazewnictwa
         actionable_features: list = None,
         neptune_run=None,
     ):
