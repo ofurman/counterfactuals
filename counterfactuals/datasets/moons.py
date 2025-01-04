@@ -6,15 +6,30 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class MoonsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/moons.csv"):
+    def __init__(
+        self,
+        file_path: str = "data/moons.csv",
+        shuffle: bool = True,
+        transform: bool = True,
+    ):
+        """
+        Initialize the Moons dataset.
+        """
+        self.categorical_features = []
+        self.features = [
+            "Feature 1",
+            "Feature 2",
+            "Target",
+        ]
         self.raw_data = self.load(file_path=file_path, header=None)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y
+            self.X, self.y, shuffle=shuffle
         )
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
+        if transform:
+            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+                self.X_train, self.X_test, self.y_train, self.y_test
+            )
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
@@ -25,6 +40,7 @@ class MoonsDataset(AbstractDataset):
         y = raw_data[raw_data.columns[-1]].to_numpy()
 
         self.numerical_features = [0, 1]
+        self.numerical_columns = [0, 1]
         self.categorical_features = []
         self.actionable_features = [0, 1]
         return X, y
