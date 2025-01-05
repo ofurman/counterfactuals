@@ -5,7 +5,9 @@ from sklearn.preprocessing import MinMaxScaler
 from counterfactuals.datasets.base import AbstractDataset
 
 
-class MnistDataset(AbstractDataset):
+class MNISTDataset(AbstractDataset):
+    alpha = 1e-6
+
     def __init__(self, file_path: str = "data/mnist.csv"):
         self.alpha = 1e-6
         self.raw_data = self.load(file_path=file_path, header=None)
@@ -21,32 +23,29 @@ class MnistDataset(AbstractDataset):
     def _dequantize(x, rng):
         """
         Adds noise to pixels to dequantize them.
+        Ensures the output stays in the valid range [0, 1].
         """
-        return x + rng.rand(*x.shape) / 256.0
+        x = x + rng.rand(*x.shape) / 256.0
+        return np.clip(x, 0, 1)
 
     @staticmethod
-    def logit(x):
-        """
-        Elementwise logit (inverse logistic sigmoid).
-        :param x: numpy array
-        :return: numpy array
-        """
-        return np.log(x / (1.0 - x))
-
-    def _logit_transform(self, x):
+    def _logit_transform(x):
         """
         Transforms pixel values with logit to be unconstrained.
         """
-        return self.logit(self.alpha + (1 - 2 * self.alpha) * x)
+        x = MNISTDataset.alpha + (1 - 2 * MNISTDataset.alpha) * x
+        return np.log(x / (1.0 - x))
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
         self.categorical_columns = []
-        raw_data = raw_data[raw_data[0].isin([1, 7])].iloc[0:200]
+        raw_data = raw_data[raw_data[0].isin([1, 7])].iloc[0:500]
         X = raw_data[raw_data.columns[1:]].to_numpy()
-        X = self._dequantize(X, np.random.RandomState(0))
+
+        rng = np.random.RandomState(42)
+        X = self._dequantize(X, rng)
         X = self._logit_transform(X)
         y = raw_data[raw_data.columns[0]].replace({1: 0, 7: 1}).to_numpy()
 
