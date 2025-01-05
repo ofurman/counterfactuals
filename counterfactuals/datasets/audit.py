@@ -9,20 +9,9 @@ class AuditDataset(AbstractDataset):
     def __init__(
         self,
         file_path: str = "data/audit.csv",
-        method=None,
-        n_bins=None,
     ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
-
-        if method in ["ares", "globe-ce"]:
-            self.n_bins = n_bins
-            self.categorical_features = []
-
-            self.raw_data = pd.DataFrame(self.X, columns=self.feature_columns)
-            self.raw_data["Detection_Risk"] = self.y
-            self.X = self.ares_one_hot(self.raw_data)
-            self.X = self.X.to_numpy().astype(np.float32)
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
@@ -89,7 +78,6 @@ class AuditDataset(AbstractDataset):
         return data
 
     def base_ares_setup(self, n_bins):
-        self.n_bins = n_bins
         data = self.ares_prepro(self.raw_data)
-        self.ares_one_hot(data[self.feature_columns + ["Detection_Risk"]])
+        self.ares_one_hot(data)
         self.categorical_features = []

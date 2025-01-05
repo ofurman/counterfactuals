@@ -18,6 +18,7 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 
 from counterfactuals.cf_methods.ares.ares import AReS, dnn_normalisers, lr_normalisers
 from counterfactuals.cf_methods.globe_ce.globe_ce import GLOBE_CE
+from counterfactuals.cf_methods.ares.utils import ares_one_hot, add_method_variables
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -123,7 +124,7 @@ def search_counterfactuals(
     run["counterfactuals"].upload(counterfactuals_path)
 
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-    ys_orig = np.ones(Xs_cfs.shape[0])*target_class
+    ys_orig = np.ones(Xs_cfs.shape[0]) * target_class
     ys_target = 1 - ys_orig
     return Xs_cfs, Xs, log_prob_threshold, model_returned, ys_orig, ys_target
 
@@ -175,7 +176,9 @@ def main(cfg: DictConfig):
     log_parameters(cfg, run)
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset, method="globe-ce")
+    dataset = instantiate(cfg.dataset)
+    add_method_variables(dataset)
+    ares_one_hot(dataset)
 
     for fold_n, (_, _, _, _) in enumerate(dataset.get_cv_splits(n_splits=5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)

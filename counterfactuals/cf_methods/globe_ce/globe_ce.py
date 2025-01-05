@@ -64,7 +64,7 @@ class GLOBE_CE:
         p=1,
         dataset_name=None,
         target_class=1,
-        logger=None
+        logger=None,
     ):
         """GLOBE_CE class. This class is used to generate GCE directions and evaluate scaling.
 
@@ -216,7 +216,7 @@ class GLOBE_CE:
 
     def prepare_continuous_features(self):
         continuous_features = []
-        for column in self.dataset.raw_data.columns[:-1]:
+        for column in self.dataset.feature_columns:
             if column not in self.categorical_features:
                 continuous_features.append(column)
         return continuous_features
