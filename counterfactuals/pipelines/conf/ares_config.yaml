@@ -21,8 +21,8 @@ experiment:
 
 
 dataset:
-  _target_: counterfactuals.datasets.AuditDataset
-  # _target_: counterfactuals.datasets.HelocDataset
+  _target_: counterfactuals.datasets.HelocDataset
+  # _target_: counterfactuals.datasets.AuditDataset
 
 
 counterfactuals:

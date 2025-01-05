@@ -1,19 +1,18 @@
 defaults:
   - _self_
   - gen_model: medium_maf
-  - disc_model: lr
+  - disc_model: mlp
 
-model: lr
 
 hydra:
   sweeper:
     max_batch_size: 10
 
 neptune:
-  enable: false
+  enable: true
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["ares", "heloc", "node"]
+  tags: ["globe-ce", "default-mlp", "heloc"]
 
 experiment:
   output_folder: models/
@@ -21,8 +20,7 @@ experiment:
 
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
-  # _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 
 counterfactuals:

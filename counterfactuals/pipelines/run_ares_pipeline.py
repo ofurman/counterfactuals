@@ -16,7 +16,7 @@ from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_mod
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 
-from counterfactuals.cf_methods.ares.ares import AReS, dnn_normalisers, lr_normalisers
+from counterfactuals.cf_methods.ares.ares import AReS
 from counterfactuals.cf_methods.ares.utils import ares_one_hot, add_method_variables
 
 logger = logging.getLogger(__name__)
@@ -24,11 +24,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-
-NORMALISERS = {
-    "dnn": dnn_normalisers,
-    "lr": lr_normalisers,
-}
 
 r_values = {"HelocDataset": 3000, "AuditDataset": 100}
 
@@ -50,7 +45,6 @@ def search_counterfactuals(
     dataset_name = cfg.dataset._target_.split(".")[-1]
 
     logger.info("Creating counterfactual model")
-    normalisers = NORMALISERS.get(cfg.model, {dataset_name: False})
 
     Xs = pd.DataFrame(dataset.X_test, columns=dataset.feature_columns).astype(
         np.float32
@@ -67,7 +61,6 @@ def search_counterfactuals(
         dropped_features=[],
         n_bins=10,
         ordinal_features=[],
-        normalise=normalisers[dataset_name],
         constraints=[20, 7, 10],
         dataset_name=dataset_name,
         target_class=target_class,
@@ -104,7 +97,7 @@ def search_counterfactuals(
     run["counterfactuals"].upload(counterfactuals_path)
 
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-    ys_orig = np.ones(Xs_cfs.shape[0]) * target_class
+    ys_orig = dataset.y_test[dataset.y_test != target_class]
     ys_target = 1 - ys_orig
     return Xs_cfs, Xs, log_prob_threshold, model_returned, ys_orig, ys_target
 

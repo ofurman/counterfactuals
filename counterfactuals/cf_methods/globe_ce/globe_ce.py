@@ -58,7 +58,6 @@ class GLOBE_CE:
         dropped_features=[],
         ordinal_features=[],
         delta_init="zeros",
-        normalise=None,
         bin_widths=None,
         monotonicity=None,
         p=1,
@@ -96,14 +95,7 @@ class GLOBE_CE:
         self.feature_values = self.dataset.features
 
         # Refer normalisation to model?
-        if normalise is not None:
-            self.normalise = True
-            self.means = normalise[0]
-            self.stds = normalise[1]
-            self.preds = self.model.predict((self.X.values - self.means) / self.stds)
-        else:
-            self.normalise = False
-            self.preds = self.model.predict(X.values)  # to determine affected inputs
+        self.preds = self.model.predict(X.values)  # to determine affected inputs
 
         if logger is not None:
             logger.info("Filtering out target class data for counterfactual generation")
@@ -298,10 +290,7 @@ class GLOBE_CE:
             if self.n_categorical
             else x_aff + delta
         )
-        if self.normalise:
-            correct = self.model.predict((ces - self.means) / self.stds)
-        else:
-            correct = self.model.predict(ces)
+        correct = self.model.predict(ces)
         if non_zero_costs:
             if self.n_categorical:
                 cost = self.compute_costs(counterfactuals=ces, x_aff=x_aff)
@@ -489,16 +478,12 @@ class GLOBE_CE:
         max_acc = 0  # maximum coverage
         max_b = 1  # upper interval at maximum coverage
         ces = self.round_categorical(self.x_aff + delta * b)
-        if self.normalise:
-            ces = (ces - self.means) / self.stds
         pred = self.model.predict(ces).mean() * 100
         while pred < thresh and b < b_lim:
             if pred > max_acc:
                 max_b = b
             b *= 2
             ces = self.round_categorical(self.x_aff + delta * b)
-            if self.normalise:
-                ces = (ces - self.means) / self.stds
             pred = self.model.predict(ces).mean() * 100
         if pred > max_acc:
             max_b = b
@@ -507,8 +492,6 @@ class GLOBE_CE:
         while i < iters:
             c = (a + b) / 2  # midpoint
             ces = self.round_categorical(self.x_aff + delta * c)
-            if self.normalise:
-                ces = (ces - self.means) / self.stds
             if self.model.predict(ces).mean() * 100 > thresh:
                 b = c
             else:

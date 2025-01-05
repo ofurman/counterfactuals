@@ -52,34 +52,6 @@ categorical_features = {
 }
 
 
-dnn_normalisers = {
-    "compas": False,
-    "GermanCreditDataset": True,
-    "adult_income": True,
-    "default_credit": True,
-    "HelocDataset": False,
-    "MoonsDataset": True,
-    "LawDataset": False,
-    "AuditDataset": False,
-    "DigitsDataset": False,
-    "BlobsDataset": False,
-}
-
-
-lr_normalisers = {
-    "compas": False,
-    "GermanCreditDataset": True,
-    "adult_income": True,
-    "default_credit": True,
-    "HelocDataset": False,
-    "MoonsDataset": True,
-    "LawDataset": False,
-    "AuditDataset": False,
-    "DigitsDataset": False,
-    "BlobsDataset": False,
-}
-
-
 def create_feature_values_tree(features_tree, use_values=False):
     """
     Converts feature values back to their parent features REFER TO EFFICIENCY
@@ -181,13 +153,7 @@ class AReS:
 
         # Set Input Parameters
         self.model = model
-        self.normalise = normalise
-        if self.normalise:
-            self.means = X.values.mean(axis=0)
-            self.stds = X.values.std(axis=0)
-            self.preds = self.model.predict((X.values - self.means) / self.stds)
-        else:
-            self.preds = self.model.predict(X.values)  # to determine affected inputs
+        self.preds = self.model.predict(X.values)  # to determine affected inputs
         if isinstance(self.preds, torch.Tensor):
             self.preds = self.preds.numpy()
         self.X_original = X  # store original inputs
