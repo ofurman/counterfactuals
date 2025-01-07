@@ -3,7 +3,9 @@ from counterfactuals.datasets.adult import AdultDataset
 from counterfactuals.datasets.audit import AuditDataset
 from counterfactuals.datasets.blobs import BlobsDataset
 from counterfactuals.datasets.compas import CompasDataset
+from counterfactuals.datasets.credit_default import CreditDefaultDataset
 from counterfactuals.datasets.digits import DigitsDataset
+from counterfactuals.datasets.digits_low_res import DigitsLowResDataset
 from counterfactuals.datasets.german_credit import GermanCreditDataset
 from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.law import LawDataset

@@ -15,8 +15,7 @@ class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if target.type() != torch.LongTensor:
             target = target.long()
-        target_mask = torch.eye(input.shape[-1])[target]
-        target_mask = target_mask.squeeze(1)  # label 2 one-hot conversion
+        target_mask = target[0].clone().detach()
         non_target_mask = (~target_mask.bool()).float()
         p_target = torch.sum(input * target_mask, dim=1)
         p_max_non_target = torch.max(input * non_target_mask, dim=1).values

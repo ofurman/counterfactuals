@@ -12,8 +12,10 @@ class MultilayerPerceptron(BaseDiscModel):
         hidden_layer_sizes: List[int],
         target_size: int,
         dropout: float = 0.2,
+        device: str = "cpu",
     ):
         super(MultilayerPerceptron, self).__init__()
+        self.device = device
         self.target_size = target_size
         self.input_size = input_size
         layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
@@ -56,6 +58,9 @@ class MultilayerPerceptron(BaseDiscModel):
             train_loss = 0
             test_loss = 0
             for i, (examples, labels) in enumerate(train_loader):
+                examples = examples.float().to(self.device)
+                labels = torch.argmax(labels, dim=1)
+                labels = labels.to(self.device)
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
                 loss = self.criterion(outputs, self.prep_for_loss(labels))
@@ -66,12 +71,15 @@ class MultilayerPerceptron(BaseDiscModel):
             if test_loader:
                 with torch.no_grad():
                     for i, (examples, labels) in enumerate(test_loader):
+                        examples = examples.float().to(self.device)
+                        labels = torch.argmax(labels, dim=1)
+                        labels = labels.to(self.device)
                         outputs = self.forward(examples)
                         loss = self.criterion(outputs, self.prep_for_loss(labels))
                         test_loss += loss.item()
                         # Early stopping
                     test_loss /= len(test_loader)
-                if test_loss < (min_test_loss - eps):
+                if test_loss < (min_test_loss + eps):
                     min_test_loss = test_loss
                     patience_counter = 0
                     self.save(checkpoint_path)

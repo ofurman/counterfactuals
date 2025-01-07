@@ -2,6 +2,7 @@ import numpy as np
 
 import torch
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import MultiStepLR
 
 from tqdm.auto import tqdm
 
@@ -80,7 +81,9 @@ class RPPCEF(BaseCounterfactual):
         x_origin,
         contexts_origin,
         context_target,
-        alpha,
+        alpha_dist,
+        alpha_plaus,
+        alpha_class,
         alpha_s,
         alpha_k,
         log_prob_threshold,
@@ -96,28 +99,28 @@ class RPPCEF(BaseCounterfactual):
         :param log_prob_threshold: threshold for the log probability
         :return: dict with loss and additional components to log.
         """
-        dist = torch.linalg.vector_norm(delta(), dim=1, ord=1)
+        dist = alpha_dist * torch.linalg.vector_norm(delta(), dim=1, ord=1)
 
         disc_logits = self.disc_model(x_origin + delta())
         disc_logits = (
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
-        context_target = (
-            context_target.reshape(-1).float()
-            if context_target.shape[0] == 1
-            else context_target.long()
-        )
-        loss_disc = self.disc_model_criterion(disc_logits, context_target)
+        # context_target = (
+        #     context_target.reshape(-1).float()
+        #     if context_target.shape[0] == 1
+        #     else context_target.long()
+        # )
+        loss_disc = alpha_class * self.disc_model_criterion(disc_logits, context_target)
 
         p_x_param_c_target = self.gen_model(
-            x_origin + delta(), context=context_target.type(torch.float32)
+            x_origin + delta(), context=context_target.float()
         ).clamp(max=10**5)
-        max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
+        max_inner = alpha_plaus * torch.nn.functional.relu(
+            log_prob_threshold - p_x_param_c_target
+        )
 
         delta_loss = delta.loss(alpha_s, alpha_k)
-        # dist = dist if dist_flag else torch.Tensor([0])
-        # dist = torch.Tensor([0])
-        loss = 0.1 * dist + 100 * alpha * loss_disc + alpha * max_inner + delta_loss
+        loss = alpha_dist * dist + loss_disc + max_inner + delta_loss
 
         return {
             "loss": loss,
@@ -153,10 +156,13 @@ class RPPCEF(BaseCounterfactual):
     def explain_dataloader(
         self,
         dataloader: DataLoader,
-        alpha: int,
-        alpha_s: int,
-        alpha_k: int,
+        target_class: int,
         log_prob_threshold: float,
+        alpha_dist: float = 1e-1,
+        alpha_plaus: float = 10**3,
+        alpha_class: float = 10**3,
+        alpha_s: float = 10**2,
+        alpha_k: float = 10**2,
         epochs: int = 1000,
         lr: float = 0.0005,
         patience: int = 100,
@@ -175,20 +181,22 @@ class RPPCEF(BaseCounterfactual):
             for param in self.disc_model.parameters():
                 param.requires_grad = False
 
-        target_class = []
+        target_classes = []
         original = []
-        original_class = []
+        original_classes = []
         for xs_origin, contexts_origin in dataloader:
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
 
-            contexts_origin = contexts_origin.reshape(-1, 1)
-            contexts_target = torch.abs(1 - contexts_origin)
+            contexts_origin = contexts_origin.reshape(-1, 10)
+            contexts_target = torch.zeros_like(contexts_origin)
+            contexts_target[:, target_class] = 1
 
             xs_origin = torch.as_tensor(xs_origin)
             xs_origin.requires_grad = False
 
             optimizer = torch.optim.Adam(self.delta.parameters(), lr=lr)
+            scheduler = MultiStepLR(optimizer, milestones=[500], gamma=0.1)
 
             min_loss = float("inf")
             dist_flag = False
@@ -200,7 +208,9 @@ class RPPCEF(BaseCounterfactual):
                     xs_origin,
                     contexts_origin,
                     contexts_target,
-                    alpha=alpha,
+                    alpha_dist=alpha_dist,
+                    alpha_plaus=alpha_plaus,
+                    alpha_class=alpha_class,
                     alpha_s=alpha_s,
                     alpha_k=alpha_k,
                     log_prob_threshold=log_prob_threshold,
@@ -208,6 +218,7 @@ class RPPCEF(BaseCounterfactual):
                 mean_loss = loss_components["loss"].mean()
                 mean_loss.backward()
                 optimizer.step()
+                scheduler.step()
 
                 self._log_loss_components(loss_components)
 
@@ -235,11 +246,11 @@ class RPPCEF(BaseCounterfactual):
                             break
 
             original.append(xs_origin.detach().cpu().numpy())
-            original_class.append(contexts_origin.detach().cpu().numpy())
-            target_class.append(contexts_target.detach().cpu().numpy())
+            original_classes.append(contexts_origin.detach().cpu().numpy())
+            target_classes.append(contexts_target.detach().cpu().numpy())
 
         x_origs = np.concatenate(original, axis=0)
-        y_origs = np.concatenate(original_class, axis=0)
-        y_target = np.concatenate(target_class, axis=0)
+        y_origs = np.concatenate(original_classes, axis=0)
+        y_target = np.concatenate(target_classes, axis=0)
         # x_cfs = x_origs + self.delta().detach().numpy()
         return self.delta, x_origs, y_origs, y_target
