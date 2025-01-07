@@ -167,6 +167,7 @@ class RPPCEF(BaseCounterfactual):
         lr: float = 0.0005,
         patience: int = 100,
         patience_eps: int = 1e-3,
+        decrease_loss_after_steps: int = 500,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -188,7 +189,9 @@ class RPPCEF(BaseCounterfactual):
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
 
-            contexts_origin = contexts_origin.reshape(-1, 10)
+            if len(contexts_origin.shape) == 1:
+                contexts_origin = contexts_origin.reshape(-1, 1)
+            # contexts_origin = contexts_origin.reshape(-1, 10)
             contexts_target = torch.zeros_like(contexts_origin)
             contexts_target[:, target_class] = 1
 
@@ -196,7 +199,9 @@ class RPPCEF(BaseCounterfactual):
             xs_origin.requires_grad = False
 
             optimizer = torch.optim.Adam(self.delta.parameters(), lr=lr)
-            scheduler = MultiStepLR(optimizer, milestones=[500], gamma=0.1)
+            scheduler = MultiStepLR(
+                optimizer, milestones=[decrease_loss_after_steps], gamma=0.1
+            )
 
             min_loss = float("inf")
             dist_flag = False
