@@ -141,7 +141,7 @@ class CFMetrics:
         y_cf = self.disc_model.predict(self.X_cf).numpy()
         y_true = self.y_target.squeeze()
         y_true = np.argmax(y_true, axis=1) if y_true.ndim > 1 else y_true
-        return (y_cf != y_true).mean()
+        return (y_cf == y_true).mean()
 
     def actionability(self) -> float:
         """

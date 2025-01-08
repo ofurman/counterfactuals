@@ -322,9 +322,9 @@ class CreditDefaultDataset(AbstractDataset):
         X_train = np.array(X_train.astype(np.float32))
         X_test = np.array(X_test.astype(np.float32))
 
-        self.y_transformer = OneHotEncoder()
-        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1)).toarray()
-        y_test = self.y_transformer.transform(y_test.reshape(-1, 1)).toarray()
+        self.y_transformer = OneHotEncoder(sparse_output=False)
+        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
+        y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
         y_train = np.array(y_train.astype(np.int64))
         y_test = np.array(y_test.astype(np.int64))
 

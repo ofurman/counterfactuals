@@ -162,10 +162,14 @@ class GCE(torch.nn.Module):
 
     def loss(self, alpha_s, alpha_k):
         # return alpha_s * self.rows_entropy() + alpha_s * torch.norm(self.d, p=0, dim=1).sum() # + alpha_k * self.cols_entropy()
-        return alpha_s * (
-            self.rows_entropy()
-            + torch.relu(0.01 * self.determinant_diversity_penalty(self.d))
-        )  # + alpha_k * self.cols_entropy()
+        return (
+            alpha_s
+            * (
+                self.rows_entropy()
+                + torch.relu(0.01 * self.determinant_diversity_penalty(self.d))
+            )
+            + alpha_k * self.cols_entropy()
+        )
 
     def get_matrices(self):
         return torch.exp(self.m), self.sparsemax(self.s), self.d
