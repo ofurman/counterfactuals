@@ -237,7 +237,7 @@ class AReS:
             print_terms=False,
             plot_accuracy=False,
         )
-        return self.R.cfx_matrix[-2]
+        return self.R.cfx_matrix[-1]
 
     def bin_continuous_features(self, data):
         """

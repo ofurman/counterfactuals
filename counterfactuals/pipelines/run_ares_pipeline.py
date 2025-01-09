@@ -233,7 +233,10 @@ def main(cfg: DictConfig):
 
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
 
     run.stop()
 
