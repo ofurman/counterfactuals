@@ -6,9 +6,13 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class AuditDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/audit.csv"):
+    def __init__(
+        self,
+        file_path: str = "data/audit.csv",
+    ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
@@ -67,3 +71,13 @@ class AuditDataset(AbstractDataset):
         self.numerical_features = list(range(0, len(self.feature_columns)))
 
         return X_train, X_test, y_train, y_test
+
+    def ares_prepro(self, data):
+        y = data.pop("Detection_Risk")
+        data["Detection_Risk"] = y
+        return data
+
+    def base_ares_setup(self, n_bins):
+        data = self.ares_prepro(self.raw_data)
+        self.ares_one_hot(data)
+        self.categorical_features = []

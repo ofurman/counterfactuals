@@ -6,9 +6,20 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class BlobsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/blobs.csv"):
-        self.raw_data = self.load(file_path=file_path, index_col=False)
-        self.X, self.y = self.preprocess(raw_data=self.raw_data)
+    def __init__(self, file_path: str = "data/blobs.csv", method=None, n_bins=None):
+        self.raw_data = self.load(file_path=file_path, header=None)
+        if method in ["ares", "globe-ce"]:
+            self.raw_data.columns = ["0", "1", "2"]
+            self.raw_data = self.raw_data[
+                (self.raw_data["2"] == 0) | (self.raw_data["2"] == 1)
+            ]
+            self.feature_columns = ["0", "1"]
+            self.n_bins = n_bins
+            self.categorical_features = []
+            self.X, self.y = self.ares_one_hot(self.raw_data), self.raw_data["2"]
+            self.X, self.y = self.X.to_numpy().astype(np.float32), self.y.to_numpy()
+        else:
+            self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )

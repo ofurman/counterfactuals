@@ -9,7 +9,9 @@ from counterfactuals.datasets.base import AbstractDataset
 class LawDataset(AbstractDataset):
     def __init__(self, file_path: str = "data/law.csv"):
         self.raw_data = self.load(file_path=file_path)
+
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )

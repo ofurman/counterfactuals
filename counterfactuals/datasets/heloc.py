@@ -8,7 +8,9 @@ from counterfactuals.datasets.base import AbstractDataset
 class HelocDataset(AbstractDataset):
     def __init__(self, file_path: str = "data/heloc.csv"):
         self.raw_data = self.load(file_path=file_path, index_col=False)
+
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
