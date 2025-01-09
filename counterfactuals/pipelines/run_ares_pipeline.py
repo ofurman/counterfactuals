@@ -190,7 +190,9 @@ def main(cfg: DictConfig):
         logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False)
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
     run.stop()
 
 
