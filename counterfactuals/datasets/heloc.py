@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -86,7 +86,7 @@ class HelocDataset(AbstractDataset):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """
-        self.feature_transformer = StandardScaler()
+        self.feature_transformer = MinMaxScaler()
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
