@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlp
+  - disc_model: mlr
 
 hydra:
   sweeper:
@@ -9,26 +9,26 @@ hydra:
 
 neptune:
   enable: false
-  project: "ofurman/counterfactuals"
+  project: "ofurman/GWCE"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["19.05", "GCE", "no_plausability", "Q1_log_prob_threshold", "all_methods", "lambda_ablation"]
+  tags: ["GCE"]
 
 experiment:
   output_folder: models/
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.BlobsDataset
+  _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
-  train_model: false
-  epochs: 5000
+  train_model: true
+  epochs: 1000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 100
@@ -39,22 +39,25 @@ counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
     _target_: counterfactuals.cf_methods.RPPCEF
-    cf_method_type: "PPCEF_2"
-    K: 1
+    cf_method_type: "GCE"
+    K: 50
 
   disc_model_criterion:
     _target_: counterfactuals.losses.MulticlassDiscLoss
+    eps: 0.01
     # _target_: counterfactuals.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
-  target_class: 0
-  epochs: 20000
-  batch_size: 4096
-  lr: 0.001
-  alpha: 1000
-  alpha_s: 1000
-  alpha_k: 100
-  beta: 0.01
-  patience: 1000
-  
-    
+  origin_class: 0
+  target_class: 1
+  epochs: 50_000
+  batch_size: 8096
+  lr: 0.01
+  patience: 500
+  decrease_loss_patience: 1_000
+  alpha_dist: 0.1
+  alpha_plaus: 10_000
+  alpha_class: 100_000
+  alpha_s: 1_000
+  alpha_k: 10_000
+  alpha_d: 100

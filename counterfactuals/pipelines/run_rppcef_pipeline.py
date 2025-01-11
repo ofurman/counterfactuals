@@ -40,9 +40,10 @@ def search_counterfactuals(
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
     logger.info("Filtering out target class data for counterfactual generation")
+    origin_class = cfg.counterfactuals_params.origin_class
     target_class = cfg.counterfactuals_params.target_class
-    X_test_origin = dataset.X_test[dataset.y_test != target_class]
-    y_test_origin = dataset.y_test[dataset.y_test != target_class]
+    X_test_origin = dataset.X_test[np.argmax(dataset.y_test, axis=1) == origin_class]
+    y_test_origin = dataset.y_test[np.argmax(dataset.y_test, axis=1) == origin_class]
     # X_test_target = dataset.X_test[dataset.y_test == target_class]
 
     logger.info("Creating counterfactual model")
@@ -54,6 +55,7 @@ def search_counterfactuals(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=disc_model_criterion,
+        not_actionable_features=dataset.not_actionable_features,
         neptune_run=run,
     )
 
@@ -80,20 +82,24 @@ def search_counterfactuals(
     time_start = time()
     delta, Xs, ys_orig, ys_target = cf_method.explain_dataloader(
         dataloader=cf_dataloader,
+        target_class=target_class,
         epochs=cfg.counterfactuals_params.epochs,
         lr=cfg.counterfactuals_params.lr,
         patience=cfg.counterfactuals_params.patience,
-        alpha=cfg.counterfactuals_params.alpha,
+        alpha_dist=cfg.counterfactuals_params.alpha_dist,
+        alpha_plaus=cfg.counterfactuals_params.alpha_plaus,
+        alpha_class=cfg.counterfactuals_params.alpha_class,
         alpha_s=cfg.counterfactuals_params.alpha_s,
         alpha_k=cfg.counterfactuals_params.alpha_k,
-        # beta=cfg.counterfactuals_params.beta,
+        alpha_d=cfg.counterfactuals_params.alpha_d,
         log_prob_threshold=log_prob_threshold,
+        decrease_loss_patience=cfg.counterfactuals_params.decrease_loss_patience,
     )
 
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
     M, S, D = delta.get_matrices()
 
@@ -126,8 +132,12 @@ def main(cfg: DictConfig):
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = dataset.y_transformer.transform(
+                disc_model.predict(dataset.X_train).detach().numpy().reshape(-1, 1)
+            )
+            dataset.y_test = dataset.y_transformer.transform(
+                disc_model.predict(dataset.X_test).detach().numpy().reshape(-1, 1)
+            )
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
@@ -144,7 +154,7 @@ def main(cfg: DictConfig):
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
             X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
+            y_train=dataset.y_train,
             X_test=Xs,
             y_test=ys_orig,
             y_target=ys_target,
@@ -155,7 +165,10 @@ def main(cfg: DictConfig):
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
         df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
     run.stop()
 
 

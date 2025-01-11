@@ -31,9 +31,10 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         "WineQualityDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
-    num_classes = (
-        1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
-    )
+    num_classes = dataset.y_train.shape[1]
+    # num_classes = (
+    #     1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
+    # )
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
     disc_model = instantiate(
@@ -79,9 +80,15 @@ def evaluate_disc_model(disc_model: torch.nn.Module, dataset: DictConfig) -> dic
     """
     logger.info("Evaluating discriminator model")
     try:
-        print(classification_report(dataset.y_test, disc_model.predict(dataset.X_test)))
+        print(
+            classification_report(
+                np.argmax(dataset.y_test, axis=1), disc_model.predict(dataset.X_test)
+            )
+        )
         report = classification_report(
-            dataset.y_test, disc_model.predict(dataset.X_test), output_dict=True
+            np.argmax(dataset.y_test, axis=1),
+            disc_model.predict(dataset.X_test),
+            output_dict=True,
         )
     except ValueError:
         # evaluate regression model on R1 score

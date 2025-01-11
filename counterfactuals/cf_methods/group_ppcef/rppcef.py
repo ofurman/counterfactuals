@@ -2,7 +2,7 @@ import numpy as np
 
 import torch
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from tqdm.auto import tqdm
 
@@ -24,10 +24,10 @@ class RPPCEF(BaseCounterfactual):
         X: np.ndarray = None,
         device: str = None,
         # TODO: poprawa nazewnictwa
-        actionable_features: list = None,
+        not_actionable_features: list = None,
         neptune_run=None,
     ):
-        self.actionable_features = actionable_features
+        self.not_actionable_features = not_actionable_features
         self.delta = self._init_cf_method(
             cf_method_type, K, init_cf_method_from_kmeans, X
         )
@@ -71,7 +71,7 @@ class RPPCEF(BaseCounterfactual):
 
         if cf_method_type == "GCE":
             return cf_methods[cf_method_type](
-                N, D, K, init_cf_method_from_kmeans, X, self.actionable_features
+                N, D, K, init_cf_method_from_kmeans, X, self.not_actionable_features
             )
         return cf_methods[cf_method_type](N, D, K)
 
@@ -84,6 +84,7 @@ class RPPCEF(BaseCounterfactual):
         alpha_dist,
         alpha_plaus,
         alpha_class,
+        alpha_d,
         alpha_s,
         alpha_k,
         log_prob_threshold,
@@ -119,7 +120,7 @@ class RPPCEF(BaseCounterfactual):
             log_prob_threshold - p_x_param_c_target
         )
 
-        delta_loss = delta.loss(alpha_s, alpha_k)
+        delta_loss = delta.loss(alpha_s, alpha_k, alpha_d)
         loss = alpha_dist * dist + loss_disc + max_inner + delta_loss
 
         return {
@@ -163,11 +164,12 @@ class RPPCEF(BaseCounterfactual):
         alpha_class: float = 10**3,
         alpha_s: float = 10**2,
         alpha_k: float = 10**2,
+        alpha_d: float = 1e-2,
         epochs: int = 1000,
         lr: float = 0.0005,
         patience: int = 100,
         patience_eps: int = 1e-3,
-        decrease_loss_after_steps: int = 500,
+        decrease_loss_patience: int = 500,
     ):
         """
         Trains the model for a specified number of epochs.
@@ -199,8 +201,11 @@ class RPPCEF(BaseCounterfactual):
             xs_origin.requires_grad = False
 
             optimizer = torch.optim.Adam(self.delta.parameters(), lr=lr)
-            scheduler = MultiStepLR(
-                optimizer, milestones=[decrease_loss_after_steps], gamma=0.1
+            # scheduler = MultiStepLR(
+            #     optimizer, milestones=[decrease_loss_after_steps], gamma=0.1
+            # )
+            scheduler = ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.1, patience=decrease_loss_patience
             )
 
             min_loss = float("inf")
@@ -218,16 +223,17 @@ class RPPCEF(BaseCounterfactual):
                     alpha_class=alpha_class,
                     alpha_s=alpha_s,
                     alpha_k=alpha_k,
+                    alpha_d=alpha_d,
                     log_prob_threshold=log_prob_threshold,
                 )
                 mean_loss = loss_components["loss"].mean()
                 mean_loss.backward()
                 optimizer.step()
-                scheduler.step()
 
                 self._log_loss_components(loss_components)
 
                 loss = loss_components["loss"].detach().cpu().mean().item()
+                scheduler.step(loss)
                 # Progress bar description
                 epoch_pbar.set_description(
                     ", ".join(

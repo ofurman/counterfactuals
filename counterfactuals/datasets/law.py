@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -80,11 +80,9 @@ class LawDataset(AbstractDataset):
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
-        # target_transformer = LabelEncoder()
-        # y_train = self.target_transformer.fit_transform(y_train.reshape(-1, 1))
-        # y_test = self.target_transformer.transform(y_test.reshape(-1, 1))
-        y_train = y_train.reshape(-1)
-        y_test = y_test.reshape(-1)
+        self.y_transformer = OneHotEncoder(sparse_output=False)
+        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
+        y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
 
         X_train = X_train.astype(np.float32)
         X_test = X_test.astype(np.float32)
@@ -92,9 +90,7 @@ class LawDataset(AbstractDataset):
         y_test = y_test.astype(np.int64)
 
         self.numerical_features = list(range(0, len(self.numerical_columns)))
-        self.categorical_features = list(
-            range(len(self.numerical_columns), X_train.shape[1])
-        )
+        self.categorical_features = []
         self.actionable_features = list(range(0, X_train.shape[1]))
 
         return X_train, X_test, y_train, y_test

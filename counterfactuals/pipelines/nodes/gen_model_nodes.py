@@ -14,8 +14,12 @@ def instantiate_gen_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Modu
     Create a generative model
     """
     logger.info("Creating generative model")
+    logger.info(f"Features: {dataset.X_train.shape}")
+    logger.info(f"Context features: {dataset.y_train.shape}")
     gen_model = instantiate(
-        cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
+        cfg.gen_model.model,
+        features=dataset.X_train.shape[1],
+        context_features=dataset.y_train.shape[1],
     )
     return gen_model
 

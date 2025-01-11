@@ -115,7 +115,7 @@ class MultinomialLogisticRegression(BaseDiscModel):
             for i, (examples, labels) in enumerate(train_loader):
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
-                labels = labels.reshape(-1).type(torch.int64)
+                labels = labels.float()
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
@@ -125,7 +125,7 @@ class MultinomialLogisticRegression(BaseDiscModel):
                 with torch.no_grad():
                     test_loss = 0.0
                     for i, (examples, labels) in enumerate(test_loader):
-                        labels = labels.type(torch.int64)
+                        labels = labels.float()
                         outputs = self.forward(examples)
                         loss = criterion(outputs, labels)
                         test_loss += loss
