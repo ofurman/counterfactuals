@@ -92,5 +92,6 @@ class LawDataset(AbstractDataset):
         self.numerical_features = list(range(0, len(self.numerical_columns)))
         self.categorical_features = []
         self.actionable_features = list(range(0, X_train.shape[1]))
+        self.not_actionable_features = []
 
         return X_train, X_test, y_train, y_test

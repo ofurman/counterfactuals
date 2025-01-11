@@ -79,7 +79,7 @@ class MultilayerPerceptron(BaseDiscModel):
                         test_loss += loss.item()
                         # Early stopping
                     test_loss /= len(test_loader)
-                if test_loss < (min_test_loss + eps):
+                if test_loss < (min_test_loss - eps):
                     min_test_loss = test_loss
                     patience_counter = 0
                     self.save(checkpoint_path)

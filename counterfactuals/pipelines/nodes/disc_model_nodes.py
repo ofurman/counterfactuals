@@ -57,7 +57,9 @@ def train_disc_model(
     """
     logger.info("Training discriminator model")
     train_dataloader = dataset.train_dataloader(
-        batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
+        batch_size=cfg.disc_model.batch_size,
+        shuffle=True,
+        noise_lvl=cfg.disc_model.noise_lvl,
     )
     test_dataloader = dataset.test_dataloader(
         batch_size=cfg.disc_model.batch_size, shuffle=False

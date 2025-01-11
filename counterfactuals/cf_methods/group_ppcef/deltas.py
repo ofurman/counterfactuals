@@ -162,7 +162,6 @@ class GCE(torch.nn.Module):
 
     def loss(self, alpha_s, alpha_k, alpha_d):
         # return alpha_s * self.rows_entropy() + alpha_s * torch.norm(self.d, p=0, dim=1).sum() # + alpha_k * self.cols_entropy()
-        print(self.determinant_diversity_penalty(self.d))
         return (
             alpha_s * self.rows_entropy()
             + alpha_d * torch.relu(self.determinant_diversity_penalty(self.d))

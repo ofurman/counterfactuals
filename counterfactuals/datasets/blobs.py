@@ -1,17 +1,23 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from counterfactuals.datasets.base import AbstractDataset
 
 
 class BlobsDataset(AbstractDataset):
     def __init__(self, file_path: str = "data/blobs.csv"):
+        self.categorical_features = []
+        self.features = ["feature1", "feature2", "target"]
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y
         )
+        self.numerical_features = [0, 1]
+        self.categorical_features = []
+        self.actionable_features = [0, 1]
+        self.not_actionable_features = []
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test
         )
@@ -41,12 +47,13 @@ class BlobsDataset(AbstractDataset):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """
-        self.feature_transformer = MinMaxScaler()
+        self.feature_transformer = StandardScaler()
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
-        y_train = y_train.reshape(-1)
-        y_test = y_test.reshape(-1)
+        self.y_transformer = OneHotEncoder(sparse_output=False)
+        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
+        y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
 
         X_train = X_train.astype(np.float32)
         X_test = X_test.astype(np.float32)
