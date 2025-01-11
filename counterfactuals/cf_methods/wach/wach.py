@@ -17,7 +17,7 @@ class WACH(BaseCounterfactual):
     ) -> None:
         tf.compat.v1.disable_eager_execution()
         target_proba = 1.0
-        tol = 0.51  # want counterfactuals with p(class)>0.99
+        tol = 0.05  # want counterfactuals with p(class)>0.99
         self.target_class = target_class
         max_iter = 1000
         lam_init = 1e-1
@@ -27,19 +27,26 @@ class WACH(BaseCounterfactual):
         num_features = disc_model.input_size
 
         # TODO: Change in future to allow for different feature ranges
-        feature_range = (0, 1)
+        feature_range = (-1e10, 1e10)
 
         self.cf = Counterfactual(
             predict_proba,
             shape=(1, num_features),
-            target_proba=target_proba,
-            tol=tol,
-            target_class=target_class,
-            max_iter=max_iter,
-            lam_init=lam_init,
-            max_lam_steps=max_lam_steps,
-            learning_rate_init=learning_rate_init,
-            feature_range=feature_range,
+            distance_fn="l1",
+            target_proba=1.0,
+            target_class="other",
+            max_iter=1000,
+            early_stop=50,
+            lam_init=1e-1,
+            max_lam_steps=10,
+            tol=0.05,
+            learning_rate_init=0.1,
+            feature_range=(-1e10, 1e10),
+            eps=0.01,
+            init="identity",
+            decay=True,
+            write_dir=None,
+            debug=False,
         )
 
     def explain(
@@ -67,7 +74,9 @@ class WACH(BaseCounterfactual):
     ) -> ExplanationResult:
         Xs, ys = dataloader.dataset.tensors
         # create ys_target numpy array same shape as ys but with target class
-        ys_target = np.full(ys.shape, target_class)
+        # ys_target = np.full(ys.shape, target_class)
+        ys_target = np.zeros_like(ys)
+        ys_target[:, target_class] = 1
         Xs_cfs = []
         model_returned = []
         for X, y in tqdm(zip(Xs, ys), total=len(Xs)):
