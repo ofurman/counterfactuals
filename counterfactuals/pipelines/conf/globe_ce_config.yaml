@@ -9,9 +9,9 @@ hydra:
 
 neptune:
   enable: false
-  project: "ofurman/counterfactuals"
+  project: "ofurman/GWCE"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["GLOBE_CE", "counterfactuals"]
+  tags: ["GLOBE_CE"]
 
 experiment:
   output_folder: models/
@@ -21,25 +21,27 @@ dataset:
   _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
+  noise_lvl: 0.00
 
 gen_model:
-  train_model: true
-  batch_size: 1024
+  train_model: false
+  batch_size: 128
   epochs: 2000
-  patience: 50
-  lr: 0.003
-  noise_lvl: 0.02
+  patience: 100
+  lr: 0.001
+  noise_lvl: 0.03
 
 counterfactuals_params:
   cf_method:
     _target_: counterfactuals.cf_methods.globe_ce.GLOBE_CE
   
   # General parameters
-  target_class: 0
+  origin_class: 0
+  target_class: 1
   batch_size: 4096
   log_prob_quantile: 0.25

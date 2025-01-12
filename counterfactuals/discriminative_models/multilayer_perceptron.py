@@ -87,10 +87,10 @@ class MultilayerPerceptron(BaseDiscModel):
                     patience_counter += 1
                 if patience_counter > patience:
                     break
-                self.load(checkpoint_path)
             pbar.set_description(
                 f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
+        self.load(checkpoint_path)
 
     def predict(self, X_test):
         if isinstance(X_test, np.ndarray):

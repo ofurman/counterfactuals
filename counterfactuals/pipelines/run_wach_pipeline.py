@@ -4,6 +4,7 @@ import hydra
 import numpy as np
 import pandas as pd
 from time import time
+import tensorflow as tf
 import torch
 import neptune
 from neptune.utils import stringify_unsupported
@@ -127,6 +128,7 @@ def calculate_metrics(
 def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    tf.keras.backend.clear_session()
 
     logger.info("Initializing Neptune run")
     run = neptune.init_run(
@@ -177,8 +179,11 @@ def main(cfg: DictConfig):
             run=run,
         )
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
     run.stop()
 
 

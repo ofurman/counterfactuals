@@ -94,12 +94,36 @@ class CFMetrics:
         self.categorical_features = categorical_features
         self.ratio_cont = ratio_cont
 
+        # filter where X_cf is not none
+        cf_idxs = ~np.isnan(self.X_cf).any(axis=1)
+        self.X_cf_covered = self.X_cf[cf_idxs]
+        self.X_test_covered = self.X_test[cf_idxs]
+        self.y_target_covered = self.y_target[cf_idxs]
+        self.y_test_covered = self.y_test[cf_idxs]
+        self.y_cf_pred_covered = self._convert_to_numpy(
+            self.disc_model.predict(self.X_cf_covered)
+        )
         # filter only valid counterfactuals and test instances
-        self.y_cf_pred = self._convert_to_numpy(self.disc_model.predict(self.X_cf))
-        self.X_cf_valid = self.X_cf[self.y_cf_pred == np.argmax(self.y_target, axis=1)]
-        self.X_test_valid = self.X_test[
-            self.y_cf_pred == np.argmax(self.y_target, axis=1)
+        self.X_cf_valid = self.X_cf_covered[
+            self.y_cf_pred_covered == np.argmax(self.y_target_covered, axis=1)
         ]
+        self.X_test_valid = self.X_test_covered[
+            self.y_cf_pred_covered == np.argmax(self.y_target_covered, axis=1)
+        ]
+        self.y_test_valid = self.y_test_covered[
+            self.y_cf_pred_covered == np.argmax(self.y_target_covered, axis=1)
+        ]
+        self.y_target_valid = self.y_target_covered[
+            self.y_cf_pred_covered == np.argmax(self.y_target_covered, axis=1)
+        ]
+        assert (
+            self.X_cf_valid.shape[0]
+            == self.X_test_valid.shape[0]
+            == self.y_test_valid.shape[0]
+            == self.y_target_valid.shape[0]
+        )
+        if self.X_cf_valid.shape[0] == 0:
+            logger.warning("No valid instances to compute metrics")
 
     def _convert_to_numpy(self, X: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
         """
@@ -138,10 +162,9 @@ class CFMetrics:
         Returns:
             float: Validity metric value.
         """
-        y_cf = self.disc_model.predict(self.X_cf).numpy()
-        y_true = self.y_target.squeeze()
-        y_true = np.argmax(y_true, axis=1) if y_true.ndim > 1 else y_true
-        return (y_cf == y_true).mean()
+        return (
+            self.y_cf_pred_covered == np.argmax(self.y_target_covered, axis=1)
+        ).mean()
 
     def actionability(self) -> float:
         """
@@ -150,7 +173,7 @@ class CFMetrics:
         Returns:
             float: Actionability metric value.
         """
-        return np.all(self.X_test == self.X_cf, axis=1).mean()
+        return np.all(self.X_test_valid == self.X_cf_valid, axis=1).mean()
 
     def sparsity(self) -> float:
         """
@@ -159,7 +182,7 @@ class CFMetrics:
         Returns:
             float: Sparsity metric value.
         """
-        return (self.X_test != self.X_cf).mean()
+        return (self.X_test_valid != self.X_cf_valid).mean()
 
     def prob_plausibility(self, cf: bool = True) -> float:
         """
@@ -171,9 +194,13 @@ class CFMetrics:
         Returns:
             float: Avg number of counterfactuals that are more plausible than the threshold.
         """
-        X = self.X_cf if cf else self.X_test
+        X = self.X_cf_valid if cf else self.X_test_valid
+        if X.shape[0] == 0:
+            logger.warning("No valid instances to compute log density")
+            return np.nan
+
         X = torch.from_numpy(X).float()
-        y = torch.from_numpy(self.y_target).float()
+        y = torch.from_numpy(self.y_target_valid).float()
         gen_log_probs = self.gen_model(X, y).detach().numpy()
         return (gen_log_probs > self.prob_plausibility_threshold).mean()
 
@@ -187,8 +214,13 @@ class CFMetrics:
         Returns:
             float: Average log density of the counterfactuals.
         """
-        X = self.X_cf if cf else self.X_test
-        y = self.y_target if cf else self.y_test
+        if cf:
+            X, y = self.X_cf_valid, self.y_target_valid
+        else:
+            X, y = self.X_test_valid, self.y_test_valid
+        if X.shape[0] == 0:
+            logger.warning("No valid instances to compute log density")
+            return np.nan
         X = torch.from_numpy(X).float()
         y = torch.from_numpy(y).float()
         gen_log_probs = self.gen_model(X, y).detach().numpy()
@@ -210,7 +242,13 @@ class CFMetrics:
         Returns:
             float: Average LOF score of the counterfactuals.
         """
-        X = self.X_cf if cf else self.X_test
+        X = self.X_cf_valid if cf else self.X_test_valid
+        if X.shape[0] == 0:
+            logger.warning("No valid instances to compute lof_scores")
+            return np.nan
+        # value should be between 3 and 20, ideally n_samples >= 5 * n_neighbors
+        n_neighbors = X.shape[0] // 5
+        n_neighbors = np.clip(n_neighbors, 3, 20)
         X_train = self.X_train
 
         lof = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True)
@@ -241,13 +279,16 @@ class CFMetrics:
         Returns:
             float: Average Isolation Forest score of the counterfactuals.
         """
-        X = self.X_cf if cf else self.X_test
+        X = self.X_cf_valid if cf else self.X_test_valid
+        if X.shape[0] == 0:
+            logger.warning("No valid instances to compute isolation_forest_scores")
+            return np.nan
         X_train = self.X_train
 
         clf = IsolationForest(n_estimators=n_estimators, random_state=42)
         clf.fit(X_train)
-        lof_scores = clf.decision_function(X)
-        return lof_scores.mean()
+        isoforest_scores = clf.decision_function(X)
+        return isoforest_scores.mean()
 
         # isolation_forest_scores = isolation_forest_metric(X_train, X, self.X_test, n_estimators) TODO: fix this
         # return isolation_forest_scores.mean()

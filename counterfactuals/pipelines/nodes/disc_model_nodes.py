@@ -37,6 +37,8 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     # )
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
+    logger.info(f"Input size: {dataset.X_train.shape[1]}")
+    logger.info(f"Number of classes: {num_classes}")
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],

@@ -18,7 +18,6 @@ class CustomCategoricalTransformer(BaseEstimator, TransformerMixin):
         for i in range(x.shape[1]):
             data_with_noise = x[:, i] + rng.rand(*x[:, i].shape)
             divider = self.dividers[i]
-            # print(divider, np.unique(x[:, i], return_counts=True))
             x[:, i] = data_with_noise / divider
         return x
 
@@ -263,7 +262,7 @@ class CreditDefaultDataset(AbstractDataset):
         # df_class_1 = raw_data[raw_data[self.target_column] == 1]
         # df_class_0_downsampled = df_class_0.sample(count_class_1, random_state=42)
         # raw_data = pd.concat([df_class_0_downsampled, df_class_1])
-
+        raw_data = raw_data.dropna()
         X = raw_data[self.feature_columns].values
         y = raw_data[self.target_column].values
         # invert y to be 1 for non-default and 0 for default

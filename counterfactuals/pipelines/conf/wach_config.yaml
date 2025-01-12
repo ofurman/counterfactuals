@@ -29,7 +29,7 @@ disc_model:
   noise_lvl: 0.00
 
 gen_model:
-  train_model: true
+  train_model: false
   batch_size: 128
   epochs: 2000
   patience: 100

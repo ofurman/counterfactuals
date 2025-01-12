@@ -8,8 +8,9 @@ class LogisticRegression(BaseDiscModel):
     def __init__(self, input_size, target_size):
         super(LogisticRegression, self).__init__()
         self.input_size = input_size
-        self.target_size = target_size
-        self.linear = torch.nn.Linear(input_size, target_size)
+        self.target_size = 1
+        self.linear = torch.nn.Linear(input_size, self.target_size)
+        self.device = "cpu"
 
     def forward(self, x):
         y_pred = torch.sigmoid(self.linear(x))
@@ -33,9 +34,11 @@ class LogisticRegression(BaseDiscModel):
         for epoch in (pbar := tqdm(range(epochs))):
             train_loss = 0.0
             for i, (examples, labels) in enumerate(train_loader):
+                examples = examples.float().to(self.device)
+                labels = torch.argmax(labels, dim=1).view(-1, 1)
+                labels = labels.to(self.device)
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
-                labels = labels.reshape(-1, 1)
                 loss = criterion(outputs, labels.float())
                 loss.backward()
                 optimizer.step()
@@ -46,8 +49,10 @@ class LogisticRegression(BaseDiscModel):
                 test_loss = 0.0
                 with torch.no_grad():
                     for i, (examples, labels) in enumerate(test_loader):
+                        examples = examples.float().to(self.device)
+                        labels = torch.argmax(labels, dim=1).view(-1, 1)
+                        labels = labels.to(self.device)
                         outputs = self.forward(examples)
-                        labels = labels.reshape(-1, 1)
                         loss = criterion(outputs, labels.float())
                         test_loss += loss
                 test_loss /= len(test_loader)

@@ -140,6 +140,7 @@ def main(cfg: DictConfig):
             )
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
+        continue
 
         Xs_cfs, Xs, log_prob_threshold, S, ys_orig, ys_target = search_counterfactuals(
             cfg, dataset, gen_model, disc_model, run, save_folder

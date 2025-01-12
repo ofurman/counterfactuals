@@ -129,7 +129,9 @@ def search_counterfactuals(
     time_start = time()
     Xs_cfs = cf_method.explain()
     Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
-    ys_target = np.abs(ys_orig - 1)
+    ys_orig = dataset.y_transformer.transform(ys_orig.reshape(-1, 1))
+    ys_target = np.zeros_like(ys_orig)
+    ys_target[:, 1] = 1
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
@@ -204,8 +206,12 @@ def main(cfg: DictConfig):
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = dataset.y_transformer.transform(
+                disc_model.predict(dataset.X_train).detach().numpy().reshape(-1, 1)
+            )
+            dataset.y_test = dataset.y_transformer.transform(
+                disc_model.predict(dataset.X_test).detach().numpy().reshape(-1, 1)
+            )
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
@@ -223,7 +229,7 @@ def main(cfg: DictConfig):
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
             X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
+            y_train=dataset.y_train,
             X_test=Xs,
             y_test=ys_orig,
             y_target=ys_target,

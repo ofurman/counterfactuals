@@ -22,15 +22,15 @@ class Artelt(BaseCounterfactual):
         self.cf = {}
 
     def fit_density_estimators(self, X_train, y_train):
-        labels = np.unique(y_train)
+        labels = np.unique(np.argmax(y_train, axis=1))
         for label in labels:
-            idx = y_train == label
+            idx = np.argmax(y_train, axis=1) == label
             X_ = X_train[idx, :]
 
             # Optimize hyperparameters
             cv = GridSearchCV(
                 estimator=KernelDensity(),
-                param_grid={"bandwidth": np.arange(0.1, 10.0, 0.05)},
+                param_grid={"bandwidth": np.arange(0.1, 20.0, 0.05)},
                 n_jobs=-1,
                 cv=5,
             )
@@ -40,7 +40,7 @@ class Artelt(BaseCounterfactual):
 
             cv = GridSearchCV(
                 estimator=GaussianMixture(covariance_type="full"),
-                param_grid={"n_components": range(2, 10)},
+                param_grid={"n_components": range(2, 20)},
                 n_jobs=-1,
                 cv=5,
             )
@@ -132,26 +132,7 @@ class Artelt(BaseCounterfactual):
         y_train: np.ndarray,
         **kwargs,
     ) -> ExplanationResult:
-        self.fit_density_estimators(X_train, y_train)
-
-        x_orig = X.reshape(1, -1)
-        y_pred = self.disc_model.predict(x_orig).item()
-        y_target = np.abs(1 - y_pred)
-
-        xcf = self.cf[y_target].compute_counterfactual(x_orig.squeeze(), y=y_target)
-
-        if xcf is None:
-            explanation = np.empty_like(x_orig)
-            explanation[:] = np.nan
-        else:
-            explanation = xcf
-
-        return ExplanationResult(
-            x_cfs=explanation.reshape(1, -1),
-            y_cf_targets=np.array([y_target]),
-            x_origs=x_orig,
-            y_origs=np.array([y_origin]),
-        )
+        raise NotImplementedError
 
     def explain_dataloader(
         self, dataloader: DataLoader, *args, **kwargs
@@ -169,8 +150,6 @@ class Artelt(BaseCounterfactual):
             x_orig = X.numpy().reshape(1, -1)
             y_pred = self.disc_model.predict(x_orig).item()
             y_target = np.abs(1 - y_pred).astype(int)
-            # print(f"y_target: {y_target}")
-            # print(f"x_orig: {x_orig}")
 
             xcf = self.cf[y_target].compute_counterfactual(x_orig.squeeze(), y=y_target)
 
@@ -184,12 +163,14 @@ class Artelt(BaseCounterfactual):
                 model_returned.append(True)
 
             Xs_cfs.append(explanation)
-            ys_target.append(y_target)
+            ys_target.append(np.zeros_like(y))
+            ys_target[-1][y_target] = 1
 
         Xs_cfs = np.array(Xs_cfs).squeeze()
         ys_target = np.array(ys_target)
 
         return Xs_cfs, Xs, ys, ys_target, model_returned
+        # Xs_cfs, Xs, ys_orig, ys_target, model_returned
 
         # return ExplanationResult(
         #     x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs.numpy(), y_origs=ys.numpy()

@@ -38,9 +38,11 @@ def search_counterfactuals(
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
     logger.info("Filtering out target class data for counterfactual generation")
+    origin_class = cfg.counterfactuals_params.origin_class
     target_class = cfg.counterfactuals_params.target_class
-    X_test_origin = dataset.X_test[dataset.y_test != target_class]
-    y_test_origin = dataset.y_test[dataset.y_test != target_class]
+    X_test_origin = dataset.X_test[np.argmax(dataset.y_test, axis=1) == origin_class]
+    y_test_origin = dataset.y_test[np.argmax(dataset.y_test, axis=1) == origin_class]
+    # X_test_target = dataset.X_test[dataset.y_test == target_class]
 
     logger.info("Creating counterfactual model")
     cf_method: Artelt = Artelt(disc_model=disc_model)
@@ -70,7 +72,6 @@ def search_counterfactuals(
     Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
         dataloader=cf_dataloader, X_train=dataset.X_train, y_train=dataset.y_train
     )
-
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
@@ -143,8 +144,12 @@ def main(cfg: DictConfig):
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = dataset.y_transformer.transform(
+                disc_model.predict(dataset.X_train).detach().numpy().reshape(-1, 1)
+            )
+            dataset.y_test = dataset.y_transformer.transform(
+                disc_model.predict(dataset.X_test).detach().numpy().reshape(-1, 1)
+            )
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
@@ -165,7 +170,7 @@ def main(cfg: DictConfig):
             categorical_features=dataset.categorical_features,
             continuous_features=dataset.numerical_features,
             X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
+            y_train=dataset.y_train,
             X_test=Xs,
             y_test=ys_orig,
             y_target=ys_target,
@@ -173,8 +178,11 @@ def main(cfg: DictConfig):
             run=run,
         )
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
     run.stop()
 
 
