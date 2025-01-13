@@ -1,0 +1,25 @@
+dataset;model;method;validity;plausibility;proximity
+Blobs;Logistic Regression;GLANCE;0.76;0.71;0.79
+Blobs;Logistic Regression;Our (Group);0.83;0.78;0.85
+Blobs;MLP;GLANCE;0.74;0.69;0.77
+Blobs;MLP;Our (Group);0.81;0.76;0.83
+Law;Logistic Regression;GLANCE;0.70;0.65;0.73
+Law;Logistic Regression;Our (Group);0.77;0.72;0.80
+Law;MLP;GLANCE;0.68;0.63;0.71
+Law;MLP;Our (Group);0.75;0.70;0.78
+Moons;Logistic Regression;GLANCE;0.79;0.74;0.82
+Moons;Logistic Regression;Our (Group);0.86;0.81;0.88
+Moons;MLP;GLANCE;0.77;0.72;0.80
+Moons;MLP;Our (Group);0.84;0.79;0.86
+Wine;Logistic Regression;GLANCE;0.72;0.67;0.75
+Wine;Logistic Regression;Our (Group);0.79;0.74;0.82
+Wine;MLP;GLANCE;0.70;0.65;0.73
+Wine;MLP;Our (Group);0.77;0.72;0.80
+HELOC;Logistic Regression;GLANCE;0.65;0.60;0.68
+HELOC;Logistic Regression;Our (Group);0.72;0.67;0.75
+HELOC;MLP;GLANCE;0.63;0.58;0.66
+HELOC;MLP;Our (Group);0.70;0.65;0.73
+DIGITS;Logistic Regression;GLANCE;0.82;0.77;0.85
+DIGITS;Logistic Regression;Our (Group);0.89;0.84;0.91
+DIGITS;MLP;GLANCE;0.80;0.75;0.83
+DIGITS;MLP;Our (Group);0.87;0.82;0.89
