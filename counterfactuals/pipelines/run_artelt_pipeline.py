@@ -80,7 +80,15 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return (
+        Xs_cfs,
+        Xs,
+        log_prob_threshold,
+        ys_orig,
+        ys_target,
+        model_returned,
+        cf_search_time,
+    )
 
 
 def calculate_metrics(
@@ -153,10 +161,16 @@ def main(cfg: DictConfig):
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+        (
+            Xs_cfs,
+            Xs,
+            log_prob_threshold,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+        ) = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, run, save_folder
         )
         if not any(model_returned):
             logger.info("No counterfactuals found, skipping metrics calculation")
@@ -180,6 +194,7 @@ def main(cfg: DictConfig):
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["time"] = cf_search_time
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )

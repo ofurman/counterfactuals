@@ -3,6 +3,7 @@
 ########################
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.MoonsDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -10,6 +11,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.MoonsDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -20,6 +22,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.LawDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -27,6 +30,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.LawDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -38,6 +42,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.BlobsDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -45,6 +50,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.BlobsDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -55,6 +61,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.WineDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -63,6 +70,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.WineDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -74,17 +82,19 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.HelocDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
     disc_model=mlp \
-    cf_method.alpha_plaus=100 \
-    cf_method.alpha_class=10000 \
-    cf_method.alpha_s=1000
+    counterfactuals_params.alpha_plaus=100 \
+    counterfactuals_params.alpha_class=10000 \
+    counterfactuals_params.alpha_s=1000
 
 
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.HelocDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -99,6 +109,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 #########################
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -108,6 +119,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 
 python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
+    counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
@@ -120,6 +132,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 # python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 #     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
+# counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
 #     counterfactuals_params.cf_method.K=1 \
 #     counterfactuals_params.alpha_k=0 \
 #     counterfactuals_params.alpha_d=0 \
@@ -127,6 +140,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 
 # python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 #     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
+# counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
 #     counterfactuals_params.cf_method.K=1 \
 #     counterfactuals_params.alpha_k=0 \
 #     counterfactuals_params.alpha_d=0 \

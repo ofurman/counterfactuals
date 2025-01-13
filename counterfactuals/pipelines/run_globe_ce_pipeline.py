@@ -98,10 +98,11 @@ def search_counterfactuals(
         return disc_model.predict(x_scaled).detach().numpy().flatten()
 
     logger.info("Filtering out target class data for counterfactual generation")
+    origin_class = 0
     target_class = 1
     ys_pred = predict_fn(X_test_unscaled)
-    Xs = dataset.X_test[ys_pred != target_class]
-    ys_orig = ys_pred[ys_pred != target_class]
+    Xs = dataset.X_test[ys_pred == origin_class]
+    ys_orig = ys_pred[ys_pred == origin_class]
 
     logger.info("Creating counterfactual model")
     ares_helper = AReS(
@@ -138,6 +139,7 @@ def search_counterfactuals(
     Xs_cfs = cf_method.explain()
     Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
     ys_orig = dataset.y_transformer.transform(ys_orig.reshape(-1, 1))
+
     ys_target = np.zeros_like(ys_orig)
     ys_target[:, 1] = 1
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
@@ -145,12 +147,20 @@ def search_counterfactuals(
     run["metrics/cf_search_time"] = cf_search_time
 
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_{disc_model_name}.csv"
     )
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return (
+        Xs_cfs,
+        Xs,
+        log_prob_threshold,
+        ys_orig,
+        ys_target,
+        model_returned,
+        cf_search_time,
+    )
 
 
 def calculate_metrics(
@@ -223,10 +233,16 @@ def main(cfg: DictConfig):
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+        (
+            Xs_cfs,
+            Xs,
+            log_prob_threshold,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+        ) = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, run, save_folder
         )
 
         metrics = calculate_metrics(
@@ -248,6 +264,7 @@ def main(cfg: DictConfig):
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         df_metrics = pd.DataFrame(metrics, index=[0])
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics["time"] = cf_search_time
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )

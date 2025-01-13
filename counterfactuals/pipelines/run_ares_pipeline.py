@@ -98,10 +98,11 @@ def search_counterfactuals(
         return disc_model.predict(x_scaled).detach().numpy().flatten()
 
     logger.info("Filtering out target class data for counterfactual generation")
+    origin_class = 0
     target_class = 1
     ys_pred = predict_fn(X_test_unscaled)
-    Xs = dataset.X_test[ys_pred != target_class]
-    ys_orig = ys_pred[ys_pred != target_class]
+    Xs = dataset.X_test[ys_pred == origin_class]
+    ys_orig = ys_pred[ys_pred == origin_class]
 
     logger.info("Creating counterfactual model")
     cf_method = AReS(
@@ -109,7 +110,7 @@ def search_counterfactuals(
         dataset=dataset,
         X=pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1]),
         dropped_features=[],
-        n_bins=10,
+        n_bins=100,
         ordinal_features=[],
         normalise=False,
         constraints=[20, 7, 10],

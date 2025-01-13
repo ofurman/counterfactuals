@@ -2,7 +2,7 @@ from typing import Union
 import torch
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -14,6 +14,8 @@ class DigitsDataset(AbstractDataset):
         self, file_path: str = "data/digits.csv", transform=True, shuffle=True
     ):
         self.alpha = 1e-6
+        self.categorical_features = []
+        self.features = ["pixel" + str(i) for i in range(1, 65)] + ["digit"]
         self.raw_data = self.load(file_path=file_path, header=None)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
@@ -52,6 +54,8 @@ class DigitsDataset(AbstractDataset):
         if isinstance(x, np.ndarray):
             x = torch.from_numpy(x)
         x = (torch.sigmoid(x) - 1e-6) / (1 - 2e-6)
+        # bins = np.linspace(0, 1, 256)
+        # x = np.digitize(x, bins) - 1
         return x.numpy()
 
     def preprocess(self, raw_data: pd.DataFrame):
@@ -69,7 +73,9 @@ class DigitsDataset(AbstractDataset):
         # y = raw_data[raw_data.columns[-1]].replace({3: 0, 8: 1}).to_numpy()
 
         self.numerical_features = list(range(0, X.shape[1]))
+        self.numerical_columns = list(range(0, X.shape[1]))
         self.categorical_features = []
+        self.categorical_columns = []
         self.actionable_features = list(range(0, X.shape[1]))
         self.not_actionable_features = []
         return X, y
@@ -84,9 +90,9 @@ class DigitsDataset(AbstractDataset):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """
-        # self.feature_transformer = MinMaxScaler()
-        # X_train = self.feature_transformer.fit_transform(X_train)
-        # X_test = self.feature_transformer.transform(X_test)
+        self.feature_transformer = FunctionTransformer(lambda x: np.array(x))
+        X_train = self.feature_transformer.fit_transform(X_train)
+        X_test = self.feature_transformer.transform(X_test)
 
         # add one hot encoder for y
         self.y_transformer = OneHotEncoder(sparse_output=False)

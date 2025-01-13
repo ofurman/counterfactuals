@@ -6,21 +6,26 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class BlobsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/blobs.csv"):
+    def __init__(self, file_path: str = "data/blobs.csv", transform=True, shuffle=True):
         self.categorical_features = []
         self.features = ["feature1", "feature2", "target"]
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y
+            self.X,
+            self.y,
+            shuffle=shuffle,
         )
         self.numerical_features = [0, 1]
+        self.numerical_columns = [0, 1]
+        self.categorical_columns = []
         self.categorical_features = []
         self.actionable_features = [0, 1]
         self.not_actionable_features = []
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
+        if transform:
+            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+                self.X_train, self.X_test, self.y_train, self.y_test
+            )
 
     def preprocess(self, raw_data: pd.DataFrame):
         """

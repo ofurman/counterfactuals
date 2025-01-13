@@ -49,8 +49,8 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
 
-    cf_method: RPPCEF = instantiate(
-        cfg.counterfactuals_params.cf_method,
+    cf_method: RPPCEF = RPPCEF(
+        cf_method_type=cfg.counterfactuals_params.cf_method.cf_method_type,
         X=X_test_origin,
         gen_model=gen_model,
         disc_model=disc_model,
@@ -106,7 +106,7 @@ def search_counterfactuals(
     Xs_cfs = Xs + delta().detach().numpy()
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, Xs, log_prob_threshold, S, ys_orig, ys_target
+    return Xs_cfs, Xs, log_prob_threshold, S, ys_orig, ys_target, cf_search_time
 
 
 @hydra.main(config_path="./conf", config_name="rppcef_config", version_base="1.2")
@@ -140,10 +140,11 @@ def main(cfg: DictConfig):
             )
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
-        continue
 
-        Xs_cfs, Xs, log_prob_threshold, S, ys_orig, ys_target = search_counterfactuals(
-            cfg, dataset, gen_model, disc_model, run, save_folder
+        Xs_cfs, Xs, log_prob_threshold, S, ys_orig, ys_target, cf_search_time = (
+            search_counterfactuals(
+                cfg, dataset, gen_model, disc_model, run, save_folder
+            )
         )
 
         logger.info("Calculating metrics")
@@ -167,6 +168,7 @@ def main(cfg: DictConfig):
         logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics["time"] = cf_search_time
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )

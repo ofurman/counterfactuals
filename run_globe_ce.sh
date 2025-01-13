@@ -63,14 +63,12 @@ python3 counterfactuals/pipelines/run_globe_ce_pipeline.py -m \
 #########################
 python3 counterfactuals/pipelines/run_globe_ce_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
-    counterfactuals_params.cf_method.K=10 \
     disc_model=mlp_large \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003
 
 python3 counterfactuals/pipelines/run_globe_ce_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
-    counterfactuals_params.cf_method.K=10 \
     disc_model=mlr \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003
