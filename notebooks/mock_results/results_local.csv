@@ -1,0 +1,37 @@
+dataset;model;method;validity;plausibility;proximity
+Blobs;Logistic Regression;Wachter;0.82;0.76;0.85
+Blobs;Logistic Regression;Artelt;0.79;0.73;0.81
+Blobs;Logistic Regression;Our (Local);0.88;0.82;0.87
+Blobs;MLP;Wachter;0.80;0.74;0.83
+Blobs;MLP;Artelt;0.77;0.71;0.79
+Blobs;MLP;Our (Local);0.85;0.80;0.86
+Law;Logistic Regression;Wachter;0.75;0.69;0.78
+Law;Logistic Regression;Artelt;0.73;0.67;0.75
+Law;Logistic Regression;Our (Local);0.81;0.76;0.83
+Law;MLP;Wachter;0.73;0.68;0.76
+Law;MLP;Artelt;0.71;0.65;0.73
+Law;MLP;Our (Local);0.79;0.74;0.81
+Moons;Logistic Regression;Wachter;0.85;0.79;0.87
+Moons;Logistic Regression;Artelt;0.82;0.76;0.84
+Moons;Logistic Regression;Our (Local);0.89;0.84;0.90
+Moons;MLP;Wachter;0.83;0.77;0.85
+Moons;MLP;Artelt;0.80;0.74;0.82
+Moons;MLP;Our (Local);0.87;0.82;0.88
+Wine;Logistic Regression;Wachter;0.78;0.72;0.80
+Wine;Logistic Regression;Artelt;0.75;0.69;0.77
+Wine;Logistic Regression;Our (Local);0.84;0.78;0.85
+Wine;MLP;Wachter;0.76;0.70;0.78
+Wine;MLP;Artelt;0.73;0.67;0.75
+Wine;MLP;Our (Local);0.82;0.76;0.83
+HELOC;Logistic Regression;Wachter;0.71;0.65;0.74
+HELOC;Logistic Regression;Artelt;0.69;0.63;0.71
+HELOC;Logistic Regression;Our (Local);0.77;0.72;0.79
+HELOC;MLP;Wachter;0.69;0.63;0.72
+HELOC;MLP;Artelt;0.67;0.61;0.69
+HELOC;MLP;Our (Local);0.75;0.70;0.77
+DIGITS;Logistic Regression;Wachter;0.88;0.82;0.90
+DIGITS;Logistic Regression;Artelt;0.85;0.79;0.87
+DIGITS;Logistic Regression;Our (Local);0.92;0.87;0.93
+DIGITS;MLP;Wachter;0.86;0.80;0.88
+DIGITS;MLP;Artelt;0.83;0.77;0.85
+DIGITS;MLP;Our (Local);0.90;0.85;0.91
