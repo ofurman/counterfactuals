@@ -1,75 +1,76 @@
+import logging
+from collections import defaultdict
+
 import dice_ml
 import numpy as np
 import pandas as pd
-from collections import defaultdict
 from sklearn.cluster import KMeans
-import logging
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
 
 class DiceExplainerWrapper:
-    def __init__(self, dataset, disc_model):
-        self.dataset = dataset
+    def __init__(self, X_train, y_train, features, disc_model):
+        self.features = features
         input_dataframe = pd.DataFrame(
-            np.concatenate((dataset.X_test, dataset.y_test.reshape(-1, 1)), axis=1),
-            columns=dataset.features,
+            np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1),
+            columns=features,
         )
 
-        d = dice_ml.Data(
+        dice = dice_ml.Data(
             dataframe=input_dataframe,
-            continuous_features=dataset.features[:-1],
+            continuous_features=features[:-1],
             outcome_name="RiskPerformance",
         )
+        model = dice_ml.Model(disc_model, backend="PYT")
 
-        m = dice_ml.Model(model_path="heloc_disc_model.pt", backend="PYT")
-
-        self.exp = dice_ml.Dice(d, m)
-        self.exp.model = disc_model
+        self.exp = dice_ml.Dice(dice, model)
 
     def generate(self, query_instance):
-        query_instance = pd.DataFrame(
-            self.dataset.X_test, columns=self.dataset.features[:-1]
-        )
+        query_instance = pd.DataFrame(query_instance, columns=self.features[:-1])
         dice_exp = self.exp.generate_counterfactuals(
-            query_instance, total_CFs=5, desired_class="opposite"
+            query_instance, total_CFs=1, desired_class="opposite"
         )
-        all_examples = np.concatenate(
-            [example.final_cfs_df.to_numpy() for example in dice_exp.cf_examples_list]
-        )
-        return all_examples
+        if dice_exp.cf_examples_list[0].final_cfs_df is not None:
+            counterfactual = self.get_counterfactual(dice_exp)
+            return counterfactual
+
+    def get_counterfactual(self, dice_exp):
+        return dice_exp.cf_examples_list[0].final_cfs_df.to_numpy()[:, :-1]
 
 
 class GlobalGLANCE:
     def __init__(
         self,
-        dataset,
+        X_test,
+        y_test,
         model,
+        features,
         k: int = -1,
         s: int = 4,
         m: int = 1,
     ) -> None:
         assert s >= 2, "s must be greater than or equal to 2"
 
-        self.dataset = dataset
+        self.features = features
         self.model = model
-        self.X = dataset.X_test
-        self.Y = dataset.y_test
+        self.X = X_test[y_test != 1]
+        self.Y = y_test[y_test != 1]
         self.n = len(self.X)
 
         self.k = k if k > 0 else self.n
         self.s = s
         self.m = m
 
-    def prep(self, method_to_use="dice"):
-        self.method_to_use = method_to_use
+    def prep(self, X_train, y_train, method_to_use="dice"):
         self.__cluster()
 
-        # We're lazy importing explainers to avoid unnecessary initializations of their dependencies
-        # Like CARLA has A LOT OF dependencies, so it's much more efficient to skip it if not needed
         if method_to_use == "dice":
             self.explainer = DiceExplainerWrapper(
-                self.dataset,
+                X_train,
+                y_train,
+                self.features,
                 self.model,
             )
 
@@ -81,7 +82,7 @@ class GlobalGLANCE:
         self.centroids = kmeans.cluster_centers_
 
     def __np_to_pd(self, arr):
-        return pd.DataFrame(arr.reshape(1, -1), columns=self.dataset.features[:-1])
+        return pd.DataFrame(arr.reshape(1, -1), columns=self.features[:-1])
 
     def __perform(self) -> None:
         min_c1, min_c2 = (None, None), (None, None)
@@ -91,18 +92,18 @@ class GlobalGLANCE:
         actions = defaultdict(set)  # Tuple -> Set of actions
         merge_history = []
         action_full_history = []
-
         # First generate counterfactuals m for each cluster center
-        for c, c_lab in cent_lab:
+        for c, c_lab in tqdm(cent_lab):
             assert isinstance(c, np.ndarray), "Centroid must be a numpy array"
 
             for _m in range(self.m):
                 query_instance = self.__np_to_pd(c)
                 counterfactual = self.explainer.generate(query_instance)
-                vec = counterfactual - c
-                if len(vec.shape) == 2:
-                    vec = vec.squeeze(0)
-                actions[(tuple(c), c_lab)].add(tuple(vec))
+                if counterfactual is not None:
+                    vec = counterfactual - c
+                    if len(vec.shape) == 2:
+                        vec = vec.squeeze(0)
+                    actions[(tuple(c), c_lab)].add(tuple(vec))
 
         while len(actions) > self.s:
             # Then compare the counterfactuals between clusters to find the best pair
@@ -281,3 +282,10 @@ class GlobalGLANCE:
         - The average action of the cluster (centroid + action = counterfactual)
         """
         return self.final_clusters
+
+    def explain(self):
+        X_aff = self.X[self.Y == 0]
+        for i in range(X_aff.shape[0]):
+            X_aff[i] = self.get_counterfactual(X_aff[i])
+
+        return X_aff
