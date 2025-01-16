@@ -21,7 +21,7 @@ class DiceExplainerWrapper:
         dice = dice_ml.Data(
             dataframe=input_dataframe,
             continuous_features=features[:-1],
-            outcome_name="RiskPerformance",
+            outcome_name=features[-1],
         )
         model = dice_ml.Model(disc_model, backend="PYT")
 
