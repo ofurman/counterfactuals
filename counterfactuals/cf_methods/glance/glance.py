@@ -59,7 +59,7 @@ class GlobalGLANCE:
         self.Y = y_test[y_test != 1]
         self.n = len(self.X)
 
-        self.k = k if k > 0 else self.n
+        self.k = k if k > 0 else self.n  # starting number of a groups
         self.s = s
         self.m = m
 
