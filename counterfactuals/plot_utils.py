@@ -18,7 +18,10 @@ def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
 
     for i in range(num_classes):
         with torch.no_grad():
-            zgrid = model(xyinput, i * torch.ones(40000, 1)).exp().reshape(200, 200)
+            context_input = torch.nn.functional.one_hot(
+                torch.Tensor([i]).repeat(40000).long(), num_classes=num_classes
+            ).float()
+            zgrid = model(xyinput, context_input).exp().reshape(200, 200)
             zgrid = zgrid.numpy()
             _ = ax.contour(
                 xgrid.numpy(),
@@ -45,8 +48,8 @@ def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
 
 
 def plot_classifier_decision_region(ax, model):
-    xline = torch.linspace(-0, 1, 400)
-    yline = torch.linspace(-0, 1, 400)
+    xline = torch.linspace(0, 1, 400)
+    yline = torch.linspace(0.1, 0.9, 400)
     xgrid, ygrid = torch.meshgrid(xline, yline)
     xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
 
