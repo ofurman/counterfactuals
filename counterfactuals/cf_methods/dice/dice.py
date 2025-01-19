@@ -17,9 +17,10 @@ class DiCE(BaseCounterfactual):
         **kwargs,  # ignore other arguments
     ) -> None:
         self.target_class = target_class
+        self.feature_columns = list(train_dataset.columns[:-1])
         self.dice_data = dice_ml.Data(
             dataframe=train_dataset,
-            continuous_features=train_dataset.columns[:-1],
+            continuous_features=list(train_dataset.columns[:-1]),
             outcome_name=train_dataset.columns[-1],
         )
         self.dice_model = dice_ml.Model(model=disc_model, backend="PYT")
@@ -47,6 +48,9 @@ class DiCE(BaseCounterfactual):
         #     x_cfs=explanation, y_cf_targets=y_target, x_origs=X, y_origs=y_origin
         # )
 
+    def __np_to_pd(self, arr):
+        return pd.DataFrame(arr.reshape(1, -1), columns=self.feature_columns)
+
     def explain_dataloader(
         self, dataloader: DataLoader, target_class: int, *args, **kwargs
     ) -> ExplanationResult:
@@ -60,14 +64,17 @@ class DiCE(BaseCounterfactual):
         for X, y in tqdm(zip(Xs, ys), total=len(Xs)):
             try:
                 dice_exp = self.dice_exp.generate_counterfactuals(
-                    X, total_CFs=1, desired_class=self.target_class, verbose=False
+                    self.__np_to_pd(X),
+                    total_CFs=1,
+                    desired_class=self.target_class,
+                    verbose=False,
                 )
                 explanation = dice_exp.cf_examples_list[0].final_cfs_df.to_numpy()[
                     :, :-1
                 ]
                 model_returned.append(True)
             except Exception as e:
-                explanation = [[np.nan] * X.shape[1]]
+                explanation = [[np.nan] * X.shape[0]]
                 print(e)
                 model_returned.append(False)
             Xs_cfs.append(explanation)
