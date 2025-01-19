@@ -29,9 +29,13 @@ class DiceExplainerWrapper:
 
     def generate(self, query_instance):
         query_instance = pd.DataFrame(query_instance, columns=self.features[:-1])
-        dice_exp = self.exp.generate_counterfactuals(
-            query_instance, total_CFs=1, desired_class="opposite"
-        )
+        try:
+            dice_exp = self.exp.generate_counterfactuals(
+                query_instance, total_CFs=1, desired_class=1, verbose=False
+            )
+        except Exception as e:
+            logger.warning(f"Failed to generate counterfactual: {e}")
+            return None
         if dice_exp.cf_examples_list[0].final_cfs_df is not None:
             counterfactual = self.get_counterfactual(dice_exp)
             return counterfactual
@@ -55,8 +59,8 @@ class GlobalGLANCE:
 
         self.features = features
         self.model = model
-        self.X = X_test[y_test != 1]
-        self.Y = y_test[y_test != 1]
+        self.X = X_test
+        self.Y = y_test
         self.n = len(self.X)
 
         self.k = k if k > 0 else self.n  # starting number of a groups
@@ -283,9 +287,8 @@ class GlobalGLANCE:
         """
         return self.final_clusters
 
-    def explain(self):
-        X_aff = self.X[self.Y == 0]
-        for i in range(X_aff.shape[0]):
-            X_aff[i] = self.get_counterfactual(X_aff[i])
-
-        return X_aff
+    def explain(self, Xs):
+        Xs_cfs = []
+        for x in tqdm(Xs):
+            Xs_cfs.append(self.get_counterfactual(x))
+        return np.array(Xs_cfs)
