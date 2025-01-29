@@ -33,7 +33,7 @@ class GroupCF:
             C=LAMBDA,
             gamma=GAMMA,
             time_limit=1,
-            verbose=False,
+            verbose=True,
         )
         cet.print_tree()
         loss = cet.loss(X, target=self.y_target)

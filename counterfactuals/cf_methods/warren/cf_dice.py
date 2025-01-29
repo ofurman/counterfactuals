@@ -15,12 +15,12 @@ def compute_cf(clf, x, y_target, X_train, y_train, n_cf=1, verbose=True):
         data = dice_ml.Data(
             dataframe=data_df, continuous_features=cols, outcome_name="y"
         )
-        model = dice_ml.Model(model=clf, backend="sklearn")
+        model = dice_ml.Model(model=clf, backend="PYT")
 
         # Compute counterfactual by using a genetic algorithm
-        cf_algo = dice_ml.Dice(data, model, method="genetic")
+        cf_algo = dice_ml.Dice(data, model)
         cf_result = cf_algo.generate_counterfactuals(
-            x_orig, total_CFs=n_cf, desired_class="opposite", verbose=False
+            x_orig, total_CFs=n_cf, desired_class=1, verbose=False
         )
 
         X_cf = cf_result.cf_examples_list[0].final_cfs_df[cols].to_numpy()

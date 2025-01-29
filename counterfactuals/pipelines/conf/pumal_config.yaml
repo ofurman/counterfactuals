@@ -10,7 +10,7 @@ hydra:
 neptune:
   enable: ture
   project: "ofurman/GWCE"
-  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  api_token: "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI5NzlmOTlmNi02YTYxLTQzNjctODdkNC02OGE5NWYyNzc0N2UifQ=="
   tags: ["GCE"]
 
 experiment:
@@ -39,9 +39,9 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.RPPCEF
+    _target_: counterfactuals.cf_methods.PUMAL
     cf_method_type: "GCE"
-    K: null
+    K: 15
 
   disc_model_criterion:
     _target_: counterfactuals.losses.MulticlassDiscLoss
@@ -59,6 +59,6 @@ counterfactuals_params:
   alpha_dist: 0.1
   alpha_plaus: 10_000
   alpha_class: 100_000
-  alpha_s: 1_000
-  alpha_k: 10_000
+  alpha_s: 10_000
+  alpha_k: 1_000
   alpha_d: 100

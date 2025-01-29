@@ -21,15 +21,15 @@ dataset:
   _target_: counterfactuals.datasets.MoonsDataset
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
-  patience: 300
+  patience: 30
   lr: 0.001
   noise_lvl: 0.00
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 128
   epochs: 2000
   patience: 100

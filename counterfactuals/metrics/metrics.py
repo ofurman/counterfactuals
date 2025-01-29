@@ -5,6 +5,9 @@ import torch
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
+from scipy.spatial.distance import pdist
+from scipy.stats import wasserstein_distance
+
 
 from counterfactuals.metrics.distances import (
     continuous_distance,
@@ -61,7 +64,7 @@ class CFMetrics:
         ), "X_test and y_test should have the same number of samples"
         assert (
             X_cf.shape[0] == y_test.shape[0]
-        ), "X_cf and y_test should have the same number of samples"
+        ), f"X_cf and y_test should have the same number of samples, but got {X_cf.shape[0]} and {y_test.shape[0]}"
         assert (
             len(continuous_features) + len(categorical_features) == X_cf.shape[1]
         ), "The sum of continuous and categorical features should equal the number of features in X_cf"
@@ -442,7 +445,7 @@ def evaluate_cf(
     return metrics
 
 
-def evaluate_cf_for_rppcef(
+def evaluate_cf_for_pumal(
     disc_model: torch.nn.Module,
     gen_model: torch.nn.Module,
     X_cf: np.ndarray,
@@ -456,6 +459,7 @@ def evaluate_cf_for_rppcef(
     y_target: np.ndarray,
     median_log_prob: np.ndarray,
     S_matrix: np.ndarray = None,
+    D_matrix: np.ndarray = None,
     X_test_target: np.ndarray = None,
 ):
     metrics = evaluate_cf(
@@ -481,6 +485,41 @@ def evaluate_cf_for_rppcef(
             {
                 "cf_belongs_to_group": cf_belongs_to_group,
                 "K_vectors": (S_matrix.sum(axis=0) != 0).sum(),
+                "pairwise_cosine_sim_mean": pdist(D_matrix, "euclidean").mean(),
+                "pairwise_cosine_sim_std": pdist(D_matrix, "euclidean").std(),
+                "pairwise_cosine_sim_min": pdist(D_matrix, "euclidean").min(),
+                "pairwise_cosine_sim_max": pdist(D_matrix, "euclidean").max(),
+                "pairwise_euclidean_dist_mean": pdist(D_matrix, "cosine").mean(),
+                "pairwise_euclidean_dist_std": pdist(D_matrix, "cosine").std(),
+                "pairwise_euclidean_dist_min": pdist(D_matrix, "cosine").min(),
+                "pairwise_euclidean_dist_max": pdist(D_matrix, "cosine").max(),
+                "pairwise_wasserstein_dist_mean": pdist(
+                    D_matrix, wasserstein_distance
+                ).mean(),
+                "pairwise_wasserstein_dist_std": pdist(
+                    D_matrix, wasserstein_distance
+                ).std(),
+                "pairwise_wasserstein_dist_min": pdist(
+                    D_matrix, wasserstein_distance
+                ).min(),
+                "pairwise_wasserstein_dist_max": pdist(
+                    D_matrix, wasserstein_distance
+                ).max(),
+                "distance_to_centroid_mean": np.linalg.norm(
+                    D_matrix - np.mean(D_matrix, axis=0), axis=1
+                ).mean(),
+                "distance_to_centroid_std": np.linalg.norm(
+                    D_matrix - np.mean(D_matrix, axis=0), axis=1
+                ).std(),
+                "distance_to_centroid_min": np.linalg.norm(
+                    D_matrix - np.mean(D_matrix, axis=0), axis=1
+                ).min(),
+                "distance_to_centroid_max": np.linalg.norm(
+                    D_matrix - np.mean(D_matrix, axis=0), axis=1
+                ).max(),
+                "variance_of_distances_to_centroid": np.power(
+                    np.linalg.norm(D_matrix - np.mean(D_matrix, axis=0), axis=1), 2
+                ).mean(),
             }
         )
     return metrics

@@ -1,5 +1,5 @@
 torchdiffeq
-alibi[tensorflow]
+# alibi[tensorflow]
 numpy
 scipy
 cvxpy

@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -95,6 +96,8 @@ class MultilayerPerceptron(BaseDiscModel):
     def predict(self, X_test):
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test).float()
+        if isinstance(X_test, pd.DataFrame):
+            X_test = torch.from_numpy(X_test.to_numpy()).float()
         with torch.no_grad():
             probs = self.predict_proba(X_test)
             probs = torch.argmax(probs, dim=1)
@@ -103,6 +106,8 @@ class MultilayerPerceptron(BaseDiscModel):
     def predict_proba(self, X_test):
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test).float()
+        if isinstance(X_test, pd.DataFrame):
+            X_test = torch.from_numpy(X_test.to_numpy()).float()
         with torch.no_grad():
             logits = self.forward(X_test)
             probs = self.final_activation(logits)

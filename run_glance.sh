@@ -45,13 +45,15 @@ python3 counterfactuals/pipelines/run_glance_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.WineDataset \
     disc_model=mlp \
     gen_model=medium_maf \
-    counterfactuals_params.cf_method.s=2
+    counterfactuals_params.cf_method.s=2 \
+    counterfactuals_params.cf_method.k=5
 
 python3 counterfactuals/pipelines/run_glance_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.WineDataset \
     disc_model=mlr \
     gen_model=medium_maf \
-    counterfactuals_params.cf_method.s=2
+    counterfactuals_params.cf_method.s=2 \
+    counterfactuals_params.cf_method.k=5
 
 ########################
 #### Heloc Dataset #####

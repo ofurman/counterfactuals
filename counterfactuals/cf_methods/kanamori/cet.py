@@ -680,7 +680,7 @@ class CounterfactualExplanationTree:
 
     def loss(self, X, target=0):
         A = self.predict(X)
-        return (self.mdl_.predict(X + A) != target).mean()
+        return np.array(self.mdl_.predict(X + A) != target, dtype=np.int64).mean()
 
     def print_tree(self, root=None):
         def rec(node, depth):

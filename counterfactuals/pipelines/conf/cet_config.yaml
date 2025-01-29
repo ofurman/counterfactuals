@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: tabnet
+  - disc_model: mlp
 
 hydra:
   sweeper:
@@ -18,13 +18,13 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
   train_model: false
   epochs: 5000
   batch_size: 128
-  patience: 30
+  patience: 300
   lr: 0.001
   noise_lvl: 0.00
 
@@ -39,7 +39,7 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.wach.wach.WACH
+    _target_: counterfactuals.cf_methods.kanamori.cet_gw.CET
 
   log_prob_quantile: 0.25
   origin_class: 0

@@ -9,10 +9,10 @@ from tqdm.auto import tqdm
 from counterfactuals.cf_methods.base import BaseCounterfactual
 from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.discriminative_models.base import BaseDiscModel
-from counterfactuals.cf_methods.group_ppcef.deltas import PPCEF_2, ARES, GLOBAL_CE, GCE
+from counterfactuals.cf_methods.pumal.deltas import PPCEF_2, ARES, GLOBAL_CE, GCE
 
 
-class RPPCEF(BaseCounterfactual):
+class PUMAL(BaseCounterfactual):
     def __init__(
         self,
         cf_method_type: str,
@@ -160,11 +160,11 @@ class RPPCEF(BaseCounterfactual):
         target_class: int,
         log_prob_threshold: float,
         alpha_dist: float = 1e-1,
-        alpha_plaus: float = 10**3,
-        alpha_class: float = 10**3,
-        alpha_s: float = 10**2,
-        alpha_k: float = 10**2,
-        alpha_d: float = 1e-2,
+        alpha_plaus: float = 10**4,
+        alpha_class: float = 10**5,
+        alpha_s: float = 10**4,
+        alpha_k: float = 10**3,
+        alpha_d: float = 10**2,
         epochs: int = 1000,
         lr: float = 0.0005,
         patience: int = 100,

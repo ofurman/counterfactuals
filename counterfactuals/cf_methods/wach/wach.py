@@ -20,7 +20,7 @@ class WACH(BaseCounterfactual):
         tol = 0.05  # want counterfactuals with p(class)>0.99
         self.target_class = target_class
         max_iter = 1000
-        lam_init = 1e-2
+        lam_init = 1e-4
         max_lam_steps = 10
         learning_rate_init = 0.1
         predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731

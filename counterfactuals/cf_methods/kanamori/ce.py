@@ -543,7 +543,7 @@ class ActionExtractor:
         if X.shape == (self.D_,):
             X = X.reshape(1, -1)
 
-        y = self.mdl_.predict(X[0].reshape(1, -1))[0]
+        y = self.mdl_.predict(X[0].reshape(1, -1)).item()
         target_label = int(1 - y)
         prob = self.__getProblem(
             X,

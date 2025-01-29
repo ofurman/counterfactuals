@@ -1,15 +1,17 @@
 
-# PPCEF: Probabilistically Plausible Counterfactual Explanations using Normalizing Flows
+# Unifying Perspectives: Plausible Counterfactual Explanations on Global, Group-wise, and Local Levels
 
-This repository is dedicated to the research and development of **PPCEF** (Probabilistically Plausible Counterfactual Explanations using Normalizing Flows), a novel method designed for generating and evaluating counterfactual explanations in machine learning models. The project aims to enhance model interpretability and fairness by providing insights into alternative scenarios that change a model's decision.
+This repository contains the official implementation of a unified framework for generating plausible counterfactual explanations (CFs) across global, group-wise, and local levels. Our method enhances transparency in AI systems by combining gradient-based optimization with probabilistic plausibility constraints, enabling stakeholders to audit models for fairness, bias, and reliability.
 
-<p align="center">
-<img src="graphic.svg" alt="drawing" width="800"/>
+<p align="center" style="display: flex; justify-content: center; gap: 20px">
+  <img src="teaser_global.svg" alt="Global Counterfactuals" width="30%"/>
+  <img src="teaser_groupwise.svg" alt="Group-wise Counterfactuals" width="30%"/>
+  <img src="teaser_local.svg" alt="Local Counterfactuals" width="30%"/>
 </p>
 
 ## Abstract
 
-We present **PPCEF**, a novel method specifically tailored for generating probabilistically plausible counterfactual explanations. This approach utilizes normalizing flows as density estimators within an unconstrained optimization framework, effectively balancing distance, validity, and probabilistic plausibility in the produced counterfactuals. Our method is notable for its computational efficiency and ability to process large and high-dimensional datasets, making it particularly applicable in real-world scenarios. A key aspect of **PPCEF** is its focus on the plausibility of counterfactuals, ensuring that the generated explanations are coherent and realistic within the context of the original data. Through comprehensive experiments across various datasets and models, we demonstrate that **PPCEF** can successfully generate high-quality counterfactual explanations, highlighting its potential as a valuable tool in enhancing the interpretability and transparency of machine learning systems.
+The growing complexity of AI systems has intensified the need for transparency through Explainable AI (XAI). Counterfactual explanations (CFs) offer actionable "what-if" scenarios on three levels: Local CFs providing instance-specific insights, Global CFs addressing broader trends, and Group-wise CFs (GWCFs) striking a balance and revealing patterns within cohesive groups. Despite the availability of methods for each granularity level, the field lacks a unified method that integrates these complementary approaches. We address this limitation by proposing a gradient-based optimization method for differentiable models that generates Local, Global, and Group-wise Counterfactual Explanations in a unified manner. We especially enhance GWCF generation by combining instance grouping and counterfactual generation into a single efficient process, replacing traditional two-step methods. Moreover, to ensure trustworthiness, we pioneer the integration of plausibility criteria into the GWCF domain, making explanations both valid and realistic. Our results demonstrate the method's effectiveness in balancing validity, proximity, and plausibility while optimizing group granularity, with practical utility validated through practical use cases.
 
 ## Table of Contents
 
@@ -100,7 +102,7 @@ evaluate_cf(
 )
 ```
 ### Jupyter notebook
-You can find the example of running algorithm in the jupyter notebook at: [here](notebooks/ppcef.ipynb)
+You can find the example of running algorithm in the jupyter notebook at: [here](notebooks/our_gw.ipynb)
 
 ### Pre-trained Models
 
@@ -111,7 +113,6 @@ We publish pre-trained models in the `./models/` directory for immediate use and
 The repository is organized as follows to facilitate ease of use and contribution:
 
 ```
-|── conf/                  # Configuration files
 |── data/                  # Datasets
 |── models/                # Trained models
 |── notebooks/             # Jupyter notebooks for analysis and examples
@@ -134,23 +135,15 @@ The full data folder can be found under the following link: [Link](data). More d
 
 To run experiments, prepare the configuration files located in the `counterfactuals/pipelines/conf/` directory:
 
-Execute the following scripts to train models and run experiments:
+Execute the following scripts to train models and run experiments for our method:
 
 ```shell
-python3 counterfactuals/pipelines/run_ppcef_pipeline.py
+python3 counterfactuals/pipelines/run_pumal_pipeline.py
 ```
 
 ## Citation
 ```
-@inbook{inbook,
-  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zięba, Maciej},
-  year = {2024},
-  month = {10},
-  pages = {},
-  title = {Probabilistically Plausible Counterfactual Explanations with Normalizing Flows},
-  isbn = {9781643685489},
-  doi = {10.3233/FAIA240584}
-}
+TBA
 ```
 ## Contact
 

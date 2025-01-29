@@ -13,7 +13,7 @@ class DiCE(BaseCounterfactual):
         self,
         disc_model: BaseDiscModel,
         train_dataset: pd.DataFrame,  # should be train dataset with target as a last column
-        target_class: int = "opposite",  # any class other than origin will do
+        target_class: int = 1,  # any class other than origin will do
         **kwargs,  # ignore other arguments
     ) -> None:
         self.target_class = target_class
@@ -55,8 +55,6 @@ class DiCE(BaseCounterfactual):
         self, dataloader: DataLoader, target_class: int, *args, **kwargs
     ) -> ExplanationResult:
         Xs, ys = dataloader.dataset.tensors
-        # create ys_target numpy array same shape as ys but with target class
-        # ys_target = np.full(ys.shape, target_class)
         ys_target = np.zeros_like(ys)
         ys_target[:, target_class] = 1
         Xs_cfs = []

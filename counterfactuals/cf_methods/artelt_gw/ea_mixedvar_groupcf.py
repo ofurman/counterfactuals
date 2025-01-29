@@ -256,4 +256,4 @@ def compute_mixedvar_groupcf(
             "Computation of multi-instance counterfactual explanation failed"
         )
 
-    return delta_cf_, err_rate
+    return X_cf

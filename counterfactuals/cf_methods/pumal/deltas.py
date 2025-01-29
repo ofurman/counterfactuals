@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from sklearn.cluster import KMeans
 
-from counterfactuals.cf_methods.group_ppcef.sparsemax import Sparsemax
+from counterfactuals.cf_methods.pumal.sparsemax import Sparsemax
 
 
 class PPCEF_2(torch.nn.Module):

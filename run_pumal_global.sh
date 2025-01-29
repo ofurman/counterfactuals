@@ -1,7 +1,7 @@
 ########################
 #### Moons Dataset #####
 ########################
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.MoonsDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -9,7 +9,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     counterfactuals_params.alpha_d=0 \
     disc_model=mlp
 
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.MoonsDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -20,7 +20,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 #### Law Dataset #####
 ########################
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.LawDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -28,7 +28,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     counterfactuals_params.alpha_d=0 \
     disc_model=mlp
 
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.LawDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -40,7 +40,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 #### Blobs Dataset #####
 ########################
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.BlobsDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -48,7 +48,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     counterfactuals_params.alpha_d=0 \
     disc_model=mlp
 
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.BlobsDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -59,7 +59,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 #### Wine Dataset #####
 ########################
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.WineDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -68,7 +68,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     disc_model=mlp \
     gen_model=medium_maf
 
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.WineDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -80,7 +80,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 #### Heloc Dataset #####
 ########################
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.HelocDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -92,7 +92,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     counterfactuals_params.alpha_s=1000
 
 
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.HelocDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -107,7 +107,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 #########################
 #### Digits Dataset #####
 #########################
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -117,7 +117,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003
 
-python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     dataset._target_=counterfactuals.datasets.DigitsDataset \
     counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
     counterfactuals_params.cf_method.K=1 \
@@ -130,7 +130,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 ########################
 #### Credit Default #####
 ########################
-# python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+# python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
 #     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
 # counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
 #     counterfactuals_params.cf_method.K=1 \
@@ -138,7 +138,7 @@ python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
 #     counterfactuals_params.alpha_d=0 \
 #     disc_model=mlp
 
-# python3 counterfactuals/pipelines/run_rppcef_pipeline.py -m \
+# python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
 #     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
 # counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
 #     counterfactuals_params.cf_method.K=1 \

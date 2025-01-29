@@ -3,11 +3,14 @@ import pandas as pd
 from scipy.stats import median_abs_deviation as mad
 from scipy.stats import gaussian_kde as kde
 from scipy.interpolate import interp1d
+from scipy.spatial.distance import mahalanobis
 from sklearn.linear_model import Ridge
 from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.model_selection import train_test_split
-# from lingam import DirectLiNGAM
+from lingam.direct_lingam import DirectLiNGAM
+from sklearn.covariance import EmpiricalCovariance, MinCovDet
+from sklearn.neighbors import LocalOutlierFactor
 # import torch
 # from pytorch_tabnet.pretraining import TabNetPretrainer
 # from pytorch_tabnet.tab_model import TabNetClassifier
@@ -100,31 +103,43 @@ def CumulativeDistributionFunction(x_d, X_d, l_buff=1e-6, r_buff=1e-6):
     return percentile_
 
 
-# def interaction_matrix(X, interaction_type='causal', prior_knowledge=None, measure='pwling', estimator='ML', file_name=''):
-#    if(interaction_type=='causal'):
-#        lingam = DirectLiNGAM(prior_knowledge=prior_knowledge, measure=measure).fit(X)
-#        B = lingam.adjacency_matrix_
-#        C = np.zeros([X.shape[1], X.shape[1]])
-#        for d in range(1, X.shape[1]):
-#            C += np.linalg.matrix_power(B, d)
-#        return B, C
-#    elif(interaction_type=='correlation'):
-#        return np.corrcoef(X.T) - np.eye(X.shape[1])
-#    elif(interaction_type=='covariance'):
-#        if(estimator=='ML'):
-#            est = EmpiricalCovariance(store_precision=True, assume_centered=False).fit(X)
-#        elif(estimator=='MCD'):
-#            est = MinCovDet(store_precision=True, assume_centered=False, support_fraction=None).fit(X)
-#        cov = est.covariance_
-#        if(np.linalg.matrix_rank(cov)!=X.shape[1]): cov += 1e-6 * np.eye(X.shape[1])
-#        l_, P_ = np.linalg.eig(np.linalg.inv(cov))
-#        l = np.diag(np.sqrt(l_))
-#        P = P_.T
-#        U = P.T.dot(l).T
-#        return cov, U
-#    elif(interaction_type=='precomputed'):
-#        df = pd.read_csv(file_name)
-#        return df.values
+def interaction_matrix(
+    X,
+    interaction_type="causal",
+    prior_knowledge=None,
+    measure="pwling",
+    estimator="ML",
+    file_name="",
+):
+    if interaction_type == "causal":
+        lingam = DirectLiNGAM(prior_knowledge=prior_knowledge, measure=measure).fit(X)
+        B = lingam.adjacency_matrix_
+        C = np.zeros([X.shape[1], X.shape[1]])
+        for d in range(1, X.shape[1]):
+            C += np.linalg.matrix_power(B, d)
+        return B, C
+    elif interaction_type == "correlation":
+        return np.corrcoef(X.T) - np.eye(X.shape[1])
+    elif interaction_type == "covariance":
+        if estimator == "ML":
+            est = EmpiricalCovariance(store_precision=True, assume_centered=False).fit(
+                X
+            )
+        elif estimator == "MCD":
+            est = MinCovDet(
+                store_precision=True, assume_centered=False, support_fraction=None
+            ).fit(X)
+        cov = est.covariance_
+        if np.linalg.matrix_rank(cov) != X.shape[1]:
+            cov += 1e-6 * np.eye(X.shape[1])
+        l_, P_ = np.linalg.eig(np.linalg.inv(cov))
+        l = np.diag(np.sqrt(l_))  # noqa: E741
+        P = P_.T
+        U = P.T.dot(l).T
+        return cov, U
+    elif interaction_type == "precomputed":
+        df = pd.read_csv(file_name)
+        return df.values
 
 
 class LimeEstimator:
@@ -193,7 +208,7 @@ class LimeEstimator:
         N_x = self.getNeighbors(x)
         weights = self.getWeights(x, N_x)
         if target_label is None:
-            target_label = int(1 - self.mdl_.predict(x.reshape(1, -1))[0])
+            target_label = int(1 - self.mdl_.predict(x.reshape(1, -1)).item())
         self.mdl_local_ = self.mdl_local_.fit(
             N_x, self.mdl_.predict_proba(N_x)[:, target_label], sample_weight=weights
         )
@@ -486,840 +501,840 @@ ACTION_TYPES = ["B", "I", "C"]
 ACTION_CONSTRAINTS = ["", "FIX", "INC", "DEC"]
 
 
-# class ActionCandidates:
-#     def __init__(
-#         self,
-#         X,
-#         Y=[],
-#         feature_names=[],
-#         feature_types=[],
-#         feature_categories=[],
-#         feature_constraints=[],
-#         max_candidates=50,
-#         tol=1e-6,
-#     ):
-#         self.X_ = X
-#         self.Y_ = Y
-#         self.N_, self.D_ = X.shape
-#         self.feature_names_ = (
-#             feature_names
-#             if len(feature_names) == self.D_
-#             else ["x_{}".format(d) for d in range(self.D_)]
-#         )
-#         self.feature_types_ = (
-#             feature_types
-#             if len(feature_types) == self.D_
-#             else ["C" for d in range(self.D_)]
-#         )
-#         self.feature_categories_ = feature_categories
-#         self.feature_constraints_ = (
-#             feature_constraints
-#             if len(feature_constraints) == self.D_
-#             else ["" for d in range(self.D_)]
-#         )
-#         self.max_candidates = max_candidates
-#         self.tol_ = tol
+class ActionCandidates:
+    def __init__(
+        self,
+        X,
+        Y=[],
+        feature_names=[],
+        feature_types=[],
+        feature_categories=[],
+        feature_constraints=[],
+        max_candidates=50,
+        tol=1e-6,
+    ):
+        self.X_ = X
+        self.Y_ = Y
+        self.N_, self.D_ = X.shape
+        self.feature_names_ = (
+            feature_names
+            if len(feature_names) == self.D_
+            else ["x_{}".format(d) for d in range(self.D_)]
+        )
+        self.feature_types_ = (
+            feature_types
+            if len(feature_types) == self.D_
+            else ["C" for d in range(self.D_)]
+        )
+        self.feature_categories_ = feature_categories
+        self.feature_constraints_ = (
+            feature_constraints
+            if len(feature_constraints) == self.D_
+            else ["" for d in range(self.D_)]
+        )
+        self.max_candidates = max_candidates
+        self.tol_ = tol
 
-#         self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
-#         self.steps_ = [
-#             (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
-#             if self.feature_types_[d] == "C"
-#             else 1
-#             for d in range(self.D_)
-#         ]
-#         self.grids_ = [
-#             np.arange(self.X_lb_[d], self.X_ub_[d] + self.steps_[d], self.steps_[d])
-#             for d in range(self.D_)
-#         ]
+        self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
+        self.steps_ = [
+            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
+            if self.feature_types_[d] == "C"
+            else 1
+            for d in range(self.D_)
+        ]
+        self.grids_ = [
+            np.arange(self.X_lb_[d], self.X_ub_[d] + self.steps_[d], self.steps_[d])
+            for d in range(self.D_)
+        ]
 
-#         self.actions_ = None
-#         self.costs_ = None
-#         self.Q_ = None
-#         self.cov_ = None
+        self.actions_ = None
+        self.costs_ = None
+        self.Q_ = None
+        self.cov_ = None
 
-#     def getFeatureWeight(self, cost_type="uniform"):
-#         weights = np.ones(self.D_)
-#         if cost_type == "MAD":
-#             for d in range(self.D_):
-#                 weight = mad(self.X_[:, d], scale="normal")
-#                 if self.feature_types_[d] == "B" or abs(weight) < self.tol_:
-#                     weights[d] = (self.X_[:, d] * 1.4826).std()
-#                 else:
-#                     weights[d] = weight**-1
-#         elif cost_type == "PCC" and len(self.Y_) == self.N_:
-#             for d in range(self.D_):
-#                 weights[d] = abs(np.corrcoef(self.X_[:, d], self.Y_)[0, 1])
-#         elif cost_type == "standard":
-#             weights = np.std(self.X_, axis=0) ** -1
-#         elif cost_type == "normalize":
-#             weights = (self.X_.max(axis=0) - self.X_.min(axis=0)) ** -1
-#         elif cost_type == "robust":
-#             q25, q75 = np.percentile(self.X_, [0.25, 0.75], axis=0)
-#             for d in range(self.D_):
-#                 if q75[d] - q25[d] == 0:
-#                     weights[d] = self.tol_**-1
-#                 else:
-#                     weights = (q75[d] - q25) ** -1
-#         return weights
+    def getFeatureWeight(self, cost_type="uniform"):
+        weights = np.ones(self.D_)
+        if cost_type == "MAD":
+            for d in range(self.D_):
+                weight = mad(self.X_[:, d], scale="normal")
+                if self.feature_types_[d] == "B" or abs(weight) < self.tol_:
+                    weights[d] = (self.X_[:, d] * 1.4826).std()
+                else:
+                    weights[d] = weight**-1
+        elif cost_type == "PCC" and len(self.Y_) == self.N_:
+            for d in range(self.D_):
+                weights[d] = abs(np.corrcoef(self.X_[:, d], self.Y_)[0, 1])
+        elif cost_type == "standard":
+            weights = np.std(self.X_, axis=0) ** -1
+        elif cost_type == "normalize":
+            weights = (self.X_.max(axis=0) - self.X_.min(axis=0)) ** -1
+        elif cost_type == "robust":
+            q25, q75 = np.percentile(self.X_, [0.25, 0.75], axis=0)
+            for d in range(self.D_):
+                if q75[d] - q25[d] == 0:
+                    weights[d] = self.tol_**-1
+                else:
+                    weights = (q75[d] - q25) ** -1
+        return weights
 
-#     def setActionSet(self, x):
-#         self.actions_ = []
-#         for d in range(self.D_):
-#             if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
-#                 self.actions_.append(np.array([0]))
-#             elif self.feature_types_[d] == "B":
-#                 if (self.feature_constraints_[d] == "INC" and x[d] == 1) or (
-#                     self.feature_constraints_[d] == "DEC" and x[d] == 0
-#                 ):
-#                     self.actions_.append(np.array([0]))
-#                 else:
-#                     self.actions_.append(np.array([1 - 2 * x[d], 0]))
-#             else:
-#                 if self.feature_constraints_[d] == "INC":
-#                     start = x[d] + self.steps_[d]
-#                     stop = self.X_ub_[d] + self.steps_[d]
-#                 elif self.feature_constraints_[d] == "DEC":
-#                     start = self.X_lb_[d]
-#                     stop = x[d]
-#                 else:
-#                     start = self.X_lb_[d]
-#                     stop = self.X_ub_[d] + self.steps_[d]
-#                 A_d = np.arange(start, stop, self.steps_[d]) - x[d]
-#                 A_d = np.extract(abs(A_d) > self.tol_, A_d)
-#                 if len(A_d) > self.max_candidates:
-#                     A_d = A_d[
-#                         np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-#                     ]
-#                 A_d = np.append(A_d, 0)
-#                 self.actions_.append(A_d)
-#         return self
+    def setActionSet(self, x):
+        self.actions_ = []
+        for d in range(self.D_):
+            if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
+                self.actions_.append(np.array([0]))
+            elif self.feature_types_[d] == "B":
+                if (self.feature_constraints_[d] == "INC" and x[d] == 1) or (
+                    self.feature_constraints_[d] == "DEC" and x[d] == 0
+                ):
+                    self.actions_.append(np.array([0]))
+                else:
+                    self.actions_.append(np.array([1 - 2 * x[d], 0]))
+            else:
+                if self.feature_constraints_[d] == "INC":
+                    start = x[d] + self.steps_[d]
+                    stop = self.X_ub_[d] + self.steps_[d]
+                elif self.feature_constraints_[d] == "DEC":
+                    start = self.X_lb_[d]
+                    stop = x[d]
+                else:
+                    start = self.X_lb_[d]
+                    stop = self.X_ub_[d] + self.steps_[d]
+                A_d = np.arange(start, stop, self.steps_[d]) - x[d]
+                A_d = np.extract(abs(A_d) > self.tol_, A_d)
+                if len(A_d) > self.max_candidates:
+                    A_d = A_d[
+                        np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
+                    ]
+                A_d = np.append(A_d, 0)
+                self.actions_.append(A_d)
+        return self
 
-#     def setActionAndCost(self, x, y, cost_type="TLPS", p=1):
-#         self.costs_ = []
-#         self = self.setActionSet(x)
-#         if cost_type == "TLPS" or cost_type == "MPS":
-#             if self.Q_ is None:
-#                 self.Q_ = [
-#                     None
-#                     if self.feature_constraints_[d] == "FIX"
-#                     else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
-#                     for d in range(self.D_)
-#                 ]
-#             for d in range(self.D_):
-#                 if self.Q_[d] is None:
-#                     self.costs_.append([0])
-#                 else:
-#                     Q_d = self.Q_[d]
-#                     Q_0 = Q_d(x[d])
-#                     self.costs_.append(
-#                         [
-#                             abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
-#                             if cost_type == "TLPS"
-#                             else abs(Q_d(x[d] + a) - Q_0)
-#                             for a in self.actions_[d]
-#                         ]
-#                     )
-#         elif cost_type == "SCM" or cost_type == "DACE":
-#             if cost_type == "SCM":
-#                 B_, _ = interaction_matrix(self.X_, interaction_type="causal")
-#                 B = np.eye(self.D_) - B_
-#                 C = self.getFeatureWeight(cost_type="standard")
-#             else:
-#                 self.cov_, B = interaction_matrix(
-#                     self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
-#                     interaction_type="covariance",
-#                 )
-#                 C = self.getFeatureWeight(cost_type="uniform")
-#             for d in range(self.D_):
-#                 cost_d = []
-#                 for d_ in range(self.D_):
-#                     cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
-#                 self.costs_.append(cost_d)
-#         else:
-#             weights = self.getFeatureWeight(cost_type=cost_type)
-#             if cost_type == "PCC":
-#                 p = 2
-#             for d in range(self.D_):
-#                 self.costs_.append(list(weights[d] * abs(self.actions_[d]) ** p))
-#         return self
+    def setActionAndCost(self, x, y, cost_type="TLPS", p=1):
+        self.costs_ = []
+        self = self.setActionSet(x)
+        if cost_type == "TLPS" or cost_type == "MPS":
+            if self.Q_ is None:
+                self.Q_ = [
+                    None
+                    if self.feature_constraints_[d] == "FIX"
+                    else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
+                    for d in range(self.D_)
+                ]
+            for d in range(self.D_):
+                if self.Q_[d] is None:
+                    self.costs_.append([0])
+                else:
+                    Q_d = self.Q_[d]
+                    Q_0 = Q_d(x[d])
+                    self.costs_.append(
+                        [
+                            abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
+                            if cost_type == "TLPS"
+                            else abs(Q_d(x[d] + a) - Q_0)
+                            for a in self.actions_[d]
+                        ]
+                    )
+        elif cost_type == "SCM" or cost_type == "DACE":
+            if cost_type == "SCM":
+                B_, _ = interaction_matrix(self.X_, interaction_type="causal")
+                B = np.eye(self.D_) - B_
+                C = self.getFeatureWeight(cost_type="standard")
+            else:
+                self.cov_, B = interaction_matrix(
+                    self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
+                    interaction_type="covariance",
+                )
+                C = self.getFeatureWeight(cost_type="uniform")
+            for d in range(self.D_):
+                cost_d = []
+                for d_ in range(self.D_):
+                    cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
+                self.costs_.append(cost_d)
+        else:
+            weights = self.getFeatureWeight(cost_type=cost_type)
+            if cost_type == "PCC":
+                p = 2
+            for d in range(self.D_):
+                self.costs_.append(list(weights[d] * abs(self.actions_[d]) ** p))
+        return self
 
-#     def setMultiActionSet(self, xs, union=False):
-#         self.actions_ = []
-#         for d in range(self.D_):
-#             if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
-#                 self.actions_.append(np.array([0]))
-#             elif self.feature_types_[d] == "B":
-#                 x_d = xs[0, d]
-#                 if union:
-#                     self.actions_.append(np.array([-1, 1, 0]))
-#                 elif (xs[:, d] == x_d).all():
-#                     if (self.feature_constraints_[d] == "INC" and x_d == 1) or (
-#                         self.feature_constraints_[d] == "DEC" and x_d == 0
-#                     ):
-#                         self.actions_.append(np.array([0]))
-#                     else:
-#                         self.actions_.append(np.array([1 - 2 * x_d, 0]))
-#                 else:
-#                     self.actions_.append(np.array([0]))
-#             else:
-#                 x_min = np.max(xs[:, d]) if union else np.min(xs[:, d])
-#                 x_max = np.min(xs[:, d]) if union else np.max(xs[:, d])
-#                 if self.feature_constraints_[d] == "INC":
-#                     start = self.steps_[d]
-#                     stop = self.X_ub_[d] + self.steps_[d] - x_max
-#                 elif self.feature_constraints_[d] == "DEC":
-#                     start = self.X_lb_[d] - x_min
-#                     stop = 0
-#                 else:
-#                     start = self.X_lb_[d] - x_min
-#                     stop = self.X_ub_[d] + self.steps_[d] - x_max
-#                 A_d = np.arange(start, stop, self.steps_[d])
-#                 A_d = np.extract(abs(A_d) > self.tol_, A_d)
-#                 if len(A_d) > self.max_candidates:
-#                     A_d = A_d[
-#                         np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-#                     ]
-#                 A_d = np.append(A_d, 0)
-#                 self.actions_.append(A_d)
-#         return self
+    def setMultiActionSet(self, xs, union=False):
+        self.actions_ = []
+        for d in range(self.D_):
+            if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
+                self.actions_.append(np.array([0]))
+            elif self.feature_types_[d] == "B":
+                x_d = xs[0, d]
+                if union:
+                    self.actions_.append(np.array([-1, 1, 0]))
+                elif (xs[:, d] == x_d).all():
+                    if (self.feature_constraints_[d] == "INC" and x_d == 1) or (
+                        self.feature_constraints_[d] == "DEC" and x_d == 0
+                    ):
+                        self.actions_.append(np.array([0]))
+                    else:
+                        self.actions_.append(np.array([1 - 2 * x_d, 0]))
+                else:
+                    self.actions_.append(np.array([0]))
+            else:
+                x_min = np.max(xs[:, d]) if union else np.min(xs[:, d])
+                x_max = np.min(xs[:, d]) if union else np.max(xs[:, d])
+                if self.feature_constraints_[d] == "INC":
+                    start = self.steps_[d]
+                    stop = self.X_ub_[d] + self.steps_[d] - x_max
+                elif self.feature_constraints_[d] == "DEC":
+                    start = self.X_lb_[d] - x_min
+                    stop = 0
+                else:
+                    start = self.X_lb_[d] - x_min
+                    stop = self.X_ub_[d] + self.steps_[d] - x_max
+                A_d = np.arange(start, stop, self.steps_[d])
+                A_d = np.extract(abs(A_d) > self.tol_, A_d)
+                if len(A_d) > self.max_candidates:
+                    A_d = A_d[
+                        np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
+                    ]
+                A_d = np.append(A_d, 0)
+                self.actions_.append(A_d)
+        return self
 
-#     def setMultiCostSet(self, xs, y, cost_type="TLPS", p=1):
-#         self.costs_ = []
-#         for x in xs:
-#             cost_x = []
-#             if cost_type == "TLPS" or cost_type == "MPS":
-#                 if self.Q_ is None:
-#                     self.Q_ = [
-#                         None
-#                         if self.feature_constraints_[d] == "FIX"
-#                         else CumulativeDistributionFunction(
-#                             self.grids_[d], self.X_[:, d]
-#                         )
-#                         for d in range(self.D_)
-#                     ]
-#                 for d in range(self.D_):
-#                     if self.Q_[d] is None:
-#                         cost_x.append([0])
-#                     else:
-#                         Q_d = self.Q_[d]
-#                         Q_0 = Q_d(x[d])
-#                         cost_x.append(
-#                             [
-#                                 abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
-#                                 if cost_type == "TLPS"
-#                                 else abs(Q_d(x[d] + a) - Q_0)
-#                                 for a in self.actions_[d]
-#                             ]
-#                         )
-#             elif cost_type == "SCM" or cost_type == "DACE":
-#                 if cost_type == "SCM":
-#                     B_, _ = interaction_matrix(self.X_, interaction_type="causal")
-#                     B = np.eye(self.D_) - B_
-#                     C = self.getFeatureWeight(cost_type="standard")
-#                 else:
-#                     self.cov_, B = interaction_matrix(
-#                         self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
-#                         interaction_type="covariance",
-#                     )
-#                     C = self.getFeatureWeight(cost_type="uniform")
-#                 for d in range(self.D_):
-#                     cost_d = []
-#                     for d_ in range(self.D_):
-#                         cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
-#                     cost_x.append(cost_d)
-#             else:
-#                 weights = self.getFeatureWeight(cost_type=cost_type)
-#                 if cost_type == "PCC":
-#                     p = 2
-#                 for d in range(self.D_):
-#                     cost_x.append(list(weights[d] * abs(self.actions_[d]) ** p))
-#             self.costs_.append(cost_x)
-#         return self
+    def setMultiCostSet(self, xs, y, cost_type="TLPS", p=1):
+        self.costs_ = []
+        for x in xs:
+            cost_x = []
+            if cost_type == "TLPS" or cost_type == "MPS":
+                if self.Q_ is None:
+                    self.Q_ = [
+                        None
+                        if self.feature_constraints_[d] == "FIX"
+                        else CumulativeDistributionFunction(
+                            self.grids_[d], self.X_[:, d]
+                        )
+                        for d in range(self.D_)
+                    ]
+                for d in range(self.D_):
+                    if self.Q_[d] is None:
+                        cost_x.append([0])
+                    else:
+                        Q_d = self.Q_[d]
+                        Q_0 = Q_d(x[d])
+                        cost_x.append(
+                            [
+                                abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
+                                if cost_type == "TLPS"
+                                else abs(Q_d(x[d] + a) - Q_0)
+                                for a in self.actions_[d]
+                            ]
+                        )
+            elif cost_type == "SCM" or cost_type == "DACE":
+                if cost_type == "SCM":
+                    B_, _ = interaction_matrix(self.X_, interaction_type="causal")
+                    B = np.eye(self.D_) - B_
+                    C = self.getFeatureWeight(cost_type="standard")
+                else:
+                    self.cov_, B = interaction_matrix(
+                        self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
+                        interaction_type="covariance",
+                    )
+                    C = self.getFeatureWeight(cost_type="uniform")
+                for d in range(self.D_):
+                    cost_d = []
+                    for d_ in range(self.D_):
+                        cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
+                    cost_x.append(cost_d)
+            else:
+                weights = self.getFeatureWeight(cost_type=cost_type)
+                if cost_type == "PCC":
+                    p = 2
+                for d in range(self.D_):
+                    cost_x.append(list(weights[d] * abs(self.actions_[d]) ** p))
+            self.costs_.append(cost_x)
+        return self
 
-#     def generateActions(self, x, y, cost_type="TLPS", p=1, multi=False, union=False):
-#         if multi:
-#             self = self.setMultiActionSet(x, union=union)
-#             self = self.setMultiCostSet(x, y, cost_type=cost_type, p=p)
-#         else:
-#             self = self.setActionAndCost(x, y, cost_type=cost_type, p=p)
-#         return self.actions_, self.costs_
+    def generateActions(self, x, y, cost_type="TLPS", p=1, multi=False, union=False):
+        if multi:
+            self = self.setMultiActionSet(x, union=union)
+            self = self.setMultiCostSet(x, y, cost_type=cost_type, p=p)
+        else:
+            self = self.setActionAndCost(x, y, cost_type=cost_type, p=p)
+        return self.actions_, self.costs_
 
-#     def generateLOFParams(self, y, k=10, p=2, subsample=20, kernel="rbf"):
-#         lof = LocalOutlierFactor(
-#             n_neighbors=k,
-#             metric="manhattan" if p == 1 else "sqeuclidean",
-#             novelty=False,
-#         )
-#         X_lof = self.X_[self.Y_ == y]
-#         lof = lof.fit(X_lof)
+    def generateLOFParams(self, y, k=10, p=2, subsample=20, kernel="rbf"):
+        lof = LocalOutlierFactor(
+            n_neighbors=k,
+            metric="manhattan" if p == 1 else "sqeuclidean",
+            novelty=False,
+        )
+        X_lof = self.X_[self.Y_ == y]
+        lof = lof.fit(X_lof)
 
-#         def k_distance(prototypes):
-#             return lof._distances_fit_X_[prototypes, k - 1]
+        def k_distance(prototypes):
+            return lof._distances_fit_X_[prototypes, k - 1]
 
-#         def local_reachability_density(prototypes):
-#             return lof._lrd[prototypes]
+        def local_reachability_density(prototypes):
+            return lof._lrd[prototypes]
 
-#         prototypes = prototype_selection(X_lof, subsample=subsample, kernel=kernel)
-#         return (
-#             X_lof[prototypes],
-#             k_distance(prototypes),
-#             local_reachability_density(prototypes),
-#         )
+        prototypes = prototype_selection(X_lof, subsample=subsample, kernel=kernel)
+        return (
+            X_lof[prototypes],
+            k_distance(prototypes),
+            local_reachability_density(prototypes),
+        )
 
-#     def mahalanobis_dist(self, x_1, x_2, y):
-#         if self.cov_ is None:
-#             self.cov_, _ = interaction_matrix(
-#                 self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
-#                 interaction_type="covariance",
-#             )
-#         return mahalanobis(x_1, x_2, np.linalg.inv(self.cov_))
+    def mahalanobis_dist(self, x_1, x_2, y):
+        if self.cov_ is None:
+            self.cov_, _ = interaction_matrix(
+                self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
+                interaction_type="covariance",
+            )
+        return mahalanobis(x_1, x_2, np.linalg.inv(self.cov_))
 
-#     def local_outlier_factor(self, x, y, k=10, p=2):
-#         lof = LocalOutlierFactor(
-#             n_neighbors=k, metric="manhattan" if p == 1 else "sqeuclidean", novelty=True
-#         )
-#         lof = lof.fit(self.X_[self.Y_ == y])
-#         return -lof.score_samples(x.reshape(1, -1))[0]
+    def local_outlier_factor(self, x, y, k=10, p=2):
+        lof = LocalOutlierFactor(
+            n_neighbors=k, metric="manhattan" if p == 1 else "sqeuclidean", novelty=True
+        )
+        lof = lof.fit(self.X_[self.Y_ == y])
+        return -lof.score_samples(x.reshape(1, -1))[0]
 
-#     def is_feasible(self, x_d, d):
-#         if self.feature_types_[d] == "B":
-#             return int(x_d) in [0, 1]
-#         else:
-#             return x_d >= self.X_lb_[d] and x_d <= self.X_ub_[d]
+    def is_feasible(self, x_d, d):
+        if self.feature_types_[d] == "B":
+            return int(x_d) in [0, 1]
+        else:
+            return x_d >= self.X_lb_[d] and x_d <= self.X_ub_[d]
 
-#     def check_action_infeasible(self, x, a):
-#         x_new = x + a
-#         for d in range(self.D_):
-#             if not self.is_feasible(x_new[d], d):
-#                 return True
-#         return False
+    def check_action_infeasible(self, x, a):
+        x_new = x + a
+        for d in range(self.D_):
+            if not self.is_feasible(x_new[d], d):
+                return True
+        return False
 
-#     def cost(self, x, a, cost_type="TLPS"):
-#         cost = 0.0
-#         if cost_type == "TLPS" or cost_type == "MPS":
-#             if self.Q_ is None:
-#                 self.Q_ = [
-#                     None
-#                     if self.feature_constraints_[d] == "FIX"
-#                     else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
-#                     for d in range(self.D_)
-#                 ]
-#             for d in range(self.D_):
-#                 if self.Q_[d] is not None:
-#                     Q_d = self.Q_[d]
-#                     Q_0 = Q_d(x[d])
-#                     if cost_type == "TLPS":
-#                         cost += abs(np.log2((1 - Q_d(x[d] + a[d])) / (1 - Q_0)))
-#                     else:
-#                         c = abs(Q_d(x[d] + a[d]) - Q_0)
-#                         if cost < c:
-#                             cost = c
-#         else:
-#             weights = self.getFeatureWeight(cost_type=cost_type)
-#             if cost_type == "PCC":
-#                 p = 2
-#             else:
-#                 p = 1
-#             for d in range(self.D_):
-#                 cost += weights[d] * (abs(a[d]) ** p)
-#         return cost
+    def cost(self, x, a, cost_type="TLPS"):
+        cost = 0.0
+        if cost_type == "TLPS" or cost_type == "MPS":
+            if self.Q_ is None:
+                self.Q_ = [
+                    None
+                    if self.feature_constraints_[d] == "FIX"
+                    else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
+                    for d in range(self.D_)
+                ]
+            for d in range(self.D_):
+                if self.Q_[d] is not None:
+                    Q_d = self.Q_[d]
+                    Q_0 = Q_d(x[d])
+                    if cost_type == "TLPS":
+                        cost += abs(np.log2((1 - Q_d(x[d] + a[d])) / (1 - Q_0)))
+                    else:
+                        c = abs(Q_d(x[d] + a[d]) - Q_0)
+                        if cost < c:
+                            cost = c
+        else:
+            weights = self.getFeatureWeight(cost_type=cost_type)
+            if cost_type == "PCC":
+                p = 2
+            else:
+                p = 1
+            for d in range(self.D_):
+                cost += weights[d] * (abs(a[d]) ** p)
+        return cost
 
 
 # class ActionCandidates
 
 
-# class ForestActionCandidates:
-#     def __init__(
-#         self,
-#         X,
-#         forest,
-#         Y=[],
-#         feature_names=[],
-#         feature_types=[],
-#         feature_categories=[],
-#         feature_constraints=[],
-#         max_candidates=50,
-#         tol=1e-6,
-#     ):
-#         self.X_ = X
-#         self.Y_ = Y
-#         self.N_, self.D_ = X.shape
-#         self.feature_names_ = (
-#             feature_names
-#             if len(feature_names) == self.D_
-#             else ["x_{}".format(d) for d in range(self.D_)]
-#         )
-#         self.feature_types_ = (
-#             feature_types
-#             if len(feature_types) == self.D_
-#             else ["C" for d in range(self.D_)]
-#         )
-#         self.feature_categories_ = feature_categories
-#         self.feature_constraints_ = (
-#             feature_constraints
-#             if len(feature_constraints) == self.D_
-#             else ["" for d in range(self.D_)]
-#         )
-#         self.tol_ = tol
+class ForestActionCandidates:
+    def __init__(
+        self,
+        X,
+        forest,
+        Y=[],
+        feature_names=[],
+        feature_types=[],
+        feature_categories=[],
+        feature_constraints=[],
+        max_candidates=50,
+        tol=1e-6,
+    ):
+        self.X_ = X
+        self.Y_ = Y
+        self.N_, self.D_ = X.shape
+        self.feature_names_ = (
+            feature_names
+            if len(feature_names) == self.D_
+            else ["x_{}".format(d) for d in range(self.D_)]
+        )
+        self.feature_types_ = (
+            feature_types
+            if len(feature_types) == self.D_
+            else ["C" for d in range(self.D_)]
+        )
+        self.feature_categories_ = feature_categories
+        self.feature_constraints_ = (
+            feature_constraints
+            if len(feature_constraints) == self.D_
+            else ["" for d in range(self.D_)]
+        )
+        self.tol_ = tol
 
-#         self.forest_ = forest
-#         self.T_ = forest.n_estimators
-#         self.trees_ = [t.tree_ for t in forest.estimators_]
-#         self.leaves_ = [np.where(tree.feature == -2)[0] for tree in self.trees_]
-#         self.L_ = [len(l) for l in self.leaves_]  # noqa: E741
+        self.forest_ = forest
+        self.T_ = forest.n_estimators
+        self.trees_ = [t.tree_ for t in forest.estimators_]
+        self.leaves_ = [np.where(tree.feature == -2)[0] for tree in self.trees_]
+        self.L_ = [len(l) for l in self.leaves_]  # noqa: E741
 
-#         self.H_ = self.getForestLabels()
-#         self.ancestors_, self.regions_ = self.getForestRegions()
-#         self.thresholds_ = self.getForestThresholds()
-#         # self.M_ = [len(self.thresholds_[d])+1 for d in range(self.D_)]
-#         # self.partitions_ = self.getForestPartitions()
+        self.H_ = self.getForestLabels()
+        self.ancestors_, self.regions_ = self.getForestRegions()
+        self.thresholds_ = self.getForestThresholds()
+        # self.M_ = [len(self.thresholds_[d])+1 for d in range(self.D_)]
+        # self.partitions_ = self.getForestPartitions()
 
-#         self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
-#         self.max_candidates = max_candidates
-#         self.steps_ = [
-#             (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
-#             if self.feature_types_[d] == "C"
-#             else 1
-#             for d in range(self.D_)
-#         ]
-#         self.grids_ = [
-#             np.arange(self.X_lb_[d], self.X_ub_[d] + self.steps_[d], self.steps_[d])
-#             for d in range(self.D_)
-#         ]
+        self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
+        self.max_candidates = max_candidates
+        self.steps_ = [
+            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
+            if self.feature_types_[d] == "C"
+            else 1
+            for d in range(self.D_)
+        ]
+        self.grids_ = [
+            np.arange(self.X_lb_[d], self.X_ub_[d] + self.steps_[d], self.steps_[d])
+            for d in range(self.D_)
+        ]
 
-#         self.x_ = None
-#         self.actions_ = None
-#         self.costs_ = None
-#         self.Q_ = None
-#         self.cov_ = None
-#         self.I_ = None
+        self.x_ = None
+        self.actions_ = None
+        self.costs_ = None
+        self.Q_ = None
+        self.cov_ = None
+        self.I_ = None
 
-#     def getFeatureWeight(self, cost_type="uniform"):
-#         weights = np.ones(self.D_)
-#         if cost_type == "MAD":
-#             for d in range(self.D_):
-#                 weight = mad(self.X_[:, d], scale="normal")
-#                 if self.feature_types_[d] == "B" or abs(weight) < self.tol_:
-#                     weights[d] = (self.X_[:, d] * 1.4826).std()
-#                 else:
-#                     weights[d] = weight**-1
-#         elif cost_type == "PCC" and len(self.Y_) == self.N_:
-#             for d in range(self.D_):
-#                 weights[d] = abs(np.corrcoef(self.X_[:, d], self.Y_)[0, 1])
-#         elif cost_type == "standard":
-#             weights = np.std(self.X_, axis=0) ** -1
-#         elif cost_type == "normalize":
-#             weights = (self.X_.max(axis=0) - self.X_.min(axis=0)) ** -1
-#         elif cost_type == "robust":
-#             q25, q75 = np.percentile(self.X_, [0.25, 0.75], axis=0)
-#             for d in range(self.D_):
-#                 if q75[d] - q25[d] == 0:
-#                     weights[d] = self.tol_**-1
-#                 else:
-#                     weights = (q75[d] - q25) ** -1
-#         return weights
+    def getFeatureWeight(self, cost_type="uniform"):
+        weights = np.ones(self.D_)
+        if cost_type == "MAD":
+            for d in range(self.D_):
+                weight = mad(self.X_[:, d], scale="normal")
+                if self.feature_types_[d] == "B" or abs(weight) < self.tol_:
+                    weights[d] = (self.X_[:, d] * 1.4826).std()
+                else:
+                    weights[d] = weight**-1
+        elif cost_type == "PCC" and len(self.Y_) == self.N_:
+            for d in range(self.D_):
+                weights[d] = abs(np.corrcoef(self.X_[:, d], self.Y_)[0, 1])
+        elif cost_type == "standard":
+            weights = np.std(self.X_, axis=0) ** -1
+        elif cost_type == "normalize":
+            weights = (self.X_.max(axis=0) - self.X_.min(axis=0)) ** -1
+        elif cost_type == "robust":
+            q25, q75 = np.percentile(self.X_, [0.25, 0.75], axis=0)
+            for d in range(self.D_):
+                if q75[d] - q25[d] == 0:
+                    weights[d] = self.tol_**-1
+                else:
+                    weights = (q75[d] - q25) ** -1
+        return weights
 
-#     def setActionSet(self, x, use_threshold=True):
-#         if (x == self.x_).all():
-#             return self
-#         self.x_ = x
-#         self.actions_ = []
-#         for d in range(self.D_):
-#             if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
-#                 self.actions_.append(np.array([0]))
-#             elif self.feature_types_[d] == "B":
-#                 if (self.feature_constraints_[d] == "INC" and x[d] == 1) or (
-#                     self.feature_constraints_[d] == "DEC" and x[d] == 0
-#                 ):
-#                     self.actions_.append(np.array([0]))
-#                 else:
-#                     self.actions_.append(np.array([1 - 2 * x[d], 0]))
-#             else:
-#                 if use_threshold:
-#                     A_d = (
-#                         self.thresholds_[d].astype(int) - x[d]
-#                         if self.feature_types_[d] == "I"
-#                         else self.thresholds_[d] - x[d]
-#                     )
-#                     A_d[A_d >= 0] += self.tol_ if self.feature_types_[d] == "C" else 1
-#                     if 0 not in A_d:
-#                         A_d = np.append(A_d, 0)
-#                     if self.feature_constraints_[d] == "INC":
-#                         A_d = np.extract(A_d >= 0, A_d)
-#                     elif self.feature_constraints_[d] == "DEC":
-#                         A_d = np.extract(A_d <= 0, A_d)
-#                 else:
-#                     if self.feature_constraints_[d] == "INC":
-#                         start = x[d] + self.steps_[d]
-#                         stop = self.X_ub_[d] + self.steps_[d]
-#                     elif self.feature_constraints_[d] == "DEC":
-#                         start = self.X_lb_[d]
-#                         stop = x[d]
-#                     else:
-#                         start = self.X_lb_[d]
-#                         stop = self.X_ub_[d] + self.steps_[d]
-#                     A_d = np.arange(start, stop, self.steps_[d]) - x[d]
-#                     A_d = np.extract(abs(A_d) > self.tol_, A_d)
-#                     if len(A_d) > self.max_candidates:
-#                         A_d = A_d[
-#                             np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-#                         ]
-#                     A_d = np.append(A_d, 0)
-#                 self.actions_.append(A_d)
-#         self = self.setForestIntervals(x)
-#         return self
+    def setActionSet(self, x, use_threshold=True):
+        if (x == self.x_).all():
+            return self
+        self.x_ = x
+        self.actions_ = []
+        for d in range(self.D_):
+            if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
+                self.actions_.append(np.array([0]))
+            elif self.feature_types_[d] == "B":
+                if (self.feature_constraints_[d] == "INC" and x[d] == 1) or (
+                    self.feature_constraints_[d] == "DEC" and x[d] == 0
+                ):
+                    self.actions_.append(np.array([0]))
+                else:
+                    self.actions_.append(np.array([1 - 2 * x[d], 0]))
+            else:
+                if use_threshold:
+                    A_d = (
+                        self.thresholds_[d].astype(int) - x[d]
+                        if self.feature_types_[d] == "I"
+                        else self.thresholds_[d] - x[d]
+                    )
+                    A_d[A_d >= 0] += self.tol_ if self.feature_types_[d] == "C" else 1
+                    if 0 not in A_d:
+                        A_d = np.append(A_d, 0)
+                    if self.feature_constraints_[d] == "INC":
+                        A_d = np.extract(A_d >= 0, A_d)
+                    elif self.feature_constraints_[d] == "DEC":
+                        A_d = np.extract(A_d <= 0, A_d)
+                else:
+                    if self.feature_constraints_[d] == "INC":
+                        start = x[d] + self.steps_[d]
+                        stop = self.X_ub_[d] + self.steps_[d]
+                    elif self.feature_constraints_[d] == "DEC":
+                        start = self.X_lb_[d]
+                        stop = x[d]
+                    else:
+                        start = self.X_lb_[d]
+                        stop = self.X_ub_[d] + self.steps_[d]
+                    A_d = np.arange(start, stop, self.steps_[d]) - x[d]
+                    A_d = np.extract(abs(A_d) > self.tol_, A_d)
+                    if len(A_d) > self.max_candidates:
+                        A_d = A_d[
+                            np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
+                        ]
+                    A_d = np.append(A_d, 0)
+                self.actions_.append(A_d)
+        self = self.setForestIntervals(x)
+        return self
 
-#     def setActionAndCost(self, x, y, cost_type="TLPS", p=1, use_threshold=True):
-#         self.costs_ = []
-#         self = self.setActionSet(x, use_threshold=use_threshold)
-#         if cost_type == "TLPS" or cost_type == "MPS":
-#             if self.Q_ is None:
-#                 self.Q_ = [
-#                     None
-#                     if self.feature_constraints_[d] == "FIX"
-#                     else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
-#                     for d in range(self.D_)
-#                 ]
-#             for d in range(self.D_):
-#                 if self.Q_[d] is None:
-#                     self.costs_.append([0])
-#                 else:
-#                     Q_d = self.Q_[d]
-#                     Q_0 = Q_d(x[d])
-#                     self.costs_.append(
-#                         [
-#                             abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
-#                             if cost_type == "TLPS"
-#                             else abs(Q_d(x[d] + a) - Q_0)
-#                             for a in self.actions_[d]
-#                         ]
-#                     )
-#         elif cost_type == "SCM" or cost_type == "DACE":
-#             if cost_type == "SCM":
-#                 B_, _ = interaction_matrix(self.X_, interaction_type="causal")
-#                 B = np.eye(self.D_) - B_
-#                 C = self.getFeatureWeight(cost_type="standard")
-#             else:
-#                 self.cov_, B = interaction_matrix(
-#                     self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
-#                     interaction_type="covariance",
-#                 )
-#                 C = self.getFeatureWeight(cost_type="uniform")
-#             for d in range(self.D_):
-#                 cost_d = []
-#                 for d_ in range(self.D_):
-#                     cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
-#                 self.costs_.append(cost_d)
-#         else:
-#             weights = self.getFeatureWeight(cost_type=cost_type)
-#             for d in range(self.D_):
-#                 self.costs_.append(list(weights[d] * abs(self.actions_[d]) ** p))
-#         return self
+    def setActionAndCost(self, x, y, cost_type="TLPS", p=1, use_threshold=True):
+        self.costs_ = []
+        self = self.setActionSet(x, use_threshold=use_threshold)
+        if cost_type == "TLPS" or cost_type == "MPS":
+            if self.Q_ is None:
+                self.Q_ = [
+                    None
+                    if self.feature_constraints_[d] == "FIX"
+                    else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
+                    for d in range(self.D_)
+                ]
+            for d in range(self.D_):
+                if self.Q_[d] is None:
+                    self.costs_.append([0])
+                else:
+                    Q_d = self.Q_[d]
+                    Q_0 = Q_d(x[d])
+                    self.costs_.append(
+                        [
+                            abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
+                            if cost_type == "TLPS"
+                            else abs(Q_d(x[d] + a) - Q_0)
+                            for a in self.actions_[d]
+                        ]
+                    )
+        elif cost_type == "SCM" or cost_type == "DACE":
+            if cost_type == "SCM":
+                B_, _ = interaction_matrix(self.X_, interaction_type="causal")
+                B = np.eye(self.D_) - B_
+                C = self.getFeatureWeight(cost_type="standard")
+            else:
+                self.cov_, B = interaction_matrix(
+                    self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
+                    interaction_type="covariance",
+                )
+                C = self.getFeatureWeight(cost_type="uniform")
+            for d in range(self.D_):
+                cost_d = []
+                for d_ in range(self.D_):
+                    cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
+                self.costs_.append(cost_d)
+        else:
+            weights = self.getFeatureWeight(cost_type=cost_type)
+            for d in range(self.D_):
+                self.costs_.append(list(weights[d] * abs(self.actions_[d]) ** p))
+        return self
 
-#     def setMultiActionSet(self, xs, union=False, use_threshold=True):
-#         self.actions_ = []
-#         for d in range(self.D_):
-#             if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
-#                 self.actions_.append(np.array([0]))
-#             elif self.feature_types_[d] == "B":
-#                 x_d = xs[0, d]
-#                 if union:
-#                     self.actions_.append(np.array([-1, 1, 0]))
-#                 elif (xs[:, d] == x_d).all():
-#                     if (self.feature_constraints_[d] == "INC" and x_d == 1) or (
-#                         self.feature_constraints_[d] == "DEC" and x_d == 0
-#                     ):
-#                         self.actions_.append(np.array([0]))
-#                     else:
-#                         self.actions_.append(np.array([1 - 2 * x_d, 0]))
-#                 else:
-#                     self.actions_.append(np.array([0]))
-#             else:
-#                 x_min = np.max(xs[:, d]) if union else np.min(xs[:, d])
-#                 x_max = np.min(xs[:, d]) if union else np.max(xs[:, d])
-#                 if use_threshold:
-#                     A_d = np.array([])
-#                     for x in xs:
-#                         A_d = np.concatenate(
-#                             [
-#                                 A_d,
-#                                 self.thresholds_[d].astype(int) - x[d]
-#                                 if self.feature_types_[d] == "I"
-#                                 else self.thresholds_[d] - x[d],
-#                             ]
-#                         )
-#                     A_d[A_d > 0] += self.tol_ if self.feature_types_[d] == "C" else 1
-#                     A_d = np.unique(A_d)
-#                     if self.feature_constraints_[d] == "INC":
-#                         A_d = np.extract(A_d >= 0, A_d)
-#                     elif self.feature_constraints_[d] == "DEC":
-#                         A_d = np.extract(A_d <= 0, A_d)
-#                     A_d = np.extract(x_min + A_d >= self.X_lb_[d], A_d)
-#                     A_d = np.extract(x_max + A_d <= self.X_ub_[d], A_d)
-#                     if A_d.shape[0] > self.max_candidates:
-#                         A_d = A_d[
-#                             np.linspace(
-#                                 0,
-#                                 A_d.shape[0],
-#                                 self.max_candidates,
-#                                 endpoint=False,
-#                                 dtype=int,
-#                             )
-#                         ]
-#                     if 0 not in A_d:
-#                         A_d = np.append(A_d, 0)
-#                 else:
-#                     if self.feature_constraints_[d] == "INC":
-#                         start = self.steps_[d]
-#                         stop = self.X_ub_[d] + self.steps_[d] - x_max
-#                     elif self.feature_constraints_[d] == "DEC":
-#                         start = self.X_lb_[d] - x_min
-#                         stop = 0
-#                     else:
-#                         start = self.X_lb_[d] - x_min
-#                         stop = self.X_ub_[d] + self.steps_[d] - x_max
-#                     A_d = np.arange(start, stop, self.steps_[d])
-#                     A_d = np.extract(abs(A_d) > self.tol_, A_d)
-#                     if len(A_d) > self.max_candidates:
-#                         A_d = A_d[
-#                             np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-#                         ]
-#                     A_d = np.append(A_d, 0)
-#                 self.actions_.append(A_d)
-#         return self
+    def setMultiActionSet(self, xs, union=False, use_threshold=True):
+        self.actions_ = []
+        for d in range(self.D_):
+            if self.feature_constraints_[d] == "FIX" or self.steps_[d] < self.tol_:
+                self.actions_.append(np.array([0]))
+            elif self.feature_types_[d] == "B":
+                x_d = xs[0, d]
+                if union:
+                    self.actions_.append(np.array([-1, 1, 0]))
+                elif (xs[:, d] == x_d).all():
+                    if (self.feature_constraints_[d] == "INC" and x_d == 1) or (
+                        self.feature_constraints_[d] == "DEC" and x_d == 0
+                    ):
+                        self.actions_.append(np.array([0]))
+                    else:
+                        self.actions_.append(np.array([1 - 2 * x_d, 0]))
+                else:
+                    self.actions_.append(np.array([0]))
+            else:
+                x_min = np.max(xs[:, d]) if union else np.min(xs[:, d])
+                x_max = np.min(xs[:, d]) if union else np.max(xs[:, d])
+                if use_threshold:
+                    A_d = np.array([])
+                    for x in xs:
+                        A_d = np.concatenate(
+                            [
+                                A_d,
+                                self.thresholds_[d].astype(int) - x[d]
+                                if self.feature_types_[d] == "I"
+                                else self.thresholds_[d] - x[d],
+                            ]
+                        )
+                    A_d[A_d > 0] += self.tol_ if self.feature_types_[d] == "C" else 1
+                    A_d = np.unique(A_d)
+                    if self.feature_constraints_[d] == "INC":
+                        A_d = np.extract(A_d >= 0, A_d)
+                    elif self.feature_constraints_[d] == "DEC":
+                        A_d = np.extract(A_d <= 0, A_d)
+                    A_d = np.extract(x_min + A_d >= self.X_lb_[d], A_d)
+                    A_d = np.extract(x_max + A_d <= self.X_ub_[d], A_d)
+                    if A_d.shape[0] > self.max_candidates:
+                        A_d = A_d[
+                            np.linspace(
+                                0,
+                                A_d.shape[0],
+                                self.max_candidates,
+                                endpoint=False,
+                                dtype=int,
+                            )
+                        ]
+                    if 0 not in A_d:
+                        A_d = np.append(A_d, 0)
+                else:
+                    if self.feature_constraints_[d] == "INC":
+                        start = self.steps_[d]
+                        stop = self.X_ub_[d] + self.steps_[d] - x_max
+                    elif self.feature_constraints_[d] == "DEC":
+                        start = self.X_lb_[d] - x_min
+                        stop = 0
+                    else:
+                        start = self.X_lb_[d] - x_min
+                        stop = self.X_ub_[d] + self.steps_[d] - x_max
+                    A_d = np.arange(start, stop, self.steps_[d])
+                    A_d = np.extract(abs(A_d) > self.tol_, A_d)
+                    if len(A_d) > self.max_candidates:
+                        A_d = A_d[
+                            np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
+                        ]
+                    A_d = np.append(A_d, 0)
+                self.actions_.append(A_d)
+        return self
 
-#     def setMultiCostSet(self, xs, y, cost_type="TLPS", p=1):
-#         self.costs_ = []
-#         for x in xs:
-#             cost_x = []
-#             if cost_type == "TLPS" or cost_type == "MPS":
-#                 if self.Q_ is None:
-#                     self.Q_ = [
-#                         None
-#                         if self.feature_constraints_[d] == "FIX"
-#                         else CumulativeDistributionFunction(
-#                             self.grids_[d], self.X_[:, d]
-#                         )
-#                         for d in range(self.D_)
-#                     ]
-#                 for d in range(self.D_):
-#                     if self.Q_[d] is None:
-#                         cost_x.append([0])
-#                     else:
-#                         Q_d = self.Q_[d]
-#                         Q_0 = Q_d(x[d])
-#                         cost_x.append(
-#                             [
-#                                 abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
-#                                 if cost_type == "TLPS"
-#                                 else abs(Q_d(x[d] + a) - Q_0)
-#                                 for a in self.actions_[d]
-#                             ]
-#                         )
-#             elif cost_type == "SCM" or cost_type == "DACE":
-#                 if cost_type == "SCM":
-#                     B_, _ = interaction_matrix(self.X_, interaction_type="causal")
-#                     B = np.eye(self.D_) - B_
-#                     C = self.getFeatureWeight(cost_type="standard")
-#                 else:
-#                     self.cov_, B = interaction_matrix(
-#                         self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
-#                         interaction_type="covariance",
-#                     )
-#                     C = self.getFeatureWeight(cost_type="uniform")
-#                 for d in range(self.D_):
-#                     cost_d = []
-#                     for d_ in range(self.D_):
-#                         cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
-#                     cost_x.append(cost_d)
-#             else:
-#                 weights = self.getFeatureWeight(cost_type=cost_type)
-#                 if cost_type == "PCC":
-#                     p = 2
-#                 for d in range(self.D_):
-#                     cost_x.append(list(weights[d] * abs(self.actions_[d]) ** p))
-#             self.costs_.append(cost_x)
-#         return self
+    def setMultiCostSet(self, xs, y, cost_type="TLPS", p=1):
+        self.costs_ = []
+        for x in xs:
+            cost_x = []
+            if cost_type == "TLPS" or cost_type == "MPS":
+                if self.Q_ is None:
+                    self.Q_ = [
+                        None
+                        if self.feature_constraints_[d] == "FIX"
+                        else CumulativeDistributionFunction(
+                            self.grids_[d], self.X_[:, d]
+                        )
+                        for d in range(self.D_)
+                    ]
+                for d in range(self.D_):
+                    if self.Q_[d] is None:
+                        cost_x.append([0])
+                    else:
+                        Q_d = self.Q_[d]
+                        Q_0 = Q_d(x[d])
+                        cost_x.append(
+                            [
+                                abs(np.log2((1 - Q_d(x[d] + a)) / (1 - Q_0)))
+                                if cost_type == "TLPS"
+                                else abs(Q_d(x[d] + a) - Q_0)
+                                for a in self.actions_[d]
+                            ]
+                        )
+            elif cost_type == "SCM" or cost_type == "DACE":
+                if cost_type == "SCM":
+                    B_, _ = interaction_matrix(self.X_, interaction_type="causal")
+                    B = np.eye(self.D_) - B_
+                    C = self.getFeatureWeight(cost_type="standard")
+                else:
+                    self.cov_, B = interaction_matrix(
+                        self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
+                        interaction_type="covariance",
+                    )
+                    C = self.getFeatureWeight(cost_type="uniform")
+                for d in range(self.D_):
+                    cost_d = []
+                    for d_ in range(self.D_):
+                        cost_d.append([C[d] * B[d][d_] * a for a in self.actions_[d_]])
+                    cost_x.append(cost_d)
+            else:
+                weights = self.getFeatureWeight(cost_type=cost_type)
+                if cost_type == "PCC":
+                    p = 2
+                for d in range(self.D_):
+                    cost_x.append(list(weights[d] * abs(self.actions_[d]) ** p))
+            self.costs_.append(cost_x)
+        return self
 
-#     def generateActions(
-#         self, x, y, cost_type="TLPS", p=1, use_threshold=True, multi=False, union=False
-#     ):
-#         if multi:
-#             self = self.setMultiActionSet(x, union=union, use_threshold=use_threshold)
-#             self = self.setMultiCostSet(x, y, cost_type=cost_type, p=p)
-#             self = self.setMultiForestIntervals(x)
-#         else:
-#             self = self.setActionAndCost(
-#                 x, y, cost_type=cost_type, p=p, use_threshold=use_threshold
-#             )
-#         # return self.actions_, self.costs_, self.I_
-#         return self.actions_, self.costs_
+    def generateActions(
+        self, x, y, cost_type="TLPS", p=1, use_threshold=True, multi=False, union=False
+    ):
+        if multi:
+            self = self.setMultiActionSet(x, union=union, use_threshold=use_threshold)
+            self = self.setMultiCostSet(x, y, cost_type=cost_type, p=p)
+            self = self.setMultiForestIntervals(x)
+        else:
+            self = self.setActionAndCost(
+                x, y, cost_type=cost_type, p=p, use_threshold=use_threshold
+            )
+        # return self.actions_, self.costs_, self.I_
+        return self.actions_, self.costs_
 
-#     def setMultiForestIntervals(self, xs):  # noqa: E741
-#         self.I_ = []
-#         for x in xs:
-#             I_x = []
-#             for t in range(self.T_):
-#                 I_t = []
-#                 for l in range(self.L_[t]):  # noqa: E741
-#                     I_t_l = []
-#                     for d in range(self.D_):
-#                         xa = x[d] + self.actions_[d]
-#                         I_t_l.append(
-#                             list(
-#                                 (
-#                                     (xa > self.regions_[t][l][d][0])
-#                                     & (xa <= self.regions_[t][l][d][1])
-#                                 ).astype(int)
-#                             )
-#                         )
-#                     I_t.append(I_t_l)
-#                 I_x.append(I_t)
-#             self.I_.append(I_x)
-#         return self
+    def setMultiForestIntervals(self, xs):  # noqa: E741
+        self.I_ = []
+        for x in xs:
+            I_x = []
+            for t in range(self.T_):
+                I_t = []
+                for l in range(self.L_[t]):  # noqa: E741
+                    I_t_l = []
+                    for d in range(self.D_):
+                        xa = x[d] + self.actions_[d]
+                        I_t_l.append(
+                            list(
+                                (
+                                    (xa > self.regions_[t][l][d][0])
+                                    & (xa <= self.regions_[t][l][d][1])
+                                ).astype(int)
+                            )
+                        )
+                    I_t.append(I_t_l)
+                I_x.append(I_t)
+            self.I_.append(I_x)
+        return self
 
-#     def setForestIntervals(self, x):  # noqa: E741
-#         Is = [np.arange(len(a)) for a in self.actions_]
-#         I = []  # noqa: E741
-#         for t in range(self.T_):
-#             I_t = []
-#             for l in range(self.L_[t]):  # noqa: E741
-#                 I_t_l = []
-#                 for d in range(self.D_):
-#                     xa = x[d] + self.actions_[d]
-#                     I_t_l.append(
-#                         list(
-#                             (
-#                                 (xa > self.regions_[t][l][d][0])
-#                                 & (xa <= self.regions_[t][l][d][1])
-#                             ).astype(int)
-#                         )
-#                     )
-#                 I_t.append(I_t_l)
-#             I.append(I_t)
-#         self.I_ = I
-#         return self
+    def setForestIntervals(self, x):  # noqa: E741
+        Is = [np.arange(len(a)) for a in self.actions_]
+        I = []  # noqa: E741
+        for t in range(self.T_):
+            I_t = []
+            for l in range(self.L_[t]):  # noqa: E741
+                I_t_l = []
+                for d in range(self.D_):
+                    xa = x[d] + self.actions_[d]
+                    I_t_l.append(
+                        list(
+                            (
+                                (xa > self.regions_[t][l][d][0])
+                                & (xa <= self.regions_[t][l][d][1])
+                            ).astype(int)
+                        )
+                    )
+                I_t.append(I_t_l)
+            I.append(I_t)
+        self.I_ = I
+        return self
 
-#     #
-#     def getForestLabels(self):
-#         H = []
-#         for tree, leaves, l_t in zip(self.trees_, self.leaves_, self.L_):
-#             h_t = []
-#             stack = [0]
-#             while len(stack) != 0:
-#                 i = stack.pop()
-#                 if i in leaves:
-#                     val = tree.value[i][0]
-#                     h_t += [val[0] if val.shape[0] == 1 else val[1] / (val[0] + val[1])]
-#                 else:
-#                     stack += [tree.children_right[i]]
-#                     stack += [tree.children_left[i]]
-#             H.append(h_t)
-#         return H
+    #
+    def getForestLabels(self):
+        H = []
+        for tree, leaves, l_t in zip(self.trees_, self.leaves_, self.L_):
+            h_t = []
+            stack = [0]
+            while len(stack) != 0:
+                i = stack.pop()
+                if i in leaves:
+                    val = tree.value[i][0]
+                    h_t += [val[0] if val.shape[0] == 1 else val[1] / (val[0] + val[1])]
+                else:
+                    stack += [tree.children_right[i]]
+                    stack += [tree.children_left[i]]
+            H.append(h_t)
+        return H
 
-#     def getForestRegions(self):  # noqa: E741
-#         As, Rs = [], []
-#         for tree, leaves in zip(self.trees_, self.leaves_):
-#             A, R = [], []
-#             stack = [[]]
-#             L, U = [[-np.inf] * self.D_], [[np.inf] * self.D_]
-#             node_stack = [0]
-#             while len(node_stack) != 0:
-#                 n = node_stack.pop()
-#                 a, l, u = stack.pop(), L.pop(), U.pop()  # noqa: E741
-#                 if n in leaves:
-#                     A.append(a)
-#                     R.append([(l[d], u[d]) for d in range(self.D_)])
-#                 else:
-#                     d = tree.feature[n]
-#                     if d not in a:
-#                         a_ = list(a) + [d]
-#                     stack.append(a_)
-#                     stack.append(a_)
-#                     # b = int(tree.threshold[n]) if self.feature_types_[d]=='I' else tree.threshold[n]
-#                     b = tree.threshold[n]
-#                     l_ = list(l)
-#                     u_ = list(u)
-#                     l[d] = b
-#                     u[d] = b
-#                     U.append(u_)
-#                     L.append(l)
-#                     node_stack.append(tree.children_right[n])
-#                     U.append(u)
-#                     L.append(l_)
-#                     node_stack.append(tree.children_left[n])
-#             As.append(A)
-#             Rs.append(R)
-#         return As, Rs
+    def getForestRegions(self):  # noqa: E741
+        As, Rs = [], []
+        for tree, leaves in zip(self.trees_, self.leaves_):
+            A, R = [], []
+            stack = [[]]
+            L, U = [[-np.inf] * self.D_], [[np.inf] * self.D_]
+            node_stack = [0]
+            while len(node_stack) != 0:
+                n = node_stack.pop()
+                a, l, u = stack.pop(), L.pop(), U.pop()  # noqa: E741
+                if n in leaves:
+                    A.append(a)
+                    R.append([(l[d], u[d]) for d in range(self.D_)])
+                else:
+                    d = tree.feature[n]
+                    if d not in a:
+                        a_ = list(a) + [d]
+                    stack.append(a_)
+                    stack.append(a_)
+                    # b = int(tree.threshold[n]) if self.feature_types_[d]=='I' else tree.threshold[n]
+                    b = tree.threshold[n]
+                    l_ = list(l)
+                    u_ = list(u)
+                    l[d] = b
+                    u[d] = b
+                    U.append(u_)
+                    L.append(l)
+                    node_stack.append(tree.children_right[n])
+                    U.append(u)
+                    L.append(l_)
+                    node_stack.append(tree.children_left[n])
+            As.append(A)
+            Rs.append(R)
+        return As, Rs
 
-#     def getForestThresholds(self):
-#         B = []
-#         for d in range(self.D_):
-#             b_d = []
-#             for tree in self.trees_:
-#                 b_d += list(tree.threshold[tree.feature == d])
-#             b_d = list(set(b_d))
-#             b_d.sort()
-#             B.append(np.array(b_d))
-#         return B
+    def getForestThresholds(self):
+        B = []
+        for d in range(self.D_):
+            b_d = []
+            for tree in self.trees_:
+                b_d += list(tree.threshold[tree.feature == d])
+            b_d = list(set(b_d))
+            b_d.sort()
+            B.append(np.array(b_d))
+        return B
 
-#     def getForestPartitions(self):  # noqa: E741
-#         I = []  # noqa: E741
-#         for t in range(self.T_):
-#             I_t = []
-#             for l in range(self.L_[t]):  # noqa: E741
-#                 I_t_l = []
-#                 for d in range(self.D_):
-#                     if self.regions_[t][l][d][0] == -np.inf:
-#                         start = 0
-#                     else:
-#                         start = self.thresholds_[d].index(self.regions_[t][l][d][0]) + 1
-#                     if self.regions_[t][l][d][1] == np.inf:
-#                         end = self.M_[d]
-#                     else:
-#                         end = self.thresholds_[d].index(self.regions_[t][l][d][1]) + 1
-#                     tmp = list(range(start, end))
-#                     I_t_l.append(tmp)
-#                 I_t.append(I_t_l)
-#             I.append(I_t)
-#         return I
+    def getForestPartitions(self):  # noqa: E741
+        I = []  # noqa: E741
+        for t in range(self.T_):
+            I_t = []
+            for l in range(self.L_[t]):  # noqa: E741
+                I_t_l = []
+                for d in range(self.D_):
+                    if self.regions_[t][l][d][0] == -np.inf:
+                        start = 0
+                    else:
+                        start = self.thresholds_[d].index(self.regions_[t][l][d][0]) + 1
+                    if self.regions_[t][l][d][1] == np.inf:
+                        end = self.M_[d]
+                    else:
+                        end = self.thresholds_[d].index(self.regions_[t][l][d][1]) + 1
+                    tmp = list(range(start, end))
+                    I_t_l.append(tmp)
+                I_t.append(I_t_l)
+            I.append(I_t)
+        return I
 
-#     def generateLOFParams(self, y, k=10, p=2, subsample=20, kernel="rbf"):
-#         lof = LocalOutlierFactor(
-#             n_neighbors=k,
-#             metric="manhattan" if p == 1 else "sqeuclidean",
-#             novelty=False,
-#         )
-#         X_lof = self.X_[self.Y_ == y]
-#         lof = lof.fit(X_lof)
+    def generateLOFParams(self, y, k=10, p=2, subsample=20, kernel="rbf"):
+        lof = LocalOutlierFactor(
+            n_neighbors=k,
+            metric="manhattan" if p == 1 else "sqeuclidean",
+            novelty=False,
+        )
+        X_lof = self.X_[self.Y_ == y]
+        lof = lof.fit(X_lof)
 
-#         def k_distance(prototypes):
-#             return lof._distances_fit_X_[prototypes, k - 1]
+        def k_distance(prototypes):
+            return lof._distances_fit_X_[prototypes, k - 1]
 
-#         def local_reachability_density(prototypes):
-#             return lof._lrd[prototypes]
+        def local_reachability_density(prototypes):
+            return lof._lrd[prototypes]
 
-#         prototypes = prototype_selection(X_lof, subsample=subsample, kernel=kernel)
-#         return (
-#             X_lof[prototypes],
-#             k_distance(prototypes),
-#             local_reachability_density(prototypes),
-#         )
+        prototypes = prototype_selection(X_lof, subsample=subsample, kernel=kernel)
+        return (
+            X_lof[prototypes],
+            k_distance(prototypes),
+            local_reachability_density(prototypes),
+        )
 
-#     # def mahalanobis_dist(self, x_1, x_2, y):
-#     #     if self.cov_ is None:
-#     #         self.cov_, _ = interaction_matrix(
-#     #             self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
-#     #             interaction_type="covariance",
-#     #         )
-#     #     return mahalanobis(x_1, x_2, np.linalg.inv(self.cov_))
+    # def mahalanobis_dist(self, x_1, x_2, y):
+    #     if self.cov_ is None:
+    #         self.cov_, _ = interaction_matrix(
+    #             self.X_[self.Y_ == y] if len(self.Y_) == self.N_ else self.X_,
+    #             interaction_type="covariance",
+    #         )
+    #     return mahalanobis(x_1, x_2, np.linalg.inv(self.cov_))
 
-#     def local_outlier_factor(self, x, y, k=10, p=2):
-#         lof = LocalOutlierFactor(
-#             n_neighbors=k, metric="manhattan" if p == 1 else "sqeuclidean", novelty=True
-#         )
-#         lof = lof.fit(self.X_[self.Y_ == y])
-#         return -lof.score_samples(x.reshape(1, -1))[0]
+    def local_outlier_factor(self, x, y, k=10, p=2):
+        lof = LocalOutlierFactor(
+            n_neighbors=k, metric="manhattan" if p == 1 else "sqeuclidean", novelty=True
+        )
+        lof = lof.fit(self.X_[self.Y_ == y])
+        return -lof.score_samples(x.reshape(1, -1))[0]
 
 
 # class ForestActionCandidates
