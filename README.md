@@ -1,7 +1,7 @@
 
 # Unifying Perspectives: Plausible Counterfactual Explanations on Global, Group-wise, and Local Levels
 
-This repository contains the official implementation of a unified framework for generating plausible counterfactual explanations (CFs) across global, group-wise, and local levels. Our method enhances transparency in AI systems by combining gradient-based optimization with probabilistic plausibility constraints, enabling stakeholders to audit models for fairness, bias, and reliability.
+This repository contains the official implementation of a unified framework for generating plausible counterfactual explanations (CFs) across global, group-wise, and local levels. Our method enhances transparency in AI systems by combining gradient-based optimization with probabilistic plausibility constraints, enabling stakeholders to audit models.
 
 <p align="center" style="display: flex; justify-content: center; gap: 20px">
   <img src="teaser_global.svg" alt="Global Counterfactuals" width="30%"/>
@@ -24,85 +24,118 @@ The growing complexity of AI systems has intensified the need for transparency t
 - [Citation](#citation)
 - [Contact](#contact)
 
-## Introduction
+## Key Features
 
-Counterfactual explanations offer a way to understand machine learning model decisions by explaining what minimal changes would alter a prediction. This project introduces **PPCEF**, a method that leverages optimization and machine learning techniques to generate plausible counterfactuals. Our approach ensures that the generated counterfactuals are not only close to the original data points but also adhere to domain-specific constraints, making them realistic and actionable for decision-makers.
+### ✨ Unified Multi-Level Explanations
+Generate CFs at global, group-wise, or local levels using a single framework. Dynamically adjust granularity via hyperparameters.
+
+### ✨ Plausibility Guarantees
+Enforce realistic counterfactuals using normalizing flows, ensuring explanations lie within high-density regions of the target class distribution.
 
 ## Prerequisites
 
 This section details the environment setup, including necessary libraries and frameworks. To clone the repository and set up the environment, use the following commands:
 
 ```shell
-git clone git@github.com:ofurman/counterfactuals.git
+git clone TBA
 cd counterfactuals
 ./setup_env.sh
 ```
 
 ## Getting Started
-The following Python code snippet demonstrates how to use the PPCEF framework for generating counterfactual explanations:
+The following Python code snippet demonstrates how to use the framework for generating counterfactual explanations:
 
 ```python
-import numpy as np
 import torch
-
+import numpy as np
 from counterfactuals.datasets import MoonsDataset
-from counterfactuals.cf_methods.ppcef import PPCEF
+from counterfactuals.losses import MulticlassDiscLoss
+from counterfactuals.cf_methods import PUMAL
 from counterfactuals.generative_models import MaskedAutoregressiveFlow
 from counterfactuals.discriminative_models import MultilayerPerceptron
-from counterfactuals.losses import BinaryDiscLoss
-from counterfactuals.metrics import evaluate_cf
+from counterfactuals.metrics import CFMetrics
 
 
 dataset = MoonsDataset("../data/moons.csv")
 train_dataloader = dataset.train_dataloader(batch_size=128, shuffle=True)
 test_dataloader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
-disc_model = MultilayerPerceptron(
-    input_size=2, hidden_layer_sizes=[256, 256], target_size=1, dropout=0.2
+disc_model = MultilayerPerceptron(dataset.X_test.shape[1], [512, 512], dataset.y_test.shape[1])
+disc_model.fit(train_dataloader, test_dataloader)
+disc_model.eval()
+
+
+dataset.y_train = dataset.y_transformer.transform(
+    disc_model.predict(dataset.X_train).detach().numpy().reshape(-1, 1)
 )
-disc_model.fit(
-    train_dataloader,
-    test_dataloader,
-    epochs=5000,
-    patience=300,
-    lr=1e-3,
+dataset.y_test = dataset.y_transformer.transform(
+    disc_model.predict(dataset.X_test).detach().numpy().reshape(-1, 1)
 )
 
+train_dataloader = dataset.train_dataloader(batch_size=256, shuffle=True, noise_lvl=0.03)
+test_dataloader = dataset.test_dataloader(batch_size=256, shuffle=False)
 gen_model = MaskedAutoregressiveFlow(
-    features=dataset.X_train.shape[1], hidden_features=8, context_features=1
+    features=dataset.X_train.shape[1], hidden_features=16, context_features=dataset.y_test.shape[1]
 )
 gen_model.fit(train_dataloader, test_dataloader, num_epochs=1000)
 
-cf = PPCEF(
+source_class = 0
+target_class = 1
+X_test_origin = dataset.X_test[np.argmax(dataset.y_test, axis=1) == source_class]
+y_test_origin = dataset.y_test[np.argmax(dataset.y_test, axis=1) == source_class]
+
+cf_method = PUMAL(
+    X=X_test_origin,
+    cf_method_type="GCE",
+    K=6,
     gen_model=gen_model,
     disc_model=disc_model,
-    disc_model_criterion=BinaryDiscLoss(),
+    disc_model_criterion=MulticlassDiscLoss(),
+    not_actionable_features=None,
     neptune_run=None,
 )
-cf_dataloader = dataset.test_dataloader(batch_size=1024, shuffle=False)
-log_prob_threshold = torch.quantile(gen_model.predict_log_prob(cf_dataloader), 0.25)
-deltas, X_orig, y_orig, y_target, logs = cf.explain_dataloader(
-    cf_dataloader, alpha=100, log_prob_threshold=log_prob_threshold, epochs=4000
+log_prob_threshold = torch.quantile(gen_model.predict_log_prob(dataset.test_dataloader(batch_size=4096, shuffle=False)), 0.25)
+cf_dataloader = torch.utils.data.DataLoader(
+    torch.utils.data.TensorDataset(
+        torch.tensor(X_test_origin).float(),
+        torch.tensor(y_test_origin).float(),
+    ),
+    batch_size=4096,
+    shuffle=False,
 )
-X_cf = X_orig + deltas
-print(X_cf)
-evaluate_cf(
-    disc_model=disc_model,
-    gen_model=gen_model,
-    X_cf=X_cf,
-    model_returned=np.ones(X_cf.shape[0]),
-    continuous_features=dataset.numerical_features,
-    categorical_features=dataset.categorical_features,
+delta, Xs, ys_orig, ys_target = cf_method.explain_dataloader(
+    dataloader=cf_dataloader,
+    target_class=target_class,
+    epochs=20000,
+    lr=0.01,
+    patience=500,
+    alpha_dist=1e-1,
+    alpha_plaus=10**4,
+    alpha_class=10**5,
+    alpha_s=10**4,
+    alpha_k=10**3,
+    alpha_d=10**2,
+    log_prob_threshold=log_prob_threshold,
+)
+Xs_cfs = Xs + delta().detach().numpy()
+
+metrics = CFMetrics(
+    X_cf=Xs_cfs,
+    y_target=ys_target,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
-    X_test=X_orig,
-    y_test=y_orig,
-    median_log_prob=log_prob_threshold,
-    y_target=y_target,
+    X_test=X_test_origin,
+    y_test=y_test_origin,
+    disc_model=disc_model,
+    gen_model=gen_model,
+    continuous_features=list(range(dataset.X_train.shape[1])),
+    categorical_features=dataset.categorical_features,
+    prob_plausibility_threshold=log_prob_threshold,
 )
+print(metrics.calc_all_metrics())
 ```
 ### Jupyter notebook
-You can find the example of running algorithm in the jupyter notebook at: [here](notebooks/our_gw.ipynb)
+You can find the example of running algorithm in the jupyter notebook at: [here](notebooks/pumal_demo.ipynb)
 
 ### Pre-trained Models
 
