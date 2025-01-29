@@ -9,7 +9,7 @@ hydra:
 
 neptune:
   enable: false
-  project: "ofurman/counterfactuals"
+  project: "/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["PPCEF"]
 

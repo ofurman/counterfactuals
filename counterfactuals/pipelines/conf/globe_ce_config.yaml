@@ -9,7 +9,7 @@ hydra:
 
 neptune:
   enable: false
-  project: "ofurman/GWCE"
+  project: "/GWCE"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["GLOBE_CE"]
 
