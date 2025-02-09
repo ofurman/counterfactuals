@@ -16,6 +16,21 @@ import nflows.utils.typechecks as check
 
 from tqdm import tqdm
 
+class RandomPermutation(RandomPermutation):
+    def forward(self, inputs, context=None):
+        # Move permutation tensor to the same device as inputs
+        self._permutation = self._permutation.to(inputs.device)  # ✅ Fix applied
+
+        # Call the original forward() method
+        return super().forward(inputs, context)
+
+class ReversePermutation(ReversePermutation):
+    def forward(self, inputs, context=None):
+        # Move permutation tensor to the same device as inputs
+        self._permutation = self._permutation.to(inputs.device)  # ✅ Fix applied
+
+        # Call the original forward() method
+        return super().forward(inputs, context)
 
 class StandardNormalWithTemp(StandardNormal):
     """A multivariate Normal with zero mean and unit covariance."""
@@ -156,21 +171,15 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
         )
 
     def forward(self, x, context=None):
+        x = x.to(self.device)  # ✅ Ensure input tensor is on CUDA
         if context is not None:
-            context = context.view(-1, self.context_features)
+            context = context.view(-1, self.context_features).to(self.device)  # ✅ Move context to CUDA
+        else:
+            context = torch.zeros((x.shape[0], self.context_features), device=self.device)  # ✅ Fix added
         return self.log_prob(inputs=x, context=context)
 
-    def fit(
-        self,
-        train_loader: torch.utils.data.DataLoader,
-        test_loader: torch.utils.data.DataLoader,
-        num_epochs: int = 100,
-        learning_rate: float = 1e-3,
-        patience: int = 20,
-        eps: float = 1e-3,
-        checkpoint_path: str = "best_model.pth",
-        neptune_run: neptune.Run = None,
-    ):
+    def fit(self, train_loader, test_loader, num_epochs=100, learning_rate=1e-3, patience=20, eps=1e-3,
+            checkpoint_path="best_model.pth", neptune_run=None):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
         min_test_loss = float("inf")
@@ -178,8 +187,9 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
         for epoch in (pbar := tqdm(range(num_epochs))):
             self.train()
             train_loss = 0.0
-            for inputs, labels in train_loader:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
+            for batch in train_loader:
+                inputs, labels = batch
+                inputs, labels = inputs.to(self.device), labels.to(self.device)  # ✅ Fix added
                 labels = labels.type(torch.float32)
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
@@ -187,24 +197,27 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
-
             train_loss /= len(train_loader)
 
             self.eval()
             test_loss = 0.0
             with torch.no_grad():
-                for inputs, labels in test_loader:
+                for batch in test_loader:
+                    inputs, labels = batch
+                    inputs, labels = inputs.to(self.device), labels.to(self.device)  # ✅ Fix added
                     labels = labels.type(torch.float32)
                     log_likelihood = self(inputs, labels)
                     loss = -log_likelihood.mean().item()
                     test_loss += loss
+
             test_loss /= len(test_loader)
             pbar.set_description(
-                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
-            )
+                f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}")
+
             if neptune_run:
                 neptune_run["gen_train_nll"].append(train_loss)
                 neptune_run["gen_test_nll"].append(test_loss)
+
             if test_loss < (min_test_loss + eps):
                 min_test_loss = test_loss
                 patience_counter = 0
@@ -234,26 +247,23 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
 
     def sample_and_log_prob(self, num_samples, context=None, temp=1.0):
         if context is not None:
-            context = context.view(-1, self.context_features)
+            context = context.view(-1, self.context_features).to(self.device)  # ✅ Move to CUDA
+        else:
+            context = torch.zeros((num_samples, self.context_features), device=self.device)  # ✅ Fix added
 
-        embedded_context = self._embedding_net(context)
+        embedded_context = self._embedding_net(context).to(self.device)  # ✅ Ensure on CUDA
+
         noise, log_prob = self._distribution.sample_and_log_prob(
             num_samples, context=embedded_context, temp=temp
         )
 
         if embedded_context is not None:
-            # Merge the context dimension with sample dimension in order to apply the transform.
             noise = torchutils.merge_leading_dims(noise, num_dims=2)
             embedded_context = torchutils.repeat_rows(
                 embedded_context, num_reps=num_samples
             )
 
-        samples, logabsdet = self._transform.inverse(noise, context=embedded_context)
-
-        if embedded_context is not None:
-            # Split the context dimension from sample dimension.
-            samples = torchutils.split_leading_dim(samples, shape=[-1, num_samples])
-            logabsdet = torchutils.split_leading_dim(logabsdet, shape=[-1, num_samples])
+        samples, logabsdet = self._transform.inverse(noise.to(self.device), context=embedded_context.to(self.device))
 
         return samples, log_prob - logabsdet
 
@@ -281,7 +291,7 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
         torch.save(self.state_dict(), path)
 
     def load(self, path):
-        self.load_state_dict(torch.load(path))
+        self.load_state_dict(torch.load(path, map_location=torch.device(self.device)))  # ✅ Fix added
 
     def _unpack_batch(self, batch):
         if isinstance(batch, tuple):

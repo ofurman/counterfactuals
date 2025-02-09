@@ -12,12 +12,15 @@ class MultilayerPerceptron(BaseDiscModel):
         hidden_layer_sizes: List[int],
         target_size: int,
         dropout: float = 0.2,
+        device="cpu"
     ):
         super(MultilayerPerceptron, self).__init__()
+        self.device=device
         self.target_size = target_size
         self.input_size = input_size
         layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
-        self.layers = torch.nn.ModuleList()
+        self.layers = torch.nn.ModuleList().to(device)  # ✅ Move layers to CUDA
+
         for i in range(len(layer_sizes) - 1):
             self.layers.append(torch.nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
         self.relu = torch.nn.ReLU()
@@ -31,6 +34,8 @@ class MultilayerPerceptron(BaseDiscModel):
             self.final_activation = torch.nn.Softmax(dim=1)
             self.criterion = torch.nn.CrossEntropyLoss()
             self.prep_for_loss = lambda x: x.view(-1).long()
+
+        self.to(device)
 
     def forward(self, x):
         for i in range(len(self.layers)):
@@ -56,6 +61,8 @@ class MultilayerPerceptron(BaseDiscModel):
             train_loss = 0
             test_loss = 0
             for i, (examples, labels) in enumerate(train_loader):
+                examples, labels = examples.to(self.device), labels.to(self.device)  # ✅ Fix added
+
                 optimizer.zero_grad()
                 outputs = self.forward(examples)
                 loss = self.criterion(outputs, self.prep_for_loss(labels))
@@ -66,6 +73,7 @@ class MultilayerPerceptron(BaseDiscModel):
             if test_loader:
                 with torch.no_grad():
                     for i, (examples, labels) in enumerate(test_loader):
+                        examples, labels = examples.to(self.device), labels.to(self.device)
                         outputs = self.forward(examples)
                         loss = self.criterion(outputs, self.prep_for_loss(labels))
                         test_loss += loss.item()
@@ -86,7 +94,10 @@ class MultilayerPerceptron(BaseDiscModel):
 
     def predict(self, X_test):
         if isinstance(X_test, np.ndarray):
-            X_test = torch.from_numpy(X_test).float()
+            X_test = torch.from_numpy(X_test).float().to(self.device)  # ✅ Fix added
+        else:
+            X_test = X_test.to(self.device)
+
         with torch.no_grad():
             probs = self.predict_proba(X_test)
             probs = torch.argmax(probs, dim=1)
@@ -94,7 +105,9 @@ class MultilayerPerceptron(BaseDiscModel):
 
     def predict_proba(self, X_test):
         if isinstance(X_test, np.ndarray):
-            X_test = torch.from_numpy(X_test).float()
+            X_test = torch.from_numpy(X_test).float().to(self.device)  # ✅ Fix added
+        else:
+            X_test = X_test.to(self.device)
         with torch.no_grad():
             logits = self.forward(X_test)
             probs = self.final_activation(logits)

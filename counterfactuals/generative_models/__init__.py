@@ -4,3 +4,4 @@ from counterfactuals.generative_models.maf import MaskedAutoregressiveFlow
 from counterfactuals.generative_models.real_nvp import RealNVP
 from counterfactuals.generative_models.nice import NICE
 from counterfactuals.generative_models.kde import KDE
+from counterfactuals.generative_models.maf_with_loss_with_distance import MaskedAutoregressiveFlowDistance

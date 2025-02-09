@@ -16,3 +16,4 @@ from counterfactuals.datasets.concrete_regression import ConcreteDataset
 from counterfactuals.datasets.diabetes_regression import DiabetesDataset
 from counterfactuals.datasets.scm20d_regression import Scm20dDataset
 from counterfactuals.datasets.toy_regression import ToyRegressionDataset
+from counterfactuals.datasets.syntetic import SyntheticDataset

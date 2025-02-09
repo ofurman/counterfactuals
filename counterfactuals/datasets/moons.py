@@ -6,7 +6,8 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class MoonsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/moons.csv"):
+    def __init__(self, file_path: str = "data/moons.csv", bias_sampling: bool = False):
+        self.bias_sampling = bias_sampling
         self.raw_data = self.load(file_path=file_path, header=None)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
@@ -16,9 +17,18 @@ class MoonsDataset(AbstractDataset):
             self.X_train, self.X_test, self.y_train, self.y_test
         )
 
+    import numpy as np
+
     def preprocess(self, raw_data: pd.DataFrame):
         """
         Preprocess the loaded data to X and y numpy arrays.
+
+        Args:
+            raw_data (pd.DataFrame): The raw dataset.
+            bias_sampling (bool): If True, increases sampling of left-side upper crescent points.
+
+        Returns:
+            X, y: Processed features and labels.
         """
         self.categorical_columns = []
         X = raw_data[raw_data.columns[:-1]].to_numpy()
@@ -27,6 +37,25 @@ class MoonsDataset(AbstractDataset):
         self.numerical_features = [0, 1]
         self.categorical_features = []
         self.actionable_features = [0, 1]
+
+        if self.bias_sampling:
+            # Weighting to favor left-side upper crescent points
+            left_weight = 2.0  # Higher weight for left-side points
+            right_weight = 1.0  # Normal weight for others
+
+            # Create weights based on X position (only for class 1)
+            weights = np.where((y == 0) & (X[:, 0] < 0.4), left_weight, right_weight)
+
+            # Normalize weights to get probabilities
+            probabilities = weights / weights.sum()
+
+            # Sample indices with weighted probability
+            sampled_indices = np.random.choice(len(X), size=len(X), replace=True, p=probabilities)
+
+            # Apply sampling
+            X = X[sampled_indices]
+            y = y[sampled_indices]
+
         return X, y
 
     def transform(

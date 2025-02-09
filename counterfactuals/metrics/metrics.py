@@ -115,7 +115,7 @@ class CFMetrics:
         if isinstance(X, np.ndarray):
             return X
         elif isinstance(X, torch.Tensor):
-            return X.detach().numpy()
+            return X.detach().cpu().numpy()
         else:
             raise ValueError("X should be either a numpy array or a torch tensor")
 
@@ -136,7 +136,7 @@ class CFMetrics:
         Returns:
             float: Validity metric value.
         """
-        y_cf = self.disc_model.predict(self.X_cf).numpy()
+        y_cf = self.disc_model.predict(self.X_cf).cpu().numpy()
         return (y_cf != self.y_test.squeeze()).mean()
 
     def actionability(self) -> float:
@@ -170,7 +170,7 @@ class CFMetrics:
         X = self.X_cf if cf else self.X_test
         X = torch.from_numpy(X).float()
         y = torch.from_numpy(self.y_target).float()
-        gen_log_probs = self.gen_model(X, y).detach().numpy()
+        gen_log_probs = self.gen_model(X, y).detach().cpu().numpy()
         return (gen_log_probs > self.prob_plausibility_threshold).mean()
 
     def log_density(self, cf: bool = True) -> float:
@@ -186,7 +186,7 @@ class CFMetrics:
         X = self.X_cf if cf else self.X_test
         X = torch.from_numpy(X).float()
         y = torch.from_numpy(self.y_target).float()
-        gen_log_probs = self.gen_model(X, y).detach().numpy()
+        gen_log_probs = self.gen_model(X, y).detach().cpu().numpy()
         return gen_log_probs.mean()
 
     def lof_scores(self, cf: bool = True, n_neighbors: int = 20) -> float:
@@ -376,7 +376,7 @@ def evaluate_cf(
     y_target: np.ndarray = None,
 ):
     y_target = torch.abs(1 - torch.from_numpy(y_test)) if y_target is None else y_target
-    y_target = y_target.numpy() if isinstance(y_target, torch.Tensor) else y_target
+    y_target = y_target.cpu().numpy() if isinstance(y_target, torch.Tensor) else y_target
 
     metrics_cf = CFMetrics(
         disc_model=disc_model,
