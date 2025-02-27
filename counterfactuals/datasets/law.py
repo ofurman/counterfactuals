@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -16,6 +17,8 @@ class LawDataset(AbstractDataset):
             "lsat",
             "gpa",
             "zfygpa",
+            # "sex",
+            "race",
             "pass_bar",
         ]
         self.raw_data = self.load(file_path=file_path)
@@ -32,8 +35,8 @@ class LawDataset(AbstractDataset):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
-        # self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
-        self.feature_columns = ["lsat", "gpa", "zfygpa"]
+        self.feature_columns = ["lsat", "gpa", "zfygpa", "race"]
+        # self.feature_columns = ["lsat", "gpa", "zfygpa"]
         target_column = "pass_bar"
         self.numerical_columns = list(range(0, 3))
         self.categorical_columns = list(range(3, len(self.feature_columns)))
@@ -66,17 +69,17 @@ class LawDataset(AbstractDataset):
         Transform the loaded data by applying Min-Max scaling to the features.
         """
 
-        # self.feature_transformer = ColumnTransformer(
-        #     [
-        #         ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-        #         (
-        #             "OneHotEncoder",
-        #             OneHotEncoder(sparse_output=False),
-        #             self.categorical_columns,
-        #         ),
-        #     ],
-        # )
-        self.feature_transformer = MinMaxScaler()
+        self.feature_transformer = ColumnTransformer(
+            [
+                ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
+                (
+                    "OneHotEncoder",
+                    OneHotEncoder(sparse_output=False),
+                    self.categorical_columns,
+                ),
+            ],
+        )
+        # self.feature_transformer = MinMaxScaler()
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
