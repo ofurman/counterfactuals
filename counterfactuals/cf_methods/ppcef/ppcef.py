@@ -67,6 +67,8 @@ class PPCEF(BaseCounterfactual):
         :return: dict with loss and additional components to log.
         """
         alpha = search_step_kwargs.get("alpha", None)
+        cat_reg = search_step_kwargs.get("cat_reg", 0.1)
+        epoch = search_step_kwargs.get("epoch", None)
         log_prob_threshold = search_step_kwargs.get("log_prob_threshold", None)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
@@ -75,7 +77,13 @@ class PPCEF(BaseCounterfactual):
 
         dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
 
-        disc_logits = self.disc_model.forward(x_origin + delta)
+        cf = x_origin + delta
+        tau = 0.9 - 0.9 / self.epochs * epoch
+        # print(tau)
+        cf[:, 3:] = torch.nn.functional.gumbel_softmax(cf[:, 3:], tau=tau, dim=1)
+        # cf[:, 3:] = torch.nn.functional.softmax(cf[:, 3:], dim=1)
+
+        disc_logits = self.disc_model.forward(cf)
         disc_logits = (
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
@@ -87,9 +95,11 @@ class PPCEF(BaseCounterfactual):
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
         p_x_param_c_target = self.gen_model(
-            x_origin + delta, context=context_target.type(torch.float32)
+            cf, context=context_target.type(torch.float32)
         )
         max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
+
+        # regularization_loss = self.compute_regularization_loss(x_origin, delta)
 
         loss = dist + alpha * (loss_disc + max_inner)
         return {
@@ -98,6 +108,11 @@ class PPCEF(BaseCounterfactual):
             "max_inner": max_inner,
             "loss_disc": loss_disc,
         }
+
+    def compute_regularization_loss(
+        self, x_origin: torch.Tensor, delta: torch.Tensor
+    ) -> torch.Tensor:
+        return torch.pow((x_origin + delta).sum(dim=1) - 1, 2).sum()
 
     def explain(
         self,
@@ -123,6 +138,7 @@ class PPCEF(BaseCounterfactual):
         """
         Search counterfactual explanations for the given dataloader.
         """
+        self.epochs = epochs
         self.gen_model.eval()
         for param in self.gen_model.parameters():
             param.requires_grad = False
@@ -150,7 +166,8 @@ class PPCEF(BaseCounterfactual):
             optimizer = optim.Adam([delta], lr=lr)
             loss_components_logging = {}
 
-            for _ in (epoch_pbar := tqdm(range(epochs))):
+            for epoch in (epoch_pbar := tqdm(range(epochs))):
+                search_step_kwargs["epoch"] = epoch
                 optimizer.zero_grad()
                 loss_components = self._search_step(
                     delta,
