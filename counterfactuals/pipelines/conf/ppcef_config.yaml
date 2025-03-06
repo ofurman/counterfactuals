@@ -18,17 +18,17 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.BlobsDataset
+  _target_: counterfactuals.datasets.AdultDataset
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 100
