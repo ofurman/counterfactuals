@@ -86,6 +86,7 @@ def search_counterfactuals(
         alpha_s=cfg.counterfactuals_params.alpha_s,
         alpha_k=cfg.counterfactuals_params.alpha_k,
         log_prob_threshold=log_prob_threshold,
+        categorical_intervals=dataset.intervals,
     )
 
     cf_search_time = np.mean(time() - time_start)
@@ -95,6 +96,11 @@ def search_counterfactuals(
     )
 
     Xs_cfs = Xs + delta
+    for interval in dataset.intervals:
+        begin, end = interval
+        max_indices = np.argmax(Xs_cfs[:, begin:end], axis=1)
+        Xs_cfs[:, begin:end] = np.eye(Xs_cfs[:, begin:end].shape[1])[max_indices]
+
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
     return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target

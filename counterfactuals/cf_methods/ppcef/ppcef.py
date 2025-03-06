@@ -55,6 +55,7 @@ class PPCEF(BaseCounterfactual):
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
         self.neptune_run = neptune_run
+        self.beta = 0
 
     def _search_step(
         self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
@@ -67,8 +68,9 @@ class PPCEF(BaseCounterfactual):
         :return: dict with loss and additional components to log.
         """
         alpha = search_step_kwargs.get("alpha", None)
-        cat_reg = search_step_kwargs.get("cat_reg", 0.1)
         epoch = search_step_kwargs.get("epoch", None)
+        categorical_intervals = search_step_kwargs.get("categorical_intervals", None)
+
         log_prob_threshold = search_step_kwargs.get("log_prob_threshold", None)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
@@ -78,10 +80,15 @@ class PPCEF(BaseCounterfactual):
         dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
 
         cf = x_origin + delta
-        tau = 0.9 - 0.9 / self.epochs * epoch
-        # print(tau)
-        cf[:, 3:] = torch.nn.functional.gumbel_softmax(cf[:, 3:], tau=tau, dim=1)
-        # cf[:, 3:] = torch.nn.functional.softmax(cf[:, 3:], dim=1)
+        if categorical_intervals:
+            tau = 1.0 - 0.9 / self.epochs * epoch
+            # tau = 1
+            for interval in categorical_intervals:
+                begin, end = interval
+                cf[:, begin:end] = torch.nn.functional.gumbel_softmax(
+                    cf[:, begin:end], tau=tau, dim=1
+                )
+                # cf[:, begin:end] = torch.nn.functional.softmax(cf[:, begin:end], dim=1)
 
         disc_logits = self.disc_model.forward(cf)
         disc_logits = (
@@ -99,7 +106,7 @@ class PPCEF(BaseCounterfactual):
         )
         max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
 
-        # regularization_loss = self.compute_regularization_loss(x_origin, delta)
+        # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)
 
         loss = dist + alpha * (loss_disc + max_inner)
         return {
@@ -110,9 +117,15 @@ class PPCEF(BaseCounterfactual):
         }
 
     def compute_regularization_loss(
-        self, x_origin: torch.Tensor, delta: torch.Tensor
+        self, cf: torch.Tensor, categorical_intervals
     ) -> torch.Tensor:
-        return torch.pow((x_origin + delta).sum(dim=1) - 1, 2).sum()
+        regularization_loss = 0.0
+        for v in categorical_intervals:
+            regularization_loss += torch.pow(
+                torch.sum((torch.sum(cf[:, v[0] : v[1]], dim=1) - 1.0)), 2
+            )
+
+        return regularization_loss
 
     def explain(
         self,
