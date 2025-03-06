@@ -5,6 +5,7 @@ from counterfactuals.datasets.blobs import BlobsDataset
 from counterfactuals.datasets.compas import CompasDataset
 from counterfactuals.datasets.digits import DigitsDataset
 from counterfactuals.datasets.german_credit import GermanCreditDataset
+from counterfactuals.datasets.givemecredit import GiveMeSomeCreditDataset
 from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.law import LawDataset
 from counterfactuals.datasets.moons import MoonsDataset

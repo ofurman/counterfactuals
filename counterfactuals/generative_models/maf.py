@@ -170,6 +170,7 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             distribution=StandardNormalWithTemp([features]),
         )
 
+
     def forward(self, x, context=None):
         x = x.to(self.device)  # ✅ Ensure input tensor is on CUDA
         if context is not None:
@@ -178,18 +179,19 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             context = torch.zeros((x.shape[0], self.context_features), device=self.device)  # ✅ Fix added
         return self.log_prob(inputs=x, context=context)
 
-    def fit(self, train_loader, test_loader, num_epochs=100, learning_rate=1e-3, patience=20, eps=1e-3,
-            checkpoint_path="best_model.pth", neptune_run=None):
+    def fit(self, train_loader, test_loader, num_epochs=100, learning_rate=1e-3, patience=20,
+            eps=1e-3, checkpoint_path="best_model.pth", neptune_run=None):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
         min_test_loss = float("inf")
+        checkpoint_saved = False  # <- Added
 
         for epoch in (pbar := tqdm(range(num_epochs))):
             self.train()
             train_loss = 0.0
             for batch in train_loader:
                 inputs, labels = batch
-                inputs, labels = inputs.to(self.device), labels.to(self.device)  # ✅ Fix added
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.type(torch.float32)
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
@@ -204,7 +206,7 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
             with torch.no_grad():
                 for batch in test_loader:
                     inputs, labels = batch
-                    inputs, labels = inputs.to(self.device), labels.to(self.device)  # ✅ Fix added
+                    inputs, labels = inputs.to(self.device), labels.to(self.device)
                     labels = labels.type(torch.float32)
                     log_likelihood = self(inputs, labels)
                     loss = -log_likelihood.mean().item()
@@ -222,11 +224,17 @@ class MaskedAutoregressiveFlow(Flow, BaseGenModel):
                 min_test_loss = test_loss
                 patience_counter = 0
                 self.save(checkpoint_path)
+                checkpoint_saved = True  # <- Added
             else:
                 patience_counter += 1
+
             if patience_counter > patience:
                 break
-        self.load(checkpoint_path)
+
+        # Load checkpoint only if it was saved during this run
+        if checkpoint_saved:
+            self.load(checkpoint_path)
+
 
     def predict_log_prob(self, dataloader) -> torch.Tensor:
         """

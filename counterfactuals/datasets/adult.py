@@ -52,6 +52,9 @@ class AdultDataset(AbstractDataset):
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
 
+        X = X[:10000]
+        y = y[:10000]
+
         return X, y
 
     def transform(
