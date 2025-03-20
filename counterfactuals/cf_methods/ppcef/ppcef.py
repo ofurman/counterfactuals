@@ -84,9 +84,8 @@ class PPCEF(BaseCounterfactual):
             tau = 1.0 - 0.99 / self.epochs * epoch
             # tau = 1
             for interval in categorical_intervals:
-                begin, end = interval
-                cf[:, begin:end] = torch.nn.functional.gumbel_softmax(
-                    cf[:, begin:end], tau=tau, dim=1
+                cf[:, interval] = torch.nn.functional.gumbel_softmax(
+                    cf[:, interval], tau=tau, dim=1
                 )
                 # cf[:, begin:end] = torch.nn.functional.softmax(cf[:, begin:end], dim=1)
 
@@ -119,6 +118,7 @@ class PPCEF(BaseCounterfactual):
     def compute_regularization_loss(
         self, cf: torch.Tensor, categorical_intervals
     ) -> torch.Tensor:
+        # deprecated, categorical_intervals follow different implementation now.
         regularization_loss = 0.0
         for v in categorical_intervals:
             regularization_loss += torch.pow(
@@ -207,8 +207,8 @@ class PPCEF(BaseCounterfactual):
                 epoch_pbar.set_description(
                     f"Discriminator loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f}"
                 )
-                # if disc_loss < patience_eps and prob_loss < patience_eps:
-                #     break
+                if disc_loss < patience_eps and prob_loss < patience_eps:
+                    break
 
             deltas.append(delta.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())

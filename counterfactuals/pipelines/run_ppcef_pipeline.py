@@ -4,6 +4,7 @@ import hydra
 import numpy as np
 import pandas as pd
 from time import time
+from typing import List
 import torch
 import neptune
 from neptune.utils import stringify_unsupported
@@ -86,7 +87,10 @@ def search_counterfactuals(
         alpha_s=cfg.counterfactuals_params.alpha_s,
         alpha_k=cfg.counterfactuals_params.alpha_k,
         log_prob_threshold=log_prob_threshold,
-        categorical_intervals=dataset.intervals,
+        categorical_intervals=get_categorical_intervals(
+            cfg.counterfactuals_params.use_categorical,
+            dataset.categorical_features_lists,
+        ),
     )
 
     cf_search_time = np.mean(time() - time_start)
@@ -96,14 +100,31 @@ def search_counterfactuals(
     )
 
     Xs_cfs = Xs + delta
-    for interval in dataset.intervals:
-        begin, end = interval
-        max_indices = np.argmax(Xs_cfs[:, begin:end], axis=1)
-        Xs_cfs[:, begin:end] = np.eye(Xs_cfs[:, begin:end].shape[1])[max_indices]
+
+    if cfg.counterfactuals_params.use_categorical:
+        Xs_cfs = apply_categorical_discretization(
+            dataset.categorical_features_lists, Xs_cfs
+        )
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
     return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target
+
+
+def get_categorical_intervals(
+    use_categorical: bool, categorical_features_lists: List[List[int]]
+):
+    return categorical_features_lists if use_categorical else None
+
+
+def apply_categorical_discretization(
+    categorical_features_lists: List[List[int]], Xs_cfs: np.ndarray
+) -> np.ndarray:
+    for interval in categorical_features_lists:
+        max_indices = np.argmax(Xs_cfs[:, interval], axis=1)
+        Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
+
+    return Xs_cfs
 
 
 def calculate_metrics(
@@ -162,13 +183,13 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-
+    dataset.inverse_dequantization()
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
         dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
-
+    dataset.dequantize()
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
     # Custom code
@@ -191,7 +212,6 @@ def main(cfg: DictConfig):
         median_log_prob=log_prob_threshold,
         run=run,
     )
-    print(metrics)
     run.stop()
 
 

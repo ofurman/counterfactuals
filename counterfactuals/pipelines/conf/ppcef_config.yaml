@@ -54,5 +54,5 @@ counterfactuals_params:
   alpha_k: 100
   beta: 0.01
   patience: 1000
-  
+  use_categorical: true
     
