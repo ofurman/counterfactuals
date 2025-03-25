@@ -1,0 +1,21 @@
+torchdiffeq
+alibi[tensorflow]
+numpy
+scipy
+cvxpy
+scikit-learn
+neptune
+hydra-core
+mlflow
+umap-learn
+nflows @ git+https://github.com/pfilo8/nflows.git
+UMNN
+pandas
+torch
+tqdm
+matplotlib
+plotly
+ipykernel
+scikit-learn
+mlflow
+ruff
