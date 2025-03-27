@@ -43,7 +43,7 @@ class CustomCategoricalTransformer(BaseEstimator, TransformerMixin):
         return x.numpy()
 
     def fit(self, X, y=None):
-        self.dividers = [int(X[:, i].max() + 1) for i in range(X.shape[1])]
+        self.dividers = [int(X[:, i].max()) + 1 for i in range(X.shape[1])]
         return self
 
     def transform(self, X):

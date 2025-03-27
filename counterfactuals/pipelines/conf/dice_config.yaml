@@ -21,14 +21,14 @@ dataset:
   _target_: counterfactuals.datasets.AdultDataset
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 100
@@ -38,7 +38,7 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.PPCEF
+    _target_: counterfactuals.cf_methods.DiceExplainerWrapper
 
   disc_model_criterion:
     _target_: counterfactuals.losses.MulticlassDiscLoss
@@ -46,14 +46,7 @@ counterfactuals_params:
 
   log_prob_quantile: 0.25
   target_class: 0
-  # epochs: 20000
-  epochs: 10000
+  epochs: 20000
   batch_size: 4096
   lr: 0.001
-  alpha: 1000
-  alpha_s: 1000
-  alpha_k: 100
-  beta: 0.01
-  patience: 1000
-  use_categorical: true
     

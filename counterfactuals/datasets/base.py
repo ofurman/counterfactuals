@@ -167,31 +167,3 @@ class AbstractDataset(ABC):
                     )
                 )
         return categorical_features_lists
-
-    def inverse_dequantization(self):
-        for categorical_interval in self.categorical_features_lists:
-            self.X_train[:, categorical_interval] = (
-                self.feature_transformer.named_transformers_["OneHotPipeline"]
-                .named_steps["CategoricalDequantizer"]
-                .inverse_transform(self.X_train[:, categorical_interval])
-            )
-
-            self.X_test[:, categorical_interval] = (
-                self.feature_transformer.named_transformers_["OneHotPipeline"]
-                .named_steps["CategoricalDequantizer"]
-                .inverse_transform(self.X_test[:, categorical_interval])
-            )
-
-    def dequantize(self):
-        for categorical_interval in self.categorical_features_lists:
-            self.X_train[:, categorical_interval] = (
-                self.feature_transformer.named_transformers_["OneHotPipeline"]
-                .named_steps["CategoricalDequantizer"]
-                .transform(self.X_train[:, categorical_interval])
-            )
-
-            self.X_test[:, categorical_interval] = (
-                self.feature_transformer.named_transformers_["OneHotPipeline"]
-                .named_steps["CategoricalDequantizer"]
-                .inverse_transform(self.X_test[:, categorical_interval])
-            )

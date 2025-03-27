@@ -82,12 +82,11 @@ class PPCEF(BaseCounterfactual):
         cf = x_origin + delta
         if categorical_intervals:
             tau = 1.0 - 0.99 / self.epochs * epoch
-            # tau = 1
             for interval in categorical_intervals:
                 cf[:, interval] = torch.nn.functional.gumbel_softmax(
                     cf[:, interval], tau=tau, dim=1
                 )
-                # cf[:, begin:end] = torch.nn.functional.softmax(cf[:, begin:end], dim=1)
+                # cf[:, interval] = torch.nn.functional.softmax(cf[:, interval], dim=1)
 
         disc_logits = self.disc_model.forward(cf)
         disc_logits = (
@@ -207,8 +206,8 @@ class PPCEF(BaseCounterfactual):
                 epoch_pbar.set_description(
                     f"Discriminator loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f}"
                 )
-                if disc_loss < patience_eps and prob_loss < patience_eps:
-                    break
+                # if disc_loss < patience_eps and prob_loss < patience_eps:
+                #     break
 
             deltas.append(delta.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
