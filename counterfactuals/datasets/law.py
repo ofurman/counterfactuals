@@ -2,10 +2,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 
 from counterfactuals.datasets.base import AbstractDataset
-from counterfactuals.datasets.utils import CustomCategoricalTransformer
 
 
 class LawDataset(AbstractDataset):
@@ -75,13 +73,8 @@ class LawDataset(AbstractDataset):
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
-                    "OneHotPipeline",
-                    Pipeline(
-                        [
-                            ("OneHotEncoder", OneHotEncoder(sparse_output=False)),
-                            ("CategoricalDequantizer", CustomCategoricalTransformer()),
-                        ]
-                    ),
+                    "OneHotEncoder",
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],

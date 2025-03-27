@@ -11,48 +11,19 @@ from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 import torch.utils
-from sklearn.compose import ColumnTransformer
 
 from counterfactuals.metrics.metrics import evaluate_cf
 
-from counterfactuals.cf_methods.ppcef import PPCEF
+from counterfactuals.cf_methods.dice import DiceExplainerWrapper
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.datasets.utils import CustomCategoricalTransformer
 
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
-
-def dequantize(dataset):
-    transformers = [
-        (f"cat_group_{i}", CustomCategoricalTransformer(), group)
-        for i, group in enumerate(dataset.categorical_features_lists)
-    ]
-
-    column_transformer = ColumnTransformer(
-        transformers=transformers, remainder="passthrough"
-    )
-
-    dataset.X_train = column_transformer.fit_transform(dataset.X_train)
-    dataset.X_test = column_transformer.transform(dataset.X_test)
-    return column_transformer
-
-
-def inverse_dequantization(dataset, dequantizer):
-    for categorical_features, transform in zip(
-        dataset.categorical_features_lists, dequantizer.named_transformers_
-    ):
-        dataset.X_train[:, categorical_features] = dequantizer.named_transformers_[
-            transform
-        ].inverse_transform(dataset.X_train[:, list(range(len(categorical_features)))])
-        dataset.X_test[:, categorical_features] = dequantizer.named_transformers_[
-            transform
-        ].inverse_transform(dataset.X_test[:, list(range(len(categorical_features)))])
 
 
 def search_counterfactuals(
@@ -77,13 +48,11 @@ def search_counterfactuals(
     # X_test_target = dataset.X_test[dataset.y_test == target_class]
 
     logger.info("Creating counterfactual model")
-    disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
 
-    cf_method = PPCEF(
-        gen_model=gen_model,
+    cf_method = DiceExplainerWrapper(
         disc_model=disc_model,
-        disc_model_criterion=disc_model_criterion,
-        neptune_run=run,
+        X_train=dataset.X_train,
+        y_train=dataset.y_train,
     )
 
     logger.info("Calculating log_prob_threshold")
@@ -129,11 +98,6 @@ def search_counterfactuals(
     )
 
     Xs_cfs = Xs + delta
-
-    if cfg.counterfactuals_params.use_categorical:
-        Xs_cfs = apply_categorical_discretization(
-            dataset.categorical_features_lists, Xs_cfs
-        )
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
@@ -212,14 +176,13 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-
+    dataset.inverse_dequantization()
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
         dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
-
-    dequantize(dataset)
+    dataset.dequantize()
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
     # Custom code

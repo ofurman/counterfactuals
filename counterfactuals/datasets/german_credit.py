@@ -1,11 +1,9 @@
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
-from counterfactuals.datasets.utils import CustomCategoricalTransformer
 
 
 class GermanCreditDataset(AbstractDataset):
@@ -83,13 +81,8 @@ class GermanCreditDataset(AbstractDataset):
             [
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
-                    "OneHotPipeline",
-                    Pipeline(
-                        [
-                            ("OneHotEncoder", OneHotEncoder(sparse_output=False)),
-                            ("CategoricalDequantizer", CustomCategoricalTransformer()),
-                        ]
-                    ),
+                    "OneHotEncoder",
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],
