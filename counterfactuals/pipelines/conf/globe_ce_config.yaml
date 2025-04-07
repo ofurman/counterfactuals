@@ -18,17 +18,17 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: true
+  train_model: false
   batch_size: 1024
   epochs: 2000
   patience: 50
