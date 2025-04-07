@@ -3,6 +3,8 @@ defaults:
   - gen_model: large_maf
   - disc_model: mlp
 
+device: cuda
+
 hydra:
   sweeper:
     max_batch_size: 1
@@ -18,13 +20,13 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.BlobsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
   train_model: false
   epochs: 5000
   batch_size: 128
-  patience: 300
+  patience: 30:0
   lr: 0.001
 
 gen_model:
@@ -40,7 +42,7 @@ counterfactuals_params:
     # specific parameters besides standard ones should be passed here
     _target_: counterfactuals.cf_methods.RPPCEF
     cf_method_type: "PPCEF_2"
-    K: 1
+    K: 10
 
   disc_model_criterion:
     _target_: counterfactuals.losses.MulticlassDiscLoss

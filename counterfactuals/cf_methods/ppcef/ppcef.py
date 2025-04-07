@@ -137,8 +137,8 @@ class PPCEF(BaseCounterfactual):
         original = []
         original_class = []
         for xs_origin, contexts_origin in dataloader:
-            xs_origin = xs_origin.to(self.device)
-            contexts_origin = contexts_origin.to(self.device)
+            # xs_origin = xs_origin.to(self.device)
+            # contexts_origin = contexts_origin.to(self.device)
 
             contexts_origin = contexts_origin.reshape(-1, 1)
             contexts_target = torch.abs(1 - contexts_origin)

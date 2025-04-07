@@ -34,6 +34,7 @@ class RPPCEF(BaseCounterfactual):
         self.gen_model = gen_model
         self.disc_model = disc_model
         self.device = device if device else "cpu"
+        self.delta = self.delta.to(self.device)
         self.neptune_run = neptune_run
         self.loss_components_logs = {}
 
@@ -114,7 +115,7 @@ class RPPCEF(BaseCounterfactual):
         ).clamp(max=10**5)
         max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
 
-        delta_loss = delta.loss(alpha_s, alpha_k)
+        delta_loss = delta.loss(alpha_s, alpha_k).to(self.device)
         # dist = dist if dist_flag else torch.Tensor([0])
         # dist = torch.Tensor([0])
         loss = 0.1 * dist + 100 * alpha * loss_disc + alpha * max_inner + delta_loss
@@ -179,8 +180,8 @@ class RPPCEF(BaseCounterfactual):
         original = []
         original_class = []
         for xs_origin, contexts_origin in dataloader:
-            xs_origin = xs_origin.to(self.device)
-            contexts_origin = contexts_origin.to(self.device)
+            # xs_origin = xs_origin.to(self.device)
+            # contexts_origin = contexts_origin.to(self.device)
 
             contexts_origin = contexts_origin.reshape(-1, 1)
             contexts_target = torch.abs(1 - contexts_origin)

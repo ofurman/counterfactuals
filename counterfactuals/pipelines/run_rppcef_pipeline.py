@@ -48,15 +48,6 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
 
-    cf_method: RPPCEF = instantiate(
-        cfg.counterfactuals_params.cf_method,
-        X=X_test_origin,
-        gen_model=gen_model,
-        disc_model=disc_model,
-        disc_model_criterion=disc_model_criterion,
-        neptune_run=run,
-    )
-
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
         batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
@@ -69,14 +60,29 @@ def search_counterfactuals(
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
+    device = cfg.device
+    disc_model = disc_model.to(device)
+    gen_model = gen_model.to(device)
+    log_prob_threshold = log_prob_threshold.to(device)
     cf_dataloader = torch.utils.data.DataLoader(
         torch.utils.data.TensorDataset(
-            torch.tensor(X_test_origin).float(),
-            torch.tensor(y_test_origin).float(),
+            torch.tensor(X_test_origin).float().to(device),
+            torch.tensor(y_test_origin).float().to(device),
         ),
         batch_size=cfg.counterfactuals_params.batch_size,
         shuffle=False,
     )
+
+    cf_method: RPPCEF = instantiate(
+        cfg.counterfactuals_params.cf_method,
+        X=X_test_origin,
+        gen_model=gen_model,
+        disc_model=disc_model,
+        disc_model_criterion=disc_model_criterion,
+        neptune_run=run,
+        device=device,
+    )
+
     time_start = time()
     delta, Xs, ys_orig, ys_target = cf_method.explain_dataloader(
         dataloader=cf_dataloader,
@@ -91,13 +97,20 @@ def search_counterfactuals(
     )
 
     cf_search_time = np.mean(time() - time_start)
+    print(cf_search_time)
+    with open("search.txt", "a") as f:
+        f.write(f"{cf_search_time}\n")
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
     )
     M, S, D = delta.get_matrices()
 
-    Xs_cfs = Xs + delta().detach().numpy()
+    Xs_cfs = Xs + delta().cpu().detach().numpy()
+    disc_model = disc_model.cpu()
+    gen_model = gen_model.cpu()
+    log_prob_threshold = log_prob_threshold.cpu()
+
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
     return Xs_cfs, Xs, log_prob_threshold, S, ys_orig, ys_target

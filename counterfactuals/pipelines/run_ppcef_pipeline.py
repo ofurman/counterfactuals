@@ -49,13 +49,6 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
 
-    cf_method = PPCEF(
-        gen_model=gen_model,
-        disc_model=disc_model,
-        disc_model_criterion=disc_model_criterion,
-        neptune_run=run,
-    )
-
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
         batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
@@ -68,13 +61,24 @@ def search_counterfactuals(
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
+    device = "cuda"
     cf_dataloader = torch.utils.data.DataLoader(
         torch.utils.data.TensorDataset(
-            torch.tensor(X_test_origin).float(),
-            torch.tensor(y_test_origin).float(),
+            torch.tensor(X_test_origin).float().to(device),
+            torch.tensor(y_test_origin).float().to(device),
         ),
         batch_size=cfg.counterfactuals_params.batch_size,
         shuffle=False,
+    )
+    disc_model = disc_model.to(device)
+    gen_model = gen_model.to(device)
+
+    cf_method = PPCEF(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        disc_model_criterion=disc_model_criterion,
+        neptune_run=run,
+        device=device,
     )
     time_start = time()
     delta, Xs, ys_orig, ys_target, logs = cf_method.explain_dataloader(
@@ -89,6 +93,8 @@ def search_counterfactuals(
     )
 
     cf_search_time = np.mean(time() - time_start)
+    print(cf_search_time)
+    exit()
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
@@ -141,7 +147,7 @@ def calculate_metrics(
 @hydra.main(config_path="./conf", config_name="ppcef_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Initializing Neptune run")
     run = neptune.init_run(
@@ -169,6 +175,9 @@ def main(cfg: DictConfig):
     Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target = search_counterfactuals(
         cfg, dataset, gen_model, disc_model, run, save_folder
     )
+
+    gen_model = gen_model.cpu()
+    disc_model = disc_model.cpu()
 
     metrics = calculate_metrics(
         gen_model=gen_model,

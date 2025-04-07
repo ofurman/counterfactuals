@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlp
+  - disc_model: lr
 
 hydra:
   sweeper:
@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.BlobsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
   train_model: false
@@ -28,7 +28,7 @@ disc_model:
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: false 
   batch_size: 1024
   epochs: 2000
   patience: 100
