@@ -7,10 +7,11 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from typing import List, Tuple, Dict, Union, Optional
+from typing import List, Tuple, Dict, Union, Optional, Set
 import logging
 import time
 from sklearn.model_selection import train_test_split
+from collections import defaultdict
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -22,20 +23,21 @@ logging.basicConfig(
 logger = logging.getLogger('counterfactual')
 
 
-class GenericCounterfactualDataset(Dataset):
+class MulticlassCounterfactualDataset(Dataset):
     """
-    PyTorch Dataset for counterfactual training with normalizing flows.
-    This class handles any binary dataset, conditioning on factual points
-    to generate counterfactual points.
+    PyTorch Dataset for multiclass counterfactual training with normalizing flows.
+    This class handles any multiclass dataset, conditioning on factual points
+    to generate counterfactual points from different classes.
     
     The dataset organizes samples by factual points, allowing for efficient
     batching where all samples in a batch have the same factual conditioning point
-    but different counterfactual targets.
+    but different counterfactual targets from various classes.
     """
     def __init__(
         self, 
         X_factual: np.ndarray, 
-        X_counterfactual: np.ndarray, 
+        X_counterfactual_dict: Dict[int, np.ndarray],
+        classes: List[int] = [0, 1],
         n_nearest: int = 5,
         noise_level: float = 0.05,
         distance_metric: str = 'euclidean'
@@ -43,101 +45,173 @@ class GenericCounterfactualDataset(Dataset):
         """
         Args:
             X_factual: Array of factual points (NxD)
-            X_counterfactual: Array of counterfactual points (MxD)
-            n_nearest: Number of nearest counterfactual points to use for each factual point
+            X_counterfactual_dict: Dictionary mapping class labels to arrays of counterfactual points
+            n_nearest: Number of nearest counterfactual points to use for each factual point per class
             noise_level: Standard deviation of Gaussian noise to add to counterfactual points
             distance_metric: Distance metric to use ('euclidean', 'manhattan', etc.)
         """
         self.X_factual = X_factual.astype(np.float32)
-        self.X_counterfactual = X_counterfactual.astype(np.float32)
+        self.X_counterfactual_dict = {k: v.astype(np.float32) for k, v in X_counterfactual_dict.items()}
+        self.classes = classes
         self.n_nearest = n_nearest
         self.noise_level = noise_level
+        self.counterfactual_classes = list(X_counterfactual_dict.keys())
         
-        # Compute distance matrix between factual and counterfactual points
-        if distance_metric == 'euclidean':
-            self.dist_matrix = euclidean_distances(X_factual, X_counterfactual)
-        else:
-            # Default to euclidean distance
-            self.dist_matrix = euclidean_distances(X_factual, X_counterfactual)
-        
-        # For each factual point, find the n_nearest counterfactual points
-        self.nearest_indices = np.argsort(self.dist_matrix, axis=1)[:, :n_nearest]
-        
-        # Create a mapping from factual index to list of nearest counterfactual indices
+        # Compute distance matrices between factual and counterfactual points for each class
+        self.dist_matrices = {}
+        self.nearest_indices = {}
         self.factual_to_cf_indices = {}
-        for f_idx in range(len(X_factual)):
-            self.factual_to_cf_indices[f_idx] = self.nearest_indices[f_idx]
+        
+        for cf_class, X_counterfactual in self.X_counterfactual_dict.items():
+            # Compute distance matrix
+            if distance_metric == 'euclidean':
+                dist_matrix = euclidean_distances(X_factual, X_counterfactual)
+            else:
+                # Default to euclidean distance
+                dist_matrix = euclidean_distances(X_factual, X_counterfactual)
+            
+            self.dist_matrices[cf_class] = dist_matrix
+            
+            # For each factual point, find the n_nearest counterfactual points
+            nearest_indices = np.argsort(dist_matrix, axis=1)[:, :n_nearest]
+            self.nearest_indices[cf_class] = nearest_indices
+            
+            # Create a mapping from factual index to list of nearest counterfactual indices
+            factual_to_cf_indices = {}
+            for f_idx in range(len(X_factual)):
+                factual_to_cf_indices[f_idx] = nearest_indices[f_idx]
+            
+            self.factual_to_cf_indices[cf_class] = factual_to_cf_indices
         
         # Create an index mapping for the dataset
-        # Each entry is (f_idx, cf_idx) where:
+        # Each entry is (f_idx, cf_class, cf_idx) where:
         # - f_idx is the factual point index
+        # - cf_class is the counterfactual class
         # - cf_idx is the counterfactual point index
         self.index_mapping = []
-        for f_idx, cf_indices in self.factual_to_cf_indices.items():
-            for cf_idx in cf_indices:
-                self.index_mapping.append((f_idx, cf_idx))
+        for f_idx in range(len(X_factual)):
+            for cf_class in self.counterfactual_classes:
+                for cf_idx in self.factual_to_cf_indices[cf_class][f_idx]:
+                    self.index_mapping.append((f_idx, cf_class, cf_idx))
     
     def __len__(self):
         return len(self.index_mapping)
     
     def __getitem__(self, idx):
-        # Get the factual and counterfactual indices from the mapping
-        f_idx, cf_idx = self.index_mapping[idx]
+        # Get the factual, counterfactual class, and counterfactual indices from the mapping
+        f_idx, cf_class, cf_idx = self.index_mapping[idx]
         
         # Get the factual point (used as condition)
         cond = self.X_factual[f_idx]
         
         # Get the counterfactual point (target to generate)
-        x = self.X_counterfactual[cf_idx].copy()
+        x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
         
         # Add small Gaussian noise to counterfactual point (target)
         if self.noise_level > 0:
             x = x + np.random.normal(0, self.noise_level, size=x.shape)
         
-        return torch.tensor(x, dtype=torch.float32), torch.tensor(cond, dtype=torch.float32)
+        # Create a one-hot encoding for the counterfactual class
+        class_one_hot = np.zeros(len(self.classes))
+        class_idx = self.classes.index(cf_class)
+        class_one_hot[class_idx] = 1
+        
+        return (
+            torch.tensor(x, dtype=torch.float32), 
+            torch.tensor(cond, dtype=torch.float32),
+            torch.tensor(class_one_hot, dtype=torch.float32)
+        )
     
-    def get_grouped_batches(self, batch_size=None, shuffle=True):
+    def get_grouped_batches(self, batch_size=None, shuffle=True, balanced=True):
         """
         Create batches where all samples in a batch share the same factual point.
-        Each batch contains a factual point and its closest counterfactual points.
+        Each batch contains a factual point and its closest counterfactual points from different classes.
         
         Args:
-            batch_size: Maximum batch size (defaults to n_nearest if None)
+            batch_size: Maximum batch size (defaults to n_nearest * num_classes if None)
             shuffle: Whether to shuffle the order of batches
+            balanced: Whether to ensure balanced representation of classes in each batch
             
         Returns:
-            List of batches, where each batch is a tuple of (counterfactual_batch, factual_batch)
+            List of batches, where each batch is a tuple of (counterfactual_batch, factual_batch, class_batch)
         """
         batches = []
         
-        # Default batch_size to n_nearest if not specified
+        # Default batch_size to n_nearest * num_classes if not specified
         if batch_size is None:
-            batch_size = self.n_nearest
+            batch_size = self.n_nearest * len(self.counterfactual_classes)
         
         # For each factual point
-        for f_idx, cf_indices in self.factual_to_cf_indices.items():
+        for f_idx in range(len(self.X_factual)):
             batch_cf = []
-            
-            # Shuffle counterfactual indices if requested
-            if shuffle:
-                np.random.shuffle(cf_indices)
+            batch_classes = []
             
             # Get the factual point as conditioning
             cond = self.X_factual[f_idx]
             
-            # For each counterfactual point in this batch
-            for cf_idx in cf_indices[:batch_size]:  # Limit to batch_size
-                # Get the counterfactual point
-                x = self.X_counterfactual[cf_idx].copy()
+            if balanced:
+                # Ensure balanced representation of classes in each batch
+                points_per_class = min(self.n_nearest, batch_size // len(self.counterfactual_classes))
                 
-                # Add noise
-                if self.noise_level > 0:
-                    x = x + np.random.normal(0, self.noise_level, size=x.shape)
+                for cf_class in self.counterfactual_classes:
+                    cf_indices = self.factual_to_cf_indices[cf_class][f_idx]
+                    
+                    # Shuffle counterfactual indices if requested
+                    if shuffle:
+                        np.random.shuffle(cf_indices)
+                    
+                    # For each counterfactual point in this batch
+                    for cf_idx in cf_indices[:points_per_class]:
+                        # Get the counterfactual point
+                        x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
+                        
+                        # Add noise
+                        if self.noise_level > 0:
+                            x = x + np.random.normal(0, self.noise_level, size=x.shape)
+                        
+                        batch_cf.append(torch.tensor(x, dtype=torch.float32))
+                        
+                        # Create a one-hot encoding for the counterfactual class
+                        class_one_hot = np.zeros(len(self.classes))
+                        class_idx = self.classes.index(cf_class)
+                        class_one_hot[class_idx] = 1
+                        batch_classes.append(torch.tensor(class_one_hot, dtype=torch.float32))
+            else:
+                # Not balanced - just take the closest points regardless of class
+                all_cf_indices = []
+                for cf_class in self.counterfactual_classes:
+                    cf_indices = self.factual_to_cf_indices[cf_class][f_idx]
+                    for cf_idx in cf_indices:
+                        all_cf_indices.append((cf_class, cf_idx))
                 
-                batch_cf.append(torch.tensor(x, dtype=torch.float32))
+                # Shuffle all counterfactual indices if requested
+                if shuffle:
+                    np.random.shuffle(all_cf_indices)
+                
+                # For each counterfactual point in this batch
+                for cf_class, cf_idx in all_cf_indices[:batch_size]:
+                    # Get the counterfactual point
+                    x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
+                    
+                    # Add noise
+                    if self.noise_level > 0:
+                        x = x + np.random.normal(0, self.noise_level, size=x.shape)
+                    
+                    batch_cf.append(torch.tensor(x, dtype=torch.float32))
+                    
+                    # Create a one-hot encoding for the counterfactual class
+                    class_one_hot = np.zeros(len(self.counterfactual_classes))
+                    class_idx = self.counterfactual_classes.index(cf_class)
+                    class_one_hot[class_idx] = 1
+                    batch_classes.append(torch.tensor(class_one_hot, dtype=torch.float32))
             
+            # Skip if no counterfactual points were added
+            if not batch_cf:
+                continue
+                
             # Create batch tensors
             batch_x = torch.stack(batch_cf)
+            batch_classes = torch.stack(batch_classes)
             
             # Create a batch of identical factual points (one for each counterfactual)
             # Convert numpy array to tensor first
@@ -145,7 +219,7 @@ class GenericCounterfactualDataset(Dataset):
             # Then create a batch by repeating it
             batch_cond = cond_tensor.repeat(len(batch_cf), 1)
             
-            batches.append((batch_x, batch_cond))
+            batches.append((batch_x, batch_cond, batch_classes))
         
         # Shuffle the order of batches if requested
         if shuffle:
@@ -154,17 +228,16 @@ class GenericCounterfactualDataset(Dataset):
         return batches
 
 
-class CounterfactualWrapper(AbstractDataset):
+class MulticlassCounterfactualWrapper(AbstractDataset):
     """
-    Wrapper for generic dataset that supports bidirectional counterfactual generation
+    Wrapper for generic dataset that supports multiclass counterfactual generation
     """
     
     def __init__(
         self, 
         X: np.ndarray, 
         y: np.ndarray,
-        factual_class: int = 0,
-        counterfactual_class: int = 1,
+        factual_classes: Optional[List[int]] = None,
         n_nearest: int = 5,
         noise_level: float = 0.05,
         test_size: float = 0.2,
@@ -173,13 +246,12 @@ class CounterfactualWrapper(AbstractDataset):
         log_level: str = 'INFO'
     ):
         """
-        Initialize the counterfactual wrapper for bidirectional counterfactual generation
+        Initialize the multiclass counterfactual wrapper
         
         Args:
             X: Feature matrix
-            y: Labels (binary)
-            factual_class: Class to use as factual
-            counterfactual_class: Class to use as counterfactual
+            y: Labels (multiclass)
+            factual_classes: List of classes to use as factual (if None, use all classes)
             n_nearest: Number of nearest counterfactual points to consider
             noise_level: Standard deviation of Gaussian noise to add to counterfactual points
             test_size: Fraction of data to use for testing
@@ -200,15 +272,26 @@ class CounterfactualWrapper(AbstractDataset):
         # Store dataset
         self.X = X
         self.y = y
-        self.factual_class = factual_class
-        self.counterfactual_class = counterfactual_class
+        self.classes = np.unique(y)
         self.n_nearest = n_nearest
         self.noise_level = noise_level
         self.distance_metric = distance_metric
-        self.bidirectional = True  # Always bidirectional
         
-        self.logger.info(f"Initializing Bidirectional CounterfactualWrapper with {len(X)} samples")
-        self.logger.info(f"Class distribution: Class {factual_class}: {np.sum(y == factual_class)}, Class {counterfactual_class}: {np.sum(y == counterfactual_class)}")
+        # Get unique classes
+        self.classes = np.unique(y)
+        self.logger.info(f"Found {len(self.classes)} classes: {self.classes}")
+        
+        # Set factual classes (if None, use all classes)
+        if factual_classes is None:
+            self.factual_classes = self.classes
+        else:
+            self.factual_classes = np.array(factual_classes)
+            # Validate that all specified classes exist in the dataset
+            for cls in self.factual_classes:
+                if cls not in self.classes:
+                    raise ValueError(f"Class {cls} not found in dataset")
+        
+        self.logger.info(f"Using {len(self.factual_classes)} factual classes: {self.factual_classes}")
         
         # Split data
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
@@ -220,20 +303,14 @@ class CounterfactualWrapper(AbstractDataset):
             self.X_train, self.X_test, self.y_train, self.y_test
         )
         
-        # Separate factual and counterfactual points for forward direction
-        self.X_factual = X[y == factual_class]
-        self.X_counterfactual = X[y == counterfactual_class]
-        self.logger.info(f"Factual points: {len(self.X_factual)}, Counterfactual points: {len(self.X_counterfactual)}")
+        # Separate points by class
+        self.X_by_class = {}
+        self.X_by_class_scaled = {}
         
-        # Scale factual and counterfactual points
-        self.X_factual_scaled = self.feature_transformer.transform(self.X_factual)
-        self.X_counterfactual_scaled = self.feature_transformer.transform(self.X_counterfactual)
-        
-        # Prepare reverse datasets (counterfactual→factual)
-        self.X_factual_rev = X[y == counterfactual_class]
-        self.X_counterfactual_rev = X[y == factual_class]
-        self.X_factual_scaled_rev = self.feature_transformer.transform(self.X_factual_rev)
-        self.X_counterfactual_scaled_rev = self.feature_transformer.transform(self.X_counterfactual_rev)
+        for cls in self.classes:
+            self.X_by_class[cls] = X[y == cls]
+            self.X_by_class_scaled[cls] = self.feature_transformer.transform(self.X_by_class[cls])
+            self.logger.info(f"Class {cls}: {len(self.X_by_class[cls])} points")
         
         # Set feature properties
         self.numerical_features = list(range(X.shape[1]))
@@ -265,90 +342,50 @@ class CounterfactualWrapper(AbstractDataset):
         
         return X_train, X_test, y_train, y_test
     
-    def get_counterfactual_dataloaders(self, batch_size=None, shuffle=True, direction='both'):
+    def get_counterfactual_dataloaders(self, batch_size=None, shuffle=True, balanced=True):
         """
-        Returns DataLoaders for bidirectional counterfactual training
+        Returns DataLoaders for multiclass counterfactual training
         
         Args:
-            batch_size: Batch size (if None, uses self.n_nearest)
+            batch_size: Batch size (if None, uses self.n_nearest * num_classes)
             shuffle: Whether to shuffle data
-            direction: 'forward', 'reverse', or 'both' for the direction of counterfactual generation
+            balanced: Whether to ensure balanced representation of classes in each batch
         
         Returns:
             train_loader, test_loader
         """
         if batch_size is None:
-            batch_size = self.n_nearest
+            batch_size = self.n_nearest * len(self.classes)
         
-        # Validate direction parameter
-        if direction not in ['forward', 'reverse', 'both']:
-            raise ValueError("direction must be one of: 'forward', 'reverse', 'both'")
+        # Create datasets for each factual class
+        datasets = []
+        
+        for factual_class in self.factual_classes:
+            # Get factual points for this class
+            X_factual = self.X_by_class_scaled[factual_class]
             
-        # Create forward dataset (factual→counterfactual)
-        if direction in ['forward', 'both']:
-            forward_dataset = GenericCounterfactualDataset(
-                X_factual=self.X_factual_scaled,
-                X_counterfactual=self.X_counterfactual_scaled,
+            # Create dictionary of counterfactual points for other classes
+            X_counterfactual_dict = {}
+            for cf_class in self.classes:
+                if cf_class != factual_class:
+                    X_counterfactual_dict[cf_class] = self.X_by_class_scaled[cf_class]
+            
+            # Create dataset for this factual class
+            dataset = MulticlassCounterfactualDataset(
+                X_factual=X_factual,
+                X_counterfactual_dict=X_counterfactual_dict,
                 n_nearest=self.n_nearest,
                 noise_level=self.noise_level,
                 distance_metric=self.distance_metric
             )
+            
+            datasets.append(dataset)
         
-        # Create reverse dataset (counterfactual→factual)
-        if direction in ['reverse', 'both']:
-            reverse_dataset = GenericCounterfactualDataset(
-                X_factual=self.X_factual_scaled_rev,  # Using counterfactual class as factual
-                X_counterfactual=self.X_counterfactual_scaled_rev,  # Using factual class as counterfactual
-                n_nearest=self.n_nearest,
-                noise_level=self.noise_level,
-                distance_metric=self.distance_metric
-            )
-            
-        # Handle 'both' direction by combining datasets
-        if direction == 'both':
-            combined_batches = []
-            forward_batches = forward_dataset.get_grouped_batches(batch_size=batch_size, shuffle=shuffle)
-            reverse_batches = reverse_dataset.get_grouped_batches(batch_size=batch_size, shuffle=shuffle)
-            
-            # Add direction information to each batch
-            forward_batches = [(batch_x, batch_cond, torch.zeros(batch_x.shape[0], 1)) for batch_x, batch_cond in forward_batches]
-            reverse_batches = [(batch_x, batch_cond, torch.ones(batch_x.shape[0], 1)) for batch_x, batch_cond in reverse_batches]
-            
-            # Combine batches from both directions
-            combined_batches = forward_batches + reverse_batches
-            
-            # Split into train and test
-            train_size = int(0.8 * len(combined_batches))
-            train_batches = combined_batches[:train_size]
-            test_batches = combined_batches[train_size:]
-            
-            class DirectionalBatchDataLoader:
-                """Custom DataLoader for combined directional batches"""
-                def __init__(self, batches, shuffle=True):
-                    self.batches = batches
-                    self.shuffle = shuffle
-                    
-                def __iter__(self):
-                    indices = list(range(len(self.batches)))
-                    if self.shuffle:
-                        np.random.shuffle(indices)
-                    
-                    for i in indices:
-                        yield self.batches[i]
-                        
-                def __len__(self):
-                    return len(self.batches)
-            
-            train_loader = DirectionalBatchDataLoader(train_batches, shuffle=shuffle)
-            test_loader = DirectionalBatchDataLoader(test_batches, shuffle=False)
-            
-            return train_loader, test_loader
-        
-        # Handle single direction ('forward' or 'reverse')
-        dataset = forward_dataset if direction == 'forward' else reverse_dataset
-        
-        # Get all batches
-        all_batches = dataset.get_grouped_batches(batch_size=batch_size, shuffle=shuffle)
+        # Get all batches from all datasets
+        all_batches = []
+        for dataset in datasets:
+            batches = dataset.get_grouped_batches(batch_size=batch_size, shuffle=shuffle, balanced=balanced)
+            all_batches.extend(batches)
         
         # Split into train and test
         train_size = int(0.8 * len(all_batches))
@@ -380,8 +417,8 @@ class CounterfactualWrapper(AbstractDataset):
         return train_loader, test_loader
 
 
-def train_counterfactual_flow_model(
-    dataset: CounterfactualWrapper,
+def train_multiclass_counterfactual_flow_model(
+    dataset: MulticlassCounterfactualWrapper,
     flow_model_class,
     hidden_features: int = 64,
     num_layers: int = 5,
@@ -394,37 +431,35 @@ def train_counterfactual_flow_model(
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
     save_dir: str = "results",
     log_interval: int = 10,
-    direction: str = 'both',
-    bidirectional_model: bool = True
+    balanced: bool = True
 ):
     """
-    Train a Conditional Normalizing Flow model for bidirectional counterfactual generation.
-    The model conditions on factual points to generate counterfactual points.
+    Train a Conditional Normalizing Flow model for multiclass counterfactual generation.
+    The model conditions on factual points to generate counterfactual points from different classes.
     
     Args:
-        dataset: CounterfactualWrapper instance
+        dataset: MulticlassCounterfactualWrapper instance
         flow_model_class: Class of the flow model to use (e.g., MaskedAutoregressiveFlow)
         hidden_features: Number of hidden features in flow model
         num_layers: Number of layers in flow model
         num_blocks_per_layer: Number of blocks per layer in flow model
         learning_rate: Learning rate for optimizer
-        batch_size: Batch size for training (defaults to n_nearest if None)
+        batch_size: Batch size for training (defaults to n_nearest * num_classes if None)
         num_epochs: Number of epochs to train
         patience: Number of epochs to wait for improvement before early stopping
         noise_level: Standard deviation of Gaussian noise to add during training
         device: Device to use for training ("cuda" or "cpu")
         save_dir: Directory to save results
         log_interval: Interval for logging detailed metrics
-        direction: 'forward', 'reverse', or 'both' for the direction of counterfactual generation
-        bidirectional_model: If True, trains a model that can handle both directions with a direction indicator
+        balanced: Whether to ensure balanced representation of classes in each batch
     
     Returns:
         Trained flow model
     """
     start_time = time.time()
-    logger.info(f"Starting bidirectional counterfactual flow model training on device: {device}")
+    logger.info(f"Starting multiclass counterfactual flow model training on device: {device}")
     logger.info(f"Model architecture: {num_layers} layers with {hidden_features} hidden features")
-    logger.info(f"Training direction: {direction}, Bidirectional model: {bidirectional_model}")
+    logger.info(f"Training with balanced batches: {balanced}")
     
     # Create directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -442,17 +477,17 @@ def train_counterfactual_flow_model(
     train_loader, test_loader = dataset.get_counterfactual_dataloaders(
         batch_size=batch_size,
         shuffle=True,
-        direction=direction
+        balanced=balanced
     )
     logger.info(f"Created data loaders - Train batches: {len(train_loader)}, Test batches: {len(test_loader)}")
     
     # Initialize model
-    context_features = dataset.X_factual.shape[1]  # Dimensionality of factual points
-    features = dataset.X_counterfactual.shape[1]  # Dimensionality of counterfactual points
+    context_features = dataset.X.shape[1]  # Dimensionality of factual points
+    features = dataset.X.shape[1]  # Dimensionality of counterfactual points
+    num_classes = len(dataset.classes)
     
-    # If bidirectional model, add direction indicator to context
-    if bidirectional_model:
-        context_features += 1  # Add one feature to indicate direction
+    # Add class one-hot encoding to context
+    context_features += num_classes
     
     logger.info(f"Initializing model with {context_features} context features and {features} output features")
     model = flow_model_class(
@@ -488,21 +523,20 @@ def train_counterfactual_flow_model(
         for batch_idx, batch_data in enumerate(train_loader):
             batch_start = time.time()
             
-            # Unpack batch data - format depends on whether we're using bidirectional mode
-            if bidirectional_model and direction == 'both':
-                x_batch, cond_batch, dir_indicator = batch_data
-                # Combine condition and direction indicator
-                cond_batch = torch.cat([cond_batch, dir_indicator], dim=1)
-            else:
-                x_batch, cond_batch = batch_data
+            # Unpack batch data
+            x_batch, cond_batch, class_batch = batch_data
             
             # Move data to device and ensure dtype is float32
             x_batch = x_batch.to(device).float()
             cond_batch = cond_batch.to(device).float()
+            class_batch = class_batch.to(device).float()
+            
+            # Combine condition and class one-hot encoding
+            combined_cond = torch.cat([cond_batch, class_batch], dim=1)
             
             # Forward pass
             optimizer.zero_grad()
-            log_prob = model(x_batch, cond_batch)
+            log_prob = model(x_batch, combined_cond)
             loss = -log_prob.mean()
             
             # Backward pass
@@ -527,20 +561,19 @@ def train_counterfactual_flow_model(
         test_loss = 0.0
         with torch.no_grad():
             for batch_data in test_loader:
-                # Unpack batch data - format depends on whether we're using bidirectional mode
-                if bidirectional_model and direction == 'both':
-                    x_batch, cond_batch, dir_indicator = batch_data
-                    # Combine condition and direction indicator
-                    cond_batch = torch.cat([cond_batch, dir_indicator], dim=1)
-                else:
-                    x_batch, cond_batch = batch_data
+                # Unpack batch data
+                x_batch, cond_batch, class_batch = batch_data
                 
                 # Move data to device and ensure dtype is float32
                 x_batch = x_batch.to(device).float()
                 cond_batch = cond_batch.to(device).float()
+                class_batch = class_batch.to(device).float()
+                
+                # Combine condition and class one-hot encoding
+                combined_cond = torch.cat([cond_batch, class_batch], dim=1)
                 
                 # Forward pass
-                log_prob = model(x_batch, cond_batch)
+                log_prob = model(x_batch, combined_cond)
                 loss = -log_prob.mean()
                 
                 test_loss += loss.item()
@@ -575,10 +608,9 @@ def train_counterfactual_flow_model(
             model_path = os.path.join(save_dir, "flow_model.pth")
             torch.save({
                 'model_state_dict': model.state_dict(),
-                'bidirectional': bidirectional_model,
-                'direction': direction,
                 'context_features': context_features,
-                'features': features
+                'features': features,
+                'num_classes': num_classes
             }, model_path)
             logger.info(f"Epoch {epoch}: Test loss improved by {improvement:.6f}. Model saved to {model_path}")
         else:
@@ -634,26 +666,26 @@ def save_training_curves(train_losses, test_losses, save_dir, epoch_or_label):
     plt.close()
 
 
-def generate_counterfactuals(
+def generate_multiclass_counterfactuals(
     model,
     factual_points: np.ndarray,
+    target_class: int,
     n_samples: int = 10,
     temperature: float = 0.8,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
-    direction_indicator: Optional[float] = None,
-    bidirectional_model: bool = True
+    num_classes: int = None
 ):
     """
-    Generate counterfactual samples for given factual points.
+    Generate counterfactual samples for given factual points targeting a specific class.
     
     Args:
         model: Trained flow model
         factual_points: Array of factual points to generate counterfactuals for
+        target_class: Target class to generate counterfactuals for
         n_samples: Number of counterfactual samples to generate per factual point
         temperature: Temperature for sampling (higher = more diverse)
         device: Device to use for generation
-        direction_indicator: For bidirectional models, indicates direction (0=forward, 1=reverse)
-        bidirectional_model: Whether the model was trained bidirectionally
+        num_classes: Number of classes in the dataset
     
     Returns:
         Array of generated counterfactual samples
@@ -667,14 +699,13 @@ def generate_counterfactuals(
             # Convert to tensor and add batch dimension
             factual_tensor = torch.tensor(factual, dtype=torch.float32).unsqueeze(0).to(device)
             
-            # If using bidirectional model, append direction indicator to context
-            if bidirectional_model and direction_indicator is not None:
-                # Create direction tensor
-                dir_tensor = torch.tensor([direction_indicator], dtype=torch.float32).unsqueeze(0).to(device)
-                # Concatenate with factual point
-                context = torch.cat([factual_tensor, dir_tensor], dim=1)
-            else:
-                context = factual_tensor
+            # Create a one-hot encoding for the target class
+            class_one_hot = np.zeros(num_classes)
+            class_one_hot[target_class] = 1
+            class_tensor = torch.tensor(class_one_hot, dtype=torch.float32).unsqueeze(0).to(device)
+            
+            # Combine factual point and class one-hot encoding
+            context = torch.cat([factual_tensor, class_tensor], dim=1)
             
             # Generate samples
             samples, _ = model.sample_and_log_prob(
@@ -692,33 +723,29 @@ def generate_counterfactuals(
     return all_counterfactuals
 
 
-def visualize_counterfactual_generation(
+def visualize_multiclass_counterfactual_generation(
     model,
     dataset,
     num_factual=5,
     num_samples=20,
     temperature=0.8,
     save_dir=None,
-    device="cuda" if torch.cuda.is_available() else "cpu",
-    direction="both",
-    bidirectional_model=True
+    device="cuda" if torch.cuda.is_available() else "cpu"
 ):
     """
-    Visualize bidirectional counterfactual generation results.
+    Visualize multiclass counterfactual generation results.
     
     Args:
         model: Trained flow model
-        dataset: CounterfactualWrapper instance
+        dataset: MulticlassCounterfactualWrapper instance
         num_factual: Number of factual points to generate counterfactuals for
         num_samples: Number of counterfactual samples to generate per factual point
         temperature: Temperature for sampling (higher = more diversity)
         save_dir: Directory to save visualizations
         device: Device to use for generation
-        direction: Direction of counterfactual generation ('forward', 'reverse', 'both')
-        bidirectional_model: Whether the model was trained bidirectionally
     """
     # Only works for 2D data
-    assert dataset.X_factual.shape[1] == 2, "Only 2D data is supported for visualization"
+    assert dataset.X.shape[1] == 2, "Only 2D data is supported for visualization"
     
     # Create samples directory
     if save_dir:
@@ -728,29 +755,13 @@ def visualize_counterfactual_generation(
     
     results = []
     
-    # Handle different directions
-    directions_to_process = []
-    if direction == 'both':
-        directions_to_process = ['forward', 'reverse']
-    else:
-        directions_to_process = [direction]
-    
-    for curr_direction in directions_to_process:
-        logger.info(f"Generating counterfactuals for direction: {curr_direction}")
+    # For each factual class
+    for factual_class in dataset.factual_classes:
+        logger.info(f"Generating counterfactuals for factual class: {factual_class}")
         
-        # Select factual and counterfactual points based on direction
-        if curr_direction == 'forward':
-            factual_scaled = dataset.X_factual_scaled
-            factual_original = dataset.X_factual
-            counterfactual_class = dataset.counterfactual_class
-            direction_indicator = 0.0
-        elif curr_direction == 'reverse':
-            factual_scaled = dataset.X_factual_scaled_rev
-            factual_original = dataset.X_factual_rev
-            counterfactual_class = dataset.factual_class
-            direction_indicator = 1.0
-        else:
-            raise ValueError(f"Invalid direction: {curr_direction}")
+        # Get factual points for this class
+        factual_scaled = dataset.X_by_class_scaled[factual_class]
+        factual_original = dataset.X_by_class[factual_class]
         
         # Sample factual points
         if len(factual_scaled) <= num_factual:
@@ -764,129 +775,83 @@ def visualize_counterfactual_generation(
         
         factual_points = factual_scaled[factual_indices]
         
-        # Generate counterfactuals
-        logger.info(f"Generating {num_samples} counterfactuals for {len(factual_points)} factual points")
-        generated_cfs = generate_counterfactuals(
-            model=model,
-            factual_points=factual_points,
-            n_samples=num_samples,
-            temperature=temperature,
-            device=device,
-            direction_indicator=direction_indicator if bidirectional_model else None,
-            bidirectional_model=bidirectional_model
-        )
-        
-        # Convert to original scale for better interpretability
-        factual_orig = dataset.feature_transformer.inverse_transform(factual_points)
-        
-        # Fix: Handle the 3D structure of generated_cfs by reshaping before inverse_transform
-        generated_cfs_orig = []
-        for cf_batch in generated_cfs:
-            # Check if we have a 3D array and reshape if needed
-            if cf_batch.ndim == 3:  # Shape is [batch_size, num_samples, features]
-                batch_size, n_samples, n_features = cf_batch.shape
-                reshaped_batch = cf_batch.reshape(-1, n_features)  # Flatten to 2D
-                transformed = dataset.feature_transformer.inverse_transform(reshaped_batch)
-                # Reshape back to original 3D shape
-                transformed = transformed.reshape(batch_size, n_samples, n_features)
-                generated_cfs_orig.append(transformed)
-            else:  # Regular 2D case
-                generated_cfs_orig.append(dataset.feature_transformer.inverse_transform(cf_batch))
-        
-        # Store results for this direction
-        results.append({
-            'direction': curr_direction,
-            'factual_indices': factual_indices,
-            'factual_points': factual_points,
-            'factual_orig': factual_orig,
-            'generated_cfs': generated_cfs,
-            'generated_cfs_orig': generated_cfs_orig,
-            'counterfactual_class': counterfactual_class
-        })
-        
-        # Plot settings
-        colors = plt.cm.tab10(np.linspace(0, 1, num_factual))
-        
-        # Create overview plot for this direction
-        plt.figure(figsize=(14, 10))
-        
-        # Plot all original data points with low opacity
-        plt.scatter(
-            dataset.X[:, 0],
-            dataset.X[:, 1],
-            c=dataset.y,
-            cmap=plt.cm.coolwarm,
-            alpha=0.2,
-            s=30
-        )
-        
-        # Add a legend for the original classes
-        plt.scatter([], [], color=plt.cm.coolwarm(0), label=f'Class {dataset.factual_class}')
-        plt.scatter([], [], color=plt.cm.coolwarm(1), label=f'Class {dataset.counterfactual_class}')
-        
-        # For each factual point
-        for i, (f_idx, factual, cf_samples) in enumerate(zip(factual_indices, factual_orig, generated_cfs_orig)):
-            # Plot factual point
-            plt.scatter(
-                factual[0],
-                factual[1],
-                color=colors[i],
-                s=150,
-                marker='*',
-                edgecolor='black',
-                label=f'Factual {i+1}' if i < 5 else None  # Limit legend entries
+        # For each target class
+        for target_class in dataset.classes:
+            if target_class == factual_class:
+                continue  # Skip generating counterfactuals for the same class
+                
+            logger.info(f"Generating counterfactuals from class {factual_class} to class {target_class}")
+            
+            # Generate counterfactuals
+            generated_cfs = generate_multiclass_counterfactuals(
+                model=model,
+                factual_points=factual_points,
+                target_class=target_class,
+                n_samples=num_samples,
+                temperature=temperature,
+                device=device,
+                num_classes=len(dataset.classes)
             )
             
-            # Plot generated counterfactuals - Fix to handle potential 3D array
-            if cf_samples.ndim == 3:
-                # If we have a 3D array, take the first dimension
-                cf_to_plot = cf_samples[0]
-            else:
-                cf_to_plot = cf_samples
-                
+            # Convert to original scale for better interpretability
+            factual_orig = dataset.feature_transformer.inverse_transform(factual_points)
+            
+            # Fix: Handle the 3D structure of generated_cfs by reshaping before inverse_transform
+            generated_cfs_orig = []
+            for cf_batch in generated_cfs:
+                # Check if we have a 3D array and reshape if needed
+                if cf_batch.ndim == 3:  # Shape is [batch_size, num_samples, features]
+                    batch_size, n_samples, n_features = cf_batch.shape
+                    reshaped_batch = cf_batch.reshape(-1, n_features)  # Flatten to 2D
+                    transformed = dataset.feature_transformer.inverse_transform(reshaped_batch)
+                    # Reshape back to original 3D shape
+                    transformed = transformed.reshape(batch_size, n_samples, n_features)
+                    generated_cfs_orig.append(transformed)
+                else:  # Regular 2D case
+                    generated_cfs_orig.append(dataset.feature_transformer.inverse_transform(cf_batch))
+            
+            # Store results for this class pair
+            results.append({
+                'factual_class': factual_class,
+                'target_class': target_class,
+                'factual_indices': factual_indices,
+                'factual_points': factual_points,
+                'factual_orig': factual_orig,
+                'generated_cfs': generated_cfs,
+                'generated_cfs_orig': generated_cfs_orig
+            })
+            
+            # Plot settings
+            colors = plt.cm.tab10(np.linspace(0, 1, num_factual))
+            
+            # Create overview plot for this class pair
+            plt.figure(figsize=(14, 10))
+            
+            # Plot all original data points with low opacity
             plt.scatter(
-                cf_to_plot[:, 0],
-                cf_to_plot[:, 1],
-                color=colors[i],
-                alpha=0.6,
-                marker='x',
-                s=50,
-                label=f'Generated CFs for Factual {i+1}' if i < 5 else None
+                dataset.X[:, 0],
+                dataset.X[:, 1],
+                c=dataset.y,
+                cmap=plt.cm.tab10,
+                alpha=0.2,
+                s=30
             )
             
-            # Draw lines to a few counterfactuals
-            for j in range(min(5, len(cf_to_plot))):
-                plt.plot(
-                    [factual[0], cf_to_plot[j, 0]],
-                    [factual[1], cf_to_plot[j, 1]],
-                    color=colors[i],
-                    linestyle='--',
-                    alpha=0.3
-                )
+            # Add a legend for the original classes
+            for cls in dataset.classes:
+                plt.scatter([], [], color=plt.cm.tab10(cls % 10), label=f'Class {cls}')
             
-            # Create individual plot for this factual point
-            if save_dir:
-                plt.figure(figsize=(10, 8))
-                
-                # Plot original data with low opacity
-                plt.scatter(
-                    dataset.X[:, 0],
-                    dataset.X[:, 1],
-                    c=dataset.y,
-                    cmap=plt.cm.coolwarm,
-                    alpha=0.2,
-                    s=30
-                )
-                
+            # For each factual point
+            for i, (f_idx, factual, cf_samples) in enumerate(zip(factual_indices, factual_orig, generated_cfs_orig)):
                 # Plot factual point
                 plt.scatter(
                     factual[0],
                     factual[1],
                     color=colors[i],
-                    s=200,
+                    s=150,
                     marker='*',
                     edgecolor='black',
-                    label=f'Factual Point {i+1}'
+                    label=f'Factual {i+1}' if i < 5 else None  # Limit legend entries
                 )
                 
                 # Plot generated counterfactuals - Fix to handle potential 3D array
@@ -900,44 +865,14 @@ def visualize_counterfactual_generation(
                     cf_to_plot[:, 0],
                     cf_to_plot[:, 1],
                     color=colors[i],
-                    alpha=0.7,
+                    alpha=0.6,
                     marker='x',
-                    s=80,
-                    label='Generated Counterfactuals'
+                    s=50,
+                    label=f'Generated CFs for Factual {i+1}' if i < 5 else None
                 )
                 
-                # Add density contour of generated points
-                try:
-                    from scipy.stats import gaussian_kde
-                    
-                    # If we have enough points, create a density plot
-                    if len(cf_to_plot) >= 10:
-                        kde = gaussian_kde(cf_to_plot.T)
-                        
-                        # Create a grid of points
-                        x_min, x_max = plt.xlim()
-                        y_min, y_max = plt.ylim()
-                        
-                        xx, yy = np.meshgrid(
-                            np.linspace(x_min, x_max, 100),
-                            np.linspace(y_min, y_max, 100)
-                        )
-                        
-                        # Evaluate KDE on grid
-                        positions = np.vstack([xx.ravel(), yy.ravel()])
-                        zz = kde(positions).reshape(xx.shape)
-                        
-                        # Plot contour
-                        plt.contour(
-                            xx, yy, zz, 
-                            cmap=plt.cm.Oranges, 
-                            alpha=0.5
-                        )
-                except Exception as e:
-                    logger.warning(f"Could not create density plot: {e}")
-                
-                # Draw lines to all counterfactuals
-                for j in range(len(cf_to_plot)):
+                # Draw lines to a few counterfactuals
+                for j in range(min(5, len(cf_to_plot))):
                     plt.plot(
                         [factual[0], cf_to_plot[j, 0]],
                         [factual[1], cf_to_plot[j, 1]],
@@ -946,37 +881,106 @@ def visualize_counterfactual_generation(
                         alpha=0.3
                     )
                 
-                direction_label = "→" if curr_direction == 'forward' else "←"
-                plt.title(f"Counterfactuals Generated for Factual Point {i+1} ({curr_direction} {direction_label})")
-                plt.legend()
-                plt.grid(True, alpha=0.3)
-                
-                # Create subdirectory for each direction if needed
-                subdir = os.path.join(samples_dir, curr_direction)
-                os.makedirs(subdir, exist_ok=True)
-                
-                plt.savefig(os.path.join(subdir, f"factual_{i+1}_counterfactuals.png"))
+                # Create individual plot for this factual point
+                if save_dir:
+                    plt.figure(figsize=(10, 8))
+                    
+                    # Plot original data with low opacity
+                    plt.scatter(
+                        dataset.X[:, 0],
+                        dataset.X[:, 1],
+                        c=dataset.y,
+                        cmap=plt.cm.tab10,
+                        alpha=0.2,
+                        s=30
+                    )
+                    
+                    # Plot factual point
+                    plt.scatter(
+                        factual[0],
+                        factual[1],
+                        color=colors[i],
+                        s=200,
+                        marker='*',
+                        edgecolor='black',
+                        label=f'Factual Point {i+1}'
+                    )
+                    
+                    # Plot generated counterfactuals - Fix to handle potential 3D array
+                    if cf_samples.ndim == 3:
+                        # If we have a 3D array, take the first dimension
+                        cf_to_plot = cf_samples[0]
+                    else:
+                        cf_to_plot = cf_samples
+                        
+                    plt.scatter(
+                        cf_to_plot[:, 0],
+                        cf_to_plot[:, 1],
+                        color=colors[i],
+                        alpha=0.7,
+                        marker='x',
+                        s=80,
+                        label='Generated Counterfactuals'
+                    )
+                    
+                    # Add density contour of generated points
+                    try:
+                        from scipy.stats import gaussian_kde
+                        
+                        # If we have enough points, create a density plot
+                        if len(cf_to_plot) >= 10:
+                            kde = gaussian_kde(cf_to_plot.T)
+                            
+                            # Create a grid of points
+                            x_min, x_max = plt.xlim()
+                            y_min, y_max = plt.ylim()
+                            
+                            xx, yy = np.meshgrid(
+                                np.linspace(x_min, x_max, 100),
+                                np.linspace(y_min, y_max, 100)
+                            )
+                            
+                            # Evaluate KDE on grid
+                            positions = np.vstack([xx.ravel(), yy.ravel()])
+                            zz = kde(positions).reshape(xx.shape)
+                            
+                            # Plot contour
+                            plt.contour(
+                                xx, yy, zz, 
+                                cmap=plt.cm.Oranges, 
+                                alpha=0.5
+                            )
+                    except Exception as e:
+                        logger.warning(f"Could not create density plot: {e}")
+                    
+                    # Draw lines to all counterfactuals
+                    for j in range(len(cf_to_plot)):
+                        plt.plot(
+                            [factual[0], cf_to_plot[j, 0]],
+                            [factual[1], cf_to_plot[j, 1]],
+                            color=colors[i],
+                            linestyle='--',
+                            alpha=0.3
+                        )
+                    
+                    plt.title(f"Counterfactuals Generated for Factual Point {i+1} (Class {factual_class} → Class {target_class})")
+                    plt.legend()
+                    plt.grid(True, alpha=0.3)
+                    
+                    # Create subdirectory for each class pair if needed
+                    subdir = os.path.join(samples_dir, f"class_{factual_class}_to_{target_class}")
+                    os.makedirs(subdir, exist_ok=True)
+                    
+                    plt.savefig(os.path.join(subdir, f"factual_{i+1}_counterfactuals.png"))
+                    plt.close()
+            
+            # Finish and save overview plot
+            plt.title(f"Overview of Generated Counterfactuals (Class {factual_class} → Class {target_class})")
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            
+            if save_dir:
+                plt.savefig(os.path.join(save_dir, f"counterfactual_overview_class_{factual_class}_to_{target_class}.png"))
                 plt.close()
-        
-        # Finish and save overview plot
-        direction_label = "→" if curr_direction == 'forward' else "←"
-        plt.title(f"Overview of Generated Counterfactuals ({curr_direction} {direction_label})")
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        
-        if save_dir:
-            plt.savefig(os.path.join(save_dir, f"counterfactual_overview_{curr_direction}.png"))
-            plt.close()
     
-    # If we processed both directions and need to return results
-    if len(results) > 1:
-        # Merge results from both directions
-        factual_points = np.vstack([r['factual_points'] for r in results])
-        generated_cfs = []
-        for r in results:
-            generated_cfs.extend(r['generated_cfs'])
-        return generated_cfs, factual_points
-    elif len(results) == 1:
-        return results[0]['generated_cfs'], results[0]['factual_points']
-    else:
-        return [], [] 
+    return results 
