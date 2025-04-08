@@ -72,12 +72,13 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
-    Xs_cfs, Xs, ys_orig, ys_target, logs = cf_method.explain_dataloader(
+    deltas, Xs, ys_orig, ys_target, logs = cf_method.explain_dataloader(
         dataloader=cf_dataloader,
         epochs=cfg.counterfactuals_params.epochs,
         lr=cfg.counterfactuals_params.lr,
         alpha=cfg.counterfactuals_params.alpha,
     )
+    Xs_cfs = Xs + deltas
 
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time

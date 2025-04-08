@@ -128,10 +128,6 @@ class WACH_OURS(BaseCounterfactual):
                     loss_components_logging.setdefault(
                         f"cf_search/{loss_name}", []
                     ).append(loss.mean().detach().cpu().item())
-                    if self.neptune_run:
-                        self.neptune_run[f"cf_search/{loss_name}"].append(
-                            loss.mean().detach().cpu().numpy()
-                        )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 epoch_pbar.set_description(f"Discriminator loss: {disc_loss:.4f}")

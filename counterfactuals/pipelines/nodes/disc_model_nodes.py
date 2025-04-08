@@ -34,6 +34,7 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     num_classes = (
         1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
     )
+    num_classes = len(np.unique(dataset.y_train))
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
     disc_model = instantiate(
