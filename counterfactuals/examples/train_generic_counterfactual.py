@@ -107,7 +107,7 @@ def train_three_class_example():
     
     # Generate a three-class dataset
     X, y = make_classification(
-        n_samples=1500,
+        n_samples=1000,
         n_features=2,
         n_informative=2,
         n_redundant=0,
@@ -146,12 +146,12 @@ def train_three_class_example():
     multiclass_model = train_multiclass_counterfactual_flow_model(
         dataset=dataset,
         flow_model_class=MaskedAutoregressiveFlow,
-        hidden_features=100,  # Larger model for more complex data
-        num_layers=3,
+        hidden_features=32,  # Larger model for more complex data
+        num_layers=2,
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=500,
+        num_epochs=10,
         patience=100,
         noise_level=0.03,
         save_dir=os.path.join(save_dir, "multiclass_model"),

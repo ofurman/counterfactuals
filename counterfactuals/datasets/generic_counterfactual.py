@@ -376,7 +376,8 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
                 X_counterfactual_dict=X_counterfactual_dict,
                 n_nearest=self.n_nearest,
                 noise_level=self.noise_level,
-                distance_metric=self.distance_metric
+                distance_metric=self.distance_metric,
+                classes=list(self.classes)
             )
             
             datasets.append(dataset)
