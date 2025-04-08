@@ -18,7 +18,6 @@ def evaluate_counterfactuals(
     y, 
     factual_indices, 
     generated_cfs,
-    feature_names, 
     direction="forward",
     save_dir=None
 ):
@@ -32,52 +31,9 @@ def evaluate_counterfactuals(
         y: Labels 
         factual_indices: Indices of factual points
         generated_cfs: Generated counterfactuals
-        feature_names: Names of features for display
         direction: 'forward' or 'reverse'
         save_dir: Directory to save results
     """
-    # 1. Print basic statistics about the changes needed
-    logger.info("\n=== Basic Counterfactual Statistics ===")
-    
-    # For each factual point, show the original values and generated counterfactuals
-    # all_changes = []
-    # for i, (factual_idx, cf_samples) in enumerate(zip(factual_indices, generated_cfs)):
-    #     factual_orig = X[factual_idx]
-        
-    #     logger.info(f"\nFactual example #{i+1} (Class {y[factual_idx]}):")
-    #     for j, feature_name in enumerate(feature_names):
-    #         logger.info(f"  {feature_name}: {factual_orig[j]:.3f}")
-        
-    #     if cf_samples.ndim == 3:
-    #         cf_to_analyze = cf_samples[0]
-    #     else:
-    #         cf_to_analyze = cf_samples
-            
-    #     # Calculate average counterfactual values
-    #     cf_means = np.mean(cf_to_analyze, axis=0)
-    #     cf_stds = np.std(cf_to_analyze, axis=0)
-        
-    #     logger.info(f"Generated counterfactual (mean values):")
-    #     for j, feature_name in enumerate(feature_names):
-    #         logger.info(f"  {feature_name}: {cf_means[j]:.3f} ± {cf_stds[j]:.3f}")
-        
-    #     # Calculate average changes needed
-    #     changes = cf_means - factual_orig
-    #     logger.info(f"Changes needed:")
-    #     for j, feature_name in enumerate(feature_names):
-    #         logger.info(f"  {feature_name}: {changes[j]:+.3f}")
-        
-    #     all_changes.append(changes)
-    
-    # # Calculate aggregate statistics
-    # all_changes = np.array(all_changes)
-    # mean_changes = np.mean(all_changes, axis=0)
-    # std_changes = np.std(all_changes, axis=0)
-    
-    # logger.info("\n=== Aggregate Changes ===")
-    # for j, feature_name in enumerate(feature_names):
-    #     logger.info(f"{feature_name}: {mean_changes[j]:+.3f} ± {std_changes[j]:.3f}")
-    
     # 2. Calculate more sophisticated counterfactual metrics
     logger.info("\n=== Counterfactual Metrics ===")
     

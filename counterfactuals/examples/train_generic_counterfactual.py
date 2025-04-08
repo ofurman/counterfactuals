@@ -17,7 +17,7 @@ from counterfactuals.examples.utils import (
     evaluate_counterfactuals
 )
 from counterfactuals.datasets.law import LawDataset
-from counterfactuals.discriminative_models.logistic_regression import LogisticRegression
+from counterfactuals.discriminative_models.logistic_regression import LogisticRegression, MultinomialLogisticRegression
 
 
 # Configure logging
@@ -117,6 +117,33 @@ def train_three_class_example():
     )
     logger.info(f"Generated three-class dataset with {len(X)} samples")
     logger.info(f"Class distribution: Class 0: {np.sum(y == 0)}, Class 1: {np.sum(y == 1)}, Class 2: {np.sum(y == 2)}")
+
+    # Load the law dataset
+    train_dataloader = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).float()),
+        batch_size=64,
+        shuffle=True
+    )
+
+    test_dataloader = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).float()),
+        batch_size=64,
+        shuffle=False
+    )
+
+    disc_model = MultinomialLogisticRegression(input_size=X.shape[1], target_size=len(np.unique(y)))
+    disc_model.fit(train_dataloader, test_dataloader, epochs=100, lr=0.001, patience=100)
+    y = disc_model.predict(X).numpy().astype(int)
+
+
+    gen_model = MaskedAutoregressiveFlow(features=X.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
+    gen_model.fit(train_dataloader, test_dataloader, num_epochs=100, learning_rate=0.001, patience=100)
+
+    logger.info(f"Loaded three-class dataset with {len(X)} samples and {X.shape[1]} features")
+    
+    # Set save directory
+    save_dir = "results/law_multiclass"
+    os.makedirs(save_dir, exist_ok=True)
     
     # Set save directory
     save_dir = "results/three_class"
@@ -174,6 +201,48 @@ def train_three_class_example():
         save_dir=cf_vis_dir
     )
     logger.info(f"Saved multiclass counterfactual visualizations to {cf_vis_dir}")
+
+
+    # Generate counterfactuals for evaluation
+    logger.info("Generating counterfactuals for evaluation")
+    
+    metrics_results = {}
+
+    for factual_class in dataset.factual_classes:
+        logger.info(f"Generating counterfactuals for factual class {factual_class}")
+        factual_indices = np.where(y == factual_class)[0]
+        factual_points = dataset.feature_transformer.transform(X[factual_indices])
+        
+        for target_class in dataset.classes:
+            if target_class == factual_class:
+                continue
+            
+            logger.info(f"Generating counterfactuals for factual class {factual_class} to target class {target_class}") 
+            generated_cfs = generate_multiclass_counterfactuals(
+                model=multiclass_model,
+                factual_points=factual_points,
+                target_class=target_class,
+                n_samples=100,
+                temperature=0.8,
+                device="cuda" if torch.cuda.is_available() else "cpu",
+                num_classes=len(dataset.classes)
+            )
+
+            save_dir_factual_class = os.path.join(save_dir, f"factual_class_{factual_class}_to_target_class_{target_class}")
+            os.makedirs(save_dir_factual_class, exist_ok=True)
+
+            metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
+                disc_model=disc_model,
+                gen_model=gen_model,
+                dataset=dataset,
+                X=X,
+                y=y,
+                factual_indices=factual_indices,
+                generated_cfs=generated_cfs,
+                direction=f'class_{factual_class}_to_class_{target_class}',
+                save_dir=save_dir_factual_class
+            )
+            metrics_results[f'class_{factual_class}_to_class_{target_class}'] = metrics_forward
     
     return multiclass_model, dataset
 
@@ -201,9 +270,6 @@ def train_law_multiclass():
     # Set save directory
     save_dir = "results/law_multiclass"
     os.makedirs(save_dir, exist_ok=True)
-    
-    # Define feature names
-    feature_names = ["LSAT", "GPA", "First Year GPA"]
     
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -266,7 +332,6 @@ def train_law_multiclass():
         y=y,
         factual_indices=factual_indices_fail,
         generated_cfs=generated_cfs_fail_to_pass,
-        feature_names=feature_names,
         direction="forward",
         save_dir=save_dir_fail_to_pass
     )
@@ -298,7 +363,6 @@ def train_law_multiclass():
         y=y,
         factual_indices=factual_indices_pass,
         generated_cfs=generated_cfs_pass_to_fail,
-        feature_names=feature_names,
         direction="reverse",
         save_dir=save_dir_pass_to_fail
     )
