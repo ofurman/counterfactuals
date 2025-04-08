@@ -22,6 +22,7 @@ from counterfactuals.discriminative_models.logistic_regression import (
     MultinomialLogisticRegression,
 )
 from counterfactuals.discriminative_models.multilayer_perceptron import MultilayerPerceptron
+from counterfactuals.datasets.heloc import HelocDataset
 
 
 # Configure logging
@@ -459,6 +460,150 @@ def train_law_multiclass():
     return multiclass_model, dataset, metrics_results
 
 
+def train_heloc_multiclass():
+    """
+    Example using the HELOC dataset with multiclass counterfactual generation
+    """
+    logger.info("Starting HELOC dataset example (multiclass)")
+    
+    # Load the HELOC dataset
+    heloc_dataset = HelocDataset()
+    disc_model = LogisticRegression(input_size=heloc_dataset.X_train.shape[1], target_size=1)
+    disc_model.fit(heloc_dataset.train_dataloader(64, True), heloc_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
+    heloc_dataset.y_train = disc_model.predict(heloc_dataset.X_train).numpy()
+    heloc_dataset.y_test = disc_model.predict(heloc_dataset.X_test).numpy()
+
+    gen_model = MaskedAutoregressiveFlow(features=heloc_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
+    gen_model.fit(heloc_dataset.train_dataloader(64, True, 0.03), heloc_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
+
+    X = np.vstack([heloc_dataset.X_train, heloc_dataset.X_test])
+    y = np.concatenate([heloc_dataset.y_train, heloc_dataset.y_test])
+    logger.info(f"Loaded HELOC dataset with {len(X)} samples and {X.shape[1]} features")
+    
+    # Set save directory
+    save_dir = "results/heloc_multiclass"
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create the multiclass counterfactual wrapper
+    logger.info("Creating multiclass counterfactual dataset wrapper")
+    dataset = MulticlassCounterfactualWrapper(
+        X=X,
+        y=y,
+        factual_classes=[0, 1],  # Use both classes as factual
+        n_nearest=10,
+        noise_level=0.03,
+        log_level='INFO',
+    )
+    
+    # Train a multiclass model
+    logger.info("Training multiclass model for HELOC dataset")
+    multiclass_model = train_multiclass_counterfactual_flow_model(
+        dataset=dataset,
+        flow_model_class=MaskedAutoregressiveFlow,
+        hidden_features=32,
+        num_layers=2,
+        num_blocks_per_layer=2,
+        learning_rate=1e-3,
+        batch_size=None,
+        num_epochs=10,
+        patience=100,
+        noise_level=0.03,
+        save_dir=save_dir,
+        log_interval=10,
+        balanced=True  # Ensure balanced representation of classes in batches
+    )
+    logger.info("Multiclass model training complete")
+    
+    # Generate counterfactuals for evaluation
+    logger.info("Generating counterfactuals for evaluation")
+    
+    metrics_results = {}
+    
+    # 1. Good Risk → Bad Risk
+    logger.info("\n--- Generating counterfactuals: Good Risk → Bad Risk ---")
+    factual_indices_good = np.where(y == 0)[0][:20]
+    factual_points_good = dataset.feature_transformer.transform(X[factual_indices_good])
+    
+    generated_cfs_good_to_bad = generate_multiclass_counterfactuals(
+        model=multiclass_model,
+        factual_points=factual_points_good,
+        target_class=1,  # Target class (bad risk)
+        n_samples=100,
+        temperature=0.8,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        num_classes=len(dataset.classes)
+    )
+    
+    # Evaluate forward direction
+    save_dir_good_to_bad = os.path.join(save_dir, "good_to_bad")
+    os.makedirs(save_dir_good_to_bad, exist_ok=True)
+    metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
+        disc_model=disc_model,
+        gen_model=gen_model,
+        dataset=dataset,
+        X=X,
+        y=y,
+        factual_indices=factual_indices_good,
+        generated_cfs=generated_cfs_good_to_bad,
+        direction="forward",
+        save_dir=save_dir_good_to_bad
+    )
+    metrics_results['forward'] = metrics_forward
+    
+    # 2. Bad Risk → Good Risk
+    logger.info("\n--- Generating counterfactuals: Bad Risk → Good Risk ---")
+    factual_indices_bad = np.where(y == 1)[0][:20]
+    factual_points_bad = dataset.feature_transformer.transform(X[factual_indices_bad])
+    
+    generated_cfs_bad_to_good = generate_multiclass_counterfactuals(
+        model=multiclass_model,
+        factual_points=factual_points_bad,
+        target_class=0,  # Target class (good risk)
+        n_samples=100,
+        temperature=0.8,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        num_classes=len(dataset.classes)
+    )
+    
+    # Evaluate reverse direction
+    save_dir_bad_to_good = os.path.join(save_dir, "bad_to_good")
+    os.makedirs(save_dir_bad_to_good, exist_ok=True)
+    metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
+        disc_model=disc_model,
+        gen_model=gen_model,
+        dataset=dataset,
+        X=X,
+        y=y,
+        factual_indices=factual_indices_bad,
+        generated_cfs=generated_cfs_bad_to_good,
+        direction="reverse",
+        save_dir=save_dir_bad_to_good
+    )
+    metrics_results['reverse'] = metrics_reverse
+    
+    # Compare metrics between directions
+    logger.info("\n=== Metrics Comparison Between Directions ===")
+    for metric in metrics_forward.keys():
+        logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
+                   f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
+    
+    # Save factual points and counterfactuals for further analysis
+    np.save(os.path.join(save_dir, "factual_points_good.npy"), X[factual_indices_good])
+    np.save(os.path.join(save_dir, "factual_points_bad.npy"), X[factual_indices_bad])
+    
+    # Save metrics comparison
+    import json
+    with open(os.path.join(save_dir, "metrics_comparison.json"), 'w') as f:
+        comparison = {
+            'forward': metrics_forward,
+            'reverse': metrics_reverse,
+            'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
+        }
+        json.dump(comparison, f, indent=2, default=str)
+    
+    return multiclass_model, dataset, metrics_results
+
+
 if __name__ == "__main__":
     # Parse command line arguments to determine which examples to run
     import argparse
@@ -466,6 +611,7 @@ if __name__ == "__main__":
     parser.add_argument('--moons', action='store_true', help='Run moons multiclass example')
     parser.add_argument('--three-class', action='store_true', help='Run three-class example')
     parser.add_argument('--law', action='store_true', help='Run law multiclass example')
+    parser.add_argument('--heloc', action='store_true', help='Run HELOC multiclass example')
     args = parser.parse_args()
     
     # Run the selected examples
@@ -484,6 +630,11 @@ if __name__ == "__main__":
         law_model, law_dataset, law_metrics = train_law_multiclass()
         logger.info("Law multiclass example completed")
     
+    if args.heloc:
+        logger.info("\n=== Starting HELOC Multiclass Example ===")
+        heloc_model, heloc_dataset, heloc_metrics = train_heloc_multiclass()
+        logger.info("HELOC multiclass example completed")
+    
     logger.info("\nAll examples completed successfully!")
     logger.info("Results saved to:")
     if args.moons:
@@ -491,4 +642,6 @@ if __name__ == "__main__":
     if args.three_class:
         logger.info("  - results/three_class")
     if args.law:
-        logger.info("  - results/law_multiclass") 
+        logger.info("  - results/law_multiclass")
+    if args.heloc:
+        logger.info("  - results/heloc_multiclass") 
