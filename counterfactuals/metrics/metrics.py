@@ -327,29 +327,29 @@ class CFMetrics:
             "actionability": self.actionability(),
             "sparsity": self.sparsity(),
             # "target_distance": self.target_distance(),
-            "proximity_categorical_hamming": self.feature_distance(
-                categorical_metric="hamming"
-            ),
-            "proximity_categorical_jaccard": self.feature_distance(
-                categorical_metric="jaccard"
-            ),
+            # "proximity_categorical_hamming": self.feature_distance(
+            #     categorical_metric="hamming"
+            # ),
+            # "proximity_categorical_jaccard": self.feature_distance(
+            #     categorical_metric="jaccard"
+            # ),
             "proximity_continuous_manhattan": self.feature_distance(
                 continuous_metric="cityblock"
             ),
             "proximity_continuous_euclidean": self.feature_distance(
                 continuous_metric="euclidean"
             ),
-            "proximity_continuous_mad": self.feature_distance(
-                continuous_metric="mad", X_train=self.X_train
-            ),
-            "proximity_l2_jaccard": self.feature_distance(
-                continuous_metric="euclidean", categorical_metric="jaccard"
-            ),
-            "proximity_mad_hamming": self.feature_distance(
-                continuous_metric="mad",
-                categorical_metric="hamming",
-                X_train=self.X_train,
-            ),
+            # "proximity_continuous_mad": self.feature_distance(
+            #     continuous_metric="mad", X_train=self.X_train
+            # ),
+            # "proximity_l2_jaccard": self.feature_distance(
+            #     continuous_metric="euclidean", categorical_metric="jaccard"
+            # ),
+            # "proximity_mad_hamming": self.feature_distance(
+            #     continuous_metric="mad",
+            #     categorical_metric="hamming",
+            #     X_train=self.X_train,
+            # ),
             "prob_plausibility": self.prob_plausibility(cf=True),
             "log_density_cf": self.log_density(cf=True),
             "log_density_test": self.log_density(cf=False),
