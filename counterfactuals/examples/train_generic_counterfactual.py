@@ -9,7 +9,6 @@ from counterfactuals.datasets.generic_counterfactual import (
     CounterfactualWrapper, 
     train_counterfactual_flow_model,
     generate_counterfactuals,
-    visualize_batch_distribution,
     visualize_counterfactual_generation
 )
 from counterfactuals.generative_models.maf import MaskedAutoregressiveFlow
@@ -130,94 +129,6 @@ def visualize_counterfactuals(
     return plt
 
 
-def train_moons_unidirectional():
-    """
-    Example using the moons dataset with unidirectional counterfactual generation
-    (class 0 → class 1)
-    """
-    logger.info("Starting moons dataset example (unidirectional)")
-    
-    # Generate the moons dataset
-    X, y = make_moons(n_samples=1000, noise=0.1, random_state=42)
-    logger.info(f"Generated moons dataset with {len(X)} samples")
-    logger.info(f"Class distribution: Class 0: {np.sum(y == 0)}, Class 1: {np.sum(y == 1)}")
-    
-    # Set save directory
-    save_dir = "results/moons_unidirectional"
-    os.makedirs(save_dir, exist_ok=True)
-    
-    # Visualize the dataset
-    visualize_dataset(
-        X, y, 
-        title="Moons Dataset", 
-        save_path=os.path.join(save_dir, "moons_dataset.png")
-    )
-    logger.info(f"Saved dataset visualization to {os.path.join(save_dir, 'moons_dataset.png')}")
-    
-    # Create the counterfactual wrapper
-    logger.info("Creating counterfactual dataset wrapper (unidirectional)")
-    dataset = CounterfactualWrapper(
-        X=X,
-        y=y,
-        factual_class=0,
-        counterfactual_class=1,
-        n_nearest=8,
-        noise_level=0.03,
-        log_level='INFO',
-        bidirectional=False
-    )
-    
-    # Visualize batch distribution and factual-counterfactual mappings
-    logger.info("Visualizing batch distribution and factual-counterfactual mappings")
-    batch_vis_dir = os.path.join(save_dir, "batch_visualization")
-    os.makedirs(batch_vis_dir, exist_ok=True)
-    visualize_batch_distribution(
-        dataset, 
-        batch_size=None,  # Use default (n_nearest)
-        save_dir=batch_vis_dir
-    )
-    logger.info(f"Saved batch visualizations to {batch_vis_dir}")
-    
-    # Train the model
-    logger.info("Training counterfactual flow model (unidirectional)")
-    model = train_counterfactual_flow_model(
-        dataset=dataset,
-        flow_model_class=MaskedAutoregressiveFlow,
-        hidden_features=64,
-        num_layers=5,
-        num_blocks_per_layer=2,
-        learning_rate=1e-3,
-        batch_size=None,  # Use default (n_nearest)
-        num_epochs=300,   # Reduced for the example
-        patience=100,     # Reduced for the example
-        noise_level=0.03,
-        save_dir=save_dir,
-        log_interval=10,
-        direction='forward',
-        bidirectional_model=False
-    )
-    logger.info("Model training complete")
-    
-    # Generate and visualize counterfactuals
-    logger.info("Generating and visualizing counterfactuals")
-    cf_vis_dir = os.path.join(save_dir, "counterfactual_visualization")
-    os.makedirs(cf_vis_dir, exist_ok=True)
-    
-    generated_cfs, factual_points = visualize_counterfactual_generation(
-        model=model,
-        dataset=dataset,
-        num_factual=8,
-        num_samples=50,
-        temperature=0.8,
-        save_dir=cf_vis_dir,
-        direction='forward',
-        bidirectional_model=False
-    )
-    logger.info(f"Saved counterfactual visualizations to {cf_vis_dir}")
-    
-    return model, dataset
-
-
 def train_moons_bidirectional():
     """
     Example using the moons dataset with bidirectional counterfactual generation
@@ -242,7 +153,7 @@ def train_moons_bidirectional():
     )
     logger.info(f"Saved dataset visualization to {os.path.join(save_dir, 'moons_dataset.png')}")
     
-    # Create the counterfactual wrapper with bidirectional=True
+    # Create the counterfactual wrapper
     logger.info("Creating counterfactual dataset wrapper (bidirectional)")
     dataset = CounterfactualWrapper(
         X=X,
@@ -251,61 +162,10 @@ def train_moons_bidirectional():
         counterfactual_class=1,
         n_nearest=8,
         noise_level=0.03,
-        log_level='INFO',
-        bidirectional=True  # Enable bidirectional mode
+        log_level='INFO'
     )
     
-    # Visualize batch distributions in both directions
-    logger.info("Visualizing batch distribution for forward direction")
-    fwd_batch_vis_dir = os.path.join(save_dir, "batch_visualization_forward")
-    os.makedirs(fwd_batch_vis_dir, exist_ok=True)
-    visualize_batch_distribution(
-        dataset, 
-        batch_size=None,
-        save_dir=fwd_batch_vis_dir
-    )
-    logger.info(f"Saved forward batch visualizations to {fwd_batch_vis_dir}")
-    
-    # Approach 1: Train separate models for each direction
-    logger.info("Training forward model (class 0 → class 1)")
-    forward_model = train_counterfactual_flow_model(
-        dataset=dataset,
-        flow_model_class=MaskedAutoregressiveFlow,
-        hidden_features=64,
-        num_layers=5,
-        num_blocks_per_layer=2,
-        learning_rate=1e-3,
-        batch_size=None,
-        num_epochs=300,
-        patience=100,
-        noise_level=0.03,
-        save_dir=os.path.join(save_dir, "forward_model"),
-        log_interval=10,
-        direction='forward',
-        bidirectional_model=False
-    )
-    logger.info("Forward model training complete")
-    
-    logger.info("Training reverse model (class 1 → class 0)")
-    reverse_model = train_counterfactual_flow_model(
-        dataset=dataset,
-        flow_model_class=MaskedAutoregressiveFlow,
-        hidden_features=64,
-        num_layers=5,
-        num_blocks_per_layer=2,
-        learning_rate=1e-3,
-        batch_size=None,
-        num_epochs=300,
-        patience=100,
-        noise_level=0.03,
-        save_dir=os.path.join(save_dir, "reverse_model"),
-        log_interval=10,
-        direction='reverse',
-        bidirectional_model=False
-    )
-    logger.info("Reverse model training complete")
-    
-    # Approach 2: Train a single model that handles both directions
+    # Train a single unified bidirectional model
     logger.info("Training unified bidirectional model (class 0 ↔ class 1)")
     bidirectional_model = train_counterfactual_flow_model(
         dataset=dataset,
@@ -325,43 +185,9 @@ def train_moons_bidirectional():
     )
     logger.info("Unified bidirectional model training complete")
     
-    # Generate and visualize counterfactuals using forward model
-    logger.info("Generating and visualizing counterfactuals using forward model")
-    fwd_cf_vis_dir = os.path.join(save_dir, "counterfactual_visualization_forward")
-    os.makedirs(fwd_cf_vis_dir, exist_ok=True)
-    
-    visualize_counterfactual_generation(
-        model=forward_model,
-        dataset=dataset,
-        num_factual=6,
-        num_samples=40,
-        temperature=0.8,
-        save_dir=fwd_cf_vis_dir,
-        direction='forward',
-        bidirectional_model=False
-    )
-    logger.info(f"Saved forward counterfactual visualizations to {fwd_cf_vis_dir}")
-    
-    # Generate and visualize counterfactuals using reverse model
-    logger.info("Generating and visualizing counterfactuals using reverse model")
-    rev_cf_vis_dir = os.path.join(save_dir, "counterfactual_visualization_reverse")
-    os.makedirs(rev_cf_vis_dir, exist_ok=True)
-    
-    visualize_counterfactual_generation(
-        model=reverse_model,
-        dataset=dataset,
-        num_factual=6,
-        num_samples=40,
-        temperature=0.8,
-        save_dir=rev_cf_vis_dir,
-        direction='reverse',
-        bidirectional_model=False
-    )
-    logger.info(f"Saved reverse counterfactual visualizations to {rev_cf_vis_dir}")
-    
     # Generate and visualize counterfactuals using unified bidirectional model
     logger.info("Generating and visualizing counterfactuals using unified bidirectional model")
-    bi_cf_vis_dir = os.path.join(save_dir, "counterfactual_visualization_unified")
+    bi_cf_vis_dir = os.path.join(save_dir, "counterfactual_visualization")
     os.makedirs(bi_cf_vis_dir, exist_ok=True)
     
     visualize_counterfactual_generation(
@@ -376,12 +202,7 @@ def train_moons_bidirectional():
     )
     logger.info(f"Saved unified bidirectional counterfactual visualizations to {bi_cf_vis_dir}")
     
-    return {
-        'dataset': dataset,
-        'forward_model': forward_model,
-        'reverse_model': reverse_model,
-        'bidirectional_model': bidirectional_model
-    }
+    return bidirectional_model, dataset
 
 
 def train_circles_bidirectional():
@@ -410,7 +231,7 @@ def train_circles_bidirectional():
     )
     logger.info(f"Saved dataset visualization to {os.path.join(save_dir, 'circles_dataset.png')}")
     
-    # Create the counterfactual wrapper with bidirectional=True
+    # Create the counterfactual wrapper
     logger.info("Creating counterfactual dataset wrapper (bidirectional)")
     dataset = CounterfactualWrapper(
         X=X,
@@ -419,8 +240,7 @@ def train_circles_bidirectional():
         counterfactual_class=1,  # Outer circle
         n_nearest=8,
         noise_level=0.02,  # Less noise for circles
-        log_level='INFO',
-        bidirectional=True  # Enable bidirectional mode
+        log_level='INFO'
     )
     
     # Train a single unified bidirectional model
@@ -466,38 +286,30 @@ def train_circles_bidirectional():
 if __name__ == "__main__":
     # Parse command line arguments to determine which examples to run
     import argparse
-    parser = argparse.ArgumentParser(description='Train counterfactual generative models')
+    parser = argparse.ArgumentParser(description='Train bidirectional counterfactual generative models')
     parser.add_argument('--all', action='store_true', help='Run all examples')
-    parser.add_argument('--moons-uni', action='store_true', help='Run moons unidirectional example')
-    parser.add_argument('--moons-bi', action='store_true', help='Run moons bidirectional example')
-    parser.add_argument('--circles-bi', action='store_true', help='Run circles bidirectional example')
+    parser.add_argument('--moons', action='store_true', help='Run moons bidirectional example')
+    parser.add_argument('--circles', action='store_true', help='Run circles bidirectional example')
     args = parser.parse_args()
     
     # If no specific arguments provided, run all examples
-    if not (args.moons_uni or args.moons_bi or args.circles_bi):
+    if not (args.moons or args.circles):
         args.all = True
     
     # Run the selected examples
-    if args.all or args.moons_uni:
-        logger.info("\n=== Starting Moons Unidirectional Example ===")
-        moons_uni_model, moons_uni_dataset = train_moons_unidirectional()
-        logger.info("Moons unidirectional example completed")
-    
-    if args.all or args.moons_bi:
+    if args.all or args.moons:
         logger.info("\n=== Starting Moons Bidirectional Example ===")
-        moons_bi_results = train_moons_bidirectional()
+        moons_model, moons_dataset = train_moons_bidirectional()
         logger.info("Moons bidirectional example completed")
     
-    if args.all or args.circles_bi:
+    if args.all or args.circles:
         logger.info("\n=== Starting Circles Bidirectional Example ===")
-        circles_bi_model, circles_bi_dataset = train_circles_bidirectional()
+        circles_model, circles_dataset = train_circles_bidirectional()
         logger.info("Circles bidirectional example completed")
     
     logger.info("\nAll examples completed successfully!")
     logger.info("Results saved to:")
-    if args.all or args.moons_uni:
-        logger.info("  - results/moons_unidirectional")
-    if args.all or args.moons_bi:
+    if args.all or args.moons:
         logger.info("  - results/moons_bidirectional")
-    if args.all or args.circles_bi:
+    if args.all or args.circles:
         logger.info("  - results/circles_bidirectional") 

@@ -156,7 +156,7 @@ class GenericCounterfactualDataset(Dataset):
 
 class CounterfactualWrapper(AbstractDataset):
     """
-    Wrapper for generic dataset that supports counterfactual generation
+    Wrapper for generic dataset that supports bidirectional counterfactual generation
     """
     
     def __init__(
@@ -170,11 +170,10 @@ class CounterfactualWrapper(AbstractDataset):
         test_size: float = 0.2,
         random_state: int = 42,
         distance_metric: str = 'euclidean',
-        log_level: str = 'INFO',
-        bidirectional: bool = False
+        log_level: str = 'INFO'
     ):
         """
-        Initialize the counterfactual wrapper
+        Initialize the counterfactual wrapper for bidirectional counterfactual generation
         
         Args:
             X: Feature matrix
@@ -187,7 +186,6 @@ class CounterfactualWrapper(AbstractDataset):
             random_state: Random seed
             distance_metric: Distance metric to use for nearest neighbors
             log_level: Logging level
-            bidirectional: If True, enables bidirectional counterfactual generation
         """
         # Configure logging
         numeric_level = getattr(logging, log_level.upper(), None)
@@ -207,9 +205,9 @@ class CounterfactualWrapper(AbstractDataset):
         self.n_nearest = n_nearest
         self.noise_level = noise_level
         self.distance_metric = distance_metric
-        self.bidirectional = bidirectional
+        self.bidirectional = True  # Always bidirectional
         
-        self.logger.info(f"Initializing CounterfactualWrapper with {len(X)} samples")
+        self.logger.info(f"Initializing Bidirectional CounterfactualWrapper with {len(X)} samples")
         self.logger.info(f"Class distribution: Class {factual_class}: {np.sum(y == factual_class)}, Class {counterfactual_class}: {np.sum(y == counterfactual_class)}")
         
         # Split data
@@ -222,7 +220,7 @@ class CounterfactualWrapper(AbstractDataset):
             self.X_train, self.X_test, self.y_train, self.y_test
         )
         
-        # Separate factual and counterfactual points
+        # Separate factual and counterfactual points for forward direction
         self.X_factual = X[y == factual_class]
         self.X_counterfactual = X[y == counterfactual_class]
         self.logger.info(f"Factual points: {len(self.X_factual)}, Counterfactual points: {len(self.X_counterfactual)}")
@@ -231,12 +229,11 @@ class CounterfactualWrapper(AbstractDataset):
         self.X_factual_scaled = self.feature_transformer.transform(self.X_factual)
         self.X_counterfactual_scaled = self.feature_transformer.transform(self.X_counterfactual)
         
-        # If bidirectional, also prepare reverse datasets
-        if self.bidirectional:
-            self.X_factual_rev = X[y == counterfactual_class]
-            self.X_counterfactual_rev = X[y == factual_class]
-            self.X_factual_scaled_rev = self.feature_transformer.transform(self.X_factual_rev)
-            self.X_counterfactual_scaled_rev = self.feature_transformer.transform(self.X_counterfactual_rev)
+        # Prepare reverse datasets (counterfactual→factual)
+        self.X_factual_rev = X[y == counterfactual_class]
+        self.X_counterfactual_rev = X[y == factual_class]
+        self.X_factual_scaled_rev = self.feature_transformer.transform(self.X_factual_rev)
+        self.X_counterfactual_scaled_rev = self.feature_transformer.transform(self.X_counterfactual_rev)
         
         # Set feature properties
         self.numerical_features = list(range(X.shape[1]))
@@ -268,15 +265,14 @@ class CounterfactualWrapper(AbstractDataset):
         
         return X_train, X_test, y_train, y_test
     
-    def get_counterfactual_dataloaders(self, batch_size=None, shuffle=True, direction='forward'):
+    def get_counterfactual_dataloaders(self, batch_size=None, shuffle=True, direction='both'):
         """
-        Returns DataLoaders for counterfactual training
+        Returns DataLoaders for bidirectional counterfactual training
         
         Args:
             batch_size: Batch size (if None, uses self.n_nearest)
             shuffle: Whether to shuffle data
-            direction: 'forward' for factual→counterfactual, 'reverse' for counterfactual→factual, 
-                       'both' for both directions (only works when bidirectional=True)
+            direction: 'forward', 'reverse', or 'both' for the direction of counterfactual generation
         
         Returns:
             train_loader, test_loader
@@ -287,10 +283,6 @@ class CounterfactualWrapper(AbstractDataset):
         # Validate direction parameter
         if direction not in ['forward', 'reverse', 'both']:
             raise ValueError("direction must be one of: 'forward', 'reverse', 'both'")
-        
-        # Check if bidirectional mode is enabled when using 'reverse' or 'both'
-        if (direction in ['reverse', 'both']) and not self.bidirectional:
-            raise ValueError(f"Cannot use direction='{direction}' when bidirectional=False")
             
         # Create forward dataset (factual→counterfactual)
         if direction in ['forward', 'both']:
@@ -402,11 +394,11 @@ def train_counterfactual_flow_model(
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
     save_dir: str = "results",
     log_interval: int = 10,
-    direction: str = 'forward',
-    bidirectional_model: bool = False
+    direction: str = 'both',
+    bidirectional_model: bool = True
 ):
     """
-    Train a Conditional Normalizing Flow model for counterfactual generation.
+    Train a Conditional Normalizing Flow model for bidirectional counterfactual generation.
     The model conditions on factual points to generate counterfactual points.
     
     Args:
@@ -430,7 +422,7 @@ def train_counterfactual_flow_model(
         Trained flow model
     """
     start_time = time.time()
-    logger.info(f"Starting counterfactual flow model training on device: {device}")
+    logger.info(f"Starting bidirectional counterfactual flow model training on device: {device}")
     logger.info(f"Model architecture: {num_layers} layers with {hidden_features} hidden features")
     logger.info(f"Training direction: {direction}, Bidirectional model: {bidirectional_model}")
     
@@ -649,7 +641,7 @@ def generate_counterfactuals(
     temperature: float = 0.8,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
     direction_indicator: Optional[float] = None,
-    bidirectional_model: bool = False
+    bidirectional_model: bool = True
 ):
     """
     Generate counterfactual samples for given factual points.
@@ -700,288 +692,6 @@ def generate_counterfactuals(
     return all_counterfactuals
 
 
-def visualize_batch(batch, save_path=None, title="Batch Visualization"):
-    """
-    Visualize a batch of data for 2D datasets.
-    
-    Args:
-        batch: Tuple of (counterfactual_points, factual_points)
-        save_path: Path to save the visualization (if None, just displays it)
-        title: Title for the plot
-    """
-    x_batch, cond_batch = batch
-    
-    # Convert to numpy for plotting
-    x_np = x_batch.numpy()
-    cond_np = cond_batch.numpy()
-    
-    # Only works for 2D data
-    assert x_np.shape[1] == 2 and cond_np.shape[1] == 2, "Only 2D data is supported for visualization"
-    
-    plt.figure(figsize=(10, 8))
-    
-    # Plot factual points (conditioning)
-    plt.scatter(
-        cond_np[:, 0], 
-        cond_np[:, 1], 
-        color='blue', 
-        s=100, 
-        alpha=0.8,
-        label='Factual Point (Condition)',
-        marker='*',
-        edgecolor='black'
-    )
-    
-    # Plot counterfactual points (targets)
-    plt.scatter(
-        x_np[:, 0], 
-        x_np[:, 1], 
-        color='red', 
-        s=80, 
-        alpha=0.7,
-        label='Counterfactual Points (Targets)',
-        edgecolor='black'
-    )
-    
-    # Draw lines connecting factual to counterfactual
-    for i in range(len(x_np)):
-        plt.plot(
-            [cond_np[i, 0], x_np[i, 0]], 
-            [cond_np[i, 1], x_np[i, 1]], 
-            'k--', 
-            alpha=0.5
-        )
-    
-    plt.title(title)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    if save_path:
-        plt.savefig(save_path)
-        plt.close()
-    else:
-        plt.show()
-    
-    return plt
-
-
-def visualize_factual_counterfactual_mapping(
-    dataset,
-    num_points=10,
-    save_path=None,
-    title="Factual-Counterfactual Mapping"
-):
-    """
-    Visualize the factual to counterfactual mapping for a sample of points.
-    Shows how each factual point maps to its nearest counterfactual points.
-    
-    Args:
-        dataset: CounterfactualWrapper instance
-        num_points: Number of factual points to visualize
-        save_path: Path to save the visualization
-        title: Title for the plot
-    """
-    # Only works for 2D data
-    assert dataset.X_factual.shape[1] == 2, "Only 2D data is supported for visualization"
-    
-    # Get a sample of factual points
-    if len(dataset.X_factual_scaled) <= num_points:
-        factual_indices = np.arange(len(dataset.X_factual_scaled))
-    else:
-        factual_indices = np.random.choice(
-            len(dataset.X_factual_scaled), 
-            size=num_points, 
-            replace=False
-        )
-    
-    # Get the counterfactual dataset
-    cf_dataset = GenericCounterfactualDataset(
-        dataset.X_factual_scaled,
-        dataset.X_counterfactual_scaled,
-        n_nearest=dataset.n_nearest,
-        noise_level=0  # No noise for visualization
-    )
-    
-    plt.figure(figsize=(12, 10))
-    
-    # Plot all factual points with low opacity
-    plt.scatter(
-        dataset.X_factual_scaled[:, 0],
-        dataset.X_factual_scaled[:, 1],
-        color='blue',
-        alpha=0.2,
-        label='All Factual Points'
-    )
-    
-    # Plot all counterfactual points with low opacity
-    plt.scatter(
-        dataset.X_counterfactual_scaled[:, 0],
-        dataset.X_counterfactual_scaled[:, 1],
-        color='red',
-        alpha=0.2,
-        label='All Counterfactual Points'
-    )
-    
-    # Colors for different factual points
-    colors = plt.cm.tab10(np.linspace(0, 1, num_points))
-    
-    # For selected factual points
-    for i, f_idx in enumerate(factual_indices):
-        # Get factual point
-        factual = dataset.X_factual_scaled[f_idx]
-        
-        # Get nearest counterfactual indices
-        cf_indices = cf_dataset.nearest_indices[f_idx]
-        
-        # Get counterfactual points
-        counterfactuals = dataset.X_counterfactual_scaled[cf_indices]
-        
-        # Plot factual point with high opacity
-        plt.scatter(
-            factual[0],
-            factual[1],
-            color=colors[i],
-            s=150,
-            marker='*',
-            edgecolor='black',
-            label=f'Factual {i+1}' if i < 5 else None  # Limit legend entries
-        )
-        
-        # Plot nearest counterfactual points
-        plt.scatter(
-            counterfactuals[:, 0],
-            counterfactuals[:, 1],
-            color=colors[i],
-            s=80,
-            alpha=0.7,
-            marker='o',
-            edgecolor='black'
-        )
-        
-        # Draw lines from factual to counterfactuals
-        for cf in counterfactuals:
-            plt.plot(
-                [factual[0], cf[0]],
-                [factual[1], cf[1]],
-                color=colors[i],
-                linestyle='--',
-                alpha=0.5
-            )
-    
-    plt.title(title)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    if save_path:
-        plt.savefig(save_path)
-        plt.close()
-    else:
-        plt.show()
-    
-    return plt
-
-
-def visualize_batch_distribution(dataset, batch_size=None, save_dir=None):
-    """
-    Visualize the distribution of batches created by the dataset.
-    
-    Args:
-        dataset: CounterfactualWrapper instance
-        batch_size: Batch size for training (defaults to n_nearest if None)
-        save_dir: Directory to save visualizations
-    """
-    # Get data loaders
-    train_loader, _ = dataset.get_counterfactual_dataloaders(
-        batch_size=batch_size,
-        shuffle=True
-    )
-    
-    if save_dir:
-        os.makedirs(save_dir, exist_ok=True)
-    
-    # Create batches subfolder
-    batches_dir = os.path.join(save_dir, "batches") if save_dir else None
-    if batches_dir:
-        os.makedirs(batches_dir, exist_ok=True)
-    
-    # Select some batches to visualize
-    num_batches = min(5, len(train_loader))
-    batch_indices = np.random.choice(len(train_loader.batches), num_batches, replace=False)
-    
-    for i, idx in enumerate(batch_indices):
-        batch = train_loader.batches[idx]
-        
-        # Visualize the batch
-        if batches_dir:
-            save_path = os.path.join(batches_dir, f"batch_{i+1}.png")
-            visualize_batch(
-                batch, 
-                save_path=save_path,
-                title=f"Batch {i+1}: {len(batch[0])} points"
-            )
-    
-    # Visualize the mapping between factual and counterfactual points
-    if save_dir:
-        save_path = os.path.join(save_dir, "factual_counterfactual_mapping.png")
-        visualize_factual_counterfactual_mapping(
-            dataset,
-            num_points=10,
-            save_path=save_path
-        )
-    
-    # Histogram of distances
-    plt.figure(figsize=(10, 6))
-    
-    cf_dataset = GenericCounterfactualDataset(
-        dataset.X_factual_scaled,
-        dataset.X_counterfactual_scaled,
-        n_nearest=dataset.n_nearest
-    )
-    
-    # Flatten the distances to nearest counterfactuals
-    distances = []
-    for f_idx in range(len(dataset.X_factual_scaled)):
-        cf_indices = cf_dataset.nearest_indices[f_idx]
-        for cf_idx in cf_indices:
-            distances.append(cf_dataset.dist_matrix[f_idx, cf_idx])
-    
-    plt.hist(distances, bins=30, alpha=0.7)
-    plt.xlabel('Distance from Factual to Counterfactual')
-    plt.ylabel('Frequency')
-    plt.title('Distribution of Factual-Counterfactual Distances')
-    plt.grid(True, alpha=0.3)
-    
-    if save_dir:
-        plt.savefig(os.path.join(save_dir, "distance_histogram.png"))
-        plt.close()
-    else:
-        plt.show()
-    
-    # Statistics about batches
-    batch_sizes = [len(batch[0]) for batch in train_loader.batches]
-    
-    plt.figure(figsize=(10, 6))
-    plt.hist(batch_sizes, bins=range(min(batch_sizes), max(batch_sizes) + 2), alpha=0.7)
-    plt.xlabel('Batch Size')
-    plt.ylabel('Frequency')
-    plt.title('Distribution of Batch Sizes')
-    plt.grid(True, alpha=0.3)
-    
-    if save_dir:
-        plt.savefig(os.path.join(save_dir, "batch_size_histogram.png"))
-        plt.close()
-    else:
-        plt.show()
-    
-    # Log batch statistics
-    logger.info(f"Batch statistics: Min size={min(batch_sizes)}, Max size={max(batch_sizes)}, "
-               f"Average size={np.mean(batch_sizes):.2f}")
-    logger.info(f"Distance statistics: Min={np.min(distances):.4f}, Max={np.max(distances):.4f}, "
-               f"Average={np.mean(distances):.4f}")
-    
-    return num_batches
-
-
 def visualize_counterfactual_generation(
     model,
     dataset,
@@ -990,11 +700,11 @@ def visualize_counterfactual_generation(
     temperature=0.8,
     save_dir=None,
     device="cuda" if torch.cuda.is_available() else "cpu",
-    direction="forward",
-    bidirectional_model=False
+    direction="both",
+    bidirectional_model=True
 ):
     """
-    Visualize counterfactual generation results.
+    Visualize bidirectional counterfactual generation results.
     
     Args:
         model: Trained flow model
@@ -1020,7 +730,7 @@ def visualize_counterfactual_generation(
     
     # Handle different directions
     directions_to_process = []
-    if direction == 'both' and dataset.bidirectional:
+    if direction == 'both':
         directions_to_process = ['forward', 'reverse']
     else:
         directions_to_process = [direction]
@@ -1035,8 +745,6 @@ def visualize_counterfactual_generation(
             counterfactual_class = dataset.counterfactual_class
             direction_indicator = 0.0
         elif curr_direction == 'reverse':
-            if not dataset.bidirectional:
-                raise ValueError("Cannot use 'reverse' direction when dataset is not bidirectional")
             factual_scaled = dataset.X_factual_scaled_rev
             factual_original = dataset.X_factual_rev
             counterfactual_class = dataset.factual_class
