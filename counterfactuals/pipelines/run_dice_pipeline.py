@@ -1,5 +1,6 @@
 import logging
 import os
+import dice_ml
 import hydra
 import numpy as np
 import pandas as pd
@@ -11,10 +12,10 @@ from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 import torch.utils
+import torch.nn as nn
 
 from counterfactuals.metrics.metrics import evaluate_cf
 
-from counterfactuals.cf_methods.dice import DiceExplainerWrapper
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -24,6 +25,16 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
+
+class DiscWrapper(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        x = torch.sigmoid(self.model(x))
+        return x
 
 
 def search_counterfactuals(
@@ -45,15 +56,29 @@ def search_counterfactuals(
     target_class = cfg.counterfactuals_params.target_class
     X_test_origin = dataset.X_test[dataset.y_test != target_class]
     y_test_origin = dataset.y_test[dataset.y_test != target_class]
-    # X_test_target = dataset.X_test[dataset.y_test == target_class]
+
+    logger.info("Creating dataset interface")
+    X_train, y_train = dataset.X_train, dataset.y_train
+
+    features = list(range(dataset.X_train.shape[1])) + ["label"]
+    features = list(map(str, features))
+    input_dataframe = pd.DataFrame(
+        np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1),
+        columns=features,
+    )
+
+    dice = dice_ml.Data(
+        dataframe=input_dataframe,
+        continuous_features=list(map(str, dataset.numerical_columns)),
+        outcome_name=features[-1],
+    )
 
     logger.info("Creating counterfactual model")
 
-    cf_method = DiceExplainerWrapper(
-        disc_model=disc_model,
-        X_train=dataset.X_train,
-        y_train=dataset.y_train,
-    )
+    disc_model_w = DiscWrapper(disc_model)
+
+    model = dice_ml.Model(disc_model_w, backend="PYT")
+    exp = dice_ml.Dice(dice, model, method="gradient")
 
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -67,28 +92,15 @@ def search_counterfactuals(
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
-    cf_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(
-            torch.tensor(X_test_origin).float(),
-            torch.tensor(y_test_origin).float(),
-        ),
-        batch_size=cfg.counterfactuals_params.batch_size,
-        shuffle=False,
-    )
+    query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
+    query_instance = query_instance
     time_start = time()
-    delta, Xs, ys_orig, ys_target, logs = cf_method.explain_dataloader(
-        dataloader=cf_dataloader,
-        epochs=cfg.counterfactuals_params.epochs,
-        lr=cfg.counterfactuals_params.lr,
-        patience=cfg.counterfactuals_params.patience,
-        alpha=cfg.counterfactuals_params.alpha,
-        alpha_s=cfg.counterfactuals_params.alpha_s,
-        alpha_k=cfg.counterfactuals_params.alpha_k,
-        log_prob_threshold=log_prob_threshold,
-        categorical_intervals=get_categorical_intervals(
-            cfg.counterfactuals_params.use_categorical,
-            dataset.categorical_features_lists,
-        ),
+    cfs = exp.generate_counterfactuals(
+        query_instance,
+        total_CFs=1,
+        desired_class="opposite",
+        posthoc_sparsity_param=None,
+        learning_rate=0.05,
     )
 
     cf_search_time = np.mean(time() - time_start)
@@ -97,11 +109,22 @@ def search_counterfactuals(
         save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
     )
 
-    Xs_cfs = Xs + delta
+    Xs_cfs = []
+    for orig, cf in zip(X_test_origin, cfs.cf_examples_list):
+        out = cf.final_cfs_df.to_numpy()
+        if out.shape[0] > 0:
+            print(out[0].shape)
+            Xs_cfs.append(out[0][:-1])
+        else:
+            print(orig.shape)
+            Xs_cfs.append(orig)
+
+    Xs_cfs = np.array(Xs_cfs)
+    ys_target = np.abs(1 - y_test_origin)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target
+    return Xs_cfs, X_test_origin, log_prob_threshold, y_test_origin, ys_target
 
 
 def get_categorical_intervals(
@@ -158,7 +181,7 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="ppcef_config", version_base="1.2")
+@hydra.main(config_path="./conf", config_name="dice_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -176,13 +199,11 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    dataset.inverse_dequantization()
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
         dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
-    dataset.dequantize()
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
     # Custom code
