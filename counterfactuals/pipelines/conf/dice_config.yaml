@@ -18,17 +18,17 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.AdultDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: true
+  train_model: false
   batch_size: 1024
   epochs: 2000
   patience: 100
@@ -41,8 +41,8 @@ counterfactuals_params:
     _target_: counterfactuals.cf_methods.DiceExplainerWrapper
 
   disc_model_criterion:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
+    # _target_: counterfactuals.losses.MulticlassDiscLoss
+    _target_: counterfactuals.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0
