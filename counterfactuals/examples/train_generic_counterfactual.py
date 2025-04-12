@@ -1,3 +1,6 @@
+import sys
+sys.path.append("C:/Users/marsz/Studia/GMUM/counters_base/counterfactuals")
+
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -6,10 +9,10 @@ import os
 import logging
 
 from counterfactuals.datasets.generic_counterfactual import (
-    MulticlassCounterfactualWrapper, 
+    MulticlassCounterfactualWrapper,
     train_multiclass_counterfactual_flow_model,
     generate_multiclass_counterfactuals,
-    visualize_multiclass_counterfactual_generation
+    visualize_multiclass_counterfactual_generation, p_values
 )
 from counterfactuals.generative_models.maf import MaskedAutoregressiveFlow
 from counterfactuals.examples.utils import (
@@ -326,12 +329,20 @@ def train_law_multiclass():
     # Load the law dataset
     law_dataset = LawDataset()
     disc_model = LogisticRegression(input_size=law_dataset.X_train.shape[1], target_size=1)
-    disc_model.fit(law_dataset.train_dataloader(64, True), law_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
+    disc_model.fit(
+        law_dataset.train_dataloader(256, True),
+        law_dataset.test_dataloader(256, False),
+        epochs=10000, lr=0.001, patience=100
+    )
     law_dataset.y_train = disc_model.predict(law_dataset.X_train).numpy()
     law_dataset.y_test = disc_model.predict(law_dataset.X_test).numpy()
 
     gen_model = MaskedAutoregressiveFlow(features=law_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(law_dataset.train_dataloader(64, True, 0.03), law_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
+    gen_model.fit(
+        law_dataset.train_dataloader(256, True, 0.03),
+        law_dataset.test_dataloader(256, False),
+        num_epochs=10000, learning_rate=0.001, patience=50
+    )
 
     X = np.vstack([law_dataset.X_train, law_dataset.X_test])
     y = np.concatenate([law_dataset.y_train, law_dataset.y_test])
@@ -348,7 +359,7 @@ def train_law_multiclass():
         y=y,
         factual_classes=[0, 1],  # Use both classes as factual
         n_nearest=10,
-        noise_level=0.03,
+        noise_level=0.003,
         log_level='INFO',
     )
     
@@ -362,9 +373,9 @@ def train_law_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
+        num_epochs=10000,
         patience=100,
-        noise_level=0.03,
+        noise_level=0.003,
         save_dir=save_dir,
         log_interval=10,
         balanced=True  # Ensure balanced representation of classes in batches
@@ -373,92 +384,125 @@ def train_law_multiclass():
     
     # Generate counterfactuals for evaluation
     logger.info("Generating counterfactuals for evaluation")
+
+    metrics_all = {}
+    np.set_printoptions(suppress=True, precision=4)
+
+    for p_value in p_values:
+        metrics_all[p_value] = {}
+        metrics_results = metrics_all[p_value]
+
+        # 1. Failed → Passed
+        logger.info("\n--- Generating counterfactuals: Failed → Passed ---")
+        factual_indices_fail = np.where(y == 0)[0][:50]
+        factual_points_fail = dataset.feature_transformer.transform(X[factual_indices_fail])
+
+        generated_cfs_fail_to_pass = generate_multiclass_counterfactuals(
+            model=multiclass_model,
+            factual_points=factual_points_fail,
+            target_class=1,  # Target class (passed)
+            n_samples=100,
+            temperature=0.8,
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            num_classes=len(dataset.classes),
+            p_value=p_value
+        )
+
+        if p_value != 2.:
+            generated_cfs_fail_to_pass = np.array(generated_cfs_fail_to_pass)
+            distance = np.abs(factual_points_fail[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_fail_to_pass))
+            broadcasted_factuals_fail = np.broadcast_to(factual_points_fail[:, np.newaxis, np.newaxis, :], distance.shape)
+            generated_cfs_fail_to_pass[distance < 1e-2] = broadcasted_factuals_fail[distance < 1e-2]
+        #print(f"P: {p_value}")
+        #print("fail to pass")
+        #print(np.abs(factual_points_fail[:5, np.newaxis, :] - np.array(generated_cfs_fail_to_pass)[:5, 0, :3]))
+
+        # Evaluate forward direction
+        save_dir_fail_to_pass = os.path.join(save_dir, "fail_to_pass")
+        os.makedirs(save_dir_fail_to_pass, exist_ok=True)
+        metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
+            disc_model=disc_model,
+            gen_model=gen_model,
+            dataset=dataset,
+            X=X,
+            y=y,
+            factual_indices=factual_indices_fail,
+            generated_cfs=generated_cfs_fail_to_pass,
+            direction="forward",
+            save_dir=save_dir_fail_to_pass,
+            p_value=p_value
+        )
+        metrics_results['forward'] = metrics_forward
+
+        # 2. Passed → Failed
+        logger.info("\n--- Generating counterfactuals: Passed → Failed ---")
+        factual_indices_pass = np.where(y == 1)[0][:50]
+        factual_points_pass = dataset.feature_transformer.transform(X[factual_indices_pass])
+
+        generated_cfs_pass_to_fail = generate_multiclass_counterfactuals(
+            model=multiclass_model,
+            factual_points=factual_points_pass,
+            target_class=0,  # Target class (failed)
+            n_samples=100,
+            temperature=0.8,
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            num_classes=len(dataset.classes),
+            p_value=p_value
+        )
+
+        if p_value != 2.:
+            generated_cfs_pass_to_fail = np.array(generated_cfs_pass_to_fail)
+            distance = np.abs(factual_points_pass[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_pass_to_fail))
+            broadcasted_factuals_pass = np.broadcast_to(factual_points_pass[:, np.newaxis, np.newaxis, :], distance.shape)
+            generated_cfs_pass_to_fail[distance < 1e-2] = broadcasted_factuals_pass[distance < 1e-2]
+        #print("pass to fail")
+        #print(np.abs(factual_points_pass[:5, np.newaxis, :] - np.array(generated_cfs_pass_to_fail)[:5, 0, :3]))
+
+        #print("nearest")
+#
+        #dist_matrix = np.abs(factual_points_pass[:, np.newaxis, :] - factual_points_pass[np.newaxis, :, :]) ** p_value
+        #dist_matrix = np.sum(dist_matrix, axis=-1) ** (1 / p_value)
+        #nearest_indices = np.argsort(dist_matrix, axis=-1)[:, :3]
+        #print(factual_points_pass[nearest_indices])
+
+        # Evaluate reverse direction
+        save_dir_pass_to_fail = os.path.join(save_dir, "pass_to_fail")
+        os.makedirs(save_dir_pass_to_fail, exist_ok=True)
+        metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
+            disc_model=disc_model,
+            gen_model=gen_model,
+            dataset=dataset,
+            X=X,
+            y=y,
+            factual_indices=factual_indices_pass,
+            generated_cfs=generated_cfs_pass_to_fail,
+            direction="reverse",
+            save_dir=save_dir_pass_to_fail,
+            p_value=p_value
+        )
+        metrics_results['reverse'] = metrics_reverse
+
+        # Compare metrics between directions
+        logger.info("\n=== Metrics Comparison Between Directions ===")
+        for metric in metrics_forward.keys():
+            logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
+                       f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
+
+        # Save factual points and counterfactuals for further analysis
+        np.save(os.path.join(save_dir, "factual_points_fail.npy"), X[factual_indices_fail])
+        np.save(os.path.join(save_dir, "factual_points_pass.npy"), X[factual_indices_pass])
+
+        # Save metrics comparison
+        import json
+        with open(os.path.join(save_dir, f"metrics_comparison_{p_value}.json"), 'w') as f:
+            comparison = {
+                'forward': metrics_forward,
+                'reverse': metrics_reverse,
+                'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
+            }
+            json.dump(comparison, f, indent=2, default=str)
     
-    metrics_results = {}
-    
-    # 1. Failed → Passed
-    logger.info("\n--- Generating counterfactuals: Failed → Passed ---")
-    factual_indices_fail = np.where(y == 0)[0][:20]
-    factual_points_fail = dataset.feature_transformer.transform(X[factual_indices_fail])
-    
-    generated_cfs_fail_to_pass = generate_multiclass_counterfactuals(
-        model=multiclass_model,
-        factual_points=factual_points_fail,
-        target_class=1,  # Target class (passed)
-        n_samples=100,
-        temperature=0.8,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-        num_classes=len(dataset.classes)
-    )
-    
-    # Evaluate forward direction
-    save_dir_fail_to_pass = os.path.join(save_dir, "fail_to_pass")
-    os.makedirs(save_dir_fail_to_pass, exist_ok=True)
-    metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
-        disc_model=disc_model,
-        gen_model=gen_model,
-        dataset=dataset,
-        X=X,
-        y=y,
-        factual_indices=factual_indices_fail,
-        generated_cfs=generated_cfs_fail_to_pass,
-        direction="forward",
-        save_dir=save_dir_fail_to_pass
-    )
-    metrics_results['forward'] = metrics_forward
-    
-    # 2. Passed → Failed
-    logger.info("\n--- Generating counterfactuals: Passed → Failed ---")
-    factual_indices_pass = np.where(y == 1)[0][:20]
-    factual_points_pass = dataset.feature_transformer.transform(X[factual_indices_pass])
-    
-    generated_cfs_pass_to_fail = generate_multiclass_counterfactuals(
-        model=multiclass_model,
-        factual_points=factual_points_pass,
-        target_class=0,  # Target class (failed)
-        n_samples=100,
-        temperature=0.8,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-        num_classes=len(dataset.classes)
-    )
-    
-    # Evaluate reverse direction
-    save_dir_pass_to_fail = os.path.join(save_dir, "pass_to_fail")
-    os.makedirs(save_dir_pass_to_fail, exist_ok=True)
-    metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
-        disc_model=disc_model,
-        gen_model=gen_model,
-        dataset=dataset,
-        X=X,
-        y=y,
-        factual_indices=factual_indices_pass,
-        generated_cfs=generated_cfs_pass_to_fail,
-        direction="reverse",
-        save_dir=save_dir_pass_to_fail
-    )
-    metrics_results['reverse'] = metrics_reverse
-    
-    # Compare metrics between directions
-    logger.info("\n=== Metrics Comparison Between Directions ===")
-    for metric in metrics_forward.keys():
-        logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
-                   f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
-    
-    # Save factual points and counterfactuals for further analysis
-    np.save(os.path.join(save_dir, "factual_points_fail.npy"), X[factual_indices_fail])
-    np.save(os.path.join(save_dir, "factual_points_pass.npy"), X[factual_indices_pass])
-    
-    # Save metrics comparison
-    import json
-    with open(os.path.join(save_dir, "metrics_comparison.json"), 'w') as f:
-        comparison = {
-            'forward': metrics_forward,
-            'reverse': metrics_reverse,
-            'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
-        }
-        json.dump(comparison, f, indent=2, default=str)
-    
-    return multiclass_model, dataset, metrics_results
+    return multiclass_model, dataset, metrics_all
 
 
 def train_heloc_multiclass():
@@ -470,12 +514,20 @@ def train_heloc_multiclass():
     # Load the HELOC dataset
     heloc_dataset = HelocDataset()
     disc_model = LogisticRegression(input_size=heloc_dataset.X_train.shape[1], target_size=1)
-    disc_model.fit(heloc_dataset.train_dataloader(64, True), heloc_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
+    disc_model.fit(
+        heloc_dataset.train_dataloader(256, True),
+        heloc_dataset.test_dataloader(256, False),
+        epochs=10000, lr=0.001, patience=50
+    )
     heloc_dataset.y_train = disc_model.predict(heloc_dataset.X_train).numpy()
     heloc_dataset.y_test = disc_model.predict(heloc_dataset.X_test).numpy()
 
     gen_model = MaskedAutoregressiveFlow(features=heloc_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(heloc_dataset.train_dataloader(64, True, 0.03), heloc_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
+    gen_model.fit(
+        heloc_dataset.train_dataloader(256, True, 0.003),
+        heloc_dataset.test_dataloader(256, False),
+        num_epochs=10000, learning_rate=0.001, patience=50
+    )
 
     X = np.vstack([heloc_dataset.X_train, heloc_dataset.X_test])
     y = np.concatenate([heloc_dataset.y_train, heloc_dataset.y_test])
@@ -484,6 +536,13 @@ def train_heloc_multiclass():
     # Set save directory
     save_dir = "results/heloc_multiclass"
     os.makedirs(save_dir, exist_ok=True)
+
+    noise_level = torch.tensor(
+            [
+                1 / len(np.unique(heloc_dataset.X_train[:, i])) * 0.1
+                for i in range(heloc_dataset.X_train.shape[1])
+            ]
+        )
     
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -492,7 +551,7 @@ def train_heloc_multiclass():
         y=y,
         factual_classes=[0, 1],  # Use both classes as factual
         n_nearest=10,
-        noise_level=0.03,
+        noise_level=noise_level,
         log_level='INFO',
     )
     
@@ -506,9 +565,9 @@ def train_heloc_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
-        patience=100,
-        noise_level=0.03,
+        num_epochs=10000,
+        patience=50,
+        noise_level=noise_level,
         save_dir=save_dir,
         log_interval=10,
         balanced=True  # Ensure balanced representation of classes in batches
@@ -517,92 +576,113 @@ def train_heloc_multiclass():
     
     # Generate counterfactuals for evaluation
     logger.info("Generating counterfactuals for evaluation")
+
+    metrics_all = {}
+    np.set_printoptions(suppress=True, precision=4)
+
+    for p_value in p_values:
+        metrics_all[p_value] = {}
+        metrics_results = metrics_all[p_value]
+
+        # 1. Good Risk → Bad Risk
+        logger.info("\n--- Generating counterfactuals: Good Risk → Bad Risk ---")
+        factual_indices_good = np.where(y == 0)[0][:50]
+        factual_points_good = dataset.feature_transformer.transform(X[factual_indices_good])
+
+        generated_cfs_good_to_bad = generate_multiclass_counterfactuals(
+            model=multiclass_model,
+            factual_points=factual_points_good,
+            target_class=1,  # Target class (bad risk)
+            n_samples=100,
+            temperature=0.8,
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            num_classes=len(dataset.classes),
+            p_value=p_value
+        )
+
+        if p_value != 2.:
+            generated_cfs_good_to_bad = np.array(generated_cfs_good_to_bad)
+            distance = np.abs(factual_points_good[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_good_to_bad))
+            broadcasted_factuals_fail = np.broadcast_to(factual_points_good[:, np.newaxis, np.newaxis, :], distance.shape)
+            generated_cfs_good_to_bad[distance < 1e-2] = broadcasted_factuals_fail[distance < 1e-2]
+
+        # Evaluate forward direction
+        save_dir_good_to_bad = os.path.join(save_dir, "good_to_bad")
+        os.makedirs(save_dir_good_to_bad, exist_ok=True)
+        metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
+            disc_model=disc_model,
+            gen_model=gen_model,
+            dataset=dataset,
+            X=X,
+            y=y,
+            factual_indices=factual_indices_good,
+            generated_cfs=generated_cfs_good_to_bad,
+            direction="forward",
+            save_dir=save_dir_good_to_bad,
+            p_value=p_value
+        )
+        metrics_results['forward'] = metrics_forward
+
+        # 2. Bad Risk → Good Risk
+        logger.info("\n--- Generating counterfactuals: Bad Risk → Good Risk ---")
+        factual_indices_bad = np.where(y == 1)[0][:50]
+        factual_points_bad = dataset.feature_transformer.transform(X[factual_indices_bad])
+
+        generated_cfs_bad_to_good = generate_multiclass_counterfactuals(
+            model=multiclass_model,
+            factual_points=factual_points_bad,
+            target_class=0,  # Target class (good risk)
+            n_samples=100,
+            temperature=0.8,
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            num_classes=len(dataset.classes),
+            p_value=p_value
+        )
+
+        if p_value != 2.:
+            generated_cfs_bad_to_good = np.array(generated_cfs_bad_to_good)
+            distance = np.abs(factual_points_bad[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_bad_to_good))
+            broadcasted_factuals_pass = np.broadcast_to(factual_points_bad[:, np.newaxis, np.newaxis, :], distance.shape)
+            generated_cfs_bad_to_good[distance < 1e-2] = broadcasted_factuals_pass[distance < 1e-2]
+
+        # Evaluate reverse direction
+        save_dir_bad_to_good = os.path.join(save_dir, "bad_to_good")
+        os.makedirs(save_dir_bad_to_good, exist_ok=True)
+        metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
+            disc_model=disc_model,
+            gen_model=gen_model,
+            dataset=dataset,
+            X=X,
+            y=y,
+            factual_indices=factual_indices_bad,
+            generated_cfs=generated_cfs_bad_to_good,
+            direction="reverse",
+            save_dir=save_dir_bad_to_good,
+            p_value=p_value
+        )
+        metrics_results['reverse'] = metrics_reverse
+
+        # Compare metrics between directions
+        logger.info("\n=== Metrics Comparison Between Directions ===")
+        for metric in metrics_forward.keys():
+            logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
+                       f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
+
+        # Save factual points and counterfactuals for further analysis
+        np.save(os.path.join(save_dir, "factual_points_good.npy"), X[factual_indices_good])
+        np.save(os.path.join(save_dir, "factual_points_bad.npy"), X[factual_indices_bad])
+
+        # Save metrics comparison
+        import json
+        with open(os.path.join(save_dir, f"metrics_comparison_{p_value}.json"), 'w') as f:
+            comparison = {
+                'forward': metrics_forward,
+                'reverse': metrics_reverse,
+                'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
+            }
+            json.dump(comparison, f, indent=2, default=str)
     
-    metrics_results = {}
-    
-    # 1. Good Risk → Bad Risk
-    logger.info("\n--- Generating counterfactuals: Good Risk → Bad Risk ---")
-    factual_indices_good = np.where(y == 0)[0][:20]
-    factual_points_good = dataset.feature_transformer.transform(X[factual_indices_good])
-    
-    generated_cfs_good_to_bad = generate_multiclass_counterfactuals(
-        model=multiclass_model,
-        factual_points=factual_points_good,
-        target_class=1,  # Target class (bad risk)
-        n_samples=100,
-        temperature=0.8,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-        num_classes=len(dataset.classes)
-    )
-    
-    # Evaluate forward direction
-    save_dir_good_to_bad = os.path.join(save_dir, "good_to_bad")
-    os.makedirs(save_dir_good_to_bad, exist_ok=True)
-    metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
-        disc_model=disc_model,
-        gen_model=gen_model,
-        dataset=dataset,
-        X=X,
-        y=y,
-        factual_indices=factual_indices_good,
-        generated_cfs=generated_cfs_good_to_bad,
-        direction="forward",
-        save_dir=save_dir_good_to_bad
-    )
-    metrics_results['forward'] = metrics_forward
-    
-    # 2. Bad Risk → Good Risk
-    logger.info("\n--- Generating counterfactuals: Bad Risk → Good Risk ---")
-    factual_indices_bad = np.where(y == 1)[0][:20]
-    factual_points_bad = dataset.feature_transformer.transform(X[factual_indices_bad])
-    
-    generated_cfs_bad_to_good = generate_multiclass_counterfactuals(
-        model=multiclass_model,
-        factual_points=factual_points_bad,
-        target_class=0,  # Target class (good risk)
-        n_samples=100,
-        temperature=0.8,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-        num_classes=len(dataset.classes)
-    )
-    
-    # Evaluate reverse direction
-    save_dir_bad_to_good = os.path.join(save_dir, "bad_to_good")
-    os.makedirs(save_dir_bad_to_good, exist_ok=True)
-    metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
-        disc_model=disc_model,
-        gen_model=gen_model,
-        dataset=dataset,
-        X=X,
-        y=y,
-        factual_indices=factual_indices_bad,
-        generated_cfs=generated_cfs_bad_to_good,
-        direction="reverse",
-        save_dir=save_dir_bad_to_good
-    )
-    metrics_results['reverse'] = metrics_reverse
-    
-    # Compare metrics between directions
-    logger.info("\n=== Metrics Comparison Between Directions ===")
-    for metric in metrics_forward.keys():
-        logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
-                   f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
-    
-    # Save factual points and counterfactuals for further analysis
-    np.save(os.path.join(save_dir, "factual_points_good.npy"), X[factual_indices_good])
-    np.save(os.path.join(save_dir, "factual_points_bad.npy"), X[factual_indices_bad])
-    
-    # Save metrics comparison
-    import json
-    with open(os.path.join(save_dir, "metrics_comparison.json"), 'w') as f:
-        comparison = {
-            'forward': metrics_forward,
-            'reverse': metrics_reverse,
-            'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
-        }
-        json.dump(comparison, f, indent=2, default=str)
-    
-    return multiclass_model, dataset, metrics_results
+    return multiclass_model, dataset, metrics_all
 
 
 def train_wine_multiclass():
@@ -614,7 +694,11 @@ def train_wine_multiclass():
     # Load the Wine dataset
     wine_dataset = WineDataset()
     disc_model = MultinomialLogisticRegression(input_size=wine_dataset.X_train.shape[1], target_size=len(np.unique(wine_dataset.y_train)))
-    disc_model.fit(wine_dataset.train_dataloader(64, True), wine_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
+    disc_model.fit(
+        wine_dataset.train_dataloader(256, True),
+        wine_dataset.test_dataloader(256, False),
+        epochs=10000, lr=0.001, patience=50
+    )
 
     logger.info("Evaluating discriminator model")
     y_pred = disc_model.predict(wine_dataset.X_train).numpy().astype(int)
@@ -623,7 +707,11 @@ def train_wine_multiclass():
     wine_dataset.y_test = disc_model.predict(wine_dataset.X_test).numpy().astype(int)
 
     gen_model = MaskedAutoregressiveFlow(features=wine_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(wine_dataset.train_dataloader(64, True, 0.03), wine_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
+    gen_model.fit(
+        wine_dataset.train_dataloader(256, True, 0.03),
+        wine_dataset.test_dataloader(256, False),
+        num_epochs=10000, learning_rate=0.001, patience=50
+    )
 
     X = np.vstack([wine_dataset.X_train, wine_dataset.X_test])
     y = np.concatenate([wine_dataset.y_train, wine_dataset.y_test])
@@ -633,6 +721,13 @@ def train_wine_multiclass():
     # Set save directory
     save_dir = "results/wine_multiclass"
     os.makedirs(save_dir, exist_ok=True)
+
+    noise_level = torch.tensor(
+            [
+                1 / len(np.unique(heloc_dataset.X_train[:, i])) * 0.1
+                for i in range(heloc_dataset.X_train.shape[1])
+            ]
+        )
     
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -641,7 +736,7 @@ def train_wine_multiclass():
         y=y,
         factual_classes=list(np.unique(y)),  # Use all classes as factual
         n_nearest=10,
-        noise_level=0.03,
+        noise_level=noise_level,
         log_level='INFO',
     )
     
@@ -655,9 +750,9 @@ def train_wine_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
+        num_epochs=10000,
         patience=100,
-        noise_level=0.03,
+        noise_level=noise_level,
         save_dir=save_dir,
         log_interval=10,
         balanced=True  # Ensure balanced representation of classes in batches
@@ -666,55 +761,71 @@ def train_wine_multiclass():
     
     # Generate counterfactuals for evaluation
     logger.info("Generating counterfactuals for evaluation")
+
+    metrics_all = {}
+    np.set_printoptions(suppress=True, precision=4)
+
+    for p_value in p_values:
+        metrics_all[p_value] = {}
+        metrics_results = metrics_all[p_value]
     
-    metrics_results = {}
+        # Generate counterfactuals for each class pair
+        for factual_class in dataset.factual_classes:
+            logger.info(f"\n--- Generating counterfactuals for factual class {factual_class} ---")
+            factual_indices = np.where(y == factual_class)[0][:50]
+            factual_points = dataset.feature_transformer.transform(X[factual_indices])
+
+            for target_class in dataset.classes:
+                if target_class == factual_class:
+                    continue
+
+                logger.info(f"Generating counterfactuals: Class {factual_class} → Class {target_class}")
+                generated_cfs = generate_multiclass_counterfactuals(
+                    model=multiclass_model,
+                    factual_points=factual_points,
+                    target_class=target_class,
+                    n_samples=100,
+                    temperature=0.8,
+                    device="cuda" if torch.cuda.is_available() else "cpu",
+                    num_classes=len(dataset.classes),
+                    p_value=p_value
+                )
+
+                if p_value != 2.:
+                    generated_cfs = np.array(generated_cfs)
+                    distance = np.abs(
+                        factual_points[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs))
+                    broadcasted_factuals_pass = np.broadcast_to(factual_points[:, np.newaxis, np.newaxis, :],
+                                                                distance.shape)
+                    generated_cfs[distance < 1e-2] = broadcasted_factuals_pass[distance < 1e-2]
+
+                # Evaluate counterfactuals
+                save_dir_class_pair = os.path.join(save_dir, f"class_{factual_class}_to_class_{target_class}")
+                os.makedirs(save_dir_class_pair, exist_ok=True)
+                metrics, cfs_orig = evaluate_counterfactuals(
+                    disc_model=disc_model,
+                    gen_model=gen_model,
+                    dataset=dataset,
+                    X=X,
+                    y=y,
+                    factual_indices=factual_indices,
+                    generated_cfs=generated_cfs,
+                    direction=f"class_{factual_class}_to_class_{target_class}",
+                    save_dir=save_dir_class_pair,
+                    p_value=p_value,
+                    target_class=target_class
+                )
+                metrics_results[f"class_{factual_class}_to_class_{target_class}"] = metrics
+
+                # Save factual points and counterfactuals for further analysis
+                np.save(os.path.join(save_dir_class_pair, f"factual_points_class_{factual_class}.npy"), X[factual_indices])
+
+        # Save metrics comparison
+        import json
+        with open(os.path.join(save_dir, f"metrics_comparison_{p_value}.json"), 'w') as f:
+            json.dump(metrics_results, f, indent=2, default=str)
     
-    # Generate counterfactuals for each class pair
-    for factual_class in dataset.factual_classes:
-        logger.info(f"\n--- Generating counterfactuals for factual class {factual_class} ---")
-        factual_indices = np.where(y == factual_class)[0][:20]
-        factual_points = dataset.feature_transformer.transform(X[factual_indices])
-        
-        for target_class in dataset.classes:
-            if target_class == factual_class:
-                continue
-                
-            logger.info(f"Generating counterfactuals: Class {factual_class} → Class {target_class}")
-            generated_cfs = generate_multiclass_counterfactuals(
-                model=multiclass_model,
-                factual_points=factual_points,
-                target_class=target_class,
-                n_samples=100,
-                temperature=0.8,
-                device="cuda" if torch.cuda.is_available() else "cpu",
-                num_classes=len(dataset.classes)
-            )
-            
-            # Evaluate counterfactuals
-            save_dir_class_pair = os.path.join(save_dir, f"class_{factual_class}_to_class_{target_class}")
-            os.makedirs(save_dir_class_pair, exist_ok=True)
-            metrics, cfs_orig = evaluate_counterfactuals(
-                disc_model=disc_model,
-                gen_model=gen_model,
-                dataset=dataset,
-                X=X,
-                y=y,
-                factual_indices=factual_indices,
-                generated_cfs=generated_cfs,
-                direction=f"class_{factual_class}_to_class_{target_class}",
-                save_dir=save_dir_class_pair
-            )
-            metrics_results[f"class_{factual_class}_to_class_{target_class}"] = metrics
-            
-            # Save factual points and counterfactuals for further analysis
-            np.save(os.path.join(save_dir_class_pair, f"factual_points_class_{factual_class}.npy"), X[factual_indices])
-    
-    # Save metrics comparison
-    import json
-    with open(os.path.join(save_dir, "metrics_comparison.json"), 'w') as f:
-        json.dump(metrics_results, f, indent=2, default=str)
-    
-    return multiclass_model, dataset, metrics_results
+    return multiclass_model, dataset, metrics_all
 
 
 if __name__ == "__main__":
@@ -727,7 +838,7 @@ if __name__ == "__main__":
     parser.add_argument('--heloc', action='store_true', help='Run HELOC multiclass example')
     parser.add_argument('--wine', action='store_true', help='Run Wine multiclass example')
     args = parser.parse_args()
-    
+
     # Run the selected examples
     if args.moons:
         logger.info("\n=== Starting Moons Multiclass Example ===")

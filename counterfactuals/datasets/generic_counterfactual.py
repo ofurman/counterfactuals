@@ -21,6 +21,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('counterfactual')
+p_values = [0.001, 2.0]
 
 
 class MulticlassCounterfactualDataset(Dataset):
@@ -58,30 +59,28 @@ class MulticlassCounterfactualDataset(Dataset):
         self.counterfactual_classes = list(X_counterfactual_dict.keys())
         
         # Compute distance matrices between factual and counterfactual points for each class
-        self.dist_matrices = {}
-        self.nearest_indices = {}
         self.factual_to_cf_indices = {}
-        
-        for cf_class, X_counterfactual in self.X_counterfactual_dict.items():
-            # Compute distance matrix
-            if distance_metric == 'euclidean':
-                dist_matrix = euclidean_distances(X_factual, X_counterfactual)
-            else:
-                # Default to euclidean distance
-                dist_matrix = euclidean_distances(X_factual, X_counterfactual)
-            
-            self.dist_matrices[cf_class] = dist_matrix
-            
-            # For each factual point, find the n_nearest counterfactual points
-            nearest_indices = np.argsort(dist_matrix, axis=1)[:, :n_nearest]
-            self.nearest_indices[cf_class] = nearest_indices
-            
-            # Create a mapping from factual index to list of nearest counterfactual indices
-            factual_to_cf_indices = {}
-            for f_idx in range(len(X_factual)):
-                factual_to_cf_indices[f_idx] = nearest_indices[f_idx]
-            
-            self.factual_to_cf_indices[cf_class] = factual_to_cf_indices
+
+        self.p_values = p_values
+
+        mask = np.ones(X_factual.shape[1])
+        mask = mask[np.newaxis, np.newaxis, :]
+        for p in self.p_values:
+            self.factual_to_cf_indices[p] = {}
+            for cf_class, X_counterfactual in self.X_counterfactual_dict.items():
+                # Compute distance matrix
+                dist_matrix = np.abs(X_factual[:, np.newaxis, :] - X_counterfactual[np.newaxis, :, :]) ** p
+                dist_matrix = np.sum(dist_matrix * mask, axis=-1) ** (1 / p)
+
+                # For each factual point, find the n_nearest counterfactual points
+                nearest_indices = np.argsort(dist_matrix, axis=-1)[:, :n_nearest]
+
+                # Create a mapping from factual index to list of nearest counterfactual indices
+                factual_to_cf_indices = {}
+                for f_idx in range(len(X_factual)):
+                    factual_to_cf_indices[f_idx] = nearest_indices[f_idx]
+
+                self.factual_to_cf_indices[p][cf_class] = factual_to_cf_indices
         
         # Create an index mapping for the dataset
         # Each entry is (f_idx, cf_class, cf_idx) where:
@@ -89,38 +88,40 @@ class MulticlassCounterfactualDataset(Dataset):
         # - cf_class is the counterfactual class
         # - cf_idx is the counterfactual point index
         self.index_mapping = []
-        for f_idx in range(len(X_factual)):
-            for cf_class in self.counterfactual_classes:
-                for cf_idx in self.factual_to_cf_indices[cf_class][f_idx]:
-                    self.index_mapping.append((f_idx, cf_class, cf_idx))
+        for p in self.p_values:
+            for f_idx in range(len(X_factual)):
+                for cf_class in self.counterfactual_classes:
+                    for cf_idx in self.factual_to_cf_indices[p][cf_class][f_idx]:
+                        self.index_mapping.append((f_idx, cf_class, cf_idx, p))
     
     def __len__(self):
         return len(self.index_mapping)
     
     def __getitem__(self, idx):
-        # Get the factual, counterfactual class, and counterfactual indices from the mapping
-        f_idx, cf_class, cf_idx = self.index_mapping[idx]
-        
-        # Get the factual point (used as condition)
-        cond = self.X_factual[f_idx]
-        
-        # Get the counterfactual point (target to generate)
-        x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
-        
-        # Add small Gaussian noise to counterfactual point (target)
-        if self.noise_level > 0:
-            x = x + np.random.normal(0, self.noise_level, size=x.shape)
-        
-        # Create a one-hot encoding for the counterfactual class
-        class_one_hot = np.zeros(len(self.classes))
-        class_idx = self.classes.index(cf_class)
-        class_one_hot[class_idx] = 1
-        
-        return (
-            torch.tensor(x, dtype=torch.float32), 
-            torch.tensor(cond, dtype=torch.float32),
-            torch.tensor(class_one_hot, dtype=torch.float32)
-        )
+        pass
+        ## Get the factual, counterfactual class, and counterfactual indices from the mapping
+        #f_idx, cf_class, cf_idx = self.index_mapping[idx]
+        #
+        ## Get the factual point (used as condition)
+        #cond = self.X_factual[f_idx]
+        #
+        ## Get the counterfactual point (target to generate)
+        #x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
+        #
+        ## Add small Gaussian noise to counterfactual point (target)
+        #if self.noise_level > 0:
+        #    x = x + np.random.normal(0, self.noise_level, size=x.shape)
+        #
+        ## Create a one-hot encoding for the counterfactual class
+        #class_one_hot = np.zeros(len(self.classes))
+        #class_idx = self.classes.index(cf_class)
+        #class_one_hot[class_idx] = 1
+        #
+        #return (
+        #    torch.tensor(x, dtype=torch.float32),
+        #    torch.tensor(cond, dtype=torch.float32),
+        #    torch.tensor(class_one_hot, dtype=torch.float32)
+        #)
     
     def get_grouped_batches(self, batch_size=None, shuffle=True, balanced=True):
         """
@@ -142,84 +143,91 @@ class MulticlassCounterfactualDataset(Dataset):
             batch_size = self.n_nearest * len(self.counterfactual_classes)
         
         # For each factual point
-        for f_idx in range(len(self.X_factual)):
-            batch_cf = []
-            batch_classes = []
-            
-            # Get the factual point as conditioning
-            cond = self.X_factual[f_idx]
-            
-            if balanced:
-                # Ensure balanced representation of classes in each batch
-                points_per_class = min(self.n_nearest, batch_size // len(self.counterfactual_classes))
-                
-                for cf_class in self.counterfactual_classes:
-                    cf_indices = self.factual_to_cf_indices[cf_class][f_idx]
-                    
-                    # Shuffle counterfactual indices if requested
-                    if shuffle:
-                        np.random.shuffle(cf_indices)
-                    
-                    # For each counterfactual point in this batch
-                    for cf_idx in cf_indices[:points_per_class]:
-                        # Get the counterfactual point
-                        x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
-                        
-                        # Add noise
-                        if self.noise_level > 0:
-                            x = x + np.random.normal(0, self.noise_level, size=x.shape)
-                        
-                        batch_cf.append(torch.tensor(x, dtype=torch.float32))
-                        
-                        # Create a one-hot encoding for the counterfactual class
-                        class_one_hot = np.zeros(len(self.classes))
-                        class_idx = self.classes.index(cf_class)
-                        class_one_hot[class_idx] = 1
-                        batch_classes.append(torch.tensor(class_one_hot, dtype=torch.float32))
-            else:
-                # Not balanced - just take the closest points regardless of class
-                all_cf_indices = []
-                for cf_class in self.counterfactual_classes:
-                    cf_indices = self.factual_to_cf_indices[cf_class][f_idx]
-                    for cf_idx in cf_indices:
-                        all_cf_indices.append((cf_class, cf_idx))
-                
-                # Shuffle all counterfactual indices if requested
-                if shuffle:
-                    np.random.shuffle(all_cf_indices)
-                
-                # For each counterfactual point in this batch
-                for cf_class, cf_idx in all_cf_indices[:batch_size]:
-                    # Get the counterfactual point
-                    x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
-                    
-                    # Add noise
-                    if self.noise_level > 0:
-                        x = x + np.random.normal(0, self.noise_level, size=x.shape)
-                    
-                    batch_cf.append(torch.tensor(x, dtype=torch.float32))
-                    
-                    # Create a one-hot encoding for the counterfactual class
-                    class_one_hot = np.zeros(len(self.counterfactual_classes))
-                    class_idx = self.counterfactual_classes.index(cf_class)
-                    class_one_hot[class_idx] = 1
-                    batch_classes.append(torch.tensor(class_one_hot, dtype=torch.float32))
-            
-            # Skip if no counterfactual points were added
-            if not batch_cf:
-                continue
-                
-            # Create batch tensors
-            batch_x = torch.stack(batch_cf)
-            batch_classes = torch.stack(batch_classes)
-            
-            # Create a batch of identical factual points (one for each counterfactual)
-            # Convert numpy array to tensor first
-            cond_tensor = torch.tensor(cond, dtype=torch.float32)
-            # Then create a batch by repeating it
-            batch_cond = cond_tensor.repeat(len(batch_cf), 1)
-            
-            batches.append((batch_x, batch_cond, batch_classes))
+        for p in self.p_values:
+            for f_idx in range(len(self.X_factual)):
+                batch_cf = []
+                batch_classes = []
+
+                # Get the factual point as conditioning
+                cond = self.X_factual[f_idx]
+
+                if balanced:
+                    # Ensure balanced representation of classes in each batch
+                    points_per_class = min(self.n_nearest, batch_size // len(self.counterfactual_classes))
+
+                    for cf_class in self.counterfactual_classes:
+                        cf_indices = self.factual_to_cf_indices[p][cf_class][f_idx]
+
+                        # Shuffle counterfactual indices if requested
+                        if shuffle:
+                            np.random.shuffle(cf_indices)
+
+                        # For each counterfactual point in this batch
+                        for cf_idx in cf_indices[:points_per_class]:
+                            # Get the counterfactual point
+                            x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
+
+                            # Add noise
+                            if self.noise_level > 0:
+                                x = x + np.random.normal(0, self.noise_level, size=x.shape)
+
+                            batch_cf.append(torch.tensor(x, dtype=torch.float32))
+
+                            # Create a one-hot encoding for the counterfactual class
+                            class_one_hot = np.zeros(len(self.classes))
+                            class_idx = self.classes.index(cf_class)
+                            class_one_hot[class_idx] = 1
+                            batch_classes.append(torch.tensor(class_one_hot, dtype=torch.float32))
+                else:
+                    pass
+                    ## Not balanced - just take the closest points regardless of class
+                    #all_cf_indices = []
+                    #for cf_class in self.counterfactual_classes:
+                    #    cf_indices = self.factual_to_cf_indices[cf_class][f_idx]
+                    #    for cf_idx in cf_indices:
+                    #        all_cf_indices.append((cf_class, cf_idx))
+                    #
+                    ## Shuffle all counterfactual indices if requested
+                    #if shuffle:
+                    #    np.random.shuffle(all_cf_indices)
+                    #
+                    ## For each counterfactual point in this batch
+                    #for cf_class, cf_idx in all_cf_indices[:batch_size]:
+                    #    # Get the counterfactual point
+                    #    x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
+                    #
+                    #    # Add noise
+                    #    if self.noise_level > 0:
+                    #        x = x + np.random.normal(0, self.noise_level, size=x.shape)
+                    #
+                    #    batch_cf.append(torch.tensor(x, dtype=torch.float32))
+                    #
+                    #    # Create a one-hot encoding for the counterfactual class
+                    #    class_one_hot = np.zeros(len(self.counterfactual_classes))
+                    #    class_idx = self.counterfactual_classes.index(cf_class)
+                    #    class_one_hot[class_idx] = 1
+                    #    batch_classes.append(torch.tensor(class_one_hot, dtype=torch.float32))
+
+                # Skip if no counterfactual points were added
+                if not batch_cf:
+                    continue
+
+                # Create batch tensors
+                batch_x = torch.stack(batch_cf)
+                batch_classes = torch.stack(batch_classes)
+
+                # Create a batch of identical factual points (one for each counterfactual)
+                # Convert numpy array to tensor first
+                cond_tensor = torch.tensor(cond, dtype=torch.float32)
+                # Then create a batch by repeating it
+                batch_cond = cond_tensor.repeat(len(batch_cf), 1)
+                if self.noise_level > 0:
+                    batch_cond = batch_cond + np.random.normal(0, self.noise_level/10, size=batch_cond.shape)
+
+                p_tensor = torch.tensor(p, dtype=torch.float32)
+                p_tensor = p_tensor.repeat(len(batch_cf), 1)
+
+                batches.append((batch_x, batch_cond, batch_classes, p_tensor))
         
         # Shuffle the order of batches if requested
         if shuffle:
@@ -241,7 +249,7 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         n_nearest: int = 5,
         noise_level: float = 0.05,
         test_size: float = 0.2,
-        random_state: int = 42,
+        random_state: int = 4,
         distance_metric: str = 'euclidean',
         log_level: str = 'INFO'
     ):
@@ -390,12 +398,21 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         
         # Split into train and test
         train_size = int(0.8 * len(all_batches))
-        train_batches = all_batches[:train_size]
-        test_batches = all_batches[train_size:]
+        indices = np.arange(len(all_batches))
+        np.random.shuffle(indices)
+
+        # Split into train/test
+        train_indices = indices[:train_size]
+        test_indices = indices[train_size:]
+
+        # Get the actual batches
+        train_batches = [all_batches[i] for i in train_indices]
+        test_batches = [all_batches[i] for i in test_indices]
         
         class GroupedBatchDataLoader:
             """Custom DataLoader for grouped batches"""
-            def __init__(self, batches, shuffle=True):
+            def __init__(self, batches, shuffle=True, batch_size=128):
+                self.batch_size = batch_size
                 self.batches = batches
                 self.shuffle = shuffle
                 
@@ -404,18 +421,25 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
                 indices = list(range(len(self.batches)))
                 if self.shuffle:
                     np.random.shuffle(indices)
-                
-                # Return batches
-                for i in indices:
-                    yield self.batches[i]
+
+                # Group indices into batches
+                for start_idx in range(0, len(indices), self.batch_size):
+                    end_idx = start_idx + self.batch_size
+                    yield self.batches[start_idx:end_idx]
                     
             def __len__(self):
-                return len(self.batches)
+                return int(np.ceil(len(self.batches) / self.batch_size))
         
         train_loader = GroupedBatchDataLoader(train_batches, shuffle=shuffle)
         test_loader = GroupedBatchDataLoader(test_batches, shuffle=False)
         
         return train_loader, test_loader
+
+
+def transform_batch_data(data: List, device: str):
+    data = torch.stack(data)
+    data = data.reshape(-1, data.shape[-1])
+    return data.to(device).float()
 
 
 def train_multiclass_counterfactual_flow_model(
@@ -483,7 +507,7 @@ def train_multiclass_counterfactual_flow_model(
     logger.info(f"Created data loaders - Train batches: {len(train_loader)}, Test batches: {len(test_loader)}")
     
     # Initialize model
-    context_features = dataset.X.shape[1]  # Dimensionality of factual points
+    context_features = dataset.X.shape[1] + 1  # Dimensionality of factual points
     features = dataset.X.shape[1]  # Dimensionality of counterfactual points
     num_classes = len(dataset.classes)
     
@@ -525,15 +549,15 @@ def train_multiclass_counterfactual_flow_model(
             batch_start = time.time()
             
             # Unpack batch data
-            x_batch, cond_batch, class_batch = batch_data
-            
-            # Move data to device and ensure dtype is float32
-            x_batch = x_batch.to(device).float()
-            cond_batch = cond_batch.to(device).float()
-            class_batch = class_batch.to(device).float()
+            x_batch, cond_batch, class_batch, p = zip(*batch_data)
+
+            x_batch = transform_batch_data(x_batch, device)
+            cond_batch = transform_batch_data(cond_batch, device)
+            class_batch = transform_batch_data(class_batch, device)
+            p = transform_batch_data(p, device)
             
             # Combine condition and class one-hot encoding
-            combined_cond = torch.cat([cond_batch, class_batch], dim=1)
+            combined_cond = torch.cat([cond_batch, class_batch, p], dim=1)
             
             # Forward pass
             optimizer.zero_grad()
@@ -563,15 +587,15 @@ def train_multiclass_counterfactual_flow_model(
         with torch.no_grad():
             for batch_data in test_loader:
                 # Unpack batch data
-                x_batch, cond_batch, class_batch = batch_data
-                
-                # Move data to device and ensure dtype is float32
-                x_batch = x_batch.to(device).float()
-                cond_batch = cond_batch.to(device).float()
-                class_batch = class_batch.to(device).float()
-                
+                x_batch, cond_batch, class_batch, p = zip(*batch_data)
+
+                x_batch = transform_batch_data(x_batch, device)
+                cond_batch = transform_batch_data(cond_batch, device)
+                class_batch = transform_batch_data(class_batch, device)
+                p = transform_batch_data(p, device)
+
                 # Combine condition and class one-hot encoding
-                combined_cond = torch.cat([cond_batch, class_batch], dim=1)
+                combined_cond = torch.cat([cond_batch, class_batch, p], dim=1)
                 
                 # Forward pass
                 log_prob = model(x_batch, combined_cond)
@@ -674,7 +698,9 @@ def generate_multiclass_counterfactuals(
     n_samples: int = 10,
     temperature: float = 0.8,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
-    num_classes: int = None
+    num_classes: int = None,
+    *,
+    p_value: float
 ):
     """
     Generate counterfactual samples for given factual points targeting a specific class.
@@ -694,6 +720,8 @@ def generate_multiclass_counterfactuals(
     model.eval()
     
     all_counterfactuals = []
+
+    p = torch.tensor([p_value], dtype=torch.float32).unsqueeze(0).to(device)
     
     with torch.no_grad():
         for factual in factual_points:
@@ -706,7 +734,7 @@ def generate_multiclass_counterfactuals(
             class_tensor = torch.tensor(class_one_hot, dtype=torch.float32).unsqueeze(0).to(device)
             
             # Combine factual point and class one-hot encoding
-            context = torch.cat([factual_tensor, class_tensor], dim=1)
+            context = torch.cat([factual_tensor, class_tensor, p], dim=1)
             
             # Generate samples
             samples, _ = model.sample_and_log_prob(

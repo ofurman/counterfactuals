@@ -19,7 +19,10 @@ def evaluate_counterfactuals(
     factual_indices, 
     generated_cfs,
     direction="forward",
-    save_dir=None
+    save_dir=None,
+    *,
+    p_value,
+    target_class = None
 ):
     """
     Evaluate generated counterfactuals using both simple statistics and CFMetrics
@@ -50,7 +53,10 @@ def evaluate_counterfactuals(
     
     # Calculate target labels (opposite of factual)
     y_factual = y[factual_indices]
-    y_target = 1 - y_factual
+    if target_class is not None:
+        y_target = target_class * np.ones_like(y_factual)
+    else:
+        y_target = 1 - y_factual
     
     # Replicate y_target to match X_cf size
     cf_per_factual = X_cf.shape[0] // len(factual_indices)
@@ -83,7 +89,8 @@ def evaluate_counterfactuals(
         disc_model=disc_model,
         continuous_features=dataset.numerical_features,
         categorical_features=dataset.categorical_features,
-        prob_plausibility_threshold=threshold
+        prob_plausibility_threshold=threshold,
+        action_mask=np.ones(1, X_train.shape[1])
     )
     
     # Calculate all metrics
@@ -95,7 +102,7 @@ def evaluate_counterfactuals(
     
     # Save metrics to file
     if save_dir:
-        metrics_file = os.path.join(save_dir, f"metrics_{direction}.json")
+        metrics_file = os.path.join(save_dir, f"metrics_{direction}_{p_value}.json")
         import json
         with open(metrics_file, 'w') as f:
             # ignore on error

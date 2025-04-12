@@ -5,6 +5,7 @@ import torch
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
+from torch import Tensor
 
 from counterfactuals.metrics.distances import (
     continuous_distance,
@@ -48,6 +49,8 @@ class CFMetrics:
         categorical_features: List[int],
         ratio_cont: Optional[float] = None,
         prob_plausibility_threshold: Optional[float] = None,
+        *,
+        action_mask
     ) -> None:
         # precheck input assumptions
         assert (
@@ -99,6 +102,8 @@ class CFMetrics:
         self.X_cf_valid = self.X_cf[self.y_cf_pred == self.y_target]
         self.X_test_valid = self.X_test[self.y_cf_pred == self.y_target]
 
+        self.action_mask = action_mask
+
     def _convert_to_numpy(self, X: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
         """
         Convert input data to numpy array.
@@ -137,7 +142,7 @@ class CFMetrics:
             float: Validity metric value.
         """
         y_cf = self.disc_model.predict(self.X_cf).numpy()
-        return (y_cf != self.y_test.squeeze()).mean()
+        return np.mean(y_cf == self.y_target.squeeze())
 
     def actionability(self) -> float:
         """
@@ -146,7 +151,7 @@ class CFMetrics:
         Returns:
             float: Actionability metric value.
         """
-        return np.all(self.X_test == self.X_cf, axis=1).mean()
+        return np.all(self.X_test[self.action_mask] == self.X_cf[self.action_mask], axis=1).mean()
 
     def sparsity(self) -> float:
         """
@@ -155,7 +160,7 @@ class CFMetrics:
         Returns:
             float: Sparsity metric value.
         """
-        return (self.X_test != self.X_cf).mean()
+        return np.mean(self.X_test != self.X_cf)
 
     def prob_plausibility(self, cf: bool = True) -> float:
         """
