@@ -72,7 +72,7 @@ def continuous_distance(
     """
     logger.info("Calculating continuous distance")
     allowed_metrics = ["cityblock", "euclidean", "mad"]
-    agg_funcs = {"mean": np.mean, "max": np.max, "min": np.min, "no": lambda x: x}
+    agg_funcs = {"mean": np.mean, "max": np.max, "min": np.min, "no": lambda x: x, "median": np.median}
 
     assert isinstance(X_test, np.ndarray), "X_test should be a numpy array"
     assert isinstance(X_cf, np.ndarray), "X_cf should be a numpy array"

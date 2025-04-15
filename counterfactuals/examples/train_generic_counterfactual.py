@@ -1,5 +1,5 @@
 import sys
-sys.path.append("C:/Users/marsz/Studia/GMUM/counters_base/counterfactuals")
+sys.path.append("/home/z1172691/counterfactuals")
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,6 +35,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('counterfactual_example')
+global_dir = "/shared/results/z1172691/counters/"
 
 
 def train_moons_multiclass():
@@ -349,8 +350,16 @@ def train_law_multiclass():
     logger.info(f"Loaded law dataset with {len(X)} samples and {X.shape[1]} features")
     
     # Set save directory
-    save_dir = "results/law_multiclass"
+    save_dir = global_dir + "results/law_multiclass"
     os.makedirs(save_dir, exist_ok=True)
+
+    noise_level = np.array(
+        [
+            1 / len(np.unique(law_dataset.X_train[:, i])) * 0.1
+            for i in range(law_dataset.X_train.shape[1])
+        ]
+    )
+    print(noise_level)
     
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -359,7 +368,7 @@ def train_law_multiclass():
         y=y,
         factual_classes=[0, 1],  # Use both classes as factual
         n_nearest=10,
-        noise_level=0.003,
+        noise_level=noise_level,
         log_level='INFO',
     )
     
@@ -375,7 +384,7 @@ def train_law_multiclass():
         batch_size=None,
         num_epochs=10000,
         patience=100,
-        noise_level=0.003,
+        noise_level=noise_level,
         save_dir=save_dir,
         log_interval=10,
         balanced=True  # Ensure balanced representation of classes in batches
@@ -522,7 +531,11 @@ def train_heloc_multiclass():
     heloc_dataset.y_train = disc_model.predict(heloc_dataset.X_train).numpy()
     heloc_dataset.y_test = disc_model.predict(heloc_dataset.X_test).numpy()
 
-    gen_model = MaskedAutoregressiveFlow(features=heloc_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
+    gen_model = MaskedAutoregressiveFlow(
+        features=heloc_dataset.X_train.shape[1], 
+        hidden_features=16, num_layers=2, 
+        num_blocks_per_layer=2, context_features=1
+        )
     gen_model.fit(
         heloc_dataset.train_dataloader(256, True, 0.003),
         heloc_dataset.test_dataloader(256, False),
@@ -534,15 +547,16 @@ def train_heloc_multiclass():
     logger.info(f"Loaded HELOC dataset with {len(X)} samples and {X.shape[1]} features")
     
     # Set save directory
-    save_dir = "results/heloc_multiclass"
+    save_dir = global_dir + "results/heloc_multiclass"
     os.makedirs(save_dir, exist_ok=True)
 
-    noise_level = torch.tensor(
-            [
-                1 / len(np.unique(heloc_dataset.X_train[:, i])) * 0.1
-                for i in range(heloc_dataset.X_train.shape[1])
-            ]
-        )
+    #noise_level = np.array(
+    #        [
+    #            1 / len(np.unique(heloc_dataset.X_train[:, i])) * 0.1
+    #            for i in range(heloc_dataset.X_train.shape[1])
+    #        ]
+    #    )
+    noise_level = 0.003
     
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -580,107 +594,129 @@ def train_heloc_multiclass():
     metrics_all = {}
     np.set_printoptions(suppress=True, precision=4)
 
-    for p_value in p_values:
-        metrics_all[p_value] = {}
-        metrics_results = metrics_all[p_value]
+    for mask_idx, mask in enumerate(dataset.masks):
+        metrics_all[mask_idx] = {}
+        for p_value in p_values:
+            metrics_all[mask_idx][p_value] = {}
+            metrics_results = metrics_all[mask_idx][p_value]
 
-        # 1. Good Risk → Bad Risk
-        logger.info("\n--- Generating counterfactuals: Good Risk → Bad Risk ---")
-        factual_indices_good = np.where(y == 0)[0][:50]
-        factual_points_good = dataset.feature_transformer.transform(X[factual_indices_good])
+            action_mask = np.zeros_like(mask, dtype=bool)
+            action_mask[mask == 1.] = True
+            print(mask)
+            print(action_mask)
 
-        generated_cfs_good_to_bad = generate_multiclass_counterfactuals(
-            model=multiclass_model,
-            factual_points=factual_points_good,
-            target_class=1,  # Target class (bad risk)
-            n_samples=100,
-            temperature=0.8,
-            device="cuda" if torch.cuda.is_available() else "cpu",
-            num_classes=len(dataset.classes),
-            p_value=p_value
-        )
+            # 1. Good Risk → Bad Risk
+            logger.info("\n--- Generating counterfactuals: Good Risk → Bad Risk ---")
+            factual_indices_good = np.where(y == 0)[0][:50]
+            factual_points_good = dataset.feature_transformer.transform(X[factual_indices_good])
 
-        if p_value != 2.:
+            generated_cfs_good_to_bad = generate_multiclass_counterfactuals(
+                model=multiclass_model,
+                factual_points=factual_points_good,
+                target_class=1,  # Target class (bad risk)
+                n_samples=100,
+                temperature=0.8,
+                device="cuda" if torch.cuda.is_available() else "cpu",
+                num_classes=len(dataset.classes),
+                p_value=p_value,
+                mask=mask
+            )
             generated_cfs_good_to_bad = np.array(generated_cfs_good_to_bad)
-            distance = np.abs(factual_points_good[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_good_to_bad))
-            broadcasted_factuals_fail = np.broadcast_to(factual_points_good[:, np.newaxis, np.newaxis, :], distance.shape)
-            generated_cfs_good_to_bad[distance < 1e-2] = broadcasted_factuals_fail[distance < 1e-2]
+            action_mask =  np.broadcast_to(
+                action_mask[np.newaxis, np.newaxis, np.newaxis, :],
+                generated_cfs_good_to_bad.shape
+            )
+            broadcasted_factuals_fail = np.broadcast_to(
+                factual_points_good[:, np.newaxis, np.newaxis, :], 
+                generated_cfs_good_to_bad.shape
+            )
+            if p_value != 2.:
+                distance = np.abs(factual_points_good[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_good_to_bad))
+                generated_cfs_good_to_bad[distance < 1e-2] = broadcasted_factuals_fail[distance < 1e-2]
+            generated_cfs_good_to_bad[action_mask] = broadcasted_factuals_fail[action_mask]
 
-        # Evaluate forward direction
-        save_dir_good_to_bad = os.path.join(save_dir, "good_to_bad")
-        os.makedirs(save_dir_good_to_bad, exist_ok=True)
-        metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
-            disc_model=disc_model,
-            gen_model=gen_model,
-            dataset=dataset,
-            X=X,
-            y=y,
-            factual_indices=factual_indices_good,
-            generated_cfs=generated_cfs_good_to_bad,
-            direction="forward",
-            save_dir=save_dir_good_to_bad,
-            p_value=p_value
-        )
-        metrics_results['forward'] = metrics_forward
+            # Evaluate forward direction
+            save_dir_good_to_bad = os.path.join(save_dir, "good_to_bad")
+            os.makedirs(save_dir_good_to_bad, exist_ok=True)
+            metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
+                disc_model=disc_model,
+                gen_model=gen_model,
+                dataset=dataset,
+                X=X,
+                y=y,
+                factual_indices=factual_indices_good,
+                generated_cfs=generated_cfs_good_to_bad,
+                direction="forward",
+                save_dir=save_dir_good_to_bad,
+                p_value=p_value,
+                mask=mask
+            )
+            metrics_results['forward'] = metrics_forward
 
-        # 2. Bad Risk → Good Risk
-        logger.info("\n--- Generating counterfactuals: Bad Risk → Good Risk ---")
-        factual_indices_bad = np.where(y == 1)[0][:50]
-        factual_points_bad = dataset.feature_transformer.transform(X[factual_indices_bad])
+            # 2. Bad Risk → Good Risk
+            logger.info("\n--- Generating counterfactuals: Bad Risk → Good Risk ---")
+            factual_indices_bad = np.where(y == 1)[0][:50]
+            factual_points_bad = dataset.feature_transformer.transform(X[factual_indices_bad])
 
-        generated_cfs_bad_to_good = generate_multiclass_counterfactuals(
-            model=multiclass_model,
-            factual_points=factual_points_bad,
-            target_class=0,  # Target class (good risk)
-            n_samples=100,
-            temperature=0.8,
-            device="cuda" if torch.cuda.is_available() else "cpu",
-            num_classes=len(dataset.classes),
-            p_value=p_value
-        )
+            generated_cfs_bad_to_good = generate_multiclass_counterfactuals(
+                model=multiclass_model,
+                factual_points=factual_points_bad,
+                target_class=0,  # Target class (good risk)
+                n_samples=100,
+                temperature=0.8,
+                device="cuda" if torch.cuda.is_available() else "cpu",
+                num_classes=len(dataset.classes),
+                p_value=p_value,
+                mask=mask
+            )
 
-        if p_value != 2.:
             generated_cfs_bad_to_good = np.array(generated_cfs_bad_to_good)
-            distance = np.abs(factual_points_bad[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_bad_to_good))
-            broadcasted_factuals_pass = np.broadcast_to(factual_points_bad[:, np.newaxis, np.newaxis, :], distance.shape)
-            generated_cfs_bad_to_good[distance < 1e-2] = broadcasted_factuals_pass[distance < 1e-2]
+            broadcasted_factuals_pass = np.broadcast_to(
+                factual_points_bad[:, np.newaxis, np.newaxis, :], 
+                generated_cfs_bad_to_good.shape
+                )
+            if p_value != 2.:
+                distance = np.abs(factual_points_bad[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs_bad_to_good))
+                generated_cfs_bad_to_good[distance < 1e-2] = broadcasted_factuals_pass[distance < 1e-2]
+            generated_cfs_bad_to_good[action_mask] = broadcasted_factuals_pass[action_mask]
 
-        # Evaluate reverse direction
-        save_dir_bad_to_good = os.path.join(save_dir, "bad_to_good")
-        os.makedirs(save_dir_bad_to_good, exist_ok=True)
-        metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
-            disc_model=disc_model,
-            gen_model=gen_model,
-            dataset=dataset,
-            X=X,
-            y=y,
-            factual_indices=factual_indices_bad,
-            generated_cfs=generated_cfs_bad_to_good,
-            direction="reverse",
-            save_dir=save_dir_bad_to_good,
-            p_value=p_value
-        )
-        metrics_results['reverse'] = metrics_reverse
+            # Evaluate reverse direction
+            save_dir_bad_to_good = os.path.join(save_dir, "bad_to_good")
+            os.makedirs(save_dir_bad_to_good, exist_ok=True)
+            metrics_reverse, cfs_orig_reverse = evaluate_counterfactuals(
+                disc_model=disc_model,
+                gen_model=gen_model,
+                dataset=dataset,
+                X=X,
+                y=y,
+                factual_indices=factual_indices_bad,
+                generated_cfs=generated_cfs_bad_to_good,
+                direction="reverse",
+                save_dir=save_dir_bad_to_good,
+                p_value=p_value,
+                mask=mask
+            )
+            metrics_results['reverse'] = metrics_reverse
 
-        # Compare metrics between directions
-        logger.info("\n=== Metrics Comparison Between Directions ===")
-        for metric in metrics_forward.keys():
-            logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
-                       f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
+            # Compare metrics between directions
+            logger.info("\n=== Metrics Comparison Between Directions ===")
+            for metric in metrics_forward.keys():
+                logger.info(f"{metric}: Forward={metrics_forward[metric]:.4f}, Reverse={metrics_reverse[metric]:.4f}, "
+                        f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
 
-        # Save factual points and counterfactuals for further analysis
-        np.save(os.path.join(save_dir, "factual_points_good.npy"), X[factual_indices_good])
-        np.save(os.path.join(save_dir, "factual_points_bad.npy"), X[factual_indices_bad])
+            # Save factual points and counterfactuals for further analysis
+            np.save(os.path.join(save_dir, "factual_points_good.npy"), X[factual_indices_good])
+            np.save(os.path.join(save_dir, "factual_points_bad.npy"), X[factual_indices_bad])
 
-        # Save metrics comparison
-        import json
-        with open(os.path.join(save_dir, f"metrics_comparison_{p_value}.json"), 'w') as f:
-            comparison = {
-                'forward': metrics_forward,
-                'reverse': metrics_reverse,
-                'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
-            }
-            json.dump(comparison, f, indent=2, default=str)
+            # Save metrics comparison
+            import json
+            with open(os.path.join(save_dir, f"metrics_comparison_{p_value}_{mask}.json"), 'w') as f:
+                comparison = {
+                    'forward': metrics_forward,
+                    'reverse': metrics_reverse,
+                    'diff': {k: metrics_forward[k] - metrics_reverse[k] for k in metrics_forward.keys()}
+                }
+                json.dump(comparison, f, indent=2, default=str)
     
     return multiclass_model, dataset, metrics_all
 
@@ -719,15 +755,16 @@ def train_wine_multiclass():
     logger.info(f"Class distribution: {np.unique(y, return_counts=True)}")
     
     # Set save directory
-    save_dir = "results/wine_multiclass"
+    save_dir = global_dir + "results/wine_multiclass"
     os.makedirs(save_dir, exist_ok=True)
 
-    noise_level = torch.tensor(
-            [
-                1 / len(np.unique(heloc_dataset.X_train[:, i])) * 0.1
-                for i in range(heloc_dataset.X_train.shape[1])
-            ]
-        )
+    #noise_level = np.array(
+    #        [
+    #            1 / len(np.unique(wine_dataset.X_train[:, i])) * 0.1
+    #            for i in range(wine_dataset.X_train.shape[1])
+    #        ]
+    #    )
+    noise_level = 0.003
     
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -765,65 +802,78 @@ def train_wine_multiclass():
     metrics_all = {}
     np.set_printoptions(suppress=True, precision=4)
 
-    for p_value in p_values:
-        metrics_all[p_value] = {}
-        metrics_results = metrics_all[p_value]
-    
-        # Generate counterfactuals for each class pair
-        for factual_class in dataset.factual_classes:
-            logger.info(f"\n--- Generating counterfactuals for factual class {factual_class} ---")
-            factual_indices = np.where(y == factual_class)[0][:50]
-            factual_points = dataset.feature_transformer.transform(X[factual_indices])
+    for mask_idx, mask in enumerate(dataset.masks):
+        metrics_all[mask_idx] = {}
+        for p_value in p_values:
+            metrics_all[mask_idx][p_value] = {}
+            metrics_results = metrics_all[mask_idx][p_value]
 
-            for target_class in dataset.classes:
-                if target_class == factual_class:
-                    continue
+            # Generate counterfactuals for each class pair
+            for factual_class in dataset.factual_classes:
+                logger.info(f"\n--- Generating counterfactuals for factual class {factual_class} ---")
+                factual_indices = np.where(y == factual_class)[0][:50]
+                factual_points = dataset.feature_transformer.transform(X[factual_indices])
 
-                logger.info(f"Generating counterfactuals: Class {factual_class} → Class {target_class}")
-                generated_cfs = generate_multiclass_counterfactuals(
-                    model=multiclass_model,
-                    factual_points=factual_points,
-                    target_class=target_class,
-                    n_samples=100,
-                    temperature=0.8,
-                    device="cuda" if torch.cuda.is_available() else "cpu",
-                    num_classes=len(dataset.classes),
-                    p_value=p_value
-                )
+                for target_class in dataset.classes:
+                    if target_class == factual_class:
+                        continue
 
-                if p_value != 2.:
+                    logger.info(f"Generating counterfactuals: Class {factual_class} → Class {target_class}")
+                    generated_cfs = generate_multiclass_counterfactuals(
+                        model=multiclass_model,
+                        factual_points=factual_points,
+                        target_class=target_class,
+                        n_samples=100,
+                        temperature=0.8,
+                        device="cuda" if torch.cuda.is_available() else "cpu",
+                        num_classes=len(dataset.classes),
+                        p_value=p_value,
+                        mask=mask
+                    )
+
+                    action_mask = np.zeros_like(mask, dtype=bool)
+                    action_mask[mask == 1.] = True
+                    
                     generated_cfs = np.array(generated_cfs)
-                    distance = np.abs(
-                        factual_points[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs))
-                    broadcasted_factuals_pass = np.broadcast_to(factual_points[:, np.newaxis, np.newaxis, :],
-                                                                distance.shape)
-                    generated_cfs[distance < 1e-2] = broadcasted_factuals_pass[distance < 1e-2]
+                    action_mask =  np.broadcast_to(
+                        action_mask[np.newaxis, np.newaxis, np.newaxis, :],
+                        generated_cfs.shape
+                    )
+                    broadcasted_factuals = np.broadcast_to(
+                        factual_points[:, np.newaxis, np.newaxis, :], 
+                        generated_cfs.shape
+                        )
+                    if p_value != 2.:
+                        distance = np.abs(factual_points[:, np.newaxis, np.newaxis, :] - np.array(generated_cfs))
+                        generated_cfs[distance < 1e-2] = broadcasted_factuals[distance < 1e-2]
+                    generated_cfs[action_mask] = broadcasted_factuals[action_mask]
 
-                # Evaluate counterfactuals
-                save_dir_class_pair = os.path.join(save_dir, f"class_{factual_class}_to_class_{target_class}")
-                os.makedirs(save_dir_class_pair, exist_ok=True)
-                metrics, cfs_orig = evaluate_counterfactuals(
-                    disc_model=disc_model,
-                    gen_model=gen_model,
-                    dataset=dataset,
-                    X=X,
-                    y=y,
-                    factual_indices=factual_indices,
-                    generated_cfs=generated_cfs,
-                    direction=f"class_{factual_class}_to_class_{target_class}",
-                    save_dir=save_dir_class_pair,
-                    p_value=p_value,
-                    target_class=target_class
-                )
-                metrics_results[f"class_{factual_class}_to_class_{target_class}"] = metrics
+                    # Evaluate counterfactuals
+                    save_dir_class_pair = os.path.join(save_dir, f"class_{factual_class}_to_class_{target_class}")
+                    os.makedirs(save_dir_class_pair, exist_ok=True)
+                    metrics, cfs_orig = evaluate_counterfactuals(
+                        disc_model=disc_model,
+                        gen_model=gen_model,
+                        dataset=dataset,
+                        X=X,
+                        y=y,
+                        factual_indices=factual_indices,
+                        generated_cfs=generated_cfs,
+                        direction=f"class_{factual_class}_to_class_{target_class}",
+                        save_dir=save_dir_class_pair,
+                        p_value=p_value,
+                        target_class=target_class,
+                        mask=mask
+                    )
+                    metrics_results[f"class_{factual_class}_to_class_{target_class}"] = metrics
 
-                # Save factual points and counterfactuals for further analysis
-                np.save(os.path.join(save_dir_class_pair, f"factual_points_class_{factual_class}.npy"), X[factual_indices])
+                    # Save factual points and counterfactuals for further analysis
+                    np.save(os.path.join(save_dir_class_pair, f"factual_points_class_{factual_class}.npy"), X[factual_indices])
 
-        # Save metrics comparison
-        import json
-        with open(os.path.join(save_dir, f"metrics_comparison_{p_value}.json"), 'w') as f:
-            json.dump(metrics_results, f, indent=2, default=str)
+            # Save metrics comparison
+            import json
+            with open(os.path.join(save_dir, f"metrics_comparison_{p_value}_{mask}.json"), 'w') as f:
+                json.dump(metrics_results, f, indent=2, default=str)
     
     return multiclass_model, dataset, metrics_all
 

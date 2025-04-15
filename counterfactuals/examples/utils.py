@@ -22,7 +22,8 @@ def evaluate_counterfactuals(
     save_dir=None,
     *,
     p_value,
-    target_class = None
+    target_class = None,
+    mask
 ):
     """
     Evaluate generated counterfactuals using both simple statistics and CFMetrics
@@ -76,6 +77,9 @@ def evaluate_counterfactuals(
         y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
         log_probs = gen_model(X_train_tensor, y_train_tensor)
         threshold = torch.median(log_probs)
+
+    #action_mask = np.ones_like(mask, dtype=bool)
+    #action_mask[mask]
     
     # Create metrics calculator
     metrics = CFMetrics(
@@ -90,7 +94,7 @@ def evaluate_counterfactuals(
         continuous_features=dataset.numerical_features,
         categorical_features=dataset.categorical_features,
         prob_plausibility_threshold=threshold,
-        action_mask=np.ones(1, X_train.shape[1])
+        action_mask=mask
     )
     
     # Calculate all metrics
@@ -102,7 +106,7 @@ def evaluate_counterfactuals(
     
     # Save metrics to file
     if save_dir:
-        metrics_file = os.path.join(save_dir, f"metrics_{direction}_{p_value}.json")
+        metrics_file = os.path.join(save_dir, f"metrics_{direction}_{p_value}_{mask}.json")
         import json
         with open(metrics_file, 'w') as f:
             # ignore on error

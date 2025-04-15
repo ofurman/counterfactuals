@@ -151,7 +151,10 @@ class CFMetrics:
         Returns:
             float: Actionability metric value.
         """
-        return np.all(self.X_test[self.action_mask] == self.X_cf[self.action_mask], axis=1).mean()
+        #print(self.mask.shape)
+        #print(self.X_test.shape, self.X_test[:, self.mask].shape)
+        #return np.all(self.X_test[:, self.mask] == self.X_cf[:, self.mask], axis=1).mean()
+        return np.all(self.X_test == self.X_cf, axis=1).mean()
 
     def sparsity(self) -> float:
         """
@@ -192,7 +195,7 @@ class CFMetrics:
         X = torch.from_numpy(X).float()
         y = torch.from_numpy(self.y_target).float()
         gen_log_probs = self.gen_model(X, y).detach().numpy()
-        return gen_log_probs.mean()
+        return np.median(gen_log_probs)
 
     def lof_scores(self, cf: bool = True, n_neighbors: int = 20) -> float:
         """
@@ -219,7 +222,7 @@ class CFMetrics:
         # ORIG: It is the opposite as bigger is better, i.e. large values correspond to inliers.
         # NEG: smaller is better, i.e. small values correspond to inliers.
         lof_scores = -lof.score_samples(X)
-        return lof_scores.mean()
+        return np.median(lof_scores)
 
     def isolation_forest_scores(
         self, cf: bool = True, n_estimators: int = 100
@@ -247,15 +250,15 @@ class CFMetrics:
         clf = IsolationForest(n_estimators=n_estimators, random_state=42)
         clf.fit(X_train)
         lof_scores = clf.decision_function(X)
-        return lof_scores.mean()
+        return np.median(lof_scores)
 
         # isolation_forest_scores = isolation_forest_metric(X_train, X, self.X_test, n_estimators) TODO: fix this
         # return isolation_forest_scores.mean()
 
     def feature_distance(
         self,
-        continuous_metric: Optional[str] = "euclidean",
-        categorical_metric: Optional[str] = "jaccard",
+        continuous_metric: Optional[str] = None,
+        categorical_metric: Optional[str] = None,
         X_train: Optional[np.ndarray] = None,
     ) -> float:
         """
@@ -281,7 +284,7 @@ class CFMetrics:
                 continuous_features=self.continuous_features,
                 metric=continuous_metric,
                 X_all=X_train,
-                agg="mean",
+                agg="median",
             )
         elif continuous_metric is None:
             return categorical_distance(
@@ -289,7 +292,7 @@ class CFMetrics:
                 X_cf=X,
                 categorical_features=self.categorical_features,
                 metric=categorical_metric,
-                agg="mean",
+                agg="median",
             )
         else:
             return distance_combined(
