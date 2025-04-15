@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.inspection import DecisionBoundaryDisplay
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics.pairwise import euclidean_distances
@@ -727,6 +728,7 @@ def generate_multiclass_counterfactuals(
 def visualize_multiclass_counterfactual_generation(
     model,
     dataset,
+    disc_model,
     num_factual=5,
     num_samples=20,
     temperature=0.8,
@@ -739,6 +741,7 @@ def visualize_multiclass_counterfactual_generation(
     Args:
         model: Trained flow model
         dataset: MulticlassCounterfactualWrapper instance
+        disc_model: Discriminator model for visualizing decision boundaries
         num_factual: Number of factual points to generate counterfactuals for
         num_samples: Number of counterfactual samples to generate per factual point
         temperature: Temperature for sampling (higher = more diversity)
@@ -755,6 +758,30 @@ def visualize_multiclass_counterfactual_generation(
         os.makedirs(samples_dir, exist_ok=True)
     
     results = []
+
+    # Function to plot decision boundaries
+    def plot_decision_boundary(ax=None, alpha=0.3):
+        """Plot decision boundaries from discriminator model"""
+        # Check if we have a subplot or create a new one
+        if ax is None:
+            ax = plt.gca()
+            
+        # Create a grid of points
+        x_min, x_max = plt.xlim()
+        y_min, y_max = plt.ylim()
+        
+        # Create mesh grid
+        xline = torch.linspace(x_min, x_max, 100)
+        yline = torch.linspace(y_min, y_max, 100)
+        xgrid, ygrid = torch.meshgrid(xline, yline)
+        xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+
+        y_hat = disc_model.predict(xyinput)
+        y_hat = y_hat.reshape(100, 100)
+
+        display = DecisionBoundaryDisplay(xx0=xgrid, xx1=ygrid, response=y_hat)
+        ax = display.plot(plot_method="contour", ax=ax, alpha=0.3).ax_
+        return ax
     
     # For each factual class
     for factual_class in dataset.factual_classes:
@@ -826,7 +853,7 @@ def visualize_multiclass_counterfactual_generation(
             colors = plt.cm.tab10(np.linspace(0, 1, num_factual))
             
             # Create overview plot for this class pair
-            plt.figure(figsize=(14, 10))
+            fig, ax = plt.subplots(figsize=(14, 10))
             
             # Plot all original data points with low opacity
             plt.scatter(
@@ -837,6 +864,9 @@ def visualize_multiclass_counterfactual_generation(
                 alpha=0.2,
                 s=30
             )
+            
+            # Plot decision boundaries before adding other elements
+            plot_decision_boundary(ax=ax, alpha=0.6)
             
             # Add a legend for the original classes
             for cls in dataset.classes:
@@ -884,7 +914,7 @@ def visualize_multiclass_counterfactual_generation(
                 
                 # Create individual plot for this factual point
                 if save_dir:
-                    plt.figure(figsize=(10, 8))
+                    fig_ind, ax_ind = plt.subplots(figsize=(10, 8))
                     
                     # Plot original data with low opacity
                     plt.scatter(
@@ -895,6 +925,9 @@ def visualize_multiclass_counterfactual_generation(
                         alpha=0.2,
                         s=30
                     )
+                    
+                    # Plot decision boundaries
+                    plot_decision_boundary(ax=ax_ind, alpha=0.6)
                     
                     # Plot factual point
                     plt.scatter(

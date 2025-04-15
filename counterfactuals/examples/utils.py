@@ -16,6 +16,7 @@ def evaluate_counterfactuals(
     dataset, 
     X, 
     y, 
+    target_class,
     factual_indices, 
     generated_cfs,
     direction="forward",
@@ -50,7 +51,7 @@ def evaluate_counterfactuals(
     
     # Calculate target labels (opposite of factual)
     y_factual = y[factual_indices]
-    y_target = 1 - y_factual
+    y_target = target_class.repeat(len(factual_indices))
     
     # Replicate y_target to match X_cf size
     cf_per_factual = X_cf.shape[0] // len(factual_indices)

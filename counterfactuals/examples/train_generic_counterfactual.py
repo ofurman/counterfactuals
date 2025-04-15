@@ -24,7 +24,9 @@ from counterfactuals.discriminative_models.logistic_regression import (
 from counterfactuals.discriminative_models.multilayer_perceptron import MultilayerPerceptron
 from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.wine import WineDataset
-
+from counterfactuals.datasets.moons import MoonsDataset
+from counterfactuals.datasets.blobs import BlobsDataset
+from counterfactuals.datasets.generic_counterfactual import AbstractDataset
 
 # Configure logging
 logging.basicConfig(
@@ -34,49 +36,39 @@ logging.basicConfig(
 logger = logging.getLogger('counterfactual_example')
 
 
+def prepare_dataset_and_models(dataset_class: AbstractDataset):
+    dataset = dataset_class()
+    disc_model = MultilayerPerceptron(input_size=dataset.X_train.shape[1], hidden_layer_sizes=[256, 256], target_size=np.unique(dataset.y_train).shape[0])
+    disc_model.fit(dataset.train_dataloader(64, True), dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
+    disc_model = disc_model.eval()
+    y_train = disc_model.predict(dataset.X_train).numpy().astype(int)
+    y_test = disc_model.predict(dataset.X_test).numpy().astype(int)
+    logger.info(f"Discriminator model accuracy: {np.sum(y_test == dataset.y_test) / len(dataset.y_test)}")
+    
+
+    dataset.y_train = y_train
+    dataset.y_test = y_test
+
+    gen_model = MaskedAutoregressiveFlow(features=dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
+    gen_model.fit(dataset.train_dataloader(64, True, 0.03), dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
+    return dataset, disc_model, gen_model
+
+
 def train_moons_multiclass():
     """
     Example using the moons dataset with multiclass counterfactual generation
     """
     logger.info("Starting moons dataset example (multiclass)")
     
-    # Generate the moons dataset
-    X, y = make_moons(n_samples=1000, noise=0.1, random_state=42)
-    logger.info(f"Generated moons dataset with {len(X)} samples")
-    logger.info(f"Class distribution: Class 0: {np.sum(y == 0)}, Class 1: {np.sum(y == 1)}")
+    dataset, disc_model, gen_model = prepare_dataset_and_models(MoonsDataset)
 
-    # Load the law dataset
-    train_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).float()),
-        batch_size=64,
-        shuffle=True
-    )
-
-    test_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).float()),
-        batch_size=64,
-        shuffle=False
-    )
-
-    disc_model = MultilayerPerceptron(input_size=X.shape[1], hidden_layer_sizes=[128, 128], target_size=len(np.unique(y)))
-    disc_model.fit(train_dataloader, test_dataloader, epochs=300, lr=0.001, patience=100)
-    logger.info("Discriminator model training complete")
-    logger.info("Evaluating discriminator model")
-    y_pred = disc_model.predict(X).numpy().astype(int)
-    logger.info(f"Discriminator model accuracy: {np.sum(y_pred == y) / len(y)}")
-    y = disc_model.predict(X).numpy().astype(int)
-
-
-    gen_model = MaskedAutoregressiveFlow(features=X.shape[1], hidden_features=32, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(train_dataloader, test_dataloader, num_epochs=300, learning_rate=0.001, patience=100)
-    
     # Set save directory
     save_dir = "results/moons_multiclass"
     os.makedirs(save_dir, exist_ok=True)
     
     # Visualize the dataset
     visualize_dataset(
-        X, y, 
+        dataset.X_train, dataset.y_train, 
         title="Moons Dataset (Multiclass)", 
         save_path=os.path.join(save_dir, "moons_dataset.png")
     )
@@ -85,8 +77,8 @@ def train_moons_multiclass():
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
     dataset = MulticlassCounterfactualWrapper(
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_classes=[0, 1],  # Use both classes as factual
         n_nearest=8,
         noise_level=0.03,
@@ -103,8 +95,8 @@ def train_moons_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
-        patience=100,
+        num_epochs=200,
+        patience=50,
         noise_level=0.03,
         save_dir=os.path.join(save_dir, "multiclass_model"),
         log_interval=10,
@@ -120,6 +112,7 @@ def train_moons_multiclass():
     visualize_multiclass_counterfactual_generation(
         model=multiclass_model,
         dataset=dataset,
+        disc_model=disc_model,
         num_factual=6,
         num_samples=40,
         temperature=0.8,
@@ -134,8 +127,8 @@ def train_moons_multiclass():
 
     for factual_class in dataset.factual_classes:
         logger.info(f"Generating counterfactuals for factual class {factual_class}")
-        factual_indices = np.where(y == factual_class)[0]
-        factual_points = dataset.feature_transformer.transform(X[factual_indices])
+        factual_indices = np.where(dataset.y_train == factual_class)[0]
+        factual_points = dataset.feature_transformer.transform(dataset.X_train[factual_indices])
         
         for target_class in dataset.classes:
             if target_class == factual_class:
@@ -156,8 +149,8 @@ def train_moons_multiclass():
                 disc_model=disc_model,
                 gen_model=gen_model,
                 dataset=dataset,
-                X=X,
-                y=y,
+                X=dataset.X_train,
+                y=dataset.y_train,
                 factual_indices=factual_indices,
                 generated_cfs=generated_cfs,
                 direction=f'class_{factual_class}_to_class_{target_class}',
@@ -174,45 +167,9 @@ def train_three_class_example():
     """
     logger.info("Starting three-class dataset example")
     
-    # Generate a three-class dataset
-    X, y = make_classification(
-        n_samples=1000,
-        n_features=2,
-        n_informative=2,
-        n_redundant=0,
-        n_clusters_per_class=1,
-        n_classes=3,
-        random_state=42
-    )
-    logger.info(f"Generated three-class dataset with {len(X)} samples")
-    logger.info(f"Class distribution: Class 0: {np.sum(y == 0)}, Class 1: {np.sum(y == 1)}, Class 2: {np.sum(y == 2)}")
+    dataset, disc_model, gen_model = prepare_dataset_and_models(BlobsDataset)
 
-    # Load the law dataset
-    train_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).float()),
-        batch_size=64,
-        shuffle=True
-    )
-
-    test_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).float()),
-        batch_size=64,
-        shuffle=False
-    )
-
-    disc_model = MultilayerPerceptron(input_size=X.shape[1], hidden_layer_sizes=[128, 128], target_size=len(np.unique(y)))
-    disc_model.fit(train_dataloader, test_dataloader, epochs=100, lr=0.001, patience=100)
-    logger.info("Discriminator model training complete")
-    logger.info("Evaluating discriminator model")
-    y_pred = disc_model.predict(X).numpy().astype(int)
-    logger.info(f"Discriminator model accuracy: {np.sum(y_pred == y) / len(y)}")
-    y = disc_model.predict(X).numpy().astype(int)
-
-
-    gen_model = MaskedAutoregressiveFlow(features=X.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(train_dataloader, test_dataloader, num_epochs=100, learning_rate=0.001, patience=100)
-
-    logger.info(f"Loaded three-class dataset with {len(X)} samples and {X.shape[1]} features")
+    logger.info(f"Loaded three-class dataset with {len(dataset.X_train)} samples and {dataset.X_train.shape[1]} features")
     
     # Set save directory
     save_dir = "results/law_multiclass"
@@ -224,7 +181,7 @@ def train_three_class_example():
     
     # Visualize the dataset
     visualize_dataset(
-        X, y, 
+        dataset.X_train, dataset.y_train, 
         title="Three-Class Dataset", 
         save_path=os.path.join(save_dir, "three_class_dataset.png")
     )
@@ -233,8 +190,8 @@ def train_three_class_example():
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
     dataset = MulticlassCounterfactualWrapper(
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_classes=[0, 1, 2],  # Use all classes as factual
         n_nearest=8,
         noise_level=0.03,
@@ -251,8 +208,8 @@ def train_three_class_example():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
-        patience=100,
+        num_epochs=200,
+        patience=50,
         noise_level=0.03,
         save_dir=os.path.join(save_dir, "multiclass_model"),
         log_interval=10,
@@ -268,6 +225,7 @@ def train_three_class_example():
     visualize_multiclass_counterfactual_generation(
         model=multiclass_model,
         dataset=dataset,
+        disc_model=disc_model,
         num_factual=5,
         num_samples=30,
         temperature=0.8,
@@ -283,8 +241,8 @@ def train_three_class_example():
 
     for factual_class in dataset.factual_classes:
         logger.info(f"Generating counterfactuals for factual class {factual_class}")
-        factual_indices = np.where(y == factual_class)[0]
-        factual_points = dataset.feature_transformer.transform(X[factual_indices])
+        factual_indices = np.where(dataset.y_train == factual_class)[0]
+        factual_points = dataset.feature_transformer.transform(dataset.X_train[factual_indices])
         
         for target_class in dataset.classes:
             if target_class == factual_class:
@@ -305,8 +263,9 @@ def train_three_class_example():
                 disc_model=disc_model,
                 gen_model=gen_model,
                 dataset=dataset,
-                X=X,
-                y=y,
+                X=dataset.X_train,
+                y=dataset.y_train,
+                target_class=target_class,
                 factual_indices=factual_indices,
                 generated_cfs=generated_cfs,
                 direction=f'class_{factual_class}_to_class_{target_class}',
@@ -323,20 +282,7 @@ def train_law_multiclass():
     """
     logger.info("Starting law dataset example (multiclass)")
     
-    # Load the law dataset
-    law_dataset = LawDataset()
-    disc_model = LogisticRegression(input_size=law_dataset.X_train.shape[1], target_size=1)
-    disc_model.fit(law_dataset.train_dataloader(64, True), law_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
-    law_dataset.y_train = disc_model.predict(law_dataset.X_train).numpy()
-    law_dataset.y_test = disc_model.predict(law_dataset.X_test).numpy()
-
-    gen_model = MaskedAutoregressiveFlow(features=law_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(law_dataset.train_dataloader(64, True, 0.03), law_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
-
-    X = np.vstack([law_dataset.X_train, law_dataset.X_test])
-    y = np.concatenate([law_dataset.y_train, law_dataset.y_test])
-    logger.info(f"Loaded law dataset with {len(X)} samples and {X.shape[1]} features")
-    
+    dataset, disc_model, gen_model = prepare_dataset_and_models(LawDataset)
     # Set save directory
     save_dir = "results/law_multiclass"
     os.makedirs(save_dir, exist_ok=True)
@@ -344,8 +290,8 @@ def train_law_multiclass():
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
     dataset = MulticlassCounterfactualWrapper(
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_classes=[0, 1],  # Use both classes as factual
         n_nearest=10,
         noise_level=0.03,
@@ -362,8 +308,8 @@ def train_law_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
-        patience=100,
+        num_epochs=200,
+        patience=50,
         noise_level=0.03,
         save_dir=save_dir,
         log_interval=10,
@@ -378,8 +324,8 @@ def train_law_multiclass():
     
     # 1. Failed → Passed
     logger.info("\n--- Generating counterfactuals: Failed → Passed ---")
-    factual_indices_fail = np.where(y == 0)[0][:20]
-    factual_points_fail = dataset.feature_transformer.transform(X[factual_indices_fail])
+    factual_indices_fail = np.where(dataset.y_train == 0)[0][:20]
+    factual_points_fail = dataset.feature_transformer.transform(dataset.X_train[factual_indices_fail])
     
     generated_cfs_fail_to_pass = generate_multiclass_counterfactuals(
         model=multiclass_model,
@@ -398,8 +344,8 @@ def train_law_multiclass():
         disc_model=disc_model,
         gen_model=gen_model,
         dataset=dataset,
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_indices=factual_indices_fail,
         generated_cfs=generated_cfs_fail_to_pass,
         direction="forward",
@@ -409,8 +355,8 @@ def train_law_multiclass():
     
     # 2. Passed → Failed
     logger.info("\n--- Generating counterfactuals: Passed → Failed ---")
-    factual_indices_pass = np.where(y == 1)[0][:20]
-    factual_points_pass = dataset.feature_transformer.transform(X[factual_indices_pass])
+    factual_indices_pass = np.where(dataset.y_train == 1)[0][:20]
+    factual_points_pass = dataset.feature_transformer.transform(dataset.X_train[factual_indices_pass])
     
     generated_cfs_pass_to_fail = generate_multiclass_counterfactuals(
         model=multiclass_model,
@@ -429,8 +375,8 @@ def train_law_multiclass():
         disc_model=disc_model,
         gen_model=gen_model,
         dataset=dataset,
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_indices=factual_indices_pass,
         generated_cfs=generated_cfs_pass_to_fail,
         direction="reverse",
@@ -445,8 +391,8 @@ def train_law_multiclass():
                    f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
     
     # Save factual points and counterfactuals for further analysis
-    np.save(os.path.join(save_dir, "factual_points_fail.npy"), X[factual_indices_fail])
-    np.save(os.path.join(save_dir, "factual_points_pass.npy"), X[factual_indices_pass])
+    np.save(os.path.join(save_dir, "factual_points_fail.npy"), dataset.X_train[factual_indices_fail])
+    np.save(os.path.join(save_dir, "factual_points_pass.npy"), dataset.X_train[factual_indices_pass])
     
     # Save metrics comparison
     import json
@@ -467,19 +413,9 @@ def train_heloc_multiclass():
     """
     logger.info("Starting HELOC dataset example (multiclass)")
     
-    # Load the HELOC dataset
-    heloc_dataset = HelocDataset()
-    disc_model = LogisticRegression(input_size=heloc_dataset.X_train.shape[1], target_size=1)
-    disc_model.fit(heloc_dataset.train_dataloader(64, True), heloc_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
-    heloc_dataset.y_train = disc_model.predict(heloc_dataset.X_train).numpy()
-    heloc_dataset.y_test = disc_model.predict(heloc_dataset.X_test).numpy()
+    dataset, disc_model, gen_model = prepare_dataset_and_models(HelocDataset)
 
-    gen_model = MaskedAutoregressiveFlow(features=heloc_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(heloc_dataset.train_dataloader(64, True, 0.03), heloc_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
-
-    X = np.vstack([heloc_dataset.X_train, heloc_dataset.X_test])
-    y = np.concatenate([heloc_dataset.y_train, heloc_dataset.y_test])
-    logger.info(f"Loaded HELOC dataset with {len(X)} samples and {X.shape[1]} features")
+    logger.info(f"Loaded HELOC dataset with {len(dataset.X_train)} samples and {dataset.X_train.shape[1]} features")
     
     # Set save directory
     save_dir = "results/heloc_multiclass"
@@ -488,8 +424,8 @@ def train_heloc_multiclass():
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
     dataset = MulticlassCounterfactualWrapper(
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_classes=[0, 1],  # Use both classes as factual
         n_nearest=10,
         noise_level=0.03,
@@ -506,8 +442,8 @@ def train_heloc_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
-        patience=100,
+        num_epochs=200,
+        patience=50,
         noise_level=0.03,
         save_dir=save_dir,
         log_interval=10,
@@ -522,8 +458,8 @@ def train_heloc_multiclass():
     
     # 1. Good Risk → Bad Risk
     logger.info("\n--- Generating counterfactuals: Good Risk → Bad Risk ---")
-    factual_indices_good = np.where(y == 0)[0][:20]
-    factual_points_good = dataset.feature_transformer.transform(X[factual_indices_good])
+    factual_indices_good = np.where(dataset.y_train == 0)[0][:20]
+    factual_points_good = dataset.feature_transformer.transform(dataset.X_train[factual_indices_good])
     
     generated_cfs_good_to_bad = generate_multiclass_counterfactuals(
         model=multiclass_model,
@@ -542,8 +478,8 @@ def train_heloc_multiclass():
         disc_model=disc_model,
         gen_model=gen_model,
         dataset=dataset,
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_indices=factual_indices_good,
         generated_cfs=generated_cfs_good_to_bad,
         direction="forward",
@@ -553,8 +489,8 @@ def train_heloc_multiclass():
     
     # 2. Bad Risk → Good Risk
     logger.info("\n--- Generating counterfactuals: Bad Risk → Good Risk ---")
-    factual_indices_bad = np.where(y == 1)[0][:20]
-    factual_points_bad = dataset.feature_transformer.transform(X[factual_indices_bad])
+    factual_indices_bad = np.where(dataset.y_train == 1)[0][:20]
+    factual_points_bad = dataset.feature_transformer.transform(dataset.X_train[factual_indices_bad])
     
     generated_cfs_bad_to_good = generate_multiclass_counterfactuals(
         model=multiclass_model,
@@ -573,8 +509,8 @@ def train_heloc_multiclass():
         disc_model=disc_model,
         gen_model=gen_model,
         dataset=dataset,
-        X=X,
-        y=y,
+        X=dataset.X_train,
+        y=dataset.y_train,
         factual_indices=factual_indices_bad,
         generated_cfs=generated_cfs_bad_to_good,
         direction="reverse",
@@ -589,8 +525,8 @@ def train_heloc_multiclass():
                    f"Diff={metrics_forward[metric]-metrics_reverse[metric]:+.4f}")
     
     # Save factual points and counterfactuals for further analysis
-    np.save(os.path.join(save_dir, "factual_points_good.npy"), X[factual_indices_good])
-    np.save(os.path.join(save_dir, "factual_points_bad.npy"), X[factual_indices_bad])
+    np.save(os.path.join(save_dir, "factual_points_good.npy"), dataset.X_train[factual_indices_good])
+    np.save(os.path.join(save_dir, "factual_points_bad.npy"), dataset.X_train[factual_indices_bad])
     
     # Save metrics comparison
     import json
@@ -611,24 +547,10 @@ def train_wine_multiclass():
     """
     logger.info("Starting Wine dataset example (multiclass)")
     
-    # Load the Wine dataset
-    wine_dataset = WineDataset()
-    disc_model = MultinomialLogisticRegression(input_size=wine_dataset.X_train.shape[1], target_size=len(np.unique(wine_dataset.y_train)))
-    disc_model.fit(wine_dataset.train_dataloader(64, True), wine_dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
-
-    logger.info("Evaluating discriminator model")
-    y_pred = disc_model.predict(wine_dataset.X_train).numpy().astype(int)
-    logger.info(f"Discriminator model accuracy: {np.sum(y_pred == wine_dataset.y_train) / len(wine_dataset.y_train)}")
-    wine_dataset.y_train = disc_model.predict(wine_dataset.X_train).numpy().astype(int)
-    wine_dataset.y_test = disc_model.predict(wine_dataset.X_test).numpy().astype(int)
-
-    gen_model = MaskedAutoregressiveFlow(features=wine_dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(wine_dataset.train_dataloader(64, True, 0.03), wine_dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
-
-    X = np.vstack([wine_dataset.X_train, wine_dataset.X_test])
-    y = np.concatenate([wine_dataset.y_train, wine_dataset.y_test])
-    logger.info(f"Loaded Wine dataset with {len(X)} samples and {X.shape[1]} features")
-    logger.info(f"Class distribution: {np.unique(y, return_counts=True)}")
+    dataset, disc_model, gen_model = prepare_dataset_and_models(WineDataset)
+    
+    logger.info(f"Loaded Wine dataset with {len(dataset.X_train)} samples and {dataset.X_train.shape[1]} features")
+    logger.info(f"Class distribution: {np.unique(dataset.y_train, return_counts=True)}")
     
     # Set save directory
     save_dir = "results/wine_multiclass"
@@ -637,9 +559,9 @@ def train_wine_multiclass():
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
     dataset = MulticlassCounterfactualWrapper(
-        X=X,
-        y=y,
-        factual_classes=list(np.unique(y)),  # Use all classes as factual
+        X=dataset.X_train,
+        y=dataset.y_train,
+        factual_classes=list(np.unique(dataset.y_train)),  # Use all classes as factual
         n_nearest=10,
         noise_level=0.03,
         log_level='INFO',
@@ -655,8 +577,8 @@ def train_wine_multiclass():
         num_blocks_per_layer=2,
         learning_rate=1e-3,
         batch_size=None,
-        num_epochs=10,
-        patience=100,
+        num_epochs=200,
+        patience=50,
         noise_level=0.03,
         save_dir=save_dir,
         log_interval=10,
@@ -672,8 +594,8 @@ def train_wine_multiclass():
     # Generate counterfactuals for each class pair
     for factual_class in dataset.factual_classes:
         logger.info(f"\n--- Generating counterfactuals for factual class {factual_class} ---")
-        factual_indices = np.where(y == factual_class)[0][:20]
-        factual_points = dataset.feature_transformer.transform(X[factual_indices])
+        factual_indices = np.where(dataset.y_train == factual_class)[0][:20]
+        factual_points = dataset.feature_transformer.transform(dataset.X_train[factual_indices])
         
         for target_class in dataset.classes:
             if target_class == factual_class:
@@ -697,8 +619,8 @@ def train_wine_multiclass():
                 disc_model=disc_model,
                 gen_model=gen_model,
                 dataset=dataset,
-                X=X,
-                y=y,
+                X=dataset.X_train,
+                y=dataset.y_train,
                 factual_indices=factual_indices,
                 generated_cfs=generated_cfs,
                 direction=f"class_{factual_class}_to_class_{target_class}",
@@ -707,7 +629,7 @@ def train_wine_multiclass():
             metrics_results[f"class_{factual_class}_to_class_{target_class}"] = metrics
             
             # Save factual points and counterfactuals for further analysis
-            np.save(os.path.join(save_dir_class_pair, f"factual_points_class_{factual_class}.npy"), X[factual_indices])
+            np.save(os.path.join(save_dir_class_pair, f"factual_points_class_{factual_class}.npy"), dataset.X_train[factual_indices])
     
     # Save metrics comparison
     import json
