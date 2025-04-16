@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from collections import defaultdict
 
 from counterfactuals.datasets.base import AbstractDataset
+from counterfactuals.discriminative_models.base import BaseDiscModel
 
 # Configure logging
 logging.basicConfig(
@@ -41,7 +42,8 @@ class MulticlassCounterfactualDataset(Dataset):
         classes: List[int] = [0, 1],
         n_nearest: int = 5,
         noise_level: float = 0.05,
-        distance_metric: str = 'euclidean'
+        classifier: BaseDiscModel = None,
+        prob_threshold: float = 0.0
     ):
         """
         Args:
@@ -49,7 +51,8 @@ class MulticlassCounterfactualDataset(Dataset):
             X_counterfactual_dict: Dictionary mapping class labels to arrays of counterfactual points
             n_nearest: Number of nearest counterfactual points to use for each factual point per class
             noise_level: Standard deviation of Gaussian noise to add to counterfactual points
-            distance_metric: Distance metric to use ('euclidean', 'manhattan', etc.)
+            classifier: Classifier model
+            prob_threshold: Probability threshold for classifier
         """
         self.X_factual = X_factual.astype(np.float32)
         self.X_counterfactual_dict = {k: v.astype(np.float32) for k, v in X_counterfactual_dict.items()}
@@ -57,6 +60,8 @@ class MulticlassCounterfactualDataset(Dataset):
         self.n_nearest = n_nearest
         self.noise_level = noise_level
         self.counterfactual_classes = list(X_counterfactual_dict.keys())
+        self.classifier = classifier
+        self.prob_threshold = prob_threshold
         
         # Compute distance matrices between factual and counterfactual points for each class
         self.dist_matrices = {}
@@ -65,11 +70,15 @@ class MulticlassCounterfactualDataset(Dataset):
         
         for cf_class, X_counterfactual in self.X_counterfactual_dict.items():
             # Compute distance matrix
-            if distance_metric == 'euclidean':
-                dist_matrix = euclidean_distances(X_factual, X_counterfactual)
-            else:
-                # Default to euclidean distance
-                dist_matrix = euclidean_distances(X_factual, X_counterfactual)
+            dist_matrix = euclidean_distances(X_factual, X_counterfactual)
+
+            # If a classifier is provided with a threshold, filter the distance matrix
+            if self.classifier is not None and self.prob_threshold > 0:
+                posterior_probs = self.classifier.predict_proba(X_counterfactual)[:, cf_class]
+                below_threshold_mask = posterior_probs < self.prob_threshold
+                # Set distances to infinity for points with probability below threshold
+                logger.info(f"Setting {below_threshold_mask.sum()} distances to infinity out of {len(below_threshold_mask)} for class {cf_class}")
+                dist_matrix[:, below_threshold_mask] = np.inf
             
             self.dist_matrices[cf_class] = dist_matrix
             
@@ -243,8 +252,9 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         noise_level: float = 0.05,
         test_size: float = 0.2,
         random_state: int = 42,
-        distance_metric: str = 'euclidean',
-        log_level: str = 'INFO'
+        log_level: str = 'INFO',
+        classifier: BaseDiscModel = None,
+        prob_threshold: float = 0.0
     ):
         """
         Initialize the multiclass counterfactual wrapper
@@ -257,8 +267,9 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
             noise_level: Standard deviation of Gaussian noise to add to counterfactual points
             test_size: Fraction of data to use for testing
             random_state: Random seed
-            distance_metric: Distance metric to use for nearest neighbors
             log_level: Logging level
+            classifier: Classifier model
+            prob_threshold: Probability threshold for classifier
         """
         # Configure logging
         numeric_level = getattr(logging, log_level.upper(), None)
@@ -276,7 +287,8 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         self.classes = np.unique(y)
         self.n_nearest = n_nearest
         self.noise_level = noise_level
-        self.distance_metric = distance_metric
+        self.classifier = classifier
+        self.prob_threshold = prob_threshold
         
         # Get unique classes
         self.classes = np.unique(y)
@@ -377,8 +389,9 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
                 X_counterfactual_dict=X_counterfactual_dict,
                 n_nearest=self.n_nearest,
                 noise_level=self.noise_level,
-                distance_metric=self.distance_metric,
-                classes=list(self.classes)
+                classes=list(self.classes),
+                classifier=self.classifier,
+                prob_threshold=self.prob_threshold
             )
             
             datasets.append(dataset)
@@ -710,12 +723,16 @@ def generate_multiclass_counterfactuals(
             context = torch.cat([factual_tensor, class_tensor], dim=1)
             
             # Generate samples
-            samples, _ = model.sample_and_log_prob(
+            samples, log_probs = model.sample_and_log_prob(
                 num_samples=n_samples,
                 context=context,
                 temp=temperature
             )
-            
+
+            # remove samples with log prob less than median log prob
+            median_log_prob = np.quantile(log_probs, 0.25)
+            samples = samples[log_probs >= median_log_prob]
+            log_probs = log_probs[log_probs >= median_log_prob]
             # Convert to numpy
             samples = samples.cpu().numpy()
             
