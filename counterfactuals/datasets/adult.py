@@ -1,3 +1,7 @@
+from typing import Union
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+import torch
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -6,7 +10,17 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from counterfactuals.datasets.base import AbstractDataset
 
 
+class CustomCategoricalTransformer(BaseEstimator, TransformerMixin):
+    def fit(self, X, categorical_mapping, y=None, ):
+        self.categorical_mapping = categorical_mapping
+        return self
+
+    def transform(self, X):
+        return X.apply(lambda x: self.categorical_mapping[x])
+
 class AdultDataset(AbstractDataset):
+    alpha = 1e-6
+
     def __init__(self, file_path: str = "data/adult.csv"):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
@@ -36,22 +50,20 @@ class AdultDataset(AbstractDataset):
         self.numerical_columns = list(range(0, 2))
         self.categorical_columns = list(range(2, len(self.feature_columns)))
         target_column = "income"
-
         # Downsample to minor class
-        # raw_data = raw_data.dropna(subset=self.feature_columns)
-        # row_per_class = sum(raw_data[target_column] == 1)
-        # raw_data = pd.concat(
-        #     [
-        #         raw_data[raw_data[target_column] == 0].sample(
-        #             row_per_class, random_state=42
-        #         ),
-        #         raw_data[raw_data[target_column] == 1],
-        #     ]
-        # )
+        raw_data = raw_data.dropna(subset=self.feature_columns)
+        row_per_class = sum(raw_data[target_column] == 1)
+        raw_data = pd.concat(
+            [
+                raw_data[raw_data[target_column] == 0],
+                raw_data[raw_data[target_column] == 1].sample(
+                    row_per_class, random_state=42
+                ),
+            ]
+        )
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
-
         return X, y
 
     def transform(
@@ -69,15 +81,19 @@ class AdultDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(sparse_output=False),
+                    OneHotEncoder(sparse=False),
                     self.categorical_columns,
                 ),
             ],
         )
-        # self.feature_transformer.set_output(transform='pandas')
-
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
+
+        # target_transformer = LabelEncoder()
+        # y_train = self.target_transformer.fit_transform(y_train.reshape(-1, 1))
+        # y_test = self.target_transformer.transform(y_test.reshape(-1, 1))
+        y_train = y_train.reshape(-1)
+        y_test = y_test.reshape(-1)
 
         X_train = X_train.astype(np.float32)
         X_test = X_test.astype(np.float32)
@@ -88,6 +104,6 @@ class AdultDataset(AbstractDataset):
         self.categorical_features = list(
             range(len(self.numerical_columns), X_train.shape[1])
         )
-        self.actionable_features = list(range(0, X_train.shape[1]))  # [1:-1]
+        self.actionable_features = list(range(0, X_train.shape[1]))
 
         return X_train, X_test, y_train, y_test

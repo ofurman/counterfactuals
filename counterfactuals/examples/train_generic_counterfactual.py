@@ -26,6 +26,7 @@ from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.wine import WineDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.blobs import BlobsDataset
+from counterfactuals.datasets.adult import AdultDataset
 from counterfactuals.datasets.generic_counterfactual import AbstractDataset
 
 # Configure logging
@@ -36,10 +37,21 @@ logging.basicConfig(
 logger = logging.getLogger('counterfactual_example')
 
 
-def prepare_dataset_and_models(dataset_class: AbstractDataset):
+def prepare_dataset_and_models(dataset_class: AbstractDataset, save_dir: str):
     dataset = dataset_class()
-    disc_model = MultilayerPerceptron(input_size=dataset.X_train.shape[1], hidden_layer_sizes=[256, 256], target_size=np.unique(dataset.y_train).shape[0])
-    disc_model.fit(dataset.train_dataloader(64, True), dataset.test_dataloader(64, False), epochs=1000, lr=0.001, patience=100)
+    disc_model = MultilayerPerceptron(
+        input_size=dataset.X_train.shape[1],
+        hidden_layer_sizes=[256, 256],
+        target_size=np.unique(dataset.y_train).shape[0]
+    )
+    disc_model.fit(
+        dataset.train_dataloader(64, True),
+        dataset.test_dataloader(64, False),
+        epochs=1000,
+        lr=0.001,
+        patience=100,
+        checkpoint_path=os.path.join(save_dir, "disc_model.pth")
+    )
     disc_model = disc_model.eval()
     y_train = disc_model.predict(dataset.X_train).numpy().astype(int)
     y_test = disc_model.predict(dataset.X_test).numpy().astype(int)
@@ -50,7 +62,14 @@ def prepare_dataset_and_models(dataset_class: AbstractDataset):
     dataset.y_test = y_test
 
     gen_model = MaskedAutoregressiveFlow(features=dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(dataset.train_dataloader(64, True, 0.03), dataset.test_dataloader(64, False), num_epochs=1000, learning_rate=0.001, patience=100)
+    gen_model.fit(
+        dataset.train_dataloader(64, True, 0.03), 
+        dataset.test_dataloader(64, False), 
+        num_epochs=1000, 
+        learning_rate=0.001, 
+        patience=100,
+        checkpoint_path=os.path.join(save_dir, "gen_model.pth")
+    )
     return dataset, disc_model, gen_model
 
 
@@ -65,11 +84,10 @@ def train_method(
     Example using the moons dataset with multiclass counterfactual generation
     """
     logger.info("Starting moons dataset example (multiclass)")
-    
-    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class)
 
-    # Set save directory
     os.makedirs(save_dir, exist_ok=True)
+    
+    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, save_dir)
     
     # Visualize the dataset
     visualize_dataset(
@@ -183,6 +201,7 @@ if __name__ == "__main__":
     parser.add_argument('--law', action='store_true', help='Run law multiclass example')
     parser.add_argument('--heloc', action='store_true', help='Run HELOC multiclass example')
     parser.add_argument('--wine', action='store_true', help='Run Wine multiclass example')
+    parser.add_argument('--adult', action='store_true', help='Run Adult multiclass example')
     args = parser.parse_args()
     
     # Run the selected examples
@@ -241,5 +260,16 @@ if __name__ == "__main__":
             n_nearest=32
         )
         logger.info("Wine multiclass example completed")
+
+    if args.adult or args.all:
+        logger.info("\n=== Starting Adult Multiclass Example ===")
+        adult_model, adult_dataset = train_method(
+            dataset_class=AdultDataset,
+            dataset_name="Adult",
+            save_dir="results/adult",
+            prob_threshold=0.55,
+            n_nearest=32
+        )
+        logger.info("Adult multiclass example completed")
     
     logger.info("\nAll examples completed successfully!")
