@@ -19,6 +19,7 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.cf_methods.c_chvae import CCHVAE
 from counterfactuals.cf_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
+from counterfactuals.datasets.utils import DequantizingFlow, dequantize
 
 
 logger = logging.getLogger(__name__)
@@ -192,15 +193,20 @@ def main(cfg: DictConfig):
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
         dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+
+    dequantizer, _ = dequantize(dataset)
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
+    dataset = instantiate(cfg.dataset)
 
     # Custom code
     Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
         search_counterfactuals(cfg, dataset, gen_model, disc_model, run, save_folder)
     )
 
+    dequantizing_flow = DequantizingFlow(gen_model, dequantizer, dataset)
+
     metrics = calculate_metrics(
-        gen_model=gen_model,
+        gen_model=dequantizing_flow,
         disc_model=disc_model,
         Xs_cfs=Xs_cfs,
         model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),

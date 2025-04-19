@@ -2,9 +2,160 @@ from typing import Union
 
 import numpy as np
 import torch
+import torch.nn as nn
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+
 
 ALPHA = 1e-6
+
+
+class DequantizingFlow(nn.Module):
+    def __init__(self, gen_model, dequantizer, dataset):
+        super().__init__()
+        self.gen_model = gen_model
+        self.dequantizer = dequantizer
+        self.dequantize = dequantize
+        self.dataset = dataset
+
+    def forward(self, X, y):
+        if isinstance(X, torch.Tensor):
+            X = X.numpy()
+        _, X = self.dequantize(self.dataset, X, self.dequantizer)
+        X = torch.from_numpy(X)
+        log_probs = self.gen_model(X, y)
+        return log_probs
+
+
+def dequantize(dataset, data=None, transformer=None):
+    """
+    Apply dequantization, only affecting categorical features
+
+    Parameters:
+    -----------
+    dataset : Dataset object
+        Dataset containing categorical_features_lists
+    data : np.ndarray, optional
+        Optional external data to transform instead of dataset.X_train/X_test
+    transformer : ColumnTransformer, optional
+        Pre-fitted transformer to use for transformation. If None, create and fit a new one.
+
+    Returns:
+    --------
+    tuple or np.ndarray
+        If data is None: returns (transformer, None)
+        If data is provided: returns (transformer, transformed_data)
+    """
+    # If no transformer is provided, create a new one
+    if transformer is None:
+        transformers = [
+            (f"cat_group_{i}", CustomCategoricalTransformer(), group)
+            for i, group in enumerate(dataset.categorical_features_lists)
+        ]
+
+        transformer = ColumnTransformer(
+            transformers=transformers,
+            remainder="drop",  # Drop continuous features
+        )
+
+        if data is None:
+            X_train_original = dataset.X_train.copy()
+            X_test_original = dataset.X_test.copy()
+
+            cat_transformed_train = transformer.fit_transform(dataset.X_train)
+            cat_transformed_test = transformer.transform(dataset.X_test)
+
+            dataset.X_train = X_train_original.copy()
+            dataset.X_test = X_test_original.copy()
+
+            cat_idx = 0
+            for group in dataset.categorical_features_lists:
+                for i, feature_idx in enumerate(group):
+                    dataset.X_train[:, feature_idx] = cat_transformed_train[:, cat_idx]
+                    dataset.X_test[:, feature_idx] = cat_transformed_test[:, cat_idx]
+                    cat_idx += 1
+
+            return transformer, None
+        else:
+            transformer.fit(dataset.X_train)
+
+    if data is not None:
+        data_copy = data.copy()
+
+        for i, group in enumerate(dataset.categorical_features_lists):
+            transformer_name = f"cat_group_{i}"
+
+            group_data = data_copy[:, group]
+
+            transformed_data = transformer.named_transformers_[
+                transformer_name
+            ].transform(group_data)
+
+            for j, feature_idx in enumerate(group):
+                data_copy[:, feature_idx] = transformed_data[:, j]
+
+        return transformer, data_copy
+
+    return transformer, None
+
+
+def inverse_dequantize(dataset, dequantizer, data=None):
+    """
+    Inverse the dequantization process, only affecting categorical features
+
+    Parameters:
+    -----------
+    dataset : Dataset object
+        Dataset containing categorical_features_lists
+    dequantizer : ColumnTransformer
+        The fitted dequantizer returned by dequantize()
+    data : np.ndarray, optional
+        Optional external data to transform instead of dataset.X_train/X_test
+
+    Returns:
+    --------
+    np.ndarray or None
+        Returns transformed data if data parameter provided, otherwise None
+    """
+    if data is not None:
+        data_copy = data.copy()
+
+        for i, group in enumerate(dataset.categorical_features_lists):
+            transformer_name = f"cat_group_{i}"
+            group_data = data_copy[:, group]
+
+            transformed_data = dequantizer.named_transformers_[
+                transformer_name
+            ].inverse_transform(group_data)
+
+            for j, feature_idx in enumerate(group):
+                data_copy[:, feature_idx] = transformed_data[:, j]
+
+        return data_copy
+    else:
+        X_train_copy = dataset.X_train.copy()
+        X_test_copy = dataset.X_test.copy()
+
+        for i, group in enumerate(dataset.categorical_features_lists):
+            transformer_name = f"cat_group_{i}"
+
+            group_train = X_train_copy[:, group]
+            transformed_train = dequantizer.named_transformers_[
+                transformer_name
+            ].inverse_transform(group_train)
+            for j, feature_idx in enumerate(group):
+                X_train_copy[:, feature_idx] = transformed_train[:, j]
+
+            group_test = X_test_copy[:, group]
+            transformed_test = dequantizer.named_transformers_[
+                transformer_name
+            ].inverse_transform(group_test)
+            for j, feature_idx in enumerate(group):
+                X_test_copy[:, feature_idx] = transformed_test[:, j]
+
+        dataset.X_train = X_train_copy
+        dataset.X_test = X_test_copy
+        return None
 
 
 class CustomCategoricalTransformer(BaseEstimator, TransformerMixin):

@@ -11,7 +11,6 @@ from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 import torch.utils
-from sklearn.compose import ColumnTransformer
 
 from counterfactuals.metrics.metrics import evaluate_cf
 
@@ -19,40 +18,17 @@ from counterfactuals.cf_methods.ppcef import PPCEF
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.datasets.utils import CustomCategoricalTransformer
+from counterfactuals.datasets.utils import (
+    DequantizingFlow,
+    dequantize,
+    inverse_dequantize,
+)
 
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
-
-def dequantize(dataset):
-    transformers = [
-        (f"cat_group_{i}", CustomCategoricalTransformer(), group)
-        for i, group in enumerate(dataset.categorical_features_lists)
-    ]
-
-    column_transformer = ColumnTransformer(
-        transformers=transformers, remainder="passthrough"
-    )
-
-    dataset.X_train = column_transformer.fit_transform(dataset.X_train)
-    dataset.X_test = column_transformer.transform(dataset.X_test)
-    return column_transformer
-
-
-def inverse_dequantization(dataset, dequantizer):
-    for categorical_features, transform in zip(
-        dataset.categorical_features_lists, dequantizer.named_transformers_
-    ):
-        dataset.X_train[:, categorical_features] = dequantizer.named_transformers_[
-            transform
-        ].inverse_transform(dataset.X_train[:, list(range(len(categorical_features)))])
-        dataset.X_test[:, categorical_features] = dequantizer.named_transformers_[
-            transform
-        ].inverse_transform(dataset.X_test[:, list(range(len(categorical_features)))])
 
 
 def search_counterfactuals(
@@ -219,30 +195,20 @@ def main(cfg: DictConfig):
         dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
         dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-    gen_model_eval = create_gen_model(cfg, dataset, gen_model_path, run)
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model_eval.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-
-    dequantizer = dequantize(dataset)
+    dequantizer, _ = dequantize(dataset)
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
     # Custom code
-    Xs_cfs, Xs, _, ys_orig, ys_target, cf_search_time = search_counterfactuals(
-        cfg, dataset, gen_model, disc_model, run, save_folder
+    Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
+        search_counterfactuals(cfg, dataset, gen_model, disc_model, run, save_folder)
     )
 
-    # for categorical_features, transform in zip(dataset.categorical_features_lists, dequantizer.named_transformers_):
-    #     Xs[:, categorical_features] = dequantizer.named_transformers_[transform].inverse_transform(Xs[:, list(range(len(categorical_features)))])
-
-    # dequantizing_flow = DequantizingFlow(gen_model, dequantizer)
+    Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+    dequantizing_flow = DequantizingFlow(gen_model, dequantizer, dataset)
+    dataset = instantiate(cfg.dataset)
 
     metrics = calculate_metrics(
-        gen_model=gen_model_eval,
+        gen_model=dequantizing_flow,
         disc_model=disc_model,
         Xs_cfs=Xs_cfs,
         model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
