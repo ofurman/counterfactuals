@@ -603,7 +603,7 @@ class AReS:
         # tlrs = two level recourse set
         if singleton and print_terms:
             raise ValueError(
-                "Cannot use parameters singleton and " "print_terms simultaneously"
+                "Cannot use parameters singleton and print_terms simultaneously"
             )
         if idx is None:
             idx = np.ones(tlrs.correct_matrix.shape[0], dtype=bool)
