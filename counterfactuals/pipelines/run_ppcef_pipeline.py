@@ -125,7 +125,7 @@ def search_counterfactuals(
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
 
     Xs_cfs = Xs + delta
@@ -137,7 +137,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target
+    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time
 
 
 def get_categorical_intervals(
@@ -219,16 +219,30 @@ def main(cfg: DictConfig):
         dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
         dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-    dequantize(dataset)
+    gen_model_eval = create_gen_model(cfg, dataset, gen_model_path, run)
+    train_dataloader_for_log_prob = dataset.train_dataloader(
+        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+    )
+    log_prob_threshold = torch.quantile(
+        gen_model_eval.predict_log_prob(train_dataloader_for_log_prob),
+        cfg.counterfactuals_params.log_prob_quantile,
+    )
+
+    dequantizer = dequantize(dataset)
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
     # Custom code
-    Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target = search_counterfactuals(
+    Xs_cfs, Xs, _, ys_orig, ys_target, cf_search_time = search_counterfactuals(
         cfg, dataset, gen_model, disc_model, run, save_folder
     )
 
+    # for categorical_features, transform in zip(dataset.categorical_features_lists, dequantizer.named_transformers_):
+    #     Xs[:, categorical_features] = dequantizer.named_transformers_[transform].inverse_transform(Xs[:, list(range(len(categorical_features)))])
+
+    # dequantizing_flow = DequantizingFlow(gen_model, dequantizer)
+
     metrics = calculate_metrics(
-        gen_model=gen_model,
+        gen_model=gen_model_eval,
         disc_model=disc_model,
         Xs_cfs=Xs_cfs,
         model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
@@ -242,6 +256,14 @@ def main(cfg: DictConfig):
         median_log_prob=log_prob_threshold,
         run=run,
     )
+    run["metrics/cf"] = stringify_unsupported(metrics)
+    df_metrics = pd.DataFrame(metrics, index=[0])
+    df_metrics["cf_search_time"] = cf_search_time
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    df_metrics.to_csv(
+        os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+    )
+
     run.stop()
 
 
