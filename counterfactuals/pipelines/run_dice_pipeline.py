@@ -106,7 +106,7 @@ def search_counterfactuals(
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
 
     Xs_cfs = []
@@ -124,7 +124,14 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, X_test_origin, log_prob_threshold, y_test_origin, ys_target
+    return (
+        Xs_cfs,
+        X_test_origin,
+        log_prob_threshold,
+        y_test_origin,
+        ys_target,
+        cf_search_time,
+    )
 
 
 def get_categorical_intervals(
@@ -207,8 +214,8 @@ def main(cfg: DictConfig):
     gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
     # Custom code
-    Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target = search_counterfactuals(
-        cfg, dataset, gen_model, disc_model, run, save_folder
+    Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
+        search_counterfactuals(cfg, dataset, gen_model, disc_model, run, save_folder)
     )
 
     metrics = calculate_metrics(
@@ -226,6 +233,14 @@ def main(cfg: DictConfig):
         median_log_prob=log_prob_threshold,
         run=run,
     )
+    run["metrics/cf"] = stringify_unsupported(metrics)
+    df_metrics = pd.DataFrame(metrics, index=[0])
+    df_metrics["cf_search_time"] = cf_search_time
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    df_metrics.to_csv(
+        os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+    )
+
     run.stop()
 
 
