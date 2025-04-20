@@ -206,8 +206,8 @@ class PPCEF(BaseCounterfactual):
                 epoch_pbar.set_description(
                     f"Discriminator loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f}"
                 )
-                if disc_loss < patience_eps and prob_loss < patience_eps:
-                    break
+                # if disc_loss < patience_eps and prob_loss < patience_eps:
+                #     break
 
             deltas.append(delta.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())
