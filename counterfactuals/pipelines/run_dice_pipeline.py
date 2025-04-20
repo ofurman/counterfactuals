@@ -113,10 +113,8 @@ def search_counterfactuals(
     for orig, cf in zip(X_test_origin, cfs.cf_examples_list):
         out = cf.final_cfs_df.to_numpy()
         if out.shape[0] > 0:
-            print(out[0].shape)
             Xs_cfs.append(out[0][:-1])
         else:
-            print(orig.shape)
             Xs_cfs.append(orig)
 
     Xs_cfs = np.array(Xs_cfs)
