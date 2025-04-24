@@ -17,8 +17,10 @@ def evaluate_counterfactuals(
     X, 
     y, 
     target_class,
-    factual_indices, 
+    factual_indices,
     generated_cfs,
+    p_value: float,
+    action_mask: np.ndarray, 
     direction="forward",
     save_dir=None
 ):
@@ -32,6 +34,8 @@ def evaluate_counterfactuals(
         y: Labels 
         factual_indices: Indices of factual points
         generated_cfs: Generated counterfactuals
+        p_value: p-norm sparsity
+        action_mask: Immutable features mask
         direction: 'forward' or 'reverse'
         save_dir: Directory to save results
     """
@@ -84,7 +88,8 @@ def evaluate_counterfactuals(
         disc_model=disc_model,
         continuous_features=dataset.numerical_features,
         categorical_features=dataset.categorical_features,
-        prob_plausibility_threshold=threshold
+        prob_plausibility_threshold=threshold,
+        action_mask=action_mask
     )
     
     # Calculate all metrics
@@ -96,7 +101,7 @@ def evaluate_counterfactuals(
     
     # Save metrics to file
     if save_dir:
-        metrics_file = os.path.join(save_dir, f"metrics_{direction}.json")
+        metrics_file = os.path.join(save_dir, f"metrics_{direction}_{p_value}_{action_mask[0]}.json")
         import json
         with open(metrics_file, 'w') as f:
             # ignore on error

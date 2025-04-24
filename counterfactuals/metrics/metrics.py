@@ -48,6 +48,7 @@ class CFMetrics:
         categorical_features: List[int],
         ratio_cont: Optional[float] = None,
         prob_plausibility_threshold: Optional[float] = None,
+        action_mask: Optional[np.ndarray] = None,
     ) -> None:
         # precheck input assumptions
         assert (
@@ -99,6 +100,11 @@ class CFMetrics:
         self.X_cf_valid = self.X_cf[self.y_cf_pred == self.y_target]
         self.X_test_valid = self.X_test[self.y_cf_pred == self.y_target]
 
+        if len(action_mask.shape) == 3:
+            B, S, F = action_mask.shape
+            action_mask = action_mask.reshape(B*S, F)
+        self.action_mask = action_mask
+
     def _convert_to_numpy(self, X: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
         """
         Convert input data to numpy array.
@@ -137,7 +143,7 @@ class CFMetrics:
             float: Validity metric value.
         """
         y_cf = self.disc_model.predict(self.X_cf).numpy()
-        return (y_cf != self.y_test.squeeze()).mean()
+        return (y_cf == self.y_target.squeeze()).mean()
 
     def actionability(self) -> float:
         """
@@ -145,8 +151,17 @@ class CFMetrics:
 
         Returns:
             float: Actionability metric value.
-        """
-        return np.all(self.X_test == self.X_cf, axis=1).mean()
+        """    
+        if self.action_mask is not None:
+            match_mask = (self.X_test == self.X_cf)  # full elementwise comparison
+            per_row_matches = [
+                np.all(match_mask[i, self.action_mask[i]])
+                for i in range(self.X_test.shape[0])
+            ]
+            per_row_matches = np.array(per_row_matches)
+            return per_row_matches.mean()
+        else:
+            return 1.0
 
     def sparsity(self) -> float:
         """

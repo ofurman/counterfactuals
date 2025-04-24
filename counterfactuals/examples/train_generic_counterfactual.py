@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/home/z1172691/counterfactuals")
+
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -47,7 +50,7 @@ def prepare_dataset_and_models(dataset_class: AbstractDataset, save_dir: str):
     disc_model.fit(
         dataset.train_dataloader(64, True),
         dataset.test_dataloader(64, False),
-        epochs=1000,
+        epochs=10000,
         lr=0.001,
         patience=100,
         checkpoint_path=os.path.join(save_dir, "disc_model.pth")
@@ -65,7 +68,7 @@ def prepare_dataset_and_models(dataset_class: AbstractDataset, save_dir: str):
     gen_model.fit(
         dataset.train_dataloader(64, True, 0.03), 
         dataset.test_dataloader(64, False), 
-        num_epochs=1000, 
+        num_epochs=10000, 
         learning_rate=0.001, 
         patience=100,
         checkpoint_path=os.path.join(save_dir, "gen_model.pth")
@@ -100,14 +103,32 @@ def train_method(
     # Select threshold for classifier as median of the posterior probabilities
     logger.info(f"Selected threshold for classifier: {prob_threshold}")
     
+    # Create masks
+    features = dataset.X_train.shape[1]
+    masks = []
+    for i in range(2):
+        mask = np.ones(features) * 1e-2
+
+        idx = np.random.choice(len(mask), size=int(features // 5) + 1, replace=False)
+        mask[idx] = 1
+
+        masks.append(mask)
+    masks.append(np.ones(features) * 1e-2)
+    masks = np.array(masks)
+
+    p_values = [1e-2, 2.0]
+    noise_level = 0.03
+
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
     dataset = MulticlassCounterfactualWrapper(
         X=dataset.X_train,
         y=dataset.y_train,
         factual_classes=np.unique(dataset.y_train),  # Use all classes as factual
+        p_values=p_values,
+        masks=masks,
         n_nearest=n_nearest,
-        noise_level=0.03,
+        noise_level=noise_level,
         classifier=disc_model,
         prob_threshold=prob_threshold,
         log_level='INFO'
@@ -122,10 +143,10 @@ def train_method(
         num_layers=5,
         num_blocks_per_layer=2,
         learning_rate=1e-3,
-        batch_size=None,
-        num_epochs=500,
+        batch_size=256,
+        num_epochs=10000,
         patience=50,
-        noise_level=0.03,
+        noise_level=noise_level,
         save_dir=os.path.join(save_dir, "multiclass_model"),
         log_interval=10,
         balanced=True  # Ensure balanced representation of classes in batches
@@ -152,41 +173,75 @@ def train_method(
     # Generate counterfactuals for evaluation
     logger.info("Generating counterfactuals for evaluation")
     
-    metrics_results = {}
+    metrics_all = {}
+    for mask_idx, mask in enumerate(masks):
+        logger.info(f"Generating counterfactuals for mask {mask}")
+        metrics_all[mask_idx] = {}
+        for p_value in p_values:
+            logger.info(f"Generating counterfactuals for p-norm {p_value}")
+            metrics_all[mask_idx][p_value] = {}
+            metrics_results = metrics_all[mask_idx][p_value]
 
-    for factual_class in dataset.factual_classes:
-        logger.info(f"Generating counterfactuals for factual class {factual_class}")
-        factual_indices = np.where(dataset.y_train == factual_class)[0]
-        factual_points = dataset.feature_transformer.transform(dataset.X_train[factual_indices])
-        
-        for target_class in dataset.classes:
-            if target_class == factual_class:
-                continue
-            
-            logger.info(f"Generating counterfactuals for factual class {factual_class} to target class {target_class}") 
-            generated_cfs = generate_multiclass_counterfactuals(
-                model=multiclass_model,
-                factual_points=factual_points,
-                target_class=target_class,
-                n_samples=100,
-                temperature=0.8,
-                device="cuda" if torch.cuda.is_available() else "cpu",
-                num_classes=len(dataset.classes)
-            )
+            for factual_class in dataset.factual_classes:
+                logger.info(f"Generating counterfactuals for factual class {factual_class}")
+                factual_indices = np.where(dataset.y_train == factual_class)[0]
+                factual_points = dataset.feature_transformer.transform(dataset.X_train[factual_indices])
+                
+                for target_class in dataset.classes:
+                    if target_class == factual_class:
+                        continue
+                    
+                    logger.info(f"Generating counterfactuals for factual class {factual_class} to target class {target_class}") 
+                    generated_cfs = generate_multiclass_counterfactuals(
+                        model=multiclass_model,
+                        factual_points=factual_points,
+                        target_class=target_class,
+                        p_value=p_value,
+                        mask=mask,
+                        n_samples=100,
+                        temperature=0.8,
+                        device="cuda" if torch.cuda.is_available() else "cpu",
+                        num_classes=len(dataset.classes)
+                    )
 
-            metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
-                disc_model=disc_model,
-                gen_model=gen_model,
-                dataset=dataset,
-                X=dataset.X_train,
-                y=dataset.y_train,
-                target_class=target_class,
-                factual_indices=factual_indices,
-                generated_cfs=generated_cfs,
-                direction=f'class_{factual_class}_to_class_{target_class}',
-                save_dir=save_dir
-            )
-            metrics_results[f'class_{factual_class}_to_class_{target_class}'] = metrics_forward
+                    action_mask = np.zeros_like(mask, dtype=bool)
+                    action_mask[mask == 1.] = True
+                    action_masks = []
+                    
+                    for gen_cf, fact_point in zip(generated_cfs, factual_points):
+                        action_mask_cf =  np.broadcast_to(
+                            action_mask[np.newaxis, :],
+                            gen_cf.shape
+                        )
+                        broadcasted_fact = np.broadcast_to(
+                            fact_point[np.newaxis, :], 
+                            gen_cf.shape
+                            )
+                        gen_cf[action_mask_cf] = broadcasted_fact[action_mask_cf]
+
+                        action_masks.append(action_mask_cf)
+                    action_masks = np.concatenate(action_masks, axis=0)
+
+                    metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
+                        disc_model=disc_model,
+                        gen_model=gen_model,
+                        dataset=dataset,
+                        X=dataset.X_train,
+                        y=dataset.y_train,
+                        target_class=target_class,
+                        factual_indices=factual_indices,
+                        generated_cfs=generated_cfs,
+                        p_value=p_value,
+                        action_mask=action_masks,
+                        direction=f'class_{factual_class}_to_class_{target_class}',
+                        save_dir=save_dir
+                    )
+                    metrics_results[f'class_{factual_class}_to_class_{target_class}'] = metrics_forward
+
+            # Save metrics comparison
+            import json
+            with open(os.path.join(save_dir, f"metrics_comparison_{p_value}_{action_mask}.json"), 'w') as f:
+                json.dump(metrics_results, f, indent=2, default=str)
     
     return multiclass_model, dataset
 
@@ -202,6 +257,7 @@ if __name__ == "__main__":
     parser.add_argument('--heloc', action='store_true', help='Run HELOC multiclass example')
     parser.add_argument('--wine', action='store_true', help='Run Wine multiclass example')
     parser.add_argument('--adult', action='store_true', help='Run Adult multiclass example')
+    parser.add_argument('--save_dir', default='results', help='Save directory path')
     args = parser.parse_args()
     
     # Run the selected examples
@@ -210,7 +266,7 @@ if __name__ == "__main__":
         moons_model, moons_dataset = train_method(
             dataset_class=MoonsDataset,
             dataset_name="Moons",
-            save_dir="results/moons",
+            save_dir=f"{args.save_dir}/moons",
             prob_threshold=0.98,
             n_nearest=32
         )
@@ -222,7 +278,7 @@ if __name__ == "__main__":
         three_class_model, three_class_dataset = train_method(
             dataset_class=BlobsDataset,
             dataset_name="Blobs",
-            save_dir="results/blobs",
+            save_dir=f"{args.save_dir}/blobs",
             prob_threshold=0.98,
             n_nearest=32
         )
@@ -233,7 +289,7 @@ if __name__ == "__main__":
         law_model, law_dataset = train_method(
             dataset_class=LawDataset,
             dataset_name="Law",
-            save_dir="results/law",
+            save_dir=f"{args.save_dir}/law",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -244,7 +300,7 @@ if __name__ == "__main__":
         heloc_model, heloc_dataset = train_method(
             dataset_class=HelocDataset,
             dataset_name="HELOC",
-            save_dir="results/heloc",
+            save_dir=f"{args.save_dir}/heloc",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -255,7 +311,7 @@ if __name__ == "__main__":
         wine_model, wine_dataset = train_method(
             dataset_class=WineDataset,
             dataset_name="Wine",
-            save_dir="results/wine",
+            save_dir=f"{args.save_dir}/wine",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -266,7 +322,7 @@ if __name__ == "__main__":
         adult_model, adult_dataset = train_method(
             dataset_class=AdultDataset,
             dataset_name="Adult",
-            save_dir="results/adult",
+            save_dir=f"{args.save_dir}/adult",
             prob_threshold=0.55,
             n_nearest=32
         )
