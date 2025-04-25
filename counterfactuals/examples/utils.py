@@ -89,7 +89,9 @@ def evaluate_counterfactuals(
         continuous_features=dataset.numerical_features,
         categorical_features=dataset.categorical_features,
         prob_plausibility_threshold=threshold,
-        action_mask=action_mask
+        action_mask=action_mask,
+        sparsity_eps=0.05,
+        cf_per_factual=cf_per_factual
     )
     
     # Calculate all metrics

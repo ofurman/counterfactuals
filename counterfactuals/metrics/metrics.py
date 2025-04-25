@@ -49,6 +49,8 @@ class CFMetrics:
         ratio_cont: Optional[float] = None,
         prob_plausibility_threshold: Optional[float] = None,
         action_mask: Optional[np.ndarray] = None,
+        sparsity_eps: float = 0.0,
+        cf_per_factual: int = 1,
     ) -> None:
         # precheck input assumptions
         assert (
@@ -69,6 +71,12 @@ class CFMetrics:
         assert (
             ratio_cont is None or 0 <= ratio_cont <= 1
         ), "ratio_cont should be between 0 and 1"
+        assert (
+            cf_per_factual > 0
+        ), "cf_per_factual should be greater than 0"
+        assert (
+            X_cf.shape[0] % cf_per_factual == 0
+        ), "X_cf.shape[0] should be divisible by cf_per_factual"
 
         # convert everything to torch tensors if not already
         self.X_cf = self._convert_to_numpy(X_cf)
@@ -94,6 +102,7 @@ class CFMetrics:
         self.continuous_features = continuous_features
         self.categorical_features = categorical_features
         self.ratio_cont = ratio_cont
+        self.sparsity_eps = sparsity_eps
 
         # filter only valid counterfactuals and test instances
         self.y_cf_pred = self._convert_to_numpy(self.disc_model.predict(self.X_cf))
@@ -163,14 +172,25 @@ class CFMetrics:
         else:
             return 1.0
 
-    def sparsity(self) -> float:
+    def sparsity(self, eps: float = 0.0) -> float:
         """
         Compute the sparsity metric.
+
+        Args:
+            eps (float, optional): Tolerance for considering features different. 
+                For continuous features, differences smaller than eps will be considered equal.
+                Defaults to 0.0 (exact comparison).
 
         Returns:
             float: Sparsity metric value.
         """
-        return (self.X_test != self.X_cf).mean()
+        if eps > 0.0:
+            # For features with difference less than epsilon, consider them equal
+            diff = np.abs(self.X_test - self.X_cf)
+            return np.mean(diff > eps)
+        else:
+            # Traditional exact comparison
+            return (self.X_test != self.X_cf).mean()
 
     def prob_plausibility(self, cf: bool = True) -> float:
         """
@@ -340,7 +360,7 @@ class CFMetrics:
             "coverage": self.coverage(),
             "validity": self.validity(),
             "actionability": self.actionability(),
-            "sparsity": self.sparsity(),
+            "sparsity": self.sparsity(eps=self.sparsity_eps),
             # "target_distance": self.target_distance(),
             # "proximity_categorical_hamming": self.feature_distance(
             #     categorical_metric="hamming"

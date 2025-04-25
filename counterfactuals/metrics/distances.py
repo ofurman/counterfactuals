@@ -70,7 +70,7 @@ def continuous_distance(
     Returns:
         float: The continuous distance between the two datasets.
     """
-    logger.info("Calculating continuous distance")
+    logger.debug("Calculating continuous distance")
     allowed_metrics = ["cityblock", "euclidean", "mad"]
     agg_funcs = {"mean": np.mean, "max": np.max, "min": np.min, "no": lambda x: x}
 
@@ -128,7 +128,7 @@ def categorical_distance(
     Returns:
         float: The categorical distance between the two datasets.
     """
-    logger.info("Calculating categorical distance")
+    logger.debug("Calculating categorical distance")
     allowed_metrics = ["hamming", "jaccard"]
     agg_funcs = {"mean": np.mean, "max": np.max, "min": np.min, "no": lambda x: x}
 
@@ -172,7 +172,7 @@ def distance_combined(
     Returns:
         float: The combined distance between the two datasets.
     """
-    logger.info("Calculating combined distance")
+    logger.debug("Calculating combined distance")
     number_features = X_cf.shape[1]
     dist_cont = continuous_distance(
         X_test,
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     continuous_features = [0, 1]
     categorical_features = [2]
 
-    logger.info(
+    logger.debug(
         continuous_distance(
             X_test,
             X_cf,
@@ -212,12 +212,12 @@ if __name__ == "__main__":
             agg="mean",
         )
     )
-    logger.info(
+    logger.debug(
         categorical_distance(
             X_test, X_cf, categorical_features, metric="jaccard", agg="mean"
         )
     )
-    logger.info(
+    logger.debug(
         distance_combined(
             X_test,
             X_cf,

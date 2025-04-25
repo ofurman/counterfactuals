@@ -40,20 +40,27 @@ logging.basicConfig(
 logger = logging.getLogger('counterfactual_example')
 
 
-def prepare_dataset_and_models(dataset_class: AbstractDataset, save_dir: str):
+def prepare_dataset_and_models(
+        dataset_class: AbstractDataset,
+        save_dir: str,
+        load_from_save_dir: bool = False
+    ):
     dataset = dataset_class()
     disc_model = MultilayerPerceptron(
         input_size=dataset.X_train.shape[1],
         hidden_layer_sizes=[256, 256],
         target_size=np.unique(dataset.y_train).shape[0]
     )
-    disc_model.fit(
-        dataset.train_dataloader(64, True),
-        dataset.test_dataloader(64, False),
-        epochs=10000,
-        lr=0.001,
-        patience=100,
-        checkpoint_path=os.path.join(save_dir, "disc_model.pth")
+    if load_from_save_dir:
+        disc_model.load_state_dict(torch.load(os.path.join(save_dir, "disc_model.pth")))
+    else:
+        disc_model.fit(
+            dataset.train_dataloader(64, True),
+            dataset.test_dataloader(64, False),
+            epochs=10000,
+            lr=0.001,
+            patience=100,
+            checkpoint_path=os.path.join(save_dir, "disc_model.pth")
     )
     disc_model = disc_model.eval()
     y_train = disc_model.predict(dataset.X_train).numpy().astype(int)
@@ -64,15 +71,25 @@ def prepare_dataset_and_models(dataset_class: AbstractDataset, save_dir: str):
     dataset.y_train = y_train
     dataset.y_test = y_test
 
-    gen_model = MaskedAutoregressiveFlow(features=dataset.X_train.shape[1], hidden_features=16, num_layers=2, num_blocks_per_layer=2, context_features=1)
-    gen_model.fit(
-        dataset.train_dataloader(64, True, 0.03), 
-        dataset.test_dataloader(64, False), 
-        num_epochs=10000, 
-        learning_rate=0.001, 
-        patience=100,
-        checkpoint_path=os.path.join(save_dir, "gen_model.pth")
+    gen_model = MaskedAutoregressiveFlow(
+        features=dataset.X_train.shape[1],
+        hidden_features=16,
+        num_layers=2,
+        num_blocks_per_layer=2,
+        context_features=1
     )
+    if load_from_save_dir:
+        gen_model.load_state_dict(torch.load(os.path.join(save_dir, "gen_model.pth")))
+    else:
+        gen_model.fit(
+            dataset.train_dataloader(64, True, 0.03), 
+            dataset.test_dataloader(64, False), 
+            num_epochs=10000, 
+            learning_rate=0.001, 
+            patience=100,
+            checkpoint_path=os.path.join(save_dir, "gen_model.pth")
+        )
+    gen_model = gen_model.eval()
     return dataset, disc_model, gen_model
 
 
@@ -90,7 +107,7 @@ def train_method(
 
     os.makedirs(save_dir, exist_ok=True)
     
-    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, save_dir)
+    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, save_dir, load_from_save_dir=False)
     
     # Visualize the dataset
     visualize_dataset(
@@ -149,7 +166,8 @@ def train_method(
         noise_level=noise_level,
         save_dir=os.path.join(save_dir, "multiclass_model"),
         log_interval=10,
-        balanced=True  # Ensure balanced representation of classes in batches
+        balanced=True,  # Ensure balanced representation of classes in batches
+        load_from_save_dir=False
     )
     logger.info("Multiclass model training complete")
     
@@ -159,15 +177,18 @@ def train_method(
     os.makedirs(cf_vis_dir, exist_ok=True)
 
     if dataset.X.shape[1] == 2:
-        visualize_multiclass_counterfactual_generation(
-            model=multiclass_model,
-            dataset=dataset,
-            disc_model=disc_model,
-            num_factual=6,
-            num_samples=40,
-            temperature=0.8,
-            save_dir=cf_vis_dir
-        )
+        for mask, p_value in zip(masks, p_values):
+            visualize_multiclass_counterfactual_generation(
+                model=multiclass_model,
+                dataset=dataset,
+                disc_model=disc_model,
+                masks=masks,
+                p_values=p_values,
+                num_factual=6,
+                num_samples=40,
+                temperature=0.8,
+                save_dir=cf_vis_dir
+            )
         logger.info(f"Saved multiclass counterfactual visualizations to {cf_vis_dir}")
 
     # Generate counterfactuals for evaluation
