@@ -29,7 +29,7 @@ from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.wine import WineDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.blobs import BlobsDataset
-from counterfactuals.datasets.adult import AdultDataset
+from counterfactuals.datasets.DCEF.adult import AdultDataset
 from counterfactuals.datasets.generic_counterfactual import AbstractDataset
 
 # Configure logging
@@ -107,7 +107,7 @@ def train_method(
 
     os.makedirs(save_dir, exist_ok=True)
     
-    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, save_dir, load_from_save_dir=False)
+    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, save_dir, load_from_save_dir=True)
     
     # Visualize the dataset
     visualize_dataset(
@@ -167,7 +167,7 @@ def train_method(
         save_dir=os.path.join(save_dir, "multiclass_model"),
         log_interval=10,
         balanced=True,  # Ensure balanced representation of classes in batches
-        load_from_save_dir=False
+        load_from_save_dir=True
     )
     logger.info("Multiclass model training complete")
     
@@ -206,7 +206,7 @@ def train_method(
             for factual_class in dataset.factual_classes:
                 logger.info(f"Generating counterfactuals for factual class {factual_class}")
                 factual_indices = np.where(dataset.y_train == factual_class)[0]
-                factual_points = dataset.feature_transformer.transform(dataset.X_train[factual_indices])
+                factual_points = dataset.X_train[factual_indices]
                 
                 for target_class in dataset.classes:
                     if target_class == factual_class:
@@ -223,6 +223,12 @@ def train_method(
                         temperature=0.8,
                         device="cuda" if torch.cuda.is_available() else "cpu",
                         num_classes=len(dataset.classes)
+                    )
+                    np.save(
+                        os.path.join(
+                            save_dir,
+                            f"generated_cfs_{factual_class}_to_class_{target_class}_p_{p_value}_mask_{mask}.npy"),
+                            generated_cfs
                     )
 
                     action_mask = np.zeros_like(mask, dtype=bool)

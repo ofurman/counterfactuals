@@ -27,7 +27,7 @@ from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.wine import WineDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.blobs import BlobsDataset
-from counterfactuals.datasets.adult import AdultDataset
+from counterfactuals.datasets.DCEF.adult import AdultDataset
 from counterfactuals.datasets.generic_counterfactual import AbstractDataset
 
 # Configure logging

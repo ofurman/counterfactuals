@@ -808,11 +808,11 @@ def generate_multiclass_counterfactuals(
             samples = samples.squeeze(0)
 
             # remove samples with log prob less than median log prob
-            median_log_prob = np.nanquantile(log_probs, 0.25)
-            samples = samples[log_probs >= median_log_prob]
-            log_probs = log_probs[log_probs >= median_log_prob]
+            # median_log_prob = np.nanquantile(log_probs, 0.25)
+            # samples = samples[log_probs >= median_log_prob]
+            # log_probs = log_probs[log_probs >= median_log_prob]
             # Convert to numpy
-            samples = samples.cpu().numpy()
+            # samples = samples.cpu().numpy()
             
             # Add to results
             all_counterfactuals[factual_idx] = samples
