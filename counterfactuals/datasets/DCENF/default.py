@@ -4,7 +4,7 @@ from sklearn.compose import ColumnTransformer
 import torch
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, QuantileTransformer
 from counterfactuals.datasets.base import AbstractDataset
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -82,47 +82,64 @@ class DefaultDataset(AbstractDataset):
     alpha = 1e-6
 
     def __init__(
-        self, file_path: str = "data/credit_default.csv", transform=True, shuffle=True
+        self,
+            train_file_path: str = "data/default/train.csv",
+            test_file_path: str = "data/default/test.csv",
+            #file_path: str = "data/credit_default.csv",
+            transform=True,
+            shuffle=True
     ):
         """
         Initialize the Credit Default dataset.
         """
-        self.categorical_features = ["SEX", "EDUCATION", "MARRIAGE"]
-        self.features = [
-            "LIMIT_BAL",
-            "SEX",
-            "EDUCATION",
-            "MARRIAGE",
-            "AGE",
-            "PAY_0",
-            "PAY_2",
-            "PAY_3",
-            "PAY_4",
-            "PAY_5",
-            "PAY_6",
-            "BILL_AMT1",
-            "BILL_AMT2",
-            "BILL_AMT3",
-            "BILL_AMT4",
-            "BILL_AMT5",
-            "BILL_AMT6",
-            "PAY_AMT1",
-            "PAY_AMT2",
-            "PAY_AMT3",
-            "PAY_AMT4",
-            "PAY_AMT5",
-            "PAY_AMT6",
-            "default payment next month",
-        ]
-        self.raw_data = self.load(file_path=file_path, index_col=False)
-        self.X, self.y = self.preprocess(raw_data=self.raw_data)
-        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y, shuffle=shuffle
+        #self.categorical_features = ["SEX", "EDUCATION", "MARRIAGE"]
+        #self.features = [
+        #    "LIMIT_BAL",
+        #    "SEX",
+        #    "EDUCATION",
+        #    "MARRIAGE",
+        #    "AGE",
+        #    "PAY_0",
+        #    "PAY_2",
+        #    "PAY_3",
+        #    "PAY_4",
+        #    "PAY_5",
+        #    "PAY_6",
+        #    "BILL_AMT1",
+        #    "BILL_AMT2",
+        #    "BILL_AMT3",
+        #    "BILL_AMT4",
+        #    "BILL_AMT5",
+        #    "BILL_AMT6",
+        #    "PAY_AMT1",
+        #    "PAY_AMT2",
+        #    "PAY_AMT3",
+        #    "PAY_AMT4",
+        #    "PAY_AMT5",
+        #    "PAY_AMT6",
+        #    "default payment next month",
+        #]
+        #self.raw_data = self.load(file_path=file_path, index_col=False)
+        #self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        #self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+        #    self.X, self.y, shuffle=shuffle
+        #)
+        #if transform:
+        #    self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+        #        self.X_train, self.X_test, self.y_train, self.y_test
+        #    )
+
+        self.train_data = self.load(file_path=train_file_path, index_col=False)
+        self.test_data = self.load(file_path=test_file_path, index_col=False)
+
+        # Preprocess train and test data separately
+        self.X_train, self.y_train = self.preprocess(raw_data=self.train_data)
+        self.X_test, self.y_test = self.preprocess(raw_data=self.test_data)
+
+        # Transform the data
+        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+            self.X_train, self.X_test, self.y_train, self.y_test
         )
-        if transform:
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                self.X_train, self.X_test, self.y_train, self.y_test
-            )
 
     def load(self, file_path: str, index_col: bool = True):
         """
@@ -218,31 +235,22 @@ class DefaultDataset(AbstractDataset):
         22 - PAY_AMT6: Previous payment amount in April.
         """
         self.feature_columns = [
-            "LIMIT_BAL",
-            "SEX",
-            "EDUCATION",
-            "MARRIAGE",
-            "AGE",
-            "PAY_0",
-            "PAY_2",
-            "PAY_3",
-            "PAY_4",
-            "PAY_5",
-            "PAY_6",
-            "BILL_AMT1",
-            "BILL_AMT2",
-            "BILL_AMT3",
-            "BILL_AMT4",
-            "BILL_AMT5",
-            "BILL_AMT6",
-            "PAY_AMT1",
-            "PAY_AMT2",
-            "PAY_AMT3",
-            "PAY_AMT4",
-            "PAY_AMT5",
-            "PAY_AMT6",
-        ]
-        self.categorical_columns = [
+            # numerical
+           "LIMIT_BAL",
+           "AGE",
+           "BILL_AMT1",
+           "BILL_AMT2",
+           "BILL_AMT3",
+           "BILL_AMT4",
+           "BILL_AMT5",
+           "BILL_AMT6",
+           "PAY_AMT1",
+           "PAY_AMT2",
+           "PAY_AMT3",
+           "PAY_AMT4",
+           "PAY_AMT5",
+           "PAY_AMT6",
+            # categorical
             "SEX",
             "EDUCATION",
             "MARRIAGE",
@@ -253,6 +261,44 @@ class DefaultDataset(AbstractDataset):
             "PAY_5",
             "PAY_6",
         ]
+
+
+        #self.feature_columns = [
+        #    "LIMIT_BAL",
+        #    "SEX",
+        #    "EDUCATION",
+        #    "MARRIAGE",
+        #    "AGE",
+        #    "PAY_0",
+        #    "PAY_2",
+        #    "PAY_3",
+        #    "PAY_4",
+        #    "PAY_5",
+        #    "PAY_6",
+        #    "BILL_AMT1",
+        #    "BILL_AMT2",
+        #    "BILL_AMT3",
+        #    "BILL_AMT4",
+        #    "BILL_AMT5",
+        #    "BILL_AMT6",
+        #    "PAY_AMT1",
+        #    "PAY_AMT2",
+        #    "PAY_AMT3",
+        #    "PAY_AMT4",
+        #    "PAY_AMT5",
+        #    "PAY_AMT6",
+        #]
+        #self.categorical_columns = [
+        #    "SEX",
+        #    "EDUCATION",
+        #    "MARRIAGE",
+        #    "PAY_0",
+        #    "PAY_2",
+        #    "PAY_3",
+        #    "PAY_4",
+        #    "PAY_5",
+        #    "PAY_6",
+        #]
         self.target_column = "default payment next month"
         raw_data = raw_data[raw_data["SEX"].isin([1, 2])]
         raw_data["SEX"] = raw_data["SEX"] - 1
@@ -278,32 +324,35 @@ class DefaultDataset(AbstractDataset):
         # invert y to be 1 for non-default and 0 for default
         y = 1 - y
 
-        self.numerical_columns = [0, 4, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
-        self.categorical_columns = [
-            1,
-            2,
-            3,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-        ]
-        self.numerical_features = [
-            self.feature_columns[i] for i in self.numerical_columns
-        ]
-        self.categorical_features = [
-            self.feature_columns[i] for i in self.categorical_columns
-        ]
+        self.numerical_columns = list(range(0, 14))
+        self.categorical_columns = list(range(14, len(self.feature_columns)))
+
+        #self.numerical_columns = [0, 4, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+        #self.categorical_columns = [
+        #    1,
+        #    2,
+        #    3,
+        #    5,
+        #    6,
+        #    7,
+        #    8,
+        #    9,
+        #    10,
+        #]
+        #self.numerical_features = [
+        #    self.feature_columns[i] for i in self.numerical_columns
+        #]
+        #self.categorical_features = [
+        #    self.feature_columns[i] for i in self.categorical_columns
+        #]
 
         # Actionable features are the features in august and september
-        self.actionable_features = [5, 6, 11, 12, 17, 18]
-        self.not_actionable_features = [
-            i
-            for i in range(len(self.feature_columns))
-            if i not in self.actionable_features
-        ]
+        #self.actionable_features = [5, 6, 11, 12, 17, 18]
+        #self.not_actionable_features = [
+        #    i
+        #    for i in range(len(self.feature_columns))
+        #    if i not in self.actionable_features
+        #]
         return X, y
 
     def transform(
@@ -318,9 +367,15 @@ class DefaultDataset(AbstractDataset):
         """
         self.feature_transformer = ColumnTransformer(
             transformers=[
-                ("num0", StandardScaler(), self.numerical_columns[0:1]),
-                ("cat", CustomCategoricalTransformer(), self.categorical_columns),
-                ("num1", StandardScaler(), self.numerical_columns[1:]),
+                #("num0", StandardScaler(), self.numerical_columns[0:1]),
+                #("cat", CustomCategoricalTransformer(), self.categorical_columns),
+                #("num1", StandardScaler(), self.numerical_columns[1:]),
+                ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
+                (
+                    "OneHotEncoder",
+                    OneHotEncoder(sparse_output=False),
+                    self.categorical_columns,
+                ),
             ],
             remainder="passthrough",
         )
@@ -331,13 +386,35 @@ class DefaultDataset(AbstractDataset):
         X_train = np.array(X_train.astype(np.float32))
         X_test = np.array(X_test.astype(np.float32))
 
-        self.y_transformer = OneHotEncoder(sparse_output=False)
-        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
-        y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
-        y_train = np.array(y_train.astype(np.int64))
-        y_test = np.array(y_test.astype(np.int64))
+        #self.y_transformer = OneHotEncoder(sparse_output=False)
+        #y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
+        #y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
+        #y_train = np.array(y_train.astype(np.int64))
+        #y_test = np.array(y_test.astype(np.int64))
 
-        self.categorical_features = self.categorical_columns
-        self.numerical_features = self.numerical_columns
+        y_train = y_train.reshape(-1)
+        y_test = y_test.reshape(-1)
+        y_train = y_train.astype(np.int64)
+        y_test = y_test.astype(np.int64)
+
+        #self.categorical_features = self.categorical_columns
+        #self.numerical_features = self.numerical_columns
+
+        self.numerical_features = list(range(0, len(self.numerical_columns)))
+        self.categorical_features = list(
+            range(len(self.numerical_columns), X_train.shape[1])
+        )
+        self.actionable_features = list(range(0, X_train.shape[1]))
+
+        X_train[:, self.categorical_features] += (
+            np.random.normal(
+                0,
+                0.1,
+                size=(X_train.shape[0], len(self.categorical_features))
+            )
+        )
+        self.qt = QuantileTransformer()
+        X_train[:, self.categorical_features] = self.qt.fit_transform(X_train[:, self.categorical_features])
+        X_test[:, self.categorical_features] = self.qt.transform(X_test[:, self.categorical_features])
 
         return X_train, X_test, y_train, y_test

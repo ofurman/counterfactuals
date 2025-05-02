@@ -66,7 +66,8 @@ def evaluate_counterfactuals(
     y_train = dataset.y_train
     
     # Get factual points in the transformed space
-    X_test = dataset.feature_transformer.transform(X[factual_indices])
+    #X_test = dataset.feature_transformer.transform(X[factual_indices])
+    X_test = X[factual_indices]
     X_test_rep = np.repeat(X_test, cf_per_factual, axis=0)
     
     # For plausibility threshold, estimate from training data log likelihoods

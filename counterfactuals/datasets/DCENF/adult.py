@@ -1,6 +1,6 @@
 from typing import Union
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, QuantileTransformer
 import torch
 import numpy as np
 import pandas as pd
@@ -56,24 +56,28 @@ class AdultDataset(AbstractDataset):
         self.feature_columns = [
             # Continuous
             "age",
+            "capital_gain",
+            "capital_loss",
             "hours_per_week",
             # Categorical
             "workclass",
             "education",
             "marital_status",
             "occupation",
+            "relationship",
             "race",
-            "gender",
+            "sex",
+            "native_country"
         ]
-        self.numerical_columns = list(range(0, 2))
-        self.categorical_columns = list(range(2, len(self.feature_columns)))
+        self.numerical_columns = list(range(0, 4))
+        self.categorical_columns = list(range(4, len(self.feature_columns)))
         target_column = "income"
 
         # Drop any rows with missing values
         raw_data = raw_data.dropna(subset=self.feature_columns)
 
         # Convert target to binary
-        raw_data[target_column] = (raw_data[target_column] == ">50K").astype(int)
+        raw_data[target_column] = (raw_data[target_column] == " >50K").astype(int)
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
@@ -94,7 +98,7 @@ class AdultDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(sparse=False),
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],
@@ -115,5 +119,17 @@ class AdultDataset(AbstractDataset):
             range(len(self.numerical_columns), X_train.shape[1])
         )
         self.actionable_features = list(range(0, X_train.shape[1]))
+
+
+        X_train[:, self.categorical_features] += (
+            np.random.normal(
+            0,
+            0.1,
+                size=(X_train.shape[0], len(self.categorical_features))
+            )
+        )
+        self.qt = QuantileTransformer()
+        X_train[:, self.categorical_features] = self.qt.fit_transform(X_train[:, self.categorical_features])
+        X_test[:, self.categorical_features] = self.qt.transform(X_test[:, self.categorical_features])
 
         return X_train, X_test, y_train, y_test

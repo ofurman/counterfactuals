@@ -1,6 +1,6 @@
 from typing import Union
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, QuantileTransformer
 import torch
 import numpy as np
 import pandas as pd
@@ -92,7 +92,7 @@ class BankDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(sparse=False),
+                    OneHotEncoder(sparse_output=False, handle_unknown='ignore'),
                     self.categorical_columns,
                 ),
             ],
@@ -113,5 +113,16 @@ class BankDataset(AbstractDataset):
             range(len(self.numerical_columns), X_train.shape[1])
         )
         self.actionable_features = list(range(0, X_train.shape[1]))
+
+        X_train[:, self.categorical_features] += (
+            np.random.normal(
+            0,
+            0.1,
+                size=(X_train.shape[0], len(self.categorical_features))
+            )
+        )
+        self.qt = QuantileTransformer()
+        X_train[:, self.categorical_features] = self.qt.fit_transform(X_train[:, self.categorical_features])
+        X_test[:, self.categorical_features] = self.qt.transform(X_test[:, self.categorical_features])
 
         return X_train, X_test, y_train, y_test

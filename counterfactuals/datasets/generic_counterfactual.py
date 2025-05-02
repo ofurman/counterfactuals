@@ -46,6 +46,9 @@ class MulticlassCounterfactualDataset(Dataset):
         noise_level: float = 0.05,
         classifier: BaseDiscModel = None,
         prob_threshold: float = 0.0,
+        *,
+        numerical_features,
+        categorical_features
     ):
         """
         Args:
@@ -58,6 +61,8 @@ class MulticlassCounterfactualDataset(Dataset):
             classifier: Classifier model
             prob_threshold: Probability threshold for classifier
         """
+        self.numerical_features = numerical_features
+        self.categorical_features = categorical_features
         self.X_factual = X_factual.astype(np.float32)
         self.X_counterfactual_dict = {k: v.astype(np.float32) for k, v in X_counterfactual_dict.items()}
         self.classes = classes
@@ -199,8 +204,17 @@ class MulticlassCounterfactualDataset(Dataset):
                                 x = self.X_counterfactual_dict[cf_class][cf_idx].copy()
                                 
                                 # Add noise
-                                if self.noise_level > 0:
-                                    x = x + np.random.normal(0, self.noise_level, size=x.shape)
+                                #if self.noise_level > 0:
+                                #    x = x + np.random.normal(0, self.noise_level, size=x.shape)
+                                x[self.numerical_features] = (
+                                        x[self.numerical_features] +
+                                        np.random.normal(0, 1,
+                                                         size=x[self.numerical_features].shape)*self.noise_level
+                                )
+                                x[self.categorical_features] = (
+                                        x[self.categorical_features] +
+                                        np.random.normal(0, 0.01, size=x[self.categorical_features].shape)
+                                )
                                 
                                 batch_cf.append(torch.tensor(x, dtype=torch.float32))
                                 
@@ -251,11 +265,19 @@ class MulticlassCounterfactualDataset(Dataset):
                     cond_tensor = torch.tensor(cond, dtype=torch.float32)
                     # Then create a batch by repeating it
                     batch_cond = cond_tensor.repeat(len(batch_cf), 1)
+                    #batch_cond[:, self.numerical_features] = (
+                    #        batch_cond[:, self.numerical_features] +
+                    #        torch.randn(size=batch_cond[:, self.numerical_features].shape)
+                    #        * torch.tensor(self.noise_level, dtype=torch.float32)
+                    #)
 
                     p_tensor = torch.tensor(p, dtype=torch.float32)
                     p_tensor = p_tensor.repeat(len(batch_cf), 1)
 
-                    mask_tensor = torch.tensor(mask, dtype=torch.float32)
+                    mask_ohe = np.zeros(len(self.masks))
+                    mask_ohe[mask_idx] = 1.
+                    mask_tensor = torch.tensor(mask_ohe, dtype=torch.float32)
+                    #mask_tensor = torch.tensor(mask, dtype=torch.float32)
                     mask_tensor = mask_tensor.repeat(len(batch_cf), 1)
                     
                     batches.append((batch_x, batch_cond, batch_classes, p_tensor, mask_tensor))
@@ -285,7 +307,9 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         random_state: int = 42,
         log_level: str = 'INFO',
         classifier: BaseDiscModel = None,
-        prob_threshold: float = 0.0
+        prob_threshold: float = 0.0,
+        *,
+        numerical_pos
     ):
         """
         Initialize the multiclass counterfactual wrapper
@@ -349,15 +373,15 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         
         self.logger.info(f"Using {len(self.factual_classes)} factual classes: {self.factual_classes}")
         
-        # Split data
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state, stratify=y
-        )
-        
-        # Apply transformations
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
+        ## Split data
+        #self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+        #    X, y, test_size=test_size, random_state=random_state, stratify=y
+        #)
+        #
+        ## Apply transformations
+        #self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+        #    self.X_train, self.X_test, self.y_train, self.y_test
+        #)
         
         # Separate points by class
         self.X_by_class = {}
@@ -365,12 +389,13 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
         
         for cls in self.classes:
             self.X_by_class[cls] = X[y == cls]
-            self.X_by_class_scaled[cls] = self.feature_transformer.transform(self.X_by_class[cls])
+            #self.X_by_class_scaled[cls] = self.feature_transformer.transform(self.X_by_class[cls])
+            self.X_by_class_scaled[cls] = self.X_by_class[cls]
             self.logger.info(f"Class {cls}: {len(self.X_by_class[cls])} points")
         
         # Set feature properties
-        self.numerical_features = list(range(X.shape[1]))
-        self.categorical_features = []
+        self.numerical_features = list(range(numerical_pos))
+        self.categorical_features = list(range(numerical_pos, X.shape[1]))
         self.actionable_features = list(range(X.shape[1]))
         self.categorical_columns = []
         
@@ -435,7 +460,9 @@ class MulticlassCounterfactualWrapper(AbstractDataset):
                 noise_level=self.noise_level,
                 classes=list(self.classes),
                 classifier=self.classifier,
-                prob_threshold=self.prob_threshold
+                prob_threshold=self.prob_threshold,
+                numerical_features=self.numerical_features,
+                categorical_features=self.categorical_features
             )
             
             datasets.append(dataset)
@@ -492,6 +519,7 @@ def __transform_batch_data(data: List, device: str):
 def train_multiclass_counterfactual_flow_model(
     dataset: MulticlassCounterfactualWrapper,
     flow_model_class,
+    mask_features,
     hidden_features: int = 64,
     num_layers: int = 5,
     num_blocks_per_layer: int = 2,
@@ -555,7 +583,7 @@ def train_multiclass_counterfactual_flow_model(
     logger.info(f"Created data loaders - Train batches: {len(train_loader)}, Test batches: {len(test_loader)}")
     
     # Initialize model
-    context_features = 2*dataset.X.shape[1] + 1  # Dimensionality of factual points
+    context_features = dataset.X.shape[1] + mask_features + 1 # Dimensionality of factual points
     features = dataset.X.shape[1]  # Dimensionality of counterfactual points
     num_classes = len(dataset.classes)
     
@@ -781,22 +809,31 @@ def generate_multiclass_counterfactuals(
     """
     model.eval()
     all_counterfactuals = np.zeros((factual_points.shape[0], n_samples, factual_points.shape[1]))
+    batch_size = 256
 
     p = torch.tensor([p_value], dtype=torch.float32).unsqueeze(0).to(device)
     mask = torch.tensor(mask, dtype=torch.float32).unsqueeze(0).to(device)
-    
+
     with torch.no_grad():
-        for factual_idx, factual in enumerate(factual_points):
+        #for factual_idx, factual in enumerate(factual_points):
+        for factual_idx in range(0, len(factual_points), batch_size):
+            end_idx = factual_idx + batch_size
+            factual = factual_points[factual_idx:end_idx]
+            cur_batch_size = len(factual)
+
             # Convert to tensor and add batch dimension
-            factual_tensor = torch.tensor(factual, dtype=torch.float32).unsqueeze(0).to(device)
+            factual_tensor = torch.tensor(factual, dtype=torch.float32).to(device)
             
             # Create a one-hot encoding for the target class
             class_one_hot = np.zeros(num_classes)
             class_one_hot[target_class] = 1
             class_tensor = torch.tensor(class_one_hot, dtype=torch.float32).unsqueeze(0).to(device)
+            class_tensor = class_tensor.repeat((cur_batch_size, 1))
+            p_tensor = p.repeat((cur_batch_size, 1))
+            mask_tensor = mask.repeat((cur_batch_size, 1))
             
             # Combine factual point, class one-hot encoding, feature mask and p-norm
-            context = torch.cat([factual_tensor, class_tensor, mask, p], dim=1)
+            context = torch.cat([factual_tensor, class_tensor, mask_tensor, p_tensor], dim=1)
             
             # Generate samples
             samples, log_probs = model.sample_and_log_prob(
@@ -815,7 +852,7 @@ def generate_multiclass_counterfactuals(
             # samples = samples.cpu().numpy()
             
             # Add to results
-            all_counterfactuals[factual_idx] = samples
+            all_counterfactuals[factual_idx:end_idx] = samples.cpu().numpy()
     
     return all_counterfactuals
 
