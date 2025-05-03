@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 
 sys.path.append(r"C:\Users\marsz\Studia\GMUM\counters_base\counterfactuals")
+sys.path.append("/home/z1172691/counterfactuals")
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,24 +56,24 @@ def prepare_dataset_and_models(
         hidden_layer_sizes=[256, 256],
         target_size=np.unique(dataset.y_train).shape[0]
     )
-    if load_from_save_dir:
-        disc_model.load_state_dict(torch.load(os.path.join(save_dir, "disc_model.pth")))
-    else:
-        disc_model.fit(
-            dataset.train_dataloader(64, True),
-            dataset.test_dataloader(64, False),
-            epochs=10000,
-            lr=0.001,
-            patience=100,
-            checkpoint_path=os.path.join(save_dir, "disc_model.pth")
-    )
-    disc_model = disc_model.eval()
-    y_train = disc_model.predict(dataset.X_train).numpy().astype(int)
-    y_test = disc_model.predict(dataset.X_test).numpy().astype(int)
-    logger.info(f"Discriminator model accuracy: {np.sum(y_test == dataset.y_test) / len(dataset.y_test)}")
+    #if load_from_save_dir:
+    #    disc_model.load_state_dict(torch.load(os.path.join(save_dir, "disc_model.pth")))
+    #else:
+    #    disc_model.fit(
+    #        dataset.train_dataloader(64, True),
+    #        dataset.test_dataloader(64, False),
+    #        epochs=10000,
+    #        lr=0.001,
+    #        patience=100,
+    #        checkpoint_path=os.path.join(save_dir, "disc_model.pth")
+    #)
+    #disc_model = disc_model.eval()
+    #y_train = disc_model.predict(dataset.X_train).numpy().astype(int)
+    #y_test = disc_model.predict(dataset.X_test).numpy().astype(int)
+    #logger.info(f"Discriminator model accuracy: {np.sum(y_test == dataset.y_test) / len(dataset.y_test)}")
 
-    dataset.y_train = y_train
-    dataset.y_test = y_test
+    #dataset.y_train = y_train
+    #dataset.y_test = y_test
 
     gen_model = MaskedAutoregressiveFlow(
         features=dataset.X_train.shape[1],
@@ -81,20 +82,48 @@ def prepare_dataset_and_models(
         num_blocks_per_layer=2,
         context_features=1
     )
-    if load_from_save_dir:
-        gen_model.load_state_dict(torch.load(os.path.join(save_dir, "gen_model.pth")))
-    else:
-        gen_model.fit(
-            dataset.train_dataloader(64, True, 0.03), 
-            dataset.test_dataloader(64, False), 
-            num_epochs=10000, 
-            learning_rate=0.001, 
-            patience=100,
-            checkpoint_path=os.path.join(save_dir, "gen_model.pth")
-        )
+    #if load_from_save_dir:
+    #    gen_model.load_state_dict(torch.load(os.path.join(save_dir, "gen_model.pth")))
+    #else:
+    #    gen_model.fit(
+    #        dataset.train_dataloader(64, True, 0.03), 
+    #        dataset.test_dataloader(64, False), 
+    #        num_epochs=10000, 
+    #        learning_rate=0.001, 
+    #        patience=100,
+    #        checkpoint_path=os.path.join(save_dir, "gen_model.pth")
+    #    )
     gen_model = gen_model.eval()
-    return dataset, disc_model, gen_model
+    #return dataset, disc_model, gen_model
 
+    return dataset, None, gen_model
+
+
+def inverse_transform_data(data, dataset):
+    data[:, dataset.categorical_features] = dataset.qt.inverse_transform(data[:, dataset.categorical_features])
+    data_orig = np.empty((
+        len(data), len(dataset.numerical_columns) + len(dataset.categorical_columns)
+    ), dtype=object)
+
+    numerical_pos = len(dataset.numerical_columns)
+    numerical_indexes = [
+        dataset.train_data.columns.get_loc(feat) for feat in dataset.feature_columns[:numerical_pos]
+    ]
+    data_orig[:, numerical_indexes] = (
+        dataset.feature_transformer.named_transformers_["MinMaxScaler"].inverse_transform(
+            data[:, dataset.numerical_features])
+    )
+
+    categorical_indexes = [
+        dataset.train_data.columns.get_loc(feat) for feat in dataset.feature_columns[numerical_pos:]
+    ]
+    data_orig[:, categorical_indexes] = (
+        dataset.feature_transformer.named_transformers_["OneHotEncoder"].inverse_transform(
+            data[:, dataset.categorical_features]
+        )
+    )
+
+    return data_orig
 
 def train_method(
         dataset_class: AbstractDataset = MoonsDataset,
@@ -142,7 +171,7 @@ def train_method(
 
     p_values = [1e-2, 2.0]
     #p_values = [2.0]
-    noise_level = 0.03
+    noise_level = 0.01
 
     # Create the multiclass counterfactual wrapper
     logger.info("Creating multiclass counterfactual dataset wrapper")
@@ -246,11 +275,13 @@ def train_method(
                     new_generated_cfs = []
                     for gen_cf, fact_point in zip(generated_cfs, factual_points):
                         nan_mask = np.isnan(gen_cf)
-                        if np.any(nan_mask):
-                            nan_mask_idx = np.any(nan_mask, axis=1)
-                            idx_to_fix = np.where(nan_mask_idx)[0]
-                            chosen_rand = np.random.choice(range(len(gen_cf)), size=len(idx_to_fix), replace=True)
-                            gen_cf[nan_mask_idx] = gen_cf[chosen_rand]
+                        if not np.all(nan_mask):    
+                            while np.any(nan_mask):
+                                nan_mask = np.isnan(gen_cf)
+                                nan_mask_idx = np.any(nan_mask, axis=1)
+                                idx_to_fix = np.where(nan_mask_idx)[0]
+                                chosen_rand = np.random.choice(range(len(gen_cf)), size=len(idx_to_fix), replace=True)
+                                gen_cf[nan_mask_idx] = gen_cf[chosen_rand]
 
                         action_mask_cf = np.broadcast_to(
                             action_mask[np.newaxis, :],
@@ -273,30 +304,10 @@ def train_method(
 
                     s, b, f = generated_cfs.shape
                     gen_rev = generated_cfs.copy().reshape(s*b, f)
-                    gen_rev[:, dataset.categorical_features] = dataset.qt.inverse_transform(gen_rev[:, dataset.categorical_features])
-                    gen_rev_orig = np.empty((
-                        len(gen_rev), len(dataset.numerical_columns) + len(dataset.categorical_columns)
-                    ), dtype=object)
+                    gen_rev_orig = inverse_transform_data(gen_rev, dataset)
 
-                    numerical_pos = len(dataset.numerical_columns)
-                    numerical_indexes = [
-                        dataset.train_data.columns.get_loc(feat) for feat in dataset.feature_columns[:numerical_pos]
-                    ]
-                    gen_rev_orig[:, numerical_indexes] = (
-                        dataset.feature_transformer.named_transformers_["MinMaxScaler"].inverse_transform(
-                            gen_rev[:, dataset.numerical_features])
-                    )
+                    factual_points_orig = inverse_transform_data(factual_points.copy(), dataset)
 
-                    categorical_indexes = [
-                        dataset.train_data.columns.get_loc(feat) for feat in dataset.feature_columns[numerical_pos:]
-                    ]
-                    gen_rev_orig[:, categorical_indexes] = (
-                        dataset.feature_transformer.named_transformers_["OneHotEncoder"].inverse_transform(
-                            gen_rev[:, dataset.categorical_features]
-                        )
-                    )
-
-                    print(gen_rev_orig.shape)
                     true_columns = [col for col in dataset.train_data.columns if col in dataset.feature_columns]
 
                     path = f"generated_cfs_{factual_class}_to_class_{target_class}_p_{p_value}_mask_{mask_ohe}.csv"
@@ -312,6 +323,18 @@ def train_method(
                         comments="",
                         fmt="%s"
                     )
+                    path = path.replace('generated_cfs', 'factual_points')
+                    np.savetxt(
+                        os.path.join(
+                            save_dir,
+                            path),
+                        factual_points_orig,
+                        delimiter=",",
+                        header=','.join(true_columns),
+                        comments="",
+                        fmt="%s"
+                    )
+
                     #np.save(
                     #    os.path.join(
                     #        save_dir,

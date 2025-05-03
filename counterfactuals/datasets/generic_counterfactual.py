@@ -213,7 +213,7 @@ class MulticlassCounterfactualDataset(Dataset):
                                 )
                                 x[self.categorical_features] = (
                                         x[self.categorical_features] +
-                                        np.random.normal(0, 0.01, size=x[self.categorical_features].shape)
+                                        np.random.normal(0, 0.08, size=x[self.categorical_features].shape)
                                 )
                                 
                                 batch_cf.append(torch.tensor(x, dtype=torch.float32))
@@ -265,11 +265,10 @@ class MulticlassCounterfactualDataset(Dataset):
                     cond_tensor = torch.tensor(cond, dtype=torch.float32)
                     # Then create a batch by repeating it
                     batch_cond = cond_tensor.repeat(len(batch_cf), 1)
-                    #batch_cond[:, self.numerical_features] = (
-                    #        batch_cond[:, self.numerical_features] +
-                    #        torch.randn(size=batch_cond[:, self.numerical_features].shape)
-                    #        * torch.tensor(self.noise_level, dtype=torch.float32)
-                    #)
+                    batch_cond[:, self.numerical_features] = (
+                            batch_cond[:, self.numerical_features] +
+                            torch.randn(size=batch_cond[:, self.numerical_features].shape)*self.noise_level/10
+                    )
 
                     p_tensor = torch.tensor(p, dtype=torch.float32)
                     p_tensor = p_tensor.repeat(len(batch_cf), 1)

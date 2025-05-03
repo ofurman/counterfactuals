@@ -32,15 +32,15 @@ class LendingClubDataset(AbstractDataset):
         self.test_data = self.load(file_path=test_file_path, index_col=False)
         
         # Preprocess train and test data separately
-        self.X_train, self.y_train = self.preprocess(raw_data=self.train_data)
-        self.X_test, self.y_test = self.preprocess(raw_data=self.test_data)
+        self.X_train, self.y_train = self.preprocess(raw_data=self.train_data, pred_path="data/lending-club/y_train_pred.npy")
+        self.X_test, self.y_test = self.preprocess(raw_data=self.test_data, pred_path="data/lending-club/y_test_pred.npy")
         
         # Transform the data
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test
         )
 
-    def preprocess(self, raw_data: pd.DataFrame):
+    def preprocess(self, raw_data: pd.DataFrame, pred_path: str):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
@@ -75,6 +75,7 @@ class LendingClubDataset(AbstractDataset):
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
+        y = np.load(pred_path)
         return X, y
 
     def transform(
@@ -117,7 +118,7 @@ class LendingClubDataset(AbstractDataset):
         X_train[:, self.categorical_features] += (
             np.random.normal(
                 0,
-                0.1,
+                0.05,
                 size=(X_train.shape[0], len(self.categorical_features))
             )
         )

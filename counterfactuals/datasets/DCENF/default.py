@@ -133,8 +133,8 @@ class DefaultDataset(AbstractDataset):
         self.test_data = self.load(file_path=test_file_path, index_col=False)
 
         # Preprocess train and test data separately
-        self.X_train, self.y_train = self.preprocess(raw_data=self.train_data)
-        self.X_test, self.y_test = self.preprocess(raw_data=self.test_data)
+        self.X_train, self.y_train = self.preprocess(raw_data=self.train_data, pred_path="data/default/y_train_pred.npy")
+        self.X_test, self.y_test = self.preprocess(raw_data=self.test_data, pred_path="data/default/y_test_pred.npy")
 
         # Transform the data
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
@@ -198,7 +198,7 @@ class DefaultDataset(AbstractDataset):
         )
         return x
 
-    def preprocess(self, raw_data: pd.DataFrame):
+    def preprocess(self, raw_data: pd.DataFrame, pred_path: str):
         """
         Preprocess the loaded data to X and y numpy arrays.
         PAY_0 to PAY_6 are the repayment status from April to September.
@@ -300,11 +300,11 @@ class DefaultDataset(AbstractDataset):
         #    "PAY_6",
         #]
         self.target_column = "default payment next month"
-        raw_data = raw_data[raw_data["SEX"].isin([1, 2])]
+        #raw_data = raw_data[raw_data["SEX"].isin([1, 2])]
         raw_data["SEX"] = raw_data["SEX"] - 1
-        raw_data = raw_data[raw_data["MARRIAGE"].isin([1, 2])]
+        #raw_data = raw_data[raw_data["MARRIAGE"].isin([1, 2])]
         raw_data["MARRIAGE"] = raw_data["MARRIAGE"] - 1
-        raw_data = raw_data[raw_data["EDUCATION"].isin([1, 2, 3])]
+        #raw_data = raw_data[raw_data["EDUCATION"].isin([1, 2, 3])]
         raw_data["EDUCATION"] = raw_data["EDUCATION"] - 1
 
         # Replace the PAY_i columns values -1, -2, 0 with 0
@@ -323,6 +323,7 @@ class DefaultDataset(AbstractDataset):
         y = raw_data[self.target_column].values
         # invert y to be 1 for non-default and 0 for default
         y = 1 - y
+        y = np.load(pred_path)
 
         self.numerical_columns = list(range(0, 14))
         self.categorical_columns = list(range(14, len(self.feature_columns)))
@@ -409,7 +410,7 @@ class DefaultDataset(AbstractDataset):
         X_train[:, self.categorical_features] += (
             np.random.normal(
                 0,
-                0.1,
+                0.05,
                 size=(X_train.shape[0], len(self.categorical_features))
             )
         )
