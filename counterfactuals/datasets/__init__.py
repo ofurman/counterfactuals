@@ -1,5 +1,4 @@
 # ruff: noqa: F401
-from counterfactuals.datasets.adult import AdultDataset
 from counterfactuals.datasets.audit import AuditDataset
 from counterfactuals.datasets.blobs import BlobsDataset
 from counterfactuals.datasets.compas import CompasDataset
@@ -16,3 +15,10 @@ from counterfactuals.datasets.concrete_regression import ConcreteDataset
 from counterfactuals.datasets.diabetes_regression import DiabetesDataset
 from counterfactuals.datasets.scm20d_regression import Scm20dDataset
 from counterfactuals.datasets.toy_regression import ToyRegressionDataset
+
+from counterfactuals.datasets.DCENF.adult import AdultDataset
+from counterfactuals.datasets.DCENF.bank import BankDataset
+from counterfactuals.datasets.DCENF.default import DefaultDataset
+from counterfactuals.datasets.DCENF.gmc import GMCDataset
+from counterfactuals.datasets.DCENF.lending_club import LendingClubDataset
+

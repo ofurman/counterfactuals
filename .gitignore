@@ -178,3 +178,5 @@ notebooks/*.csv
 
 # models
 models/*
+results/*
+results_dice/*
