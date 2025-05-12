@@ -9,68 +9,21 @@ import neptune
 from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
-from sklearn.preprocessing import LabelEncoder
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.cf_methods.ares import AReS
-from counterfactuals.cf_methods.globe_ce import GLOBE_CE
+from counterfactuals.cf_methods.cet.cet import CounterfactualExplanationTree
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+
+MAX_ITERATION = 50
+# LAMBDA, GAMMA = 0.01, 0.75
+LAMBDA, GAMMA = 0.02, 1.0
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
-
-def one_hot(dataset, data):
-    """
-    Improvised method for one-hot encoding the data
-
-    Input: data (whole dataset)
-    Outputs: data_oh (one-hot encoded data)
-                features (list of feature values after one-hot encoding)
-    """
-    label_encoder = LabelEncoder()
-    data_encode = data.copy()
-    dataset.bins = {}
-    dataset.bins_tree = {}
-    dataset.features_tree = {}
-    dataset.n_bins = None
-
-    # Assign encoded features to one hot columns
-    data_oh, features = [], []
-    for x in data.columns:
-        dataset.features_tree[x] = []
-        categorical = x in dataset.categorical_features
-        if categorical:
-            data_encode[x] = label_encoder.fit_transform(data_encode[x])
-            cols = label_encoder.classes_
-        elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(
-                data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins
-            )
-            cols = data_encode[x].cat.categories
-            dataset.bins_tree[x] = {}
-        else:
-            data_oh.append(data[x])
-            features.append(x)
-            continue
-
-        one_hot = pd.get_dummies(data_encode[x])
-        data_oh.append(one_hot)
-        for col in cols:
-            feature_value = x + " = " + str(col)
-            features.append(feature_value)
-            dataset.features_tree[x].append(feature_value)
-            if not categorical:
-                dataset.bins[feature_value] = col.mid
-                dataset.bins_tree[x][feature_value] = col.mid
-
-    data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
-    data_oh.columns = features
-    return data_oh, features
 
 
 def search_counterfactuals(
@@ -84,44 +37,40 @@ def search_counterfactuals(
     """
     Create counterfactuals using CEM method
     """
-    cf_method_name = "ARES"
+    cf_method_name = "CET"
     disc_model.eval()
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-
-    X_test_unscaled = dataset.feature_transformer.inverse_transform(dataset.X_test)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1])
-    )
-
-    def predict_fn(x):
-        x_scaled = dataset.feature_transformer.transform(x)
-        return disc_model.predict(x_scaled).detach().numpy().flatten()
+    X_train, y_train = dataset.X_train, dataset.y_train
+    X_test, y_tes = dataset.X_test, dataset.y_test
 
     logger.info("Filtering out target class data for counterfactual generation")
     target_class = 1
-    ys_pred = predict_fn(X_test_unscaled)
+    ys_pred = disc_model.predict(X_test)
     Xs = dataset.X_test[ys_pred != target_class]
     ys_orig = ys_pred[ys_pred != target_class]
 
     logger.info("Creating counterfactual model")
-    ares_helper = AReS(
-        predict_fn=predict_fn,
-        dataset=dataset,
-        X=pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1]),
-        dropped_features=[],
-        n_bins=10,
-        ordinal_features=[],
-        normalise=False,
-        constraints=[20, 7, 10],
-    )
-    bin_widths = ares_helper.bin_widths
+    X_train = pd.DataFrame(X_train)
+    columns = X_train.columns
+    X_train = X_train.to_numpy()
+    feature_types = ["C" for _ in range(X_train.shape[0])]
+    feature_constraints = ["" for _ in range(X_train.shape[0])]
+    feature_categories = []
 
-    cf_method = GLOBE_CE(
-        predict_fn=predict_fn,
-        dataset=dataset,
-        X=pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1]),
-        bin_widths=bin_widths,
+    cet = CounterfactualExplanationTree(
+        disc_model,
+        X_train,
+        y_train,
+        max_iteration=MAX_ITERATION,
+        lime_approximation=True,
+        feature_names=columns,
+        feature_types=feature_types,
+        feature_categories=feature_categories,
+        feature_constraints=feature_constraints,
+        target_name=dataset.features[-1],
+        target_labels=[0, 1],
     )
+
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
         batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
@@ -135,8 +84,16 @@ def search_counterfactuals(
 
     logger.info("Handling counterfactual generation")
     time_start = time()
-    Xs_cfs = cf_method.explain()
-    Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
+    cet = cet.fit(
+        X_test,
+        max_change_num=3,
+        cost_type="MPS",
+        C=LAMBDA,
+        gamma=GAMMA,
+        time_limit=60,
+        verbose=False,
+    )
+    Xs_cfs = cet.predict(X_test)
     ys_target = np.abs(ys_orig - 1)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
