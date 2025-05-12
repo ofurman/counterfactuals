@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import torch.optim as optim
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
@@ -37,6 +38,34 @@ from counterfactuals.generative_models.base import BaseGenModel
 #         grad_input = grad_output * (softmax * (1 - softmax) / temp)
 
 #         return grad_input, None  # None corresponds to no gradient for temp
+
+
+class TorchDequantizer(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.alpha = 1e-6
+
+    def forward(self, x):
+        # x[:, 2:] = x[:, 2:] + torch.tensor(0.5)
+        x[:, 2:] = x[:, 2:] + torch.sigmoid(torch.randn(x[:, 2:].size()))
+        x[:, 2:] = x[:, 2:] / 2
+        x[:, 2:] = self.alpha + (1 - 2 * self.alpha) * x[:, 2:]
+        result = x.clone()
+        new_tensor = torch.log(x[:, 2:] / (torch.tensor(1.0) - x[:, 2:]))
+        result[:, 2:] = new_tensor
+        return result
+
+
+torch_dequantizer = TorchDequantizer()
+
+
+ALPHA = 1e-6
+
+
+def logit(x):
+    x_clone = x.clone()  # Clone to avoid in-place modification issues
+    x_clone[:, 2:4] = torch.logit(x[:, 2:4], eps=1e-6)
+    return x_clone
 
 
 class PPCEF(BaseCounterfactual):
@@ -100,7 +129,7 @@ class PPCEF(BaseCounterfactual):
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
         p_x_param_c_target = self.gen_model(
-            x_origin + delta, context=context_target.type(torch.float32)
+            torch_dequantizer(cf), context=context_target.type(torch.float32)
         )
         max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
 

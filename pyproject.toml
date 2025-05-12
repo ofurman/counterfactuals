@@ -38,3 +38,8 @@ where = ["."]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"counterfactuals/cf_methods/cet/*.py" = ["E741", "E711", "F841"]
+"counterfactuals/cf_methods/ares/ares.py" = ["F841"]
+"counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
+"counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
+"counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
