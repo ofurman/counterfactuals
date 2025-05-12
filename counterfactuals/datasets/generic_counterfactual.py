@@ -800,13 +800,16 @@ def generate_multiclass_counterfactuals(
             
             # Generate samples
             samples, log_probs = model.sample_and_log_prob(
-                num_samples=n_samples,
+                num_samples=n_samples + 5,
                 context=context,
                 temp=temperature
             )
             log_probs = log_probs.squeeze(0).cpu().numpy()
             samples = samples.squeeze(0)
-
+            # Sort samples by log probability and take top n_samples
+            top_indices = np.argsort(log_probs)[-n_samples:]
+            samples = samples[top_indices]
+            samples = samples.cpu().numpy()
             # remove samples with log prob less than median log prob
             # median_log_prob = np.nanquantile(log_probs, 0.25)
             # samples = samples[log_probs >= median_log_prob]
@@ -868,13 +871,13 @@ def visualize_multiclass_counterfactual_generation(
         y_min, y_max = plt.ylim()
         
         # Create mesh grid
-        xline = torch.linspace(x_min, x_max, 100)
-        yline = torch.linspace(y_min, y_max, 100)
+        xline = torch.linspace(x_min, x_max, 200)
+        yline = torch.linspace(y_min, y_max, 200)
         xgrid, ygrid = torch.meshgrid(xline, yline)
         xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
 
         y_hat = disc_model.predict(xyinput)
-        y_hat = y_hat.reshape(100, 100)
+        y_hat = y_hat.reshape(200, 200)
 
         display = DecisionBoundaryDisplay(xx0=xgrid, xx1=ygrid, response=y_hat)
         ax = display.plot(plot_method="contour", ax=ax, alpha=0.3).ax_
@@ -926,7 +929,7 @@ def visualize_multiclass_counterfactual_generation(
                     )
                     
                     # Convert to original scale for better interpretability
-                    factual_orig = dataset.feature_transformer.inverse_transform(factual_points)
+                    factual_orig = factual_points
                     
                     # Fix: Handle the 3D structure of generated_cfs by reshaping before inverse_transform
                     generated_cfs_orig = []
@@ -1061,36 +1064,6 @@ def visualize_multiclass_counterfactual_generation(
                                 label='Generated Counterfactuals'
                             )
                             
-                            # Add density contour of generated points
-                            try:
-                                from scipy.stats import gaussian_kde
-                                
-                                # If we have enough points, create a density plot
-                                if len(cf_to_plot) >= 10:
-                                    kde = gaussian_kde(cf_to_plot.T)
-                                    
-                                    # Create a grid of points
-                                    x_min, x_max = plt.xlim()
-                                    y_min, y_max = plt.ylim()
-                                    
-                                    xx, yy = np.meshgrid(
-                                        np.linspace(x_min, x_max, 100),
-                                        np.linspace(y_min, y_max, 100)
-                                    )
-                                    
-                                    # Evaluate KDE on grid
-                                    positions = np.vstack([xx.ravel(), yy.ravel()])
-                                    zz = kde(positions).reshape(xx.shape)
-                                    
-                                    # Plot contour
-                                    plt.contour(
-                                        xx, yy, zz, 
-                                        cmap=plt.cm.Oranges, 
-                                        alpha=0.5
-                                    )
-                            except Exception as e:
-                                logger.warning(f"Could not create density plot: {e}")
-                            
                             # Draw lines to all counterfactuals
                             for j in range(len(cf_to_plot)):
                                 plt.plot(
@@ -1122,3 +1095,153 @@ def visualize_multiclass_counterfactual_generation(
                         plt.close()
 
     return results 
+
+
+def visualize_single_factual_counterfactuals(
+    model,
+    dataset,
+    disc_model,
+    factual_point: np.ndarray,
+    factual_class: int,
+    target_class: int,
+    mask: np.ndarray,
+    p_value: float,
+    num_samples: int = 20,
+    temperature: float = 0.8,
+    save_path: Optional[str] = None,
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+):
+    """
+    Visualize counterfactuals generated for a single factual point.
+    
+    Args:
+        model: Trained flow model
+        dataset: MulticlassCounterfactualWrapper instance
+        disc_model: Discriminator model for visualizing decision boundaries
+        factual_point: The factual point to generate counterfactuals for
+        factual_class: Class of the factual point
+        target_class: Target class to generate counterfactuals for
+        mask: Feature mask for immutable features
+        p_value: p-norm value for distance calculation
+        num_samples: Number of counterfactual samples to generate
+        temperature: Temperature for sampling (higher = more diverse)
+        save_path: Path to save the visualization (if None, plot is shown)
+        device: Device to use for generation
+    """
+    # Only works for 2D data
+    assert dataset.X.shape[1] == 2, "Only 2D data is supported for visualization"
+    
+    # Generate counterfactuals
+    generated_cfs = generate_multiclass_counterfactuals(
+        model=model,
+        factual_points=factual_point[np.newaxis, :],  # Add batch dimension
+        target_class=target_class,
+        n_samples=num_samples,
+        temperature=temperature,
+        device=device,
+        num_classes=len(dataset.classes),
+        mask=mask,
+        p_value=p_value
+    )
+    
+    # Convert to original scale
+    factual_orig = dataset.feature_transformer.inverse_transform(factual_point[np.newaxis, :])[0]
+    generated_cfs_orig = dataset.feature_transformer.inverse_transform(generated_cfs[0])
+    
+    # Create the plot
+    plt.figure(figsize=(6, 5))
+    # fontsize
+    plt.rcParams.update({'font.size': 14})
+
+    ax = plt.gca()
+    plt.xlim(0, 0.8)
+    plt.ylim(0.2, 1)
+    
+    # Plot decision boundaries
+    x_min, x_max = plt.xlim()
+    y_min, y_max = plt.ylim()
+    
+    # Create mesh grid
+    xline = torch.linspace(x_min, x_max, 200)
+    yline = torch.linspace(y_min, y_max, 200)
+    xgrid, ygrid = torch.meshgrid(xline, yline)
+    xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+    
+    y_hat = disc_model.predict(xyinput)
+    y_hat = y_hat.reshape(200, 200)
+    
+    display = DecisionBoundaryDisplay(xx0=xgrid, xx1=ygrid, response=y_hat)
+    display.plot(plot_method="contour", ax=ax, alpha=0.3)
+    # add legend green line for decision boundary
+    ax.plot([x_min, x_min], [x_min, x_min], color='green', label='Decision Boundary')
+
+    # Plot training data points with slightly higher opacity
+    ax.scatter(
+        dataset.X_test[dataset.y_test == factual_class, 0],
+        dataset.X_test[dataset.y_test == factual_class, 1],
+        c='red',
+        alpha=0.10,  # Higher alpha for training points
+        s=40,
+        label='Original Class'
+    )
+
+    ax.scatter(
+        dataset.X_test[dataset.y_test == target_class, 0],
+        dataset.X_test[dataset.y_test == target_class, 1],
+        c='blue',
+        alpha=0.10,  # Higher alpha for training points
+        s=40,
+        label='Target Class'
+    )
+    
+    # Plot factual point
+    ax.scatter(
+        factual_orig[0],
+        factual_orig[1],
+        color='red',
+        s=250,
+        marker='*',
+        edgecolor='black',
+        label=f'Factual Points'
+    )
+    
+    # Plot generated counterfactuals
+    ax.scatter(
+        generated_cfs_orig[:, 0],
+        generated_cfs_orig[:, 1],
+        color='blue',
+        alpha=0.8,
+        marker='x',
+        s=100,
+        label=f'Counterfactual Points'
+    )
+    
+    # Draw lines to all counterfactuals
+    for j in range(len(generated_cfs_orig)):
+        ax.plot(
+            [factual_orig[0], generated_cfs_orig[j, 0]],
+            [factual_orig[1], generated_cfs_orig[j, 1]],
+            color='gray',
+            linestyle='--',
+            alpha=0.3
+        )
+    
+    # Add title and labels
+    # plt.title(
+    #     f"Counterfactuals for Factual Point (Class {factual_class} → Class {target_class}). p-value: {p_value}\n"
+    #     f"Mask: {mask}"
+    # )
+    ax.set_xlabel("Feature 1")
+    ax.set_ylabel("Feature 2")
+    # set legend to lower right
+    ax.legend(loc='lower right')
+    ax.grid(True, alpha=0.3)
+    
+    # Save or show the plot
+    if save_path:
+        # tight layout
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+    else:
+        plt.show() 

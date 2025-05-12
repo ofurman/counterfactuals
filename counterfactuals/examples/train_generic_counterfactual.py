@@ -12,7 +12,8 @@ from counterfactuals.datasets.generic_counterfactual import (
     MulticlassCounterfactualWrapper, 
     train_multiclass_counterfactual_flow_model,
     generate_multiclass_counterfactuals,
-    visualize_multiclass_counterfactual_generation
+    visualize_multiclass_counterfactual_generation,
+    visualize_single_factual_counterfactuals
 )
 from counterfactuals.generative_models.maf import MaskedAutoregressiveFlow
 from counterfactuals.examples.utils import (
@@ -29,7 +30,7 @@ from counterfactuals.datasets.heloc import HelocDataset
 from counterfactuals.datasets.wine import WineDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.blobs import BlobsDataset
-from counterfactuals.datasets.DCEF.adult import AdultDataset
+# from counterfactuals.datasets.DCEF.adult import AdultDataset
 from counterfactuals.datasets.generic_counterfactual import AbstractDataset
 
 # Configure logging
@@ -170,6 +171,72 @@ def train_method(
         load_from_save_dir=True
     )
     logger.info("Multiclass model training complete")
+
+    # visualise factual points
+    mask = np.array([0.01, 0.01])
+    p_value = 2.0
+    visualize_single_factual_counterfactuals(
+        model=multiclass_model,
+        dataset=dataset,
+        disc_model=disc_model,
+        factual_point=dataset.X_train[0],
+        factual_class=dataset.y_train[0],
+        target_class=dataset.y_train[1],
+        mask=mask,
+        p_value=p_value,
+        num_samples=20,
+        temperature=0.8,
+        save_path=os.path.join(save_dir, f"factual_point_class_{dataset.y_train[0]}_to_class_{dataset.y_train[1]}_mask_{mask}_p_{p_value}.pdf")
+    )
+
+    mask = np.array([0.01, 0.01])
+    p_value = 0.01
+    visualize_single_factual_counterfactuals(
+        model=multiclass_model,
+        dataset=dataset,
+        disc_model=disc_model,
+        factual_point=dataset.X_train[0],
+        factual_class=dataset.y_train[0],
+        target_class=dataset.y_train[1],
+        mask=mask,
+        p_value=p_value,
+        num_samples=20,
+        temperature=0.8,
+        save_path=os.path.join(save_dir, f"factual_point_class_{dataset.y_train[0]}_to_class_{dataset.y_train[1]}_mask_{mask}_p_{p_value}.pdf")
+    )
+
+    mask = np.array([0.01, 1.0])
+    p_value = 2.0
+    visualize_single_factual_counterfactuals(
+        model=multiclass_model,
+        dataset=dataset,
+        disc_model=disc_model,
+        factual_point=dataset.X_train[0],
+        factual_class=dataset.y_train[0],
+        target_class=dataset.y_train[1],
+        mask=mask,
+        p_value=p_value,
+        num_samples=20,
+        temperature=0.8,
+        save_path=os.path.join(save_dir, f"factual_point_class_{dataset.y_train[0]}_to_class_{dataset.y_train[1]}_mask_{mask}_p_{p_value}.pdf")
+    )
+
+    mask = np.array([1.0, 0.01])
+    p_value = 2.0
+    visualize_single_factual_counterfactuals(
+        model=multiclass_model,
+        dataset=dataset,
+        disc_model=disc_model,
+        factual_point=dataset.X_train[0],
+        factual_class=dataset.y_train[0],
+        target_class=dataset.y_train[1],
+        mask=mask,
+        p_value=p_value,
+        num_samples=20,
+        temperature=0.8,
+        save_path=os.path.join(save_dir, f"factual_point_class_{dataset.y_train[0]}_to_class_{dataset.y_train[1]}_mask_{mask}_p_{p_value}.pdf")
+    )
+    return
     
     # Generate and visualize counterfactuals using multiclass model
     logger.info("Generating and visualizing counterfactuals using multiclass model")
