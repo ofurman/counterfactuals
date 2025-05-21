@@ -156,14 +156,7 @@ def train_method(
     # Create masks
     features = dataset.X_train.shape[1]
     masks = []
-    #for i in range(1):
-    #    mask = np.ones(features) * 1e-2
-#
-    #    idx = np.random.choice(len(mask), size=int(features // 5) + 1, replace=False)
-    #    mask[idx] = 1
-#
-    #    masks.append(mask)
-    masks.append(np.ones(features) * 1e-2)
+    masks.append(np.ones(features) * 1e-3)
     masks = np.array(masks)
 
     mask_features = len(masks)
@@ -255,7 +248,7 @@ def train_method(
                     mask_ohe = np.zeros(mask_features)
                     mask_ohe[mask_idx] = 1
                     print(mask_ohe)
-                    generated_cfs = generate_multiclass_counterfactuals(
+                    generated_cfs, log_probs = generate_multiclass_counterfactuals(
                         model=multiclass_model,
                         factual_points=factual_points,
                         target_class=target_class,
@@ -266,12 +259,13 @@ def train_method(
                         device="cuda" if torch.cuda.is_available() else "cpu",
                         num_classes=len(dataset_cf.classes)
                     )
+                    print("Log probs shape: ", log_probs.shape)
 
                     action_mask = np.zeros_like(mask, dtype=bool)
                     action_mask[mask == 1.] = True
                     action_masks = []
 
-                    print(np.isnan(generated_cfs).sum() / generated_cfs.shape[2])
+                    # Replace counterfactuals containing NaNs with randomly chosen ones
                     new_generated_cfs = []
                     for gen_cf, fact_point in zip(generated_cfs, factual_points):
                         nan_mask = np.isnan(gen_cf)
@@ -287,11 +281,6 @@ def train_method(
                             action_mask[np.newaxis, :],
                             gen_cf.shape
                         )
-                        broadcasted_fact = np.broadcast_to(
-                            fact_point[np.newaxis, :],
-                            gen_cf.shape
-                            )
-                        gen_cf[action_mask_cf] = broadcasted_fact[action_mask_cf]
 
                         action_masks.append(action_mask_cf)
                         new_generated_cfs.append(gen_cf)
@@ -333,6 +322,14 @@ def train_method(
                         header=','.join(true_columns),
                         comments="",
                         fmt="%s"
+                    )
+
+                    path = path.replace('factual_points', 'log_probs')
+                    np.save(
+                        os.path.join(
+                            save_dir,
+                            path),
+                        log_probs
                     )
 
                     #np.save(

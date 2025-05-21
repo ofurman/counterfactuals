@@ -808,6 +808,7 @@ def generate_multiclass_counterfactuals(
     """
     model.eval()
     all_counterfactuals = np.zeros((factual_points.shape[0], n_samples, factual_points.shape[1]))
+    all_log_probs = np.zeros((factual_points.shape[0], n_samples))
     batch_size = 256
 
     p = torch.tensor([p_value], dtype=torch.float32).unsqueeze(0).to(device)
@@ -833,13 +834,14 @@ def generate_multiclass_counterfactuals(
             
             # Combine factual point, class one-hot encoding, feature mask and p-norm
             context = torch.cat([factual_tensor, class_tensor, mask_tensor, p_tensor], dim=1)
-            
+
             # Generate samples
             samples, log_probs = model.sample_and_log_prob(
                 num_samples=n_samples,
                 context=context,
                 temp=temperature
             )
+
             log_probs = log_probs.squeeze(0).cpu().numpy()
             samples = samples.squeeze(0)
 
@@ -852,8 +854,9 @@ def generate_multiclass_counterfactuals(
             
             # Add to results
             all_counterfactuals[factual_idx:end_idx] = samples.cpu().numpy()
+            all_log_probs[factual_idx:end_idx] = log_probs
     
-    return all_counterfactuals
+    return all_counterfactuals, all_log_probs
 
 
 def visualize_multiclass_counterfactual_generation(
