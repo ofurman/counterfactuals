@@ -94,7 +94,7 @@ class CompasDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(sparse_output=False),
+                    OneHotEncoder(sparse=False),
                     self.categorical_columns,
                 ),
             ],

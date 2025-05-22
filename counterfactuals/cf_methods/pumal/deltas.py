@@ -1,8 +1,30 @@
 import torch
 import numpy as np
 from sklearn.cluster import KMeans
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Dict, Tuple, Optional, Any
 
 from counterfactuals.cf_methods.pumal.sparsemax import Sparsemax
+
+
+class GradStrategy(Enum):
+    ZERO = auto()            # Zero out gradient (no change)
+    INCREASE_ONLY = auto()   # Only allow positive gradients (increase only)
+    DECREASE_ONLY = auto()   # Only allow negative gradients (decrease only)
+    UNRESTRICTED = auto()    # No gradient restriction
+
+
+@dataclass
+class DimConfig:
+    """Configuration for a single dimension in the optimization process."""
+    strategy: GradStrategy = GradStrategy.UNRESTRICTED
+    min_val: Optional[float] = None
+    max_val: Optional[float] = None
+    
+    def has_range(self) -> bool:
+        """Check if this dimension has a valid clamping range defined."""
+        return self.min_val is not None and self.max_val is not None
 
 
 class PPCEF_2(torch.nn.Module):
@@ -76,7 +98,21 @@ class GLOBAL_CE(torch.nn.Module):
 
 
 class GCE(torch.nn.Module):
-    def __init__(self, N, D, K, init_from_kmeans=False, X=None, zero_grad_dims=None):
+    def __init__(self, N, D, K, init_from_kmeans=False, X=None, 
+                 dim_configs: Optional[Dict[int, DimConfig]] = None):
+        """
+        Initialize GCE with per-dimension gradient strategies and value ranges.
+        
+        Args:
+            N (int): Number of instances
+            D (int): Dimensionality of the data
+            K (int): Number of clusters
+            init_from_kmeans (bool): Whether to initialize S from KMeans clustering
+            X (tensor): Data for KMeans initialization
+            dim_configs (Dict[int, DimConfig]): Dictionary mapping dimension indices to 
+                                                DimConfig objects specifying gradient behavior
+                                                and clamping ranges
+        """
         super(GCE, self).__init__()
         assert 1 <= K and K <= N, "Assumption of the method!"
         assert N >= 1
@@ -88,9 +124,14 @@ class GCE(torch.nn.Module):
 
         self.m = torch.nn.Parameter(0 * torch.rand(self.N, 1))
         self.d = torch.nn.Parameter(0 * torch.rand((self.K, self.D)))
-        self.zero_grad_dims = zero_grad_dims
-        if self.zero_grad_dims is not None:
-            self.d.register_hook(self._zero_grad_hook)
+        
+        # Initialize dimension configurations
+        self.dim_configs = dim_configs if dim_configs is not None else {}
+        
+        # Register hooks if needed
+        if self.dim_configs:
+            self.d.register_hook(self._gradient_hook)
+            self._register_clamp_hook()
 
         if init_from_kmeans:
             assert X is not None, "X should be provided for KMeans initialization"
@@ -98,14 +139,55 @@ class GCE(torch.nn.Module):
         else:
             self.s = torch.nn.Parameter(0.01 * torch.rand(self.N, self.K))
         self.sparsemax = Sparsemax(dim=1)
-
-    def _zero_grad_hook(self, grad):
+        
+    def _register_clamp_hook(self):
         """
-        Hook to zero gradients for specified dimensions of d.
+        Register a hook that clamps values to specified ranges after each optimization step.
         """
-        if self.zero_grad_dims is not None:
-            grad[:, self.zero_grad_dims] = 0
-        return grad
+        def clamp_hook(module, input, output):
+            with torch.no_grad():
+                for dim, config in self.dim_configs.items():
+                    if config.has_range():
+                        self.d.data[:, dim].clamp_(config.min_val, config.max_val)
+        
+        self.register_forward_hook(clamp_hook)
+        
+    def clamp_parameters(self):
+        """
+        Manually clamp parameters to their specified ranges.
+        This can be called explicitly if needed.
+        """
+        with torch.no_grad():
+            for dim, config in self.dim_configs.items():
+                if config.has_range():
+                    self.d.data[:, dim].clamp_(config.min_val, config.max_val)
+                
+    def _gradient_hook(self, grad):
+        """
+        Hook to modify gradients for specified dimensions based on their strategies.
+        
+        This hook applies different gradient strategies to different dimensions based on
+        the GradStrategy enum in each dimension's DimConfig.
+        """
+        # Create a copy of the gradient
+        modified_grad = grad.clone()
+        
+        # Apply strategies to each dimension
+        for dim, config in self.dim_configs.items():
+            if config.strategy == GradStrategy.ZERO:
+                modified_grad[:, dim] = 0
+            elif config.strategy == GradStrategy.INCREASE_ONLY:
+                # Zero out negative gradients
+                mask = (modified_grad[:, dim] < 0)
+                if mask.any():
+                    modified_grad[:, dim][mask] = 0
+            elif config.strategy == GradStrategy.DECREASE_ONLY:
+                # Zero out positive gradients
+                mask = (modified_grad[:, dim] > 0)
+                if mask.any():
+                    modified_grad[:, dim][mask] = 0
+                    
+        return modified_grad
 
     def determinant_diversity_penalty(self, vectors):
         """

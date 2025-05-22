@@ -55,22 +55,22 @@ class CFMetrics:
         # precheck input assumptions
         assert (
             X_cf.shape[1] == X_train.shape[1] == X_test.shape[1]
-        ), "All input data should have the same number of features"
+        ), f"All input data should have the same number of features, but got {X_cf.shape[1]}, {X_train.shape[1]}, {X_test.shape[1]}"
         assert (
             X_train.shape[0] == y_train.shape[0]
-        ), "X_train and y_train should have the same number of samples"
+        ), f"X_train and y_train should have the same number of samples, but got {X_train.shape[0]} and {y_train.shape[0]}"
         assert (
             X_test.shape[0] == y_test.shape[0]
-        ), "X_test and y_test should have the same number of samples"
+        ), f"X_test and y_test should have the same number of samples, but got {X_test.shape[0]} and {y_test.shape[0]}"
         assert (
             X_cf.shape[0] == y_test.shape[0]
         ), f"X_cf and y_test should have the same number of samples, but got {X_cf.shape[0]} and {y_test.shape[0]}"
         assert (
             len(continuous_features) + len(categorical_features) == X_cf.shape[1]
-        ), "The sum of continuous and categorical features should equal the number of features in X_cf"
+        ), f"The sum of continuous and categorical features should equal the number of features in X_cf, but got {len(continuous_features)} + {len(categorical_features)} = {len(continuous_features) + len(categorical_features)} and {X_cf.shape[1]}"
         assert (
             ratio_cont is None or 0 <= ratio_cont <= 1
-        ), "ratio_cont should be between 0 and 1"
+        ), f"ratio_cont should be between 0 and 1, but got {ratio_cont}"
 
         # convert everything to torch tensors if not already
         self.X_cf = self._convert_to_numpy(X_cf)
@@ -522,4 +522,60 @@ def evaluate_cf_for_pumal(
                 ).mean(),
             }
         )
+    return metrics
+
+
+def evaluate_cf_for_tcrex(
+    disc_model: torch.nn.Module,
+    gen_model: torch.nn.Module,
+    X_cf: np.ndarray,
+    model_returned: np.ndarray,
+    continuous_features: list,
+    categorical_features: list,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    y_target: np.ndarray,
+    median_log_prob: np.ndarray,
+    X_test_target: np.ndarray = None,
+):
+    """
+    Evaluate counterfactuals for TCREx method.
+    
+    Args:
+        disc_model: The discriminative model
+        gen_model: The generative model
+        X_cf: The counterfactuals
+        model_returned: Boolean mask indicating which counterfactuals were returned
+        continuous_features: List of continuous feature indices
+        categorical_features: List of categorical feature indices
+        X_train: Training data
+        y_train: Training labels
+        X_test: Test data
+        y_test: Test labels
+        y_target: Target labels for counterfactuals
+        median_log_prob: Threshold for log probability
+        X_test_target: Target test data for evaluation
+        
+    Returns:
+        dict: Dictionary containing all metric values
+    """
+    metrics = evaluate_cf(
+        disc_model=disc_model,
+        gen_model=gen_model,
+        X_cf=X_cf,
+        model_returned=model_returned,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        y_target=y_target,
+        median_log_prob=median_log_prob,
+    )
+    
+    # Add TCREx specific metrics if needed in the future
+    
     return metrics

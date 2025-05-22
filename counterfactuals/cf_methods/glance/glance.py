@@ -56,7 +56,7 @@ class GlobalGLANCE:
         s: int = 4,
         m: int = 1,
     ) -> None:
-        assert s >= 2, "s must be greater than or equal to 2"
+        assert s >= 1, "s must be greater than or equal to 2"
 
         self.features = features
         self.model = model

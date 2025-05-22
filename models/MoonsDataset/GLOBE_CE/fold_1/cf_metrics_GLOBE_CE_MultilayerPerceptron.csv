@@ -1,2 +1,0 @@
-coverage,validity,actionability,sparsity,proximity_categorical_hamming,proximity_categorical_jaccard,proximity_continuous_manhattan,proximity_continuous_euclidean,proximity_continuous_mad,proximity_l2_jaccard,proximity_mad_hamming,prob_plausibility,log_density_cf,log_density_test,lof_scores_cf,lof_scores_test,isolation_forest_scores_cf,isolation_forest_scores_test
-1.0,1.0,0.0,1.0,,0.39514246786456564,0.39565509740710497,0.39514246786456564,2.29853844317128,0.39514246786456564,,0.0,-6.43307,-49.96651,2.2597971021327052,1.07623,-0.07106555442866942,0.0031330320048963928

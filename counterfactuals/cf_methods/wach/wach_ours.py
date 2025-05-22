@@ -3,10 +3,13 @@ import numpy as np
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+import logging
 
 from counterfactuals.cf_methods.base import BaseCounterfactual
 from counterfactuals.discriminative_models.base import BaseDiscModel
 from counterfactuals.generative_models.base import BaseGenModel
+
+logger = logging.getLogger(__name__)
 
 
 class WACH_OURS(BaseCounterfactual):
@@ -43,14 +46,14 @@ class WACH_OURS(BaseCounterfactual):
         dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
 
         disc_logits = self.disc_model.forward(x_origin + delta)
-        disc_logits = (
-            disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
-        )
-        context_target = (
-            context_target.reshape(-1)
-            if context_target.shape[0] == 1
-            else context_target
-        )
+        # disc_logits = (
+        #     disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
+        # )
+        # context_target = (
+        #     context_target.reshape(-1)
+        #     if context_target.shape[0] == 1
+        #     else context_target
+        # )
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
         loss = dist + alpha * (loss_disc)
@@ -101,8 +104,11 @@ class WACH_OURS(BaseCounterfactual):
             xs_origin = xs_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
 
-            contexts_origin = contexts_origin.reshape(-1, 1)
-            contexts_target = torch.abs(1 - contexts_origin)
+            # contexts_origin = contexts_origin.reshape(-1, 1)
+            contexts_target = torch.zeros_like(contexts_origin)
+            contexts_target[np.argmax(contexts_origin, axis=1) == 0, 1] = 1
+            contexts_target[np.argmax(contexts_origin, axis=1) == 1, 0] = 1
+            # contexts_target = torch.abs(1 - contexts_origin)
 
             xs_origin = torch.as_tensor(xs_origin)
             xs_origin.requires_grad = False

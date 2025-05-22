@@ -68,7 +68,7 @@ class WineDataset(AbstractDataset):
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
-        self.y_transformer = OneHotEncoder(sparse_output=False)
+        self.y_transformer = OneHotEncoder(sparse=False)
         y_train = self.y_transformer.fit_transform(
             y_train.reshape(-1, 1).astype(np.float32)
         )
