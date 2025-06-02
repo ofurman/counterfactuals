@@ -42,6 +42,8 @@ def search_counterfactuals(
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     X_train, y_train = dataset.X_train, dataset.y_train
     X_test, y_tes = dataset.X_test, dataset.y_test
+    X_train = dataset.feature_transformer.inverse_transform(dataset.X_train)
+    X_test = dataset.feature_transformer.inverse_transform(dataset.X_test)
 
     logger.info("Filtering out target class data for counterfactual generation")
     target_class = 1
@@ -53,16 +55,18 @@ def search_counterfactuals(
     X_train = pd.DataFrame(X_train)
     columns = X_train.columns
     X_train = X_train.to_numpy()
-    feature_types = ["C" for _ in range(X_train.shape[0])]
+    feature_types = ["I" for _ in range(X_train.shape[0])]
     feature_constraints = ["" for _ in range(X_train.shape[0])]
     feature_categories = []
 
+    disc_model_wrapper = DiscModelWrapper(disc_model)
+
     cet = CounterfactualExplanationTree(
-        disc_model,
+        disc_model_wrapper,
         X_train,
         y_train,
         max_iteration=MAX_ITERATION,
-        lime_approximation=True,
+        lime_approximation=False,
         feature_names=columns,
         feature_types=feature_types,
         feature_categories=feature_categories,
@@ -81,7 +85,6 @@ def search_counterfactuals(
     )
     run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
-
     logger.info("Handling counterfactual generation")
     time_start = time()
     cet = cet.fit(
@@ -91,7 +94,7 @@ def search_counterfactuals(
         C=LAMBDA,
         gamma=GAMMA,
         time_limit=60,
-        verbose=False,
+        verbose=True,
     )
     Xs_cfs = cet.predict(X_test)
     ys_target = np.abs(ys_orig - 1)
@@ -146,7 +149,20 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="globe_ce_config", version_base="1.2")
+class DiscModelWrapper:
+    def __init__(self, disc_model: torch.nn.Module):
+        self.disc_model = disc_model
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        out = self.disc_model.predict(X)
+        return out.detach().numpy()
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        out = self.disc_model.predict_proba(X)
+        return out.detach().numpy()
+
+
+@hydra.main(config_path="./conf", config_name="cet_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

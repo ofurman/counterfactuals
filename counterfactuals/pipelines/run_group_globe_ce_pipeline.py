@@ -84,7 +84,7 @@ def search_counterfactuals(
     """
     Create counterfactuals using CEM method
     """
-    cf_method_name = "ARES"
+    cf_method_name = "Group_Globe_CE"
     disc_model.eval()
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -114,7 +114,7 @@ def search_counterfactuals(
     run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
-    kmeans = KMeans(n_clusters=8)
+    kmeans = KMeans(n_clusters=cfg.counterfactuals_params.n_clusters)
     kmeans.fit(Xs)
 
     logger.info("Handling counterfactual generation")
@@ -166,7 +166,15 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return (
+        Xs_cfs,
+        Xs,
+        log_prob_threshold,
+        ys_orig,
+        ys_target,
+        model_returned,
+        cf_search_time,
+    )
 
 
 def calculate_metrics(
@@ -207,7 +215,9 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="globe_ce_config", version_base="1.2")
+@hydra.main(
+    config_path="./conf", config_name="group_globe_ce_config", version_base="1.2"
+)
 def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -235,10 +245,16 @@ def main(cfg: DictConfig):
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+        (
+            Xs_cfs,
+            Xs,
+            log_prob_threshold,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+        ) = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, run, save_folder
         )
 
         metrics = calculate_metrics(
@@ -259,6 +275,7 @@ def main(cfg: DictConfig):
 
         run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False

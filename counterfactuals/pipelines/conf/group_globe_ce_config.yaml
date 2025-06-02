@@ -18,17 +18,17 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.WineDataset
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 50
@@ -37,9 +37,11 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.globe_ce.GLOBE_CE
+    _target_: counterfactuals.cf_methods.globe_ce.Group_GLOBE_CE
   
   # General parameters
   target_class: 0
   batch_size: 4096
   log_prob_quantile: 0.25
+  n_clusters: 4
+

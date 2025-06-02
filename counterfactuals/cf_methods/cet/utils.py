@@ -211,7 +211,7 @@ class LimeEstimator:
         N_x = self.getNeighbors(x)
         weights = self.getWeights(x, N_x)
         if target_label is None:
-            target_label = int(1 - self.mdl_.predict(x.reshape(1, -1))[0])
+            target_label = int(1 - self.mdl_.predict(x.reshape(1, -1)))
         self.mdl_local_ = self.mdl_local_.fit(
             N_x, self.mdl_.predict_proba(N_x)[:, target_label], sample_weight=weights
         )
@@ -1575,6 +1575,7 @@ class DatasetHelper:
     def __init__(self, dataset="h", feature_prefix_index=False):
         self.dataset_ = dataset
         self.df_ = pd.read_csv(DATASETS_PATH[dataset], dtype="float")
+        self.df_ = self.df_.sample(frac=0.02)
         self.y = self.df_[TARGET_NAME[dataset]].values
         self.X = self.df_.drop([TARGET_NAME[dataset]], axis=1).values
         self.n_samples, self.n_features = self.X.shape

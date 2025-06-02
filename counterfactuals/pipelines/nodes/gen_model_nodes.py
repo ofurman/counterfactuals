@@ -26,6 +26,7 @@ def train_gen_model(
     gen_model_path: str,
     cfg: DictConfig,
     run: neptune.Run,
+    dequantizer=None,
 ) -> torch.nn.Module:
     """
     Train a generative model
@@ -47,6 +48,7 @@ def train_gen_model(
         learning_rate=cfg.gen_model.lr,
         checkpoint_path=gen_model_path,
         neptune_run=run,
+        dequantizer=dequantizer,
     )
     gen_model.save(gen_model_path)
     return gen_model
@@ -77,14 +79,20 @@ def evaluate_gen_model(
 
 
 def create_gen_model(
-    cfg: DictConfig, dataset: DictConfig, gen_model_path: str, run: neptune.Run
+    cfg: DictConfig,
+    dataset: DictConfig,
+    gen_model_path: str,
+    run: neptune.Run,
+    dequantizer=None,
 ) -> torch.nn.Module:
     """
     Create and train a generative model
     """
     gen_model = instantiate_gen_model(cfg, dataset)
     if cfg.gen_model.train_model:
-        gen_model = train_gen_model(gen_model, dataset, gen_model_path, cfg, run)
+        gen_model = train_gen_model(
+            gen_model, dataset, gen_model_path, cfg, run, dequantizer
+        )
     else:
         logger.info("Loading generative model")
         gen_model.load(gen_model_path)

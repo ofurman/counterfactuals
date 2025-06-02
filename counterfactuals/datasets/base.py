@@ -49,7 +49,9 @@ class AbstractDataset(ABC):
         else:
             print("No data to save.")
 
-    def get_cv_splits(self, n_splits: int = 5, shuffle: bool = True):
+    def get_cv_splits(
+        self, n_splits: int = 5, shuffle: bool = True, transform: bool = True
+    ):
         """
         Sets and return the train and test splits for cross-validation.
         """
@@ -57,12 +59,13 @@ class AbstractDataset(ABC):
         for train_idx, test_idx in cv.split(self.X, self.y):
             self.X_train, self.X_test = self.X[train_idx], self.X[test_idx]
             self.y_train, self.y_test = self.y[train_idx], self.y[test_idx]
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                X_train=self.X_train,
-                X_test=self.X_test,
-                y_train=self.y_train,
-                y_test=self.y_test,
-            )
+            if transform:
+                self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+                    X_train=self.X_train,
+                    X_test=self.X_test,
+                    y_train=self.y_train,
+                    y_test=self.y_test,
+                )
             yield self.X_train, self.X_test, self.y_train, self.y_test
 
     def get_target_class_splits(self, target_class: int) -> Tuple[np.ndarray]:

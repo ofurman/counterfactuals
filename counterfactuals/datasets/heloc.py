@@ -38,6 +38,7 @@ class HelocDataset(AbstractDataset):
             "RiskPerformance",
         ]
         self.raw_data = self.load(file_path=file_path, index_col=False)
+        self.raw_data = self.raw_data.sample(frac=0.005)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
             self.X, self.y, shuffle=shuffle

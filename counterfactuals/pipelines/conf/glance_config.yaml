@@ -18,17 +18,17 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 100
@@ -41,7 +41,7 @@ counterfactuals_params:
     _target_: counterfactuals.cf_methods.glance.GlobalGLANCE
     k: 50
     m: 10
-    s: 2
+    s: 1
 
   disc_model_criterion:
     _target_: counterfactuals.losses.MulticlassDiscLoss

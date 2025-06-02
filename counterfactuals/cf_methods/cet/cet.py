@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import logging
 from counterfactuals.cf_methods.cet.utils import flatten, Cost
 from counterfactuals.cf_methods.cet.ce import ActionExtractor
 from counterfactuals.cf_methods.cet.rule_miner import (
@@ -7,6 +8,11 @@ from counterfactuals.cf_methods.cet.rule_miner import (
     FrequentRuleMiner,
 )
 from counterfactuals.cf_methods.cet.utils import LimeEstimator
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 class Node:
@@ -490,37 +496,36 @@ class CounterfactualExplanationTree:
 
         # Stochastic Local Search
         if verbose:
-            print("## Stochastic Local Searching ...")
+            logger.info("## Stochastic Local Searching ...")
         for i in range(self.max_iteration_):
             self.dummy_.left = self.copyTree(self.dummy_.left)
             if verbose and (i + 1) % 10 == 0:
-                print("### Iteration:", i + 1)
-                print("#### Before:")
+                logger.info("### Iteration:", i + 1)
+                logger.info("#### Before:")
                 self.print_tree(root=self.dummy_.left)
             self = self.setNodeList()
             edit = self.selectEditOperation()
             if edit == "I":
                 self.insertNode()
                 if verbose and (i + 1) % 10 == 0:
-                    print('#### After "Insert"')
+                    logger.info("#### After 'Insert'")
             elif edit == "D":
                 self.deleteNode()
                 if verbose and (i + 1) % 10 == 0:
-                    print('#### After "Delete"')
+                    logger.info("#### After 'Delete'")
             elif edit == "R":
                 self.replaceNode()
                 if verbose and (i + 1) % 10 == 0:
-                    print('#### After "Replace"')
+                    logger.info("#### After 'Replace'")
             root_next = self.optimizeTree()
             obj_next, cost_next, loss_next, comp_next = self.getObjective(root_next)
             if verbose and (i + 1) % 10 == 0:
                 self.print_tree(root=root_next)
-                print("##### Score:")
-                print("- Objective: {} => {}".format(obj_prev, obj_next))
-                print("- Update:", self.isUpdate(i, obj_prev, obj_next))
-                print("- Best:", obj_next < obj_best)
-                print("- Time:", time.perf_counter() - start)
-                print()
+                logger.info("##### Score:")
+                # logger.info("- Objective: {} => {}".format(obj_prev, obj_next))
+                # logger.info("- Update:", self.isUpdate(i, obj_prev, obj_next))
+                # logger.info("- Best:", obj_next < obj_best)
+                # logger.info("- Time:", time.perf_counter() - start)
             if self.isUpdate(i, obj_prev, obj_next):
                 root_prev = root_next
                 obj_prev = obj_next
@@ -816,7 +821,6 @@ def _check(
     np.random.seed(0)
     LAMBDA, GAMMA = params
     MAX_ITERATION = max_iteration
-
     from utils import DatasetHelper
 
     D = DatasetHelper(dataset=dataset, feature_prefix_index=False)
@@ -933,10 +937,10 @@ def _check(
 if __name__ == "__main__":
     MAX_ITERATION = 50
     _check(
-        dataset="i",
+        dataset="h",
         model="X",
         params=(0.02, 1.0),
         max_iteration=MAX_ITERATION,
-        lime_approximation=True,
-        verbose=False,
+        lime_approximation=False,
+        verbose=True,
     )
