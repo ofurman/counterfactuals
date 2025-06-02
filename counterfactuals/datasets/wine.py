@@ -6,11 +6,19 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class WineDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/wine.csv", preprocess: bool = True):
+    def __init__(
+        self,
+        file_path: str = "data/wine.csv",
+        preprocess: bool = True,
+        shuffle: bool = True,
+    ):
         self.raw_data = self.load(file_path=file_path, index_col=False)
+        self.features = self.raw_data.columns
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        self.X = self.X[(self.y == 1) | (self.y == 2)]
+        self.y = self.y[(self.y == 1) | (self.y == 2)]
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y
+            self.X, self.y, shuffle=shuffle
         )
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test
@@ -54,6 +62,7 @@ class WineDataset(AbstractDataset):
         y_train = y_train.astype(np.int64)
         y_test = y_test.astype(np.int64)
 
+        self.numerical_columns = list(range(0, len(self.feature_columns)))
         self.categorical_columns = []
 
         return X_train, X_test, y_train, y_test

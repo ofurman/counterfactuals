@@ -129,9 +129,12 @@ class PPCEF(BaseCounterfactual):
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
         p_x_param_c_target = self.gen_model(
-            torch_dequantizer(cf), context=context_target.type(torch.float32)
+            x_origin + delta, context=context_target.type(torch.float32)
         )
-        max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
+
+        max_inner = torch.nn.functional.relu(
+            log_prob_threshold * 0.5 - p_x_param_c_target
+        )
 
         # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)
 

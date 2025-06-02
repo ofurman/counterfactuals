@@ -29,6 +29,7 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         # "DiabetesDataset",
         # "YachtDataset",
         # "WineQualityDataset",
+        # "WineDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
     num_classes = (

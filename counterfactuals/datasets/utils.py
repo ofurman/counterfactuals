@@ -57,6 +57,7 @@ def dequantize(dataset, data=None, transformer=None):
             transformers=transformers,
             remainder="drop",  # Drop continuous features
         )
+        transformer.dropped_numerical = dataset.numerical_columns
 
         if data is None:
             X_train_original = dataset.X_train.copy()

@@ -543,7 +543,9 @@ class ActionExtractor:
         if X.shape == (self.D_,):
             X = X.reshape(1, -1)
 
-        y = self.mdl_.predict(X[0].reshape(1, -1))[0]
+        X_in = X[0]
+        X_in = X_in.reshape(1, -1)
+        y = self.mdl_.predict(X_in)
         target_label = int(1 - y)
         prob = self.__getProblem(
             X,
@@ -563,9 +565,7 @@ class ActionExtractor:
         prob.solve(
             solver=pulp.CPLEX_PY(
                 msg=log_stream,
-                warm_start=(len(init_sols) != 0),
                 timeLimit=time_limit,
-                options=["set output clonelog -1"],
             )
         )
         t = time.perf_counter() - s

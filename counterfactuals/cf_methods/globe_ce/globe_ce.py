@@ -63,12 +63,11 @@ class GLOBE_CE:
 
         # X
         self.x_aff = copy.deepcopy(self.X.values)
-        self.x_aff = self.x_aff[self.preds == 0]
+
         if self.affected_subgroup is not None:
             self.subgroup_idx = self.x_aff[self.affected_subgroup] == 1
             self.x_aff = self.x_aff[self.subgroup_idx]
         self.n = self.x_aff.shape[0]  # number of affected inputs
-
         # Feature processing
         self.dropped_features = dropped_features
         self.active_idx = np.ones(len(self.feature_values), dtype=bool)

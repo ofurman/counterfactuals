@@ -11,14 +11,14 @@ neptune:
   enable: false
   project: "ofurman/counterfactuals"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["GLOBE_CE", "counterfactuals"]
+  tags: ["CET", "counterfactuals"]
 
 experiment:
   output_folder: models/
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.HelocDataset
 
 disc_model:
   train_model: false
@@ -37,7 +37,7 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.globe_ce.GLOBE_CE
+    _target_: counterfactuals.cf_methods.cet.CounterfactualExplanationTree
   
   # General parameters
   target_class: 0

@@ -19,7 +19,6 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.cf_methods.c_chvae import CCHVAE
 from counterfactuals.cf_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
-from counterfactuals.datasets.utils import DequantizingFlow, dequantize
 
 
 logger = logging.getLogger(__name__)
@@ -188,45 +187,47 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
-    if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-        dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+        if cfg.experiment.relabel_with_disc_model:
+            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
+            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-    dequantizer, _ = dequantize(dataset)
-    gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
-    dataset = instantiate(cfg.dataset)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
-    # Custom code
-    Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-        search_counterfactuals(cfg, dataset, gen_model, disc_model, run, save_folder)
-    )
+        # Custom code
+        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
+            search_counterfactuals(
+                cfg, dataset, gen_model, disc_model, run, save_folder
+            )
+        )
 
-    dequantizing_flow = DequantizingFlow(gen_model, dequantizer, dataset)
+        # dequantizing_flow = DequantizingFlow(gen_model, dequantizer, dataset)
 
-    metrics = calculate_metrics(
-        gen_model=dequantizing_flow,
-        disc_model=disc_model,
-        Xs_cfs=Xs_cfs,
-        model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-        categorical_features=dataset.categorical_features,
-        continuous_features=dataset.numerical_features,
-        X_train=dataset.X_train,
-        y_train=dataset.y_train.reshape(-1),
-        X_test=Xs,
-        y_test=ys_orig,
-        y_target=ys_target,
-        median_log_prob=log_prob_threshold,
-        run=run,
-    )
-    run["metrics/cf"] = stringify_unsupported(metrics)
-    df_metrics = pd.DataFrame(metrics, index=[0])
-    df_metrics["cf_search_time"] = cf_search_time
-    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-    df_metrics.to_csv(
-        os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
-    )
+        metrics = calculate_metrics(
+            gen_model=gen_model,
+            disc_model=disc_model,
+            Xs_cfs=Xs_cfs,
+            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
+            categorical_features=dataset.categorical_features,
+            continuous_features=dataset.numerical_features,
+            X_train=dataset.X_train,
+            y_train=dataset.y_train.reshape(-1),
+            X_test=Xs,
+            y_test=ys_orig,
+            y_target=ys_target,
+            median_log_prob=log_prob_threshold,
+            run=run,
+        )
+        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
+        df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
 
     run.stop()
 

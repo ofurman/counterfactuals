@@ -60,6 +60,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
         neptune_run: neptune.Run = None,
+        dequantizer=None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
@@ -71,6 +72,12 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.type(torch.float32)
+                if dequantizer:
+                    numerical_features = inputs[:, dequantizer.dropped_numerical]
+                    inputs = dequantizer.transform(inputs.numpy())
+                    inputs = torch.from_numpy(inputs)
+                    inputs = torch.cat([numerical_features, inputs], dim=1)
+
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
                 loss = -log_likelihood.mean()
