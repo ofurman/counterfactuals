@@ -1,0 +1,79 @@
+name: counterfactuals
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  # Python
+  - python=3.11
+  
+  # Core Scientific Computing
+  - numpy
+  - scipy
+  - pandas
+  
+  # Machine Learning & Deep Learning
+  - pytorch
+  - torchvision
+  - torchaudio
+  - scikit-learn
+  - scikit-image  # for skimage.util.shape
+  
+  # Optimization & Mathematical Programming
+  - cvxpy
+  
+  # Data Visualization & Plotting
+  - matplotlib
+  - plotly
+  
+  # Progress Bars & UI
+  - tqdm
+  
+  # Configuration Management
+  - hydra-core
+  - omegaconf
+  
+  # Experiment Tracking & Logging
+  - neptune
+  - mlflow
+  
+  # Development & Testing
+  - pytest
+  - ruff
+  - pre-commit
+  - ipykernel
+  - jupyter
+  - jupyterlab
+  
+  # Dimensionality Reduction
+  - umap-learn
+  
+  # TensorFlow (required for some CF methods)
+  - tensorflow
+  
+  # Time/Date utilities
+  - python-dateutil
+  
+  # Additional utilities
+  - typing_extensions
+  
+  # Note: The following are part of Python's standard library and don't need to be installed:
+  # dataclasses, warnings, abc, collections, itertools, functools, copy, uuid, time, random, math, logging, os
+  
+  # Pip-only dependencies
+  - pip
+  - pip:
+    # PyTorch differential equations solver
+    - torchdiffeq
+    
+    # Explainable AI library (with TensorFlow backend)
+    - "alibi[tensorflow]"
+    
+    # Normalizing flows library (custom fork)
+    - "git+https://github.com/pfilo8/nflows.git"
+    
+    # Universal approximator for neural networks
+    - UMNN
+    
+    # Dependencies that might not be in conda-forge
+    - autoencoder  # Custom autoencoder package used in SACE methods
