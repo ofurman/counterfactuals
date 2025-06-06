@@ -19,6 +19,11 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.cf_methods.c_chvae import CCHVAE
 from counterfactuals.cf_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
+from counterfactuals.datasets.utils import (
+    DequantizingFlow,
+    dequantize,
+    inverse_dequantize,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -195,6 +200,8 @@ def main(cfg: DictConfig):
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
+        dequantizer, _ = dequantize(dataset)
+        dataset = instantiate(cfg.dataset)
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
         # Custom code
@@ -204,7 +211,9 @@ def main(cfg: DictConfig):
             )
         )
 
-        # dequantizing_flow = DequantizingFlow(gen_model, dequantizer, dataset)
+        Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+        gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
+        dataset = instantiate(cfg.dataset)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
