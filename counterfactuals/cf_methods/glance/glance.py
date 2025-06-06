@@ -231,15 +231,14 @@ class GlobalGLANCE:
     ) -> float:
         c1 = np.array(_c1)
         c2 = np.array(_c2)
-        match type:
-            case "euclidean":
-                return np.linalg.norm(c1 - c2)
-            case "manhattan":
-                return np.sum(np.abs(c1 - c2))
-            case "chebyshev":
-                return np.max(np.abs(c1 - c2))
-            case _:
-                raise ValueError("Invalid distance type")
+        if type == "euclidean":
+            return np.linalg.norm(c1 - c2)
+        elif type == "manhattan":
+            return np.sum(np.abs(c1 - c2))
+        elif type == "chebyshev":
+            return np.max(np.abs(c1 - c2))
+        else:
+            raise ValueError("Invalid distance type")
 
     def get_clusters(self) -> list[tuple]:
         """

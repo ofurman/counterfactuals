@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlp
+  - disc_model: mlr
 
 hydra:
   sweeper:
@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.AdultDataset
 
 disc_model:
   train_model: false
@@ -41,8 +41,8 @@ counterfactuals_params:
     _target_: counterfactuals.cf_methods.DiceExplainerWrapper
 
   disc_model_criterion:
-    # _target_: counterfactuals.losses.MulticlassDiscLoss
-    _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0
