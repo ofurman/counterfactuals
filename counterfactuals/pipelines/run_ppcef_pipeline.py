@@ -1,13 +1,13 @@
 import logging
 import os
 import matplotlib
+from typing import Tuple, Any, Dict, List, Optional
 
 matplotlib.use("Agg")  # Use non-interactive backend
 import hydra
 import numpy as np
 import pandas as pd
 from time import time
-from typing import List
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
@@ -38,11 +38,30 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> torch.nn.Module:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float]:
     """
-    Create a counterfactual model
-    """
+    Generate counterfactuals using the PPCEF method.
 
+    This function filters the test data to exclude the target class, creates a PPCEF
+    counterfactual method, calculates a log probability threshold, and generates
+    counterfactuals for the filtered data.
+
+    Args:
+        cfg: Hydra configuration containing counterfactual parameters
+        dataset: Dataset containing training and test data
+        gen_model: Pre-trained generative model
+        disc_model: Pre-trained discriminative model
+        save_folder: Directory path where counterfactuals will be saved
+
+    Returns:
+        tuple: A tuple containing:
+            - Xs_cfs (np.ndarray): Generated counterfactual examples
+            - Xs (np.ndarray): Original examples used for counterfactual generation
+            - log_prob_threshold (float): Calculated log probability threshold
+            - ys_orig (np.ndarray): Original labels
+            - ys_target (np.ndarray): Target labels for counterfactuals
+            - cf_search_time (float): Time taken for counterfactual search in seconds
+    """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -116,13 +135,39 @@ def search_counterfactuals(
 
 def get_categorical_intervals(
     use_categorical: bool, categorical_features_lists: List[List[int]]
-):
+) -> Optional[List[List[int]]]:
+    """
+    Get categorical feature intervals based on configuration.
+
+    Returns the categorical features lists if categorical processing is enabled,
+    otherwise returns None.
+
+    Args:
+        use_categorical: Whether to use categorical feature processing
+        categorical_features_lists: List of lists containing categorical feature indices
+
+    Returns:
+        List of categorical feature intervals if use_categorical is True, None otherwise
+    """
     return categorical_features_lists if use_categorical else None
 
 
 def apply_categorical_discretization(
     categorical_features_lists: List[List[int]], Xs_cfs: np.ndarray
 ) -> np.ndarray:
+    """
+    Apply categorical discretization to counterfactual examples.
+
+    For each categorical feature interval, this function finds the maximum value
+    and applies one-hot encoding to discretize the categorical features.
+
+    Args:
+        categorical_features_lists: List of lists containing indices of categorical features
+        Xs_cfs: Counterfactual examples array to be discretized
+
+    Returns:
+        np.ndarray: Discretized counterfactual examples with one-hot encoded categorical features
+    """
     for interval in categorical_features_lists:
         max_indices = np.argmax(Xs_cfs[:, interval], axis=1)
         Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
@@ -143,9 +188,29 @@ def calculate_metrics(
     y_test: np.ndarray,
     median_log_prob: float,
     y_target: np.ndarray = None,
-):
+) -> Dict[str, Any]:
     """
-    Calculate metrics for counterfactuals
+    Calculate evaluation metrics for generated counterfactuals.
+
+    Evaluates the quality of counterfactuals using various metrics including validity,
+    plausibility, proximity, and diversity measures.
+
+    Args:
+        gen_model: Generative model used for plausibility assessment
+        disc_model: Discriminative model used for validity assessment
+        Xs_cfs: Generated counterfactual examples
+        model_returned: Boolean array indicating successful counterfactual generation
+        categorical_features: List of categorical feature indices
+        continuous_features: List of continuous feature indices
+        X_train: Training data features
+        y_train: Training data labels
+        X_test: Original test examples
+        y_test: Original test labels
+        median_log_prob: Log probability threshold for plausibility
+        y_target: Target labels for counterfactuals (optional)
+
+    Returns:
+        dict: Dictionary containing computed metrics
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
