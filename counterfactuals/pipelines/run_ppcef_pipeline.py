@@ -1,21 +1,20 @@
 import logging
 import os
+from time import time
+
 import hydra
 import numpy as np
 import pandas as pd
-from time import time
 import torch
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
-
-from counterfactuals.metrics.metrics import evaluate_cf
 
 from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -52,7 +51,6 @@ def search_counterfactuals(
             - ys_orig (np.ndarray): Original labels
             - ys_target (np.ndarray): Target labels for counterfactuals
     """
-
 
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]

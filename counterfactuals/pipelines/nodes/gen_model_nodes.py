@@ -1,9 +1,8 @@
 import logging
+
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
-
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,9 @@ def train_gen_model(
 
 
 def evaluate_gen_model(
-    cfg: DictConfig, gen_model: torch.nn.Module, dataset: DictConfig,
+    cfg: DictConfig,
+    gen_model: torch.nn.Module,
+    dataset: DictConfig,
 ) -> None:
     """
     Evaluate a generative model's performance using log-likelihood.
@@ -106,7 +107,9 @@ def evaluate_gen_model(
 
 
 def create_gen_model(
-    cfg: DictConfig, dataset: DictConfig, gen_model_path: str,
+    cfg: DictConfig,
+    dataset: DictConfig,
+    gen_model_path: str,
 ) -> torch.nn.Module:
     """
     Create, train, and evaluate a generative model.

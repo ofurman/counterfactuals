@@ -1,13 +1,12 @@
 import logging
 import os
+
 import numpy as np
+import pandas as pd
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from sklearn.metrics import classification_report
-from sklearn.metrics import r2_score
-import torch.utils
-import pandas as pd
+from sklearn.metrics import classification_report, r2_score
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +159,5 @@ def create_disc_model(
     pd.DataFrame(report).transpose().to_csv(
         os.path.join(save_folder, f"eval_disc_model_{disc_model_name}.csv")
     )
-    logger.info(
-        f"Discriminator model evaluation results:\n {report}"
-    )
+    logger.info(f"Discriminator model evaluation results:\n {report}")
     return disc_model
