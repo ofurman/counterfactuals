@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import torch
 from hydra.utils import instantiate
@@ -33,6 +34,7 @@ def train_gen_model(
     dataset: DictConfig,
     gen_model_path: str,
     cfg: DictConfig,
+    dequantizer: Optional[object] = None,
 ) -> torch.nn.Module:
     """
     Train a generative model on the provided dataset.
@@ -45,6 +47,7 @@ def train_gen_model(
         dataset: Dataset instance containing training and test data
         gen_model_path: File path where the trained model will be saved
         cfg: Hydra configuration containing training parameters
+        dequantizer: Optional dequantizer for data preprocessing
 
     Returns:
         torch.nn.Module: Trained generative model
@@ -65,6 +68,7 @@ def train_gen_model(
         patience=cfg.gen_model.patience,
         learning_rate=cfg.gen_model.lr,
         checkpoint_path=gen_model_path,
+        dequantizer=dequantizer,
     )
     gen_model.save(gen_model_path)
     return gen_model
@@ -110,6 +114,7 @@ def create_gen_model(
     cfg: DictConfig,
     dataset: DictConfig,
     gen_model_path: str,
+    dequantizer: Optional[object] = None,
 ) -> torch.nn.Module:
     """
     Create, train, and evaluate a generative model.
@@ -122,13 +127,16 @@ def create_gen_model(
         cfg: Hydra configuration containing all model and training parameters
         dataset: Dataset instance containing training and test data
         gen_model_path: File path for saving/loading the model
+        dequantizer: Optional dequantizer for data preprocessing
 
     Returns:
         torch.nn.Module: Trained and evaluated generative model in evaluation mode
     """
     gen_model = instantiate_gen_model(cfg, dataset)
     if cfg.gen_model.train_model:
-        gen_model = train_gen_model(gen_model, dataset, gen_model_path, cfg)
+        gen_model = train_gen_model(
+            gen_model, dataset, gen_model_path, cfg, dequantizer
+        )
     else:
         logger.info("Loading generative model")
         gen_model.load(gen_model_path)
