@@ -1,6 +1,7 @@
 import logging
 import os
 from time import time
+from typing import Any, Dict, Tuple
 
 import hydra
 import numpy as np
@@ -28,7 +29,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray]:
     """
     Generate counterfactuals using the PPCEF method.
 
@@ -126,7 +127,7 @@ def calculate_metrics(
     y_test: np.ndarray,
     median_log_prob: float,
     y_target: np.ndarray = None,
-) -> dict:
+) -> Dict[str, Any]:
     """
     Calculate evaluation metrics for generated counterfactuals.
 
