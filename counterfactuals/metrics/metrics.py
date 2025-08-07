@@ -363,6 +363,67 @@ class CFMetrics:
             agg="mean",
         )
 
+    def binning_cost(self, n_bins: int = 10) -> float:
+        """
+        Compute the binning cost metric for continuous features.
+
+        Bins each continuous feature into n_bins equal intervals based on training data.
+        Cost of moving between two adjacent bins = 1.
+        This creates a discrete cost structure for continuous variables.
+
+        Args:
+            n_bins (int, optional): Number of bins to create for each continuous feature. Defaults to 10.
+
+        Returns:
+            float: Average binning cost across all valid counterfactuals.
+        """
+        if len(self.continuous_features) == 0:
+            logger.warning(
+                "No continuous features available for binning cost computation"
+            )
+            return 0.0
+
+        if self.X_cf_valid.shape[0] == 0:
+            logger.warning("No valid instances to compute binning cost")
+            return np.nan
+
+        total_cost = 0.0
+        n_instances = self.X_cf_valid.shape[0]
+
+        # For each continuous feature, create bins and calculate costs
+        for feature_idx in self.continuous_features:
+            # Get feature values from training data to define bins
+            feature_train = self.X_train[:, feature_idx]
+            feature_min = np.min(feature_train)
+            feature_max = np.max(feature_train)
+
+            # Handle edge case where all values are the same
+            if feature_min == feature_max:
+                continue
+
+            # Create bin edges for equal-width binning
+            bin_edges = np.linspace(feature_min, feature_max, n_bins + 1)
+
+            # Get feature values for test and counterfactual instances
+            feature_test = self.X_test_valid[:, feature_idx]
+            feature_cf = self.X_cf_valid[:, feature_idx]
+
+            # Assign bin numbers (digitize returns 1-based indices, we want 0-based)
+            # Use right=False to include the right edge in the last bin
+            test_bins = np.digitize(feature_test, bin_edges, right=False) - 1
+            cf_bins = np.digitize(feature_cf, bin_edges, right=False) - 1
+
+            # Clip to valid range [0, n_bins-1] to handle edge cases
+            test_bins = np.clip(test_bins, 0, n_bins - 1)
+            cf_bins = np.clip(cf_bins, 0, n_bins - 1)
+
+            # Calculate cost as absolute difference in bin numbers
+            feature_costs = np.abs(cf_bins - test_bins)
+            total_cost += np.sum(feature_costs)
+
+        # Return average cost per instance
+        return total_cost / n_instances if n_instances > 0 else np.nan
+
     def calc_all_metrics(self) -> dict:
         """
         Calculate all metrics.
@@ -399,6 +460,7 @@ class CFMetrics:
                 categorical_metric="hamming",
                 X_train=self.X_train,
             ),
+            "binning_cost": self.binning_cost(),
             "prob_plausibility": self.prob_plausibility(cf=True),
             "log_density_cf": self.log_density(cf=True),
             "log_density_test": self.log_density(cf=False),
@@ -542,7 +604,7 @@ def evaluate_cf_for_tcrex(
 ):
     """
     Evaluate counterfactuals for TCREx method.
-    
+
     Args:
         disc_model: The discriminative model
         gen_model: The generative model
@@ -557,7 +619,7 @@ def evaluate_cf_for_tcrex(
         y_target: Target labels for counterfactuals
         median_log_prob: Threshold for log probability
         X_test_target: Target test data for evaluation
-        
+
     Returns:
         dict: Dictionary containing all metric values
     """
@@ -575,7 +637,7 @@ def evaluate_cf_for_tcrex(
         y_target=y_target,
         median_log_prob=median_log_prob,
     )
-    
+
     # Add TCREx specific metrics if needed in the future
-    
+
     return metrics
