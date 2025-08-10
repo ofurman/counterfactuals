@@ -1,13 +1,14 @@
 from typing import Optional, Tuple, Union
+
 import neptune
 import torch
-import torch.optim as optim
 import torch.nn.functional as F
+import torch.optim as optim
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 from counterfactuals.generative_models import BaseGenModel
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
-
-from tqdm import tqdm
 
 
 class MaskedAutoregressiveFlow(BaseGenModel):
@@ -97,6 +98,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
         neptune_run: Optional[neptune.Run] = None,
+        dequantizer=None,
     ) -> None:
         """Train the MAF model on provided data.
         
@@ -109,6 +111,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             eps: Minimum improvement threshold for early stopping.
             checkpoint_path: Path to save best model checkpoint.
             neptune_run: Neptune run for logging metrics.
+            dequantizer: Optional dequantizer for data preprocessing.
         """
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
