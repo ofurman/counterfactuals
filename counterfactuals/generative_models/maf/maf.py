@@ -1,60 +1,31 @@
-from typing import Optional, Tuple, Union
-
 import neptune
 import torch
-import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-
+import torch.nn.functional as F
 from counterfactuals.generative_models import BaseGenModel
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
 
+from tqdm import tqdm
+
 
 class MaskedAutoregressiveFlow(BaseGenModel):
-    """Masked Autoregressive Flow (MAF) generative model.
-    
-    A normalizing flow that learns complex probability distributions by transforming
-    a simple base distribution through invertible autoregressive transformations.
-    """
-    
     def __init__(
         self,
-        features: int,
-        hidden_features: int,
-        context_features: Optional[int] = None,
-        num_layers: int = 5,
-        num_blocks_per_layer: int = 2,
-        use_residual_blocks: bool = True,
-        use_random_masks: bool = False,
-        use_random_permutations: bool = False,
-        activation: callable = F.relu,
-        dropout_probability: float = 0.0,
-        batch_norm_within_layers: bool = False,
-        batch_norm_between_layers: bool = False,
-        neptune_run: Optional["neptune.Run"] = None,
-        device: str = "cpu",
-    ) -> None:
-        """
-        Initialize the Masked Autoregressive Flow (MAF) model.
-
-        Args:
-            features (int): Number of input features.
-            hidden_features (int): Number of hidden units in each transformation network.
-            context_features (Optional[int], optional): Number of context features for conditional modeling. Defaults to None.
-            num_layers (int, optional): Number of autoregressive layers. Defaults to 5.
-            num_blocks_per_layer (int, optional): Number of transformation blocks per layer. Defaults to 2.
-            use_residual_blocks (bool, optional): Whether to use residual connections within blocks. Defaults to True.
-            use_random_masks (bool, optional): Whether to use random autoregressive masks. Defaults to False.
-            use_random_permutations (bool, optional): Whether to randomly permute features between layers. Defaults to False.
-            activation (callable, optional): Activation function for transformation networks. Defaults to torch.nn.functional.relu.
-            dropout_probability (float, optional): Dropout rate for regularization. Defaults to 0.0.
-            batch_norm_within_layers (bool, optional): Whether to apply batch normalization within layers. Defaults to False.
-            batch_norm_between_layers (bool, optional): Whether to apply batch normalization between layers. Defaults to False.
-            neptune_run (Optional[neptune.Run], optional): Neptune run object for experiment tracking. Defaults to None.
-            device (str, optional): Device to run computations on (e.g., "cpu" or "cuda"). Defaults to "cpu".
-        """
-        
+        features,
+        hidden_features,
+        context_features=None,
+        num_layers=5,
+        num_blocks_per_layer=2,
+        use_residual_blocks=True,
+        use_random_masks=False,
+        use_random_permutations=False,
+        activation=F.relu,
+        dropout_probability=0.0,
+        batch_norm_within_layers=False,
+        batch_norm_between_layers=False,
+        neptune_run=None,
+        device="cpu",
+    ):
         super(MaskedAutoregressiveFlow, self).__init__()
         self.device = device
         self.neptune_run = neptune_run
@@ -74,45 +45,23 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             batch_norm_between_layers=batch_norm_between_layers,
         )
 
-    def forward(self, x: torch.Tensor, context: Optional[torch.Tensor] = None) -> torch.Tensor:
-        """Compute log probabilities for input data.
-        
-        Args:
-            x: Input tensor of shape (batch_size, features).
-            context: Optional context tensor of shape (batch_size, context_features).
-            
-        Returns:
-            Log probabilities for each input sample.
-        """
+    def forward(self, x, context=None):
         if context is not None:
             context = context.view(-1, self.context_features)
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(
         self,
-        train_loader: DataLoader,
-        test_loader: DataLoader,
+        train_loader: torch.utils.data.DataLoader,
+        test_loader: torch.utils.data.DataLoader,
         num_epochs: int = 100,
         learning_rate: float = 1e-3,
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
-        neptune_run: Optional[neptune.Run] = None,
+        neptune_run: neptune.Run = None,
         dequantizer=None,
-    ) -> None:
-        """Train the MAF model on provided data.
-        
-        Args:
-            train_loader: DataLoader for training data.
-            test_loader: DataLoader for validation data.
-            num_epochs: Maximum number of training epochs.
-            learning_rate: Learning rate for Adam optimizer.
-            patience: Early stopping patience (epochs without improvement).
-            eps: Minimum improvement threshold for early stopping.
-            checkpoint_path: Path to save best model checkpoint.
-            neptune_run: Neptune run for logging metrics.
-            dequantizer: Optional dequantizer for data preprocessing.
-        """
+    ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
         min_test_loss = float("inf")
@@ -163,14 +112,9 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 break
         self.load(checkpoint_path)
 
-    def predict_log_prob(self, dataloader: DataLoader) -> torch.Tensor:
-        """Compute log probabilities for dataset using context from dataloader.
-        
-        Args:
-            dataloader: DataLoader containing inputs and context labels.
-            
-        Returns:
-            Tensor of log probabilities for all samples in dataset.
+    def predict_log_prob(self, dataloader) -> torch.Tensor:
+        """
+        Predict log probabilities for the given dataset using the context included in the dataset.
         """
         self.eval()
         log_probs = []
@@ -185,20 +129,7 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         assert len(dataloader.dataset) == len(results)
         return results
 
-    def sample_and_log_prob(
-        self, 
-        num_samples: int, 
-        context: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Generate samples and their log probabilities.
-        
-        Args:
-            num_samples: Number of samples to generate.
-            context: Optional context tensor for conditional sampling.
-            
-        Returns:
-            Tuple of (samples, log_probabilities).
-        """
+    def sample_and_log_prob(self, num_samples, context=None):
         if context is not None:
             context = context.view(-1, self.context_features)
         return self.model.sample_and_log_prob(num_samples=num_samples, context=context)
@@ -223,31 +154,13 @@ class MaskedAutoregressiveFlow(BaseGenModel):
     #                                             f"Shape of result: {result.shape}, shape of input: {X.shape}"
     #     return result
 
-    def save(self, path: str) -> None:
-        """Save model state to file.
-        
-        Args:
-            path: File path to save model state.
-        """
+    def save(self, path):
         torch.save(self.state_dict(), path)
 
-    def load(self, path: str) -> None:
-        """Load model state from file.
-        
-        Args:
-            path: File path to load model state from.
-        """
+    def load(self, path):
         self.load_state_dict(torch.load(path))
 
-    def _unpack_batch(self, batch: Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
-        """Unpack batch data and move to device.
-        
-        Args:
-            batch: Either a tensor or tuple of (inputs, labels).
-            
-        Returns:
-            Tuple of (inputs, labels) moved to device.
-        """
+    def _unpack_batch(self, batch):
         if isinstance(batch, tuple):
             inputs, labels = batch
             inputs, labels = inputs.to(self.device), labels.to(self.device)

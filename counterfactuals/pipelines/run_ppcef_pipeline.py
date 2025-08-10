@@ -180,23 +180,6 @@ def calculate_metrics(
     return metrics
 
 
-def get_categorical_intervals(
-    use_categorical: bool, categorical_features_lists: list
-):
-    """Get categorical intervals for feature discretization."""
-    return categorical_features_lists if use_categorical else None
-
-
-def apply_categorical_discretization(
-    categorical_features_lists: list, Xs_cfs: np.ndarray
-) -> np.ndarray:
-    """Apply categorical discretization to counterfactuals."""
-    for interval in categorical_features_lists:
-        max_indices = np.argmax(Xs_cfs[:, interval], axis=1)
-        Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
-    return Xs_cfs
-
-
 @hydra.main(config_path="./conf", config_name="ppcef_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
@@ -208,8 +191,16 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
-    
+    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+
+        dequantizer, _ = dequantize(dataset)
+        dataset = instantiate(cfg.dataset)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, run, dequantizer)
+
     gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
     # Custom code
