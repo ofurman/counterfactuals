@@ -1,6 +1,0 @@
-model_returned_smth,valid_cf_disc,dissimilarity_proximity_categorical_hamming,dissimilarity_proximity_categorical_jaccard,dissimilarity_proximity_continuous_manhatan,dissimilarity_proximity_continuous_euclidean,dissimilarity_proximity_continuous_mad,distance_l2_jaccard,distance_mad_hamming,sparsity,flow_log_density_cfs,flow_log_density_xs,flow_prob_condition_acc,lof_scores_xs,lof_scores_cfs,isolation_forest_scores_xs,isolation_forest_scores_cfs,plausibility,cf_belongs_to_group,K_vectors,time
-1.0,0.0,,,,,,,,,,,,1.0605766,1.0701389,0.029199696069947073,0.05039280540296119,,1.0,233,27.486561059951782
-1.0,0.0,,,,,,,,,,,,1.0575917,1.0486264,0.03242778616236805,0.05770661996586323,,1.0,200,15.83438491821289
-1.0,0.0,,,,,,,,,,,,1.0601087,1.0430037,0.023895651543884323,0.052397492686808975,,1.0,167,21.903269052505493
-1.0,0.0,,,,,,,,,,,,1.0462512,1.0543085,0.02954682969236264,0.04978599410019053,,1.0,206,26.40436816215515
-1.0,0.0,,,,,,,,,,,,1.0707911,1.0572011,0.02275276776030527,0.049500631155491685,,1.0,221,28.240544080734253

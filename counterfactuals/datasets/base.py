@@ -49,20 +49,23 @@ class AbstractDataset(ABC):
         else:
             print("No data to save.")
 
-    def get_cv_splits(self, n_splits: int = 5):
+    def get_cv_splits(
+        self, n_splits: int = 5, shuffle: bool = True, transform: bool = True
+    ):
         """
         Sets and return the train and test splits for cross-validation.
         """
-        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=4)
+        cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=4)
         for train_idx, test_idx in cv.split(self.X, self.y):
             self.X_train, self.X_test = self.X[train_idx], self.X[test_idx]
             self.y_train, self.y_test = self.y[train_idx], self.y[test_idx]
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                X_train=self.X_train,
-                X_test=self.X_test,
-                y_train=self.y_train,
-                y_test=self.y_test,
-            )
+            if transform:
+                self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+                    X_train=self.X_train,
+                    X_test=self.X_test,
+                    y_train=self.y_train,
+                    y_test=self.y_test,
+                )
             yield self.X_train, self.X_test, self.y_train, self.y_test
 
     def get_target_class_splits(self, target_class: int) -> Tuple[np.ndarray]:
@@ -101,14 +104,14 @@ class AbstractDataset(ABC):
                 "X_train, X_test, y_train, and y_test must be set before calling this method."
             )
 
-    def get_split_data(self, X: np.ndarray, y: np.ndarray):
+    def get_split_data(self, X: np.ndarray, y: np.ndarray, shuffle: bool = True):
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
             random_state=4,
             test_size=0.2,
-            shuffle=True,
-            stratify=y,
+            shuffle=shuffle,
+            stratify=y if shuffle else None,
         )
         return X_train, X_test, y_train, y_test
 

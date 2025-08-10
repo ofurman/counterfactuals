@@ -27,15 +27,16 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     """
     logger.info("Creating discriminator model")
     binary_datasets = [
-        "MoonsDataset",
-        "LawDataset",
-        "HelocDataset",
-        "AuditDataset",
-        "ToyRegressionDataset",
-        "ConcreteDataset",
-        "DiabetesDataset",
-        "YachtDataset",
-        "WineQualityDataset",
+        # "MoonsDataset",
+        # "LawDataset",
+        # "HelocDataset",
+        # "AuditDataset",
+        # "ToyRegressionDataset",
+        # "ConcreteDataset",
+        # "DiabetesDataset",
+        # "YachtDataset",
+        # "WineQualityDataset",
+        # "WineDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
     num_classes = (

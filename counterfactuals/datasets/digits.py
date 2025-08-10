@@ -7,11 +7,14 @@ from counterfactuals.datasets.base import AbstractDataset
 
 
 class DigitsDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/digits.csv"):
+    def __init__(self, file_path: str = "data/digits.csv", shuffle=True):
         self.raw_data = pd.DataFrame()
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
+        self.X = self.X[(self.y == 0) | (self.y == 1)]
+        self.y = self.y[(self.y == 0) | (self.y == 1)]
+        self.features = [str(i) for i in self.numerical_columns] + ["label"]
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y
+            self.X, self.y, shuffle=shuffle
         )
         self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
             self.X_train, self.X_test, self.y_train, self.y_test

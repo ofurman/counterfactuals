@@ -22,8 +22,11 @@ class RPPCEF(BaseCounterfactual):
         K: int = None,
         X: np.ndarray = None,
         device: str = None,
+        # TODO: poprawa nazewnictwa
+        actionable_features: list = None,
         neptune_run=None,
     ):
+        self.actionable_features = actionable_features
         self.delta = self._init_cf_method(
             cf_method_type, K, init_cf_method_from_kmeans, X
         )
@@ -47,8 +50,10 @@ class RPPCEF(BaseCounterfactual):
             K = 1
         elif cf_method_type == "PPCEF_2":
             K = N
-        elif K is not None:
+        elif cf_method_type == "GCE" and K is not None:
             K = K
+        elif cf_method_type == "GCE" and K is None:
+            K = N
         elif X is not None:
             K = X.shape[0]
         else:
@@ -64,7 +69,9 @@ class RPPCEF(BaseCounterfactual):
             raise ValueError(f"Unknown cf_method: {cf_method_type}")
 
         if cf_method_type == "GCE":
-            return cf_methods[cf_method_type](N, D, K, init_cf_method_from_kmeans, X)
+            return cf_methods[cf_method_type](
+                N, D, K, init_cf_method_from_kmeans, X, self.actionable_features
+            )
         return cf_methods[cf_method_type](N, D, K)
 
     def _search_step(
@@ -89,9 +96,9 @@ class RPPCEF(BaseCounterfactual):
         :param log_prob_threshold: threshold for the log probability
         :return: dict with loss and additional components to log.
         """
-        dist = torch.linalg.vector_norm(delta(), dim=1, ord=2)
+        dist = torch.linalg.vector_norm(delta(), dim=1, ord=1)
 
-        disc_logits = self.disc_model.forward(x_origin + delta())
+        disc_logits = self.disc_model(x_origin + delta())
         disc_logits = (
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
@@ -109,7 +116,8 @@ class RPPCEF(BaseCounterfactual):
 
         delta_loss = delta.loss(alpha_s, alpha_k)
         # dist = dist if dist_flag else torch.Tensor([0])
-        loss = dist + alpha * (loss_disc + max_inner) + delta_loss
+        # dist = torch.Tensor([0])
+        loss = 0.1 * dist + 100 * alpha * loss_disc + alpha * max_inner + delta_loss
 
         return {
             "loss": loss,

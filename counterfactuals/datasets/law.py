@@ -1,28 +1,42 @@
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
 from counterfactuals.datasets.base import AbstractDataset
 
 
 class LawDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/law.csv"):
+    def __init__(self, file_path: str = "data/law.csv", transform=True, shuffle=True):
+        """
+        Initialize the Law School dataset.
+        """
+        self.categorical_features = []
+        # include target column as last feature
+        self.features = [
+            "lsat",
+            "gpa",
+            "zfygpa",
+            "sex",
+            "race",
+            "pass_bar",
+        ]
         self.raw_data = self.load(file_path=file_path)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y
+            self.X, self.y, shuffle=shuffle
         )
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
+        if transform:
+            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+                self.X_train, self.X_test, self.y_train, self.y_test
+            )
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
-        # self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
-        self.feature_columns = ["lsat", "gpa", "zfygpa"]
+        self.feature_columns = ["lsat", "gpa", "zfygpa", "sex", "race"]
+        # self.feature_columns = ["lsat", "gpa", "zfygpa"]
         target_column = "pass_bar"
         self.numerical_columns = list(range(0, 3))
         self.categorical_columns = list(range(3, len(self.feature_columns)))
@@ -65,6 +79,7 @@ class LawDataset(AbstractDataset):
                 ),
             ],
         )
+        # self.feature_transformer = MinMaxScaler()
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 

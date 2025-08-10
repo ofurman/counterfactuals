@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.BlobsDataset
+  _target_: counterfactuals.datasets.AdultDataset
 
 disc_model:
   train_model: false
@@ -46,7 +46,8 @@ counterfactuals_params:
 
   log_prob_quantile: 0.25
   target_class: 0
-  epochs: 20000
+  epochs: 5000
+  # epochs: 10000
   batch_size: 4096
   lr: 0.001
   alpha: 1000
@@ -54,5 +55,5 @@ counterfactuals_params:
   alpha_k: 100
   beta: 0.01
   patience: 1000
-  
+  use_categorical: true
     

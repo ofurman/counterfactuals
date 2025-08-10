@@ -100,15 +100,25 @@ def search_counterfactuals(
         alpha_s=cfg.counterfactuals_params.alpha_s,
         alpha_k=cfg.counterfactuals_params.alpha_k,
         log_prob_threshold=log_prob_threshold,
+        categorical_intervals=get_categorical_intervals(
+            cfg.counterfactuals_params.use_categorical,
+            dataset.categorical_features_lists,
+        ),
     )
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
 
     Xs_cfs = Xs + delta
+
+    if cfg.counterfactuals_params.use_categorical:
+        Xs_cfs = apply_categorical_discretization(
+            dataset.categorical_features_lists, Xs_cfs
+        )
+
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
     return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target
@@ -181,12 +191,15 @@ def main(cfg: DictConfig):
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
+    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
 
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
-    if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-        dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+        dequantizer, _ = dequantize(dataset)
+        dataset = instantiate(cfg.dataset)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, run, dequantizer)
 
     gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
