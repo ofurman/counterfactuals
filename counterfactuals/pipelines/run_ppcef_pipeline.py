@@ -195,7 +195,21 @@ def main(cfg: DictConfig):
             )
         )
 
-        Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+        if dequantizer is None:
+            raise ValueError("dequantizer is not initialized. Please check its assignment before inverse_dequantize.")
+        
+        logger.info(f"Calling inverse_dequantize with Xs of type: {type(Xs)} and shape: {getattr(Xs, 'shape', None)}")
+        logger.info(f"dequantizer type: {type(dequantizer)}")
+        
+        try:
+            Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+            logger.info(f"inverse_dequantize successful, Xs shape: {getattr(Xs, 'shape', None)}")
+        except Exception as e:
+            logger.error(f"Error in inverse_dequantize: {e}")
+            logger.error(f"Xs type: {type(Xs)}, shape: {getattr(Xs, 'shape', None)}")
+            logger.error(f"dequantizer: {dequantizer}")
+            raise
+            
         gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
         dataset = instantiate(cfg.dataset)
 
