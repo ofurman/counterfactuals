@@ -542,7 +542,7 @@ def evaluate_cf_for_tcrex(
 ):
     """
     Evaluate counterfactuals for TCREx method.
-    
+
     Args:
         disc_model: The discriminative model
         gen_model: The generative model
@@ -557,7 +557,7 @@ def evaluate_cf_for_tcrex(
         y_target: Target labels for counterfactuals
         median_log_prob: Threshold for log probability
         X_test_target: Target test data for evaluation
-        
+
     Returns:
         dict: Dictionary containing all metric values
     """
@@ -575,7 +575,7 @@ def evaluate_cf_for_tcrex(
         y_target=y_target,
         median_log_prob=median_log_prob,
     )
-    
+
     # Add TCREx specific metrics if needed in the future
-    
+
     return metrics

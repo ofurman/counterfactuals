@@ -53,28 +53,28 @@ def search_counterfactuals(
         rho=cfg.counterfactuals_params.rho,
         surrogate_tree_params=cfg.counterfactuals_params.surrogate_tree_params,
     )
-    
+
     # Fit the TCREx model on training data
     logger.info("Fitting the TCREx model")
     time_start = time()
-    
+
     # Use training data with labels for fitting the surrogate tree
     cf_method.fit(dataset.X_train, np.argmax(dataset.y_train, axis=1))
-    
+
     # Generate counterfactuals for the test instances
     logger.info("Generating counterfactuals")
     Xs_cfs = cf_method.explain(X_test_origin)
-    
+
     cf_search_time = np.mean(time() - time_start)
     run["metrics/cf_search_time"] = cf_search_time
-    
+
     # Save the counterfactuals
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     run["counterfactuals"].upload(counterfactuals_path)
-    
+
     # For compatibility with the metrics calculation, calculate log_prob_threshold
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -87,9 +87,17 @@ def search_counterfactuals(
     run["parameters/log_prob_threshold"] = log_prob_threshold
 
     n_groups = cf_method.n_groups_
-    
+
     # Return counterfactuals and related info
-    return Xs_cfs, X_test_origin, log_prob_threshold, y_test_origin, np.full_like(y_test_origin, target_class), cf_search_time, n_groups
+    return (
+        Xs_cfs,
+        X_test_origin,
+        log_prob_threshold,
+        y_test_origin,
+        np.full_like(y_test_origin, target_class),
+        cf_search_time,
+        n_groups,
+    )
 
 
 @hydra.main(config_path="./conf", config_name="tcrex_config", version_base="1.2")

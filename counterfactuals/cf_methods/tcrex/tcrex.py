@@ -1,8 +1,6 @@
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils.validation import check_X_y, check_array
 from sklearn.metrics import accuracy_score
 from itertools import product
 
@@ -17,7 +15,8 @@ class Hyperrectangle:
         self.bounds = bounds
 
     def contains(self, x):
-        return all(l <= xi <= u for xi, (l, u) in zip(x, self.bounds))
+        return all(l <= xi <= u for xi, (l, u) in zip(x, self.bounds))  # noqa: E741
+
 
 class CounterfactualRule:
     def __init__(self, hyperrectangle, accuracy, feasibility):
@@ -31,7 +30,7 @@ class TCREx(BaseCounterfactual):
         self.target_model = target_model
         self.tau = tau
         self.rho = rho
-        self.surrogate_tree_params = surrogate_tree_params or {'max_leaf_nodes': 8}
+        self.surrogate_tree_params = surrogate_tree_params or {"max_leaf_nodes": 8}
         self.rules_ = []
         self.metarule_tree_ = None
         self.n_groups_ = 0  # Add attribute to track number of groups
@@ -80,7 +79,9 @@ class TCREx(BaseCounterfactual):
                 if isinstance(y_pred, torch.Tensor):
                     y_pred = y_pred.numpy().reshape(-1)
                 accuracy = accuracy_score(y_true, y_pred)
-                rules.append(CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility))
+                rules.append(
+                    CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility)
+                )
         return rules
 
     def _get_node_bounds(self, tree, node_id):
@@ -111,12 +112,18 @@ class TCREx(BaseCounterfactual):
 
     def _filter_maximal_rules(self):
         # Filter rules by tau and rho, then remove non-maximal
-        valid_rules = [r for r in self.rules_ if r.accuracy >= self.tau and r.feasibility >= self.rho]
+        valid_rules = [
+            r
+            for r in self.rules_
+            if r.accuracy >= self.tau and r.feasibility >= self.rho
+        ]
         maximal_rules = []
         for rule in valid_rules:
             is_maximal = True
             for other in valid_rules:
-                if rule != other and self._is_subset(rule.hyperrectangle, other.hyperrectangle):
+                if rule != other and self._is_subset(
+                    rule.hyperrectangle, other.hyperrectangle
+                ):
                     is_maximal = False
                     break
             if is_maximal:
@@ -125,25 +132,29 @@ class TCREx(BaseCounterfactual):
 
     def _is_subset(self, hr1, hr2):
         # Check if hr1 is a subset of hr2
-        return all(l2 <= l1 and u1 <= u2 for (l1, u1), (l2, u2) in zip(hr1.bounds, hr2.bounds))
+        return all(
+            l2 <= l1 and u1 <= u2 for (l1, u1), (l2, u2) in zip(hr1.bounds, hr2.bounds)
+        )
 
     def _partition_grid(self):
         # Create grid cells based on maximal rules' bounds
-        if not self.maximal_rules_:  # If there are no maximal rules, create at least one grid cell
+        if (
+            not self.maximal_rules_
+        ):  # If there are no maximal rules, create at least one grid cell
             return [Hyperrectangle([(-np.inf, np.inf)] * self.n_features_)]
-        
+
         # Extract all unique bound values per feature
         bounds_per_feature = []
         for d in range(self.n_features_):
             values = set()
             for rule in self.maximal_rules_:
-                l, u = rule.hyperrectangle.bounds[d]
+                l, u = rule.hyperrectangle.bounds[d]  # noqa: E741
                 values.add(l)
                 values.add(u)
             values.add(-np.inf)
             values.add(np.inf)
             bounds_per_feature.append(sorted(values))
-        
+
         # Create intervals for each feature
         intervals = []
         for bounds in bounds_per_feature:
@@ -151,23 +162,23 @@ class TCREx(BaseCounterfactual):
             for i in range(len(bounds) - 1):
                 feature_intervals.append((bounds[i], bounds[i + 1]))
             intervals.append(feature_intervals)
-        
+
         # Generate grid cells using Cartesian product
         grid_cells = []
         for cell_intervals in product(*intervals):
             grid_cells.append(Hyperrectangle(list(cell_intervals)))
-        
+
         return grid_cells
 
     def _assign_optimal_rules(self):
         # Assign optimal rule to each grid cell (simplified)
         if not self.maximal_rules_:  # Handle case with no maximal rules
             return {}
-        
+
         # If only one rule exists, assign it to all cells
         if len(self.maximal_rules_) == 1:
             return {cell: self.maximal_rules_[0] for cell in self.grid_cells_}
-        
+
         # Otherwise compute optimal rule for each cell
         return {cell: self._compute_optimal_rule(cell) for cell in self.grid_cells_}
 
@@ -175,30 +186,30 @@ class TCREx(BaseCounterfactual):
         # Compute cost for each rule and select the minimal
         if not self.maximal_rules_:
             return None
-        
+
         # Get a prototype point from the cell (e.g., midpoint)
         prototype = self._get_prototype(cell)
-        
+
         costs = []
         for rule in self.maximal_rules_:
             # Calculate sparsity (number of dimensions that need to change)
             sparsity = 0
             for d in range(self.n_features_):
-                l, u = rule.hyperrectangle.bounds[d]
+                l, u = rule.hyperrectangle.bounds[d]  # noqa: E741
                 if prototype[d] < l or prototype[d] > u:
                     sparsity += 1
-            
+
             # Cost function: sparsity - feasibility
             cost = sparsity - rule.feasibility
             costs.append(cost)
-        
+
         return self.maximal_rules_[np.argmin(costs)]
 
     def _get_prototype(self, cell):
         # Return a representative point for the cell (e.g., midpoint)
         prototype = np.zeros(self.n_features_)
         for d in range(self.n_features_):
-            l, u = cell.bounds[d]
+            l, u = cell.bounds[d]  # noqa: E741
             # Handle infinite bounds
             if np.isinf(l) and np.isinf(u):
                 prototype[d] = 0  # Default to 0 if both bounds are infinite
@@ -219,23 +230,23 @@ class TCREx(BaseCounterfactual):
             y_dummy = np.zeros(1)
             meta_tree.fit(X_dummy, y_dummy)
             return meta_tree
-        
+
         X_meta = np.array([self._get_prototype(cell) for cell in self.grid_cells_])
         y_meta = np.array([id(self.cell_rules_[cell]) for cell in self.grid_cells_])
-        
+
         # Make sure we have unique identifiers for rules
         unique_y = np.unique(y_meta)
         y_labels = np.zeros_like(y_meta)
         for i, val in enumerate(unique_y):
             y_labels[y_meta == val] = i
-        
+
         meta_tree = DecisionTreeClassifier()
         meta_tree.fit(X_meta, y_labels)
         return meta_tree
 
     def generate_counterfactual_point(self, x, rule):
         cf_point = np.copy(x)
-        for d, (l, u) in enumerate(rule.hyperrectangle.bounds):
+        for d, (l, u) in enumerate(rule.hyperrectangle.bounds):  # noqa: E741
             if x[d] < l:
                 cf_point[d] = l
             elif x[d] > u:
@@ -245,23 +256,25 @@ class TCREx(BaseCounterfactual):
     def explain(self, X):
         # Check if X is a single sample and reshape if needed
         X = check_array(X, ensure_2d=True)
-        
+
         if self.metarule_tree_ is None:
             # If no metarule tree was trained, return the input
             return X
-        
+
         leaf_ids = self.metarule_tree_.apply(X)
         cf_points = np.zeros_like(X)
-        
+
         # Map each leaf to a rule
-        prototype_points = np.array([self._get_prototype(cell) for cell in self.grid_cells_])
+        prototype_points = np.array(
+            [self._get_prototype(cell) for cell in self.grid_cells_]
+        )
         prototype_leaf_ids = self.metarule_tree_.apply(prototype_points)
-        
+
         leaf_to_rule = {}
         for i, leaf_id in enumerate(prototype_leaf_ids):
             if leaf_id not in leaf_to_rule and i < len(self.grid_cells_):
                 leaf_to_rule[leaf_id] = self.cell_rules_[self.grid_cells_[i]]
-        
+
         # Generate counterfactual points
         for i, (x, leaf_id) in enumerate(zip(X, leaf_ids)):
             # If we can't find a rule for this leaf, return the original point
@@ -270,9 +283,9 @@ class TCREx(BaseCounterfactual):
                 cf_points[i] = self.generate_counterfactual_point(x, rule)
             else:
                 cf_points[i] = x
-                
+
         return cf_points
-    
+
     def explain_dataloader(self, dataloader):
         Xs, ys = dataloader.dataset.tensors
         return self.explain(Xs)

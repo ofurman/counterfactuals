@@ -66,7 +66,8 @@ class HelocDataset(AbstractDataset):
 
         self.numerical_columns = list(range(0, len(self.feature_columns)))
         self.categorical_columns = []
-        self.actionable_features = [4, 17, 18, 19, 20]
+        # self.actionable_features = [4, 17, 18, 19, 20]
+        self.actionable_features = list(range(0, len(self.feature_columns)))
         self.not_actionable_features = [
             i for i in self.numerical_columns if i not in self.actionable_features
         ]
@@ -90,7 +91,7 @@ class HelocDataset(AbstractDataset):
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
-        self.y_transformer = OneHotEncoder(sparse=False)
+        self.y_transformer = OneHotEncoder(sparse_output=False)
         y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
         y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
 

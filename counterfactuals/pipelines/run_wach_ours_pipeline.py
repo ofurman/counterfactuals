@@ -162,8 +162,10 @@ def main(cfg: DictConfig):
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
 
-        Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold, cf_search_time = search_counterfactuals(
-            cfg, dataset, gen_model, disc_model, run, save_folder
+        Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold, cf_search_time = (
+            search_counterfactuals(
+                cfg, dataset, gen_model, disc_model, run, save_folder
+            )
         )
 
         metrics = calculate_metrics(

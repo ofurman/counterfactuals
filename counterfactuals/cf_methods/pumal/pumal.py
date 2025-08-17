@@ -9,7 +9,14 @@ from tqdm.auto import tqdm
 from counterfactuals.cf_methods.base import BaseCounterfactual
 from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.discriminative_models.base import BaseDiscModel
-from counterfactuals.cf_methods.pumal.deltas import PPCEF_2, ARES, GLOBAL_CE, GCE, DimConfig, GradStrategy
+from counterfactuals.cf_methods.pumal.deltas import (
+    PPCEF_2,
+    ARES,
+    GLOBAL_CE,
+    GCE,
+    DimConfig,
+    GradStrategy,
+)
 
 
 class PUMAL(BaseCounterfactual):
@@ -31,7 +38,7 @@ class PUMAL(BaseCounterfactual):
     ):
         """
         Initialize the PUMAL counterfactual method.
-        
+
         Args:
             cf_method_type: Type of counterfactual method to use ('ARES', 'GLOBAL_CE', 'GCE', 'PPCEF_2')
             gen_model: Generative model
@@ -51,7 +58,7 @@ class PUMAL(BaseCounterfactual):
         self.increase_only_features = increase_only_features
         self.decrease_only_features = decrease_only_features
         self.feature_ranges = feature_ranges
-        
+
         self.delta = self._init_cf_method(
             cf_method_type, K, init_cf_method_from_kmeans, X
         )
@@ -65,20 +72,20 @@ class PUMAL(BaseCounterfactual):
     def _prepare_dim_configs(self, D):
         """
         Prepare dimension configurations for the GCE model.
-        
+
         Args:
             D: Dimensionality of the data
-            
+
         Returns:
             Dictionary mapping dimension indices to DimConfig objects
         """
         dim_configs = {}
-        
+
         # Setup not actionable features (zero gradient)
         if self.not_actionable_features:
             for dim in self.not_actionable_features:
                 dim_configs[dim] = DimConfig(strategy=GradStrategy.ZERO)
-        
+
         # Setup increase only features
         if self.increase_only_features:
             for dim in self.increase_only_features:
@@ -87,7 +94,7 @@ class PUMAL(BaseCounterfactual):
                     dim_configs[dim].strategy = GradStrategy.INCREASE_ONLY
                 else:
                     dim_configs[dim] = DimConfig(strategy=GradStrategy.INCREASE_ONLY)
-        
+
         # Setup decrease only features
         if self.decrease_only_features:
             for dim in self.decrease_only_features:
@@ -96,7 +103,7 @@ class PUMAL(BaseCounterfactual):
                     dim_configs[dim].strategy = GradStrategy.DECREASE_ONLY
                 else:
                     dim_configs[dim] = DimConfig(strategy=GradStrategy.DECREASE_ONLY)
-        
+
         # Setup feature ranges
         if self.feature_ranges:
             for dim, (min_val, max_val) in self.feature_ranges.items():
@@ -106,7 +113,7 @@ class PUMAL(BaseCounterfactual):
                     dim_configs[dim].max_val = max_val
                 else:
                     dim_configs[dim] = DimConfig(min_val=min_val, max_val=max_val)
-        
+
         return dim_configs
 
     def _init_cf_method(
@@ -118,6 +125,7 @@ class PUMAL(BaseCounterfactual):
     ):
         N = X.shape[0]
         D = X.shape[1]
+
         if cf_method_type in ["ARES", "GLOBAL_CE"]:
             K = 1
         elif cf_method_type == "PPCEF_2":
@@ -144,7 +152,7 @@ class PUMAL(BaseCounterfactual):
             # Prepare dimension configurations
             dim_configs = self._prepare_dim_configs(D)
             print(dim_configs)
-            
+
             return cf_methods[cf_method_type](
                 N, D, K, init_cf_method_from_kmeans, X, dim_configs=dim_configs
             )

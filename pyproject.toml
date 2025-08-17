@@ -3,6 +3,8 @@ name = "counterfactuals"
 version = "0.1.0"
 description = "A package for demonstrating counterfactuals"
 
+requires-python = ">=3.9"
+
 dependencies = [
   "torchdiffeq",
   "alibi[tensorflow]",
@@ -27,6 +29,7 @@ dependencies = [
   "ruff",
   "pre-commit",
   "pytest",
+  "dice-ml>=0.12",
 ]
 
 [build-system]
