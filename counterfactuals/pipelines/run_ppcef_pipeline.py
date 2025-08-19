@@ -1,13 +1,14 @@
 import logging
 import os
+import matplotlib
+from typing import Tuple, Any, Dict, List, Optional
+
+matplotlib.use("Agg")  # Use non-interactive backend
 import hydra
 import numpy as np
 import pandas as pd
 from time import time
-from typing import List
 import torch
-import neptune
-from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 import torch.utils
@@ -15,7 +16,7 @@ import torch.utils
 from counterfactuals.metrics.metrics import evaluate_cf
 
 from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.datasets.utils import (
@@ -36,13 +37,31 @@ def search_counterfactuals(
     dataset: DictConfig,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    run: neptune.Run,
     save_folder: str,
-) -> torch.nn.Module:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float]:
     """
-    Create a counterfactual model
-    """
+    Generate counterfactuals using the PPCEF method.
 
+    This function filters the test data to exclude the target class, creates a PPCEF
+    counterfactual method, calculates a log probability threshold, and generates
+    counterfactuals for the filtered data.
+
+    Args:
+        cfg: Hydra configuration containing counterfactual parameters
+        dataset: Dataset containing training and test data
+        gen_model: Pre-trained generative model
+        disc_model: Pre-trained discriminative model
+        save_folder: Directory path where counterfactuals will be saved
+
+    Returns:
+        tuple: A tuple containing:
+            - Xs_cfs (np.ndarray): Generated counterfactual examples
+            - Xs (np.ndarray): Original examples used for counterfactual generation
+            - log_prob_threshold (float): Calculated log probability threshold
+            - ys_orig (np.ndarray): Original labels
+            - ys_target (np.ndarray): Target labels for counterfactuals
+            - cf_search_time (float): Time taken for counterfactual search in seconds
+    """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -59,7 +78,6 @@ def search_counterfactuals(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=disc_model_criterion,
-        neptune_run=run,
     )
 
     logger.info("Calculating log_prob_threshold")
@@ -70,7 +88,6 @@ def search_counterfactuals(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
-    run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
@@ -99,7 +116,7 @@ def search_counterfactuals(
     )
 
     cf_search_time = np.mean(time() - time_start)
-    run["metrics/cf_search_time"] = cf_search_time
+    logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
@@ -112,19 +129,45 @@ def search_counterfactuals(
         )
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
+    logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
     return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time
 
 
 def get_categorical_intervals(
     use_categorical: bool, categorical_features_lists: List[List[int]]
-):
+) -> Optional[List[List[int]]]:
+    """
+    Get categorical feature intervals based on configuration.
+
+    Returns the categorical features lists if categorical processing is enabled,
+    otherwise returns None.
+
+    Args:
+        use_categorical: Whether to use categorical feature processing
+        categorical_features_lists: List of lists containing categorical feature indices
+
+    Returns:
+        List of categorical feature intervals if use_categorical is True, None otherwise
+    """
     return categorical_features_lists if use_categorical else None
 
 
 def apply_categorical_discretization(
     categorical_features_lists: List[List[int]], Xs_cfs: np.ndarray
 ) -> np.ndarray:
+    """
+    Apply categorical discretization to counterfactual examples.
+
+    For each categorical feature interval, this function finds the maximum value
+    and applies one-hot encoding to discretize the categorical features.
+
+    Args:
+        categorical_features_lists: List of lists containing indices of categorical features
+        Xs_cfs: Counterfactual examples array to be discretized
+
+    Returns:
+        np.ndarray: Discretized counterfactual examples with one-hot encoded categorical features
+    """
     for interval in categorical_features_lists:
         max_indices = np.argmax(Xs_cfs[:, interval], axis=1)
         Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
@@ -144,11 +187,30 @@ def calculate_metrics(
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    run: neptune.Run,
     y_target: np.ndarray = None,
-):
+) -> Dict[str, Any]:
     """
-    Calculate metrics for counterfactuals
+    Calculate evaluation metrics for generated counterfactuals.
+
+    Evaluates the quality of counterfactuals using various metrics including validity,
+    plausibility, proximity, and diversity measures.
+
+    Args:
+        gen_model: Generative model used for plausibility assessment
+        disc_model: Discriminative model used for validity assessment
+        Xs_cfs: Generated counterfactual examples
+        model_returned: Boolean array indicating successful counterfactual generation
+        categorical_features: List of categorical feature indices
+        continuous_features: List of continuous feature indices
+        X_train: Training data features
+        y_train: Training data labels
+        X_test: Original test examples
+        y_test: Original test labels
+        median_log_prob: Log probability threshold for plausibility
+        y_target: Target labels for counterfactuals (optional)
+
+    Returns:
+        dict: Dictionary containing computed metrics
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
@@ -165,8 +227,7 @@ def calculate_metrics(
         median_log_prob=median_log_prob,
         y_target=y_target,
     )
-    run["metrics/cf"] = stringify_unsupported(metrics)
-    logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
+    logger.info(f"Metrics:\n{metrics}")
     return metrics
 
 
@@ -175,22 +236,15 @@ def main(cfg: DictConfig):
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-    logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
+    logger.info("Initializing pipeline")
 
-    log_parameters(cfg, run)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
@@ -198,16 +252,34 @@ def main(cfg: DictConfig):
 
         dequantizer, _ = dequantize(dataset)
         dataset = instantiate(cfg.dataset)
-        gen_model = create_gen_model(cfg, dataset, gen_model_path, run, dequantizer)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
         # Custom code
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
-        Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+        if dequantizer is None:
+            raise ValueError(
+                "dequantizer is not initialized. Please check its assignment before inverse_dequantize."
+            )
+
+        logger.info(
+            f"Calling inverse_dequantize with Xs of type: {type(Xs)} and shape: {getattr(Xs, 'shape', None)}"
+        )
+        logger.info(f"dequantizer type: {type(dequantizer)}")
+
+        try:
+            Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+            logger.info(
+                f"inverse_dequantize successful, Xs shape: {getattr(Xs, 'shape', None)}"
+            )
+        except Exception as e:
+            logger.error(f"Error in inverse_dequantize: {e}")
+            logger.error(f"Xs type: {type(Xs)}, shape: {getattr(Xs, 'shape', None)}")
+            logger.error(f"dequantizer: {dequantizer}")
+            raise
+
         gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
         dataset = instantiate(cfg.dataset)
 
@@ -224,17 +296,14 @@ def main(cfg: DictConfig):
             y_test=ys_orig,
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
-            run=run,
         )
-        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
+        logger.info(f"Metrics for fold {fold_n}: {metrics}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )
-
-    run.stop()
 
 
 if __name__ == "__main__":
