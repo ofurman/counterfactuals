@@ -1,19 +1,22 @@
 import logging
 import os
+from time import time
+from typing import Tuple, Dict, Any
+
 import hydra
+import matplotlib
+
+matplotlib.use("Agg")  # Set non-interactive backend to prevent Qt issues
 import numpy as np
 import pandas as pd
-from time import time
 import torch
-import neptune
-from neptune.utils import stringify_unsupported
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.artelt.artelt import Artelt
-from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 
@@ -28,11 +31,31 @@ def search_counterfactuals(
     dataset: DictConfig,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    run: neptune.Run,
     save_folder: str,
-) -> torch.nn.Module:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Create a counterfactual model
+    Generate counterfactual explanations using the Artelt method.
+
+    This function implements the Artelt counterfactual generation algorithm, which uses
+    density estimators to generate valid counterfactuals. It filters the test data to
+    exclude the target class, fits density estimators on the training data, and then
+    generates counterfactuals for the filtered test instances.
+
+    Args:
+        cfg: Hydra configuration containing experiment parameters
+        dataset: Dataset object containing training and test data
+        gen_model: Trained generative model for density estimation
+        disc_model: Trained discriminative model for classification
+        save_folder: Directory path where results will be saved
+
+    Returns:
+        Tuple containing:
+            - Xs_cfs: Generated counterfactual explanations
+            - Xs: Original test instances
+            - log_prob_threshold: Computed log probability threshold
+            - ys_orig: Original labels for test instances
+            - ys_target: Target labels for counterfactuals
+            - model_returned: Boolean array indicating successful generation
     """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
@@ -53,7 +76,6 @@ def search_counterfactuals(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
-    run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
@@ -72,13 +94,14 @@ def search_counterfactuals(
     )
 
     cf_search_time = np.mean(time() - time_start)
-    run["metrics/cf_search_time"] = cf_search_time
+    logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
-
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
+    logger.info(f"Counterfactuals saved to {counterfactuals_path}")
+
     return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
 
 
@@ -94,11 +117,31 @@ def calculate_metrics(
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    y_target: np.ndarray,
-    run: neptune.Run,
-):
+    y_target: np.ndarray = None,
+) -> Dict[str, Any]:
     """
-    Calculate metrics for counterfactuals
+    Calculate comprehensive metrics for generated counterfactual explanations.
+
+    This function evaluates the quality of counterfactual explanations using various
+    metrics including validity, coverage, proximity, diversity, and density-based
+    plausibility measures.
+
+    Args:
+        gen_model: Trained generative model used for density estimation
+        disc_model: Trained discriminative model used for classification
+        Xs_cfs: Generated counterfactual explanations
+        model_returned: Boolean array indicating successful generation
+        categorical_features: List of categorical feature indices
+        continuous_features: List of continuous feature indices
+        X_train: Training data features
+        y_train: Training data labels
+        X_test: Test data features (original instances)
+        y_test: Test data labels (original labels)
+        median_log_prob: Median log probability threshold for plausibility
+        y_target: Target labels for counterfactuals (optional)
+
+    Returns:
+        Dictionary containing computed metrics for counterfactual quality evaluation
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
@@ -115,44 +158,53 @@ def calculate_metrics(
         median_log_prob=median_log_prob,
         y_target=y_target,
     )
-    run["metrics/cf"] = stringify_unsupported(metrics)
-    logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
+    logger.info(f"Metrics calculated: {list(metrics.keys())}")
     return metrics
 
 
 @hydra.main(config_path="./conf", config_name="artelt_config", version_base="1.2")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
+    """
+    Main pipeline function for Artelt counterfactual generation.
+
+    This function orchestrates the complete pipeline for generating and evaluating
+    counterfactual explanations using the Artelt method. It performs cross-validation
+    across multiple folds, trains models if required, generates counterfactuals,
+    and calculates comprehensive evaluation metrics.
+
+    The pipeline includes:
+    1. Dataset loading and preprocessing
+    2. Cross-validation setup (5 folds)
+    3. Discriminative and generative model training/loading
+    4. Counterfactual generation using Artelt method
+    5. Metrics calculation and results saving
+
+    Args:
+        cfg: Hydra configuration containing all experiment parameters including
+             dataset settings, model configurations, and counterfactual parameters
+    """
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
-
-    log_parameters(cfg, run)
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        logger.info(f"Processing fold {fold_n}")
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
+            logger.info("Relabeling dataset with discriminative model predictions")
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
+
         if not any(model_returned):
             logger.info("No counterfactuals found, skipping metrics calculation")
             continue
@@ -170,12 +222,13 @@ def main(cfg: DictConfig):
             y_test=ys_orig,
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
-            run=run,
         )
-        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
+
+        logger.info(f"Fold {fold_n} completed. Metrics: {metrics}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
-    run.stop()
+
+    logger.info("Artelt pipeline completed successfully")
 
 
 if __name__ == "__main__":
