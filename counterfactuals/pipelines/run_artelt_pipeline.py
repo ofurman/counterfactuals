@@ -1,11 +1,12 @@
 import logging
 import os
 from time import time
-from typing import Tuple, Optional, List, Dict, Any
+from typing import Tuple, Dict, Any
 
 import hydra
 import matplotlib
-matplotlib.use('Agg')  # Set non-interactive backend to prevent Qt issues
+
+matplotlib.use("Agg")  # Set non-interactive backend to prevent Qt issues
 import numpy as np
 import pandas as pd
 import torch
@@ -34,19 +35,19 @@ def search_counterfactuals(
 ) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
     """
     Generate counterfactual explanations using the Artelt method.
-    
+
     This function implements the Artelt counterfactual generation algorithm, which uses
     density estimators to generate valid counterfactuals. It filters the test data to
     exclude the target class, fits density estimators on the training data, and then
     generates counterfactuals for the filtered test instances.
-    
+
     Args:
         cfg: Hydra configuration containing experiment parameters
         dataset: Dataset object containing training and test data
         gen_model: Trained generative model for density estimation
         disc_model: Trained discriminative model for classification
         save_folder: Directory path where results will be saved
-        
+
     Returns:
         Tuple containing:
             - Xs_cfs: Generated counterfactual explanations
@@ -94,13 +95,13 @@ def search_counterfactuals(
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
-    
+
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
-    
+
     return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
 
 
@@ -120,11 +121,11 @@ def calculate_metrics(
 ) -> Dict[str, Any]:
     """
     Calculate comprehensive metrics for generated counterfactual explanations.
-    
+
     This function evaluates the quality of counterfactual explanations using various
     metrics including validity, coverage, proximity, diversity, and density-based
     plausibility measures.
-    
+
     Args:
         gen_model: Trained generative model used for density estimation
         disc_model: Trained discriminative model used for classification
@@ -138,7 +139,7 @@ def calculate_metrics(
         y_test: Test data labels (original labels)
         median_log_prob: Median log probability threshold for plausibility
         y_target: Target labels for counterfactuals (optional)
-        
+
     Returns:
         Dictionary containing computed metrics for counterfactual quality evaluation
     """
@@ -165,19 +166,19 @@ def calculate_metrics(
 def main(cfg: DictConfig) -> None:
     """
     Main pipeline function for Artelt counterfactual generation.
-    
+
     This function orchestrates the complete pipeline for generating and evaluating
     counterfactual explanations using the Artelt method. It performs cross-validation
     across multiple folds, trains models if required, generates counterfactuals,
     and calculates comprehensive evaluation metrics.
-    
+
     The pipeline includes:
     1. Dataset loading and preprocessing
     2. Cross-validation setup (5 folds)
     3. Discriminative and generative model training/loading
     4. Counterfactual generation using Artelt method
     5. Metrics calculation and results saving
-    
+
     Args:
         cfg: Hydra configuration containing all experiment parameters including
              dataset settings, model configurations, and counterfactual parameters
@@ -201,11 +202,9 @@ def main(cfg: DictConfig) -> None:
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, save_folder
-            )
+            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
-        
+
         if not any(model_returned):
             logger.info("No counterfactuals found, skipping metrics calculation")
             continue
@@ -224,11 +223,11 @@ def main(cfg: DictConfig) -> None:
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
         )
-        
+
         logger.info(f"Fold {fold_n} completed. Metrics: {metrics}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
-        
+
     logger.info("Artelt pipeline completed successfully")
 
 
