@@ -272,8 +272,8 @@ def main(cfg: DictConfig) -> None:
     Orchestrates a 5-fold CV process: loads dataset, trains/loads models,
     clusters eligible test points via KMeans, generates GLOBE-CE CFs per
     cluster, evaluates them with ``evaluate_cf``, and writes metrics/CFs to
-    disk. Neptune integration has been removed in favor of Python logging.
-
+    disk.
+    
     Args:
         cfg: Hydra configuration with dataset, model, and CF method settings.
     """

@@ -164,7 +164,7 @@ def main(cfg: DictConfig) -> None:
 
     Runs a 5-fold CV routine: loads dataset, prepares models, performs CF search
     using WACH_OURS on non-target-class samples, evaluates with ``evaluate_cf``,
-    and saves results locally. Neptune integration has been removed.
+    and saves results locally. 
 
     Args:
         cfg: Hydra configuration with dataset, model, and method parameters.
