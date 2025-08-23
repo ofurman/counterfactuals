@@ -1,20 +1,21 @@
 import logging
 import os
+from time import time
+from typing import Any, Dict, List, Optional, Tuple
+
 import hydra
 import numpy as np
 import pandas as pd
-from time import time
 import torch
-import neptune
-from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from sklearn.cluster import KMeans
 from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
+
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ares import AReS
 from counterfactuals.cf_methods.globe_ce import GLOBE_CE
-from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 
@@ -24,13 +25,21 @@ logging.basicConfig(
 )
 
 
-def one_hot(dataset, data):
+def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     """
-    Improvised method for one-hot encoding the data
+    Apply one-hot encoding to categorical features in the dataset.
 
-    Input: data (whole dataset)
-    Outputs: data_oh (one-hot encoded data)
-                features (list of feature values after one-hot encoding)
+    Mirrors the AReS preprocessing utility: encodes categoricals and optionally
+    bins continuous features, updating dataset metadata for later use.
+
+    Args:
+        dataset: Dataset object that will be updated with encoding metadata
+        data: DataFrame with raw features to be encoded
+
+    Returns:
+        Tuple containing:
+            - data_oh: One-hot encoded DataFrame
+            - features: List of feature names after encoding
     """
     label_encoder = LabelEncoder()
     data_encode = data.copy()
@@ -78,11 +87,40 @@ def search_counterfactuals(
     dataset: DictConfig,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    run: neptune.Run,
     save_folder: str,
-) -> torch.nn.Module:
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    float,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    float,
+]:
     """
-    Create counterfactuals using CEM method
+    Generate counterfactuals using the Group GLOBE-CE method.
+
+    This function clusters eligible instances into groups and, per cluster, builds
+    an AReS helper to compute bin widths and a GLOBE-CE explainer to generate
+    counterfactuals. It also computes a plausibility (log-prob) threshold using
+    the generative model.
+
+    Args:
+        cfg: Hydra configuration with counterfactual parameters
+        dataset: Dataset with training/test data and metadata
+        gen_model: Pre-trained generative model
+        disc_model: Pre-trained discriminative model
+        save_folder: Directory path where counterfactuals will be saved
+
+    Returns:
+        Tuple containing:
+            - Xs_cfs: Generated counterfactual examples
+            - Xs: Original examples used for generation
+            - log_prob_threshold: Calculated log probability threshold
+            - ys_orig: Original predicted labels
+            - ys_target: Target labels for counterfactuals
+            - model_returned: Boolean mask indicating successful generation
+            - cf_search_time: Average time taken for counterfactual search
     """
     cf_method_name = "Group_Globe_CE"
     disc_model.eval()
@@ -111,7 +149,6 @@ def search_counterfactuals(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
-    run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     kmeans = KMeans(n_clusters=cfg.counterfactuals_params.n_clusters)
@@ -158,13 +195,13 @@ def search_counterfactuals(
 
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
-    run["metrics/cf_search_time"] = cf_search_time
+    logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
+    logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
     return (
         Xs_cfs,
@@ -182,18 +219,20 @@ def calculate_metrics(
     disc_model: torch.nn.Module,
     Xs_cfs: np.ndarray,
     model_returned: np.ndarray,
-    categorical_features: list,
-    continuous_features: list,
+    categorical_features: List[int],
+    continuous_features: List[int],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    run: neptune.Run,
-    y_target: np.ndarray = None,
-):
+    y_target: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
     """
-    Calculate metrics for counterfactuals
+    Calculate evaluation metrics for generated counterfactuals.
+
+    Evaluates the quality of counterfactuals using validity, plausibility,
+    proximity, and diversity measures.
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
@@ -210,40 +249,39 @@ def calculate_metrics(
         median_log_prob=median_log_prob,
         y_target=y_target,
     )
-    run["metrics/cf"] = stringify_unsupported(metrics)
-    logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
+    logger.info(f"Metrics:\n{metrics}")
     return metrics
 
 
 @hydra.main(
     config_path="./conf", config_name="group_globe_ce_config", version_base="1.2"
 )
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
+    """
+    Main pipeline for Group GLOBE-CE counterfactual generation and evaluation.
+
+    Performs 5-fold CV; per fold it loads/creates models, clusters instances,
+    generates group-wise GLOBE-CE counterfactuals, and computes metrics.
+
+    Args:
+        cfg: Hydra configuration including dataset, model, and CF parameters
+    """
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
-
-    log_parameters(cfg, run)
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset, shuffle=False)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+        logger.info(f"Processing fold {fold_n}")
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         (
             Xs_cfs,
@@ -253,9 +291,7 @@ def main(cfg: DictConfig):
             ys_target,
             model_returned,
             cf_search_time,
-        ) = search_counterfactuals(
-            cfg, dataset, gen_model, disc_model, run, save_folder
-        )
+        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
@@ -270,18 +306,13 @@ def main(cfg: DictConfig):
             y_test=ys_orig,
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
-            run=run,
         )
-
-        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )
-
-    run.stop()
 
 
 if __name__ == "__main__":
