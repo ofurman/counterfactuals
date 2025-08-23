@@ -6,13 +6,6 @@ hydra:
   sweeper:
     max_batch_size: 10
 
-neptune:
-  enable: true
-  project: "ofurman/counterfactuals"
-  api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["train_disc_model"]
-  
-
 experiment:
   output_folder: models/
 
