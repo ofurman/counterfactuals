@@ -75,7 +75,6 @@ cf = PPCEF(
     gen_model=gen_model,
     disc_model=disc_model,
     disc_model_criterion=BinaryDiscLoss(),
-    neptune_run=None,
 )
 cf_dataloader = dataset.test_dataloader(batch_size=1024, shuffle=False)
 log_prob_threshold = torch.quantile(gen_model.predict_log_prob(cf_dataloader), 0.25)

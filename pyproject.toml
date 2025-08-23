@@ -10,7 +10,6 @@ dependencies = [
   "scipy",
   "cvxpy",
   "scikit-learn",
-  "neptune",
   "hydra-core",
   "mlflow",
   "umap-learn",
