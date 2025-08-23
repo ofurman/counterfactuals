@@ -1,19 +1,19 @@
 import logging
 import os
+from time import time
+from typing import Dict, List, Tuple
+
 import hydra
 import numpy as np
 import pandas as pd
-from time import time
 import torch
-import neptune
-from neptune.utils import stringify_unsupported
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.wach.wach_ours import WACH_OURS
-from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 
@@ -28,11 +28,29 @@ def search_counterfactuals(
     dataset: DictConfig,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    run: neptune.Run,
     save_folder: str,
-) -> torch.nn.Module:
-    """
-    Create a counterfactual model
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]:
+    """Generate counterfactual deltas using the WACH_OURS method.
+
+    This builds the WACH_OURS counterfactual searcher, computes a plausibility
+    threshold from the generative model, and runs batched CF search over
+    non-target-class test samples.
+
+    Args:
+        cfg: Hydra configuration for experiment and method settings.
+        dataset: Dataset object exposing train/test arrays and metadata.
+        gen_model: Trained generative model used to compute log-probability threshold.
+        disc_model: Trained discriminative model used in the search loss.
+        save_folder: Output directory to persist results (CSVs, timings).
+
+    Returns:
+        A tuple:
+        - Xs_cfs: Counterfactual deltas from WACH_OURS (same shape as inputs)
+        - Xs: Original inputs corresponding to the deltas
+        - ys_orig: Original labels
+        - ys_target: Target labels for counterfactuals
+        - log_prob_threshold: Quantile-based log-probability threshold
+        - cf_search_time: Average CF search time in seconds
     """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
@@ -48,7 +66,6 @@ def search_counterfactuals(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=disc_model_criterion,
-        neptune_run=run,
     )
 
     logger.info("Calculating log_prob_threshold")
@@ -59,7 +76,6 @@ def search_counterfactuals(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
-    run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
@@ -80,14 +96,14 @@ def search_counterfactuals(
     )
 
     cf_search_time = np.mean(time() - time_start)
-    run["metrics/cf_search_time"] = cf_search_time
+    logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
     )
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
-    return Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold
+    logger.info("Counterfactual deltas saved to %s", counterfactuals_path)
+    return Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold, cf_search_time
 
 
 def calculate_metrics(
@@ -95,18 +111,33 @@ def calculate_metrics(
     disc_model: torch.nn.Module,
     Xs_cfs: np.ndarray,
     model_returned: np.ndarray,
-    categorical_features: list,
-    continuous_features: list,
+    categorical_features: List[int] | List[str],
+    continuous_features: List[int] | List[str],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    run: neptune.Run,
-    y_target: np.ndarray = None,
-):
-    """
-    Calculate metrics for counterfactuals
+    y_target: np.ndarray | None = None,
+) -> Dict[str, float]:
+    """Compute evaluation metrics for WACH_OURS-generated counterfactuals.
+
+    Args:
+        gen_model: Generative model used for plausibility metrics.
+        disc_model: Discriminative model used to evaluate outcomes.
+        Xs_cfs: Generated counterfactual deltas.
+        model_returned: Boolean mask indicating successful generations.
+        categorical_features: Indices or names of categorical features.
+        continuous_features: Indices or names of continuous features.
+        X_train: Training features.
+        y_train: Training labels.
+        X_test: Original instances.
+        y_test: Original labels.
+        median_log_prob: Log-probability threshold for plausibility.
+        y_target: Target labels for the original instances.
+
+    Returns:
+        Mapping from metric names to values.
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
@@ -123,42 +154,47 @@ def calculate_metrics(
         median_log_prob=median_log_prob,
         y_target=y_target,
     )
-    run["metrics/cf"] = stringify_unsupported(metrics)
-    logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
+    logger.info("Metrics computed: %s", metrics)
     return metrics
 
 
 @hydra.main(config_path="./conf", config_name="wach_ours_config", version_base="1.2")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
+    """WACH_OURS pipeline: generate and evaluate counterfactual deltas.
+
+    Runs a 5-fold CV routine: loads dataset, prepares models, performs CF search
+    using WACH_OURS on non-target-class samples, evaluates with ``evaluate_cf``,
+    and saves results locally. Neptune integration has been removed.
+
+    Args:
+        cfg: Hydra configuration with dataset, model, and method parameters.
+    """
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
-
-    log_parameters(cfg, run)
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+        logger.info("Processing fold %d", fold_n)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
+            logger.info("Relabeling dataset with discriminative model predictions")
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold = search_counterfactuals(
-            cfg, dataset, gen_model, disc_model, run, save_folder
-        )
+        (
+            Xs_cfs,
+            Xs,
+            ys_orig,
+            ys_target,
+            log_prob_threshold,
+            cf_search_time,
+        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
@@ -172,13 +208,16 @@ def main(cfg: DictConfig):
             X_test=Xs,
             y_test=ys_orig,
             y_target=ys_target,
-            median_log_prob=log_prob_threshold,  # Remove this parameter if not needed for WACH_OURS
-            run=run,
+            median_log_prob=log_prob_threshold,
         )
-        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
+
+        logger.info("Metrics: %s", metrics)
         df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
-    run.stop()
+        df_metrics["cf_search_time"] = cf_search_time
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
 
 
 if __name__ == "__main__":
