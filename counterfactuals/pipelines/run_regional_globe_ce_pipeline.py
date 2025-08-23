@@ -189,15 +189,11 @@ def search_counterfactuals(
     ys_target = np.abs(ys_orig - 1)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
+    logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
-
-    time_path = os.path.join(save_folder, "search_time.txt")
-
-    with open(time_path, "w") as f:
-        f.write(str(cf_search_time))
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
@@ -273,7 +269,7 @@ def main(cfg: DictConfig) -> None:
     clusters eligible test points via KMeans, generates GLOBE-CE CFs per
     cluster, evaluates them with ``evaluate_cf``, and writes metrics/CFs to
     disk.
-    
+
     Args:
         cfg: Hydra configuration with dataset, model, and CF method settings.
     """

@@ -131,6 +131,8 @@ def search_counterfactuals(
     )
 
     cf_search_time = np.mean(time() - time_start)
+    logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
