@@ -1,13 +1,14 @@
 import logging
 import os
+from time import time
+
+import neptune
 import numpy as np
 import pandas as pd
-from time import time
 import torch
-import neptune
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
 from counterfactuals.datasets.base import AbstractDataset
 

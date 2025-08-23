@@ -1,9 +1,9 @@
-import os
 import logging
-from omegaconf import DictConfig
+import os
+
 import neptune
 from neptune.utils import stringify_unsupported
-
+from omegaconf import DictConfig
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

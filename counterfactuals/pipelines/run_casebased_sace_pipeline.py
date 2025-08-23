@@ -1,21 +1,21 @@
 import logging
 import os
 from time import time
-from typing import Tuple, Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
 import numpy as np
 import pandas as pd
 import torch
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.casebased_sace.casebased_sace import CaseBasedSACE
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -219,7 +219,6 @@ def main(cfg: DictConfig) -> None:
         )
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
-    
 
 
 if __name__ == "__main__":

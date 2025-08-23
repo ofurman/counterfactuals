@@ -8,16 +8,16 @@ import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
-from sklearn.cluster import KMeans
 from omegaconf import DictConfig
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.ares import AReS
 from counterfactuals.cf_methods.globe_ce import GLOBE_CE
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

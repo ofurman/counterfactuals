@@ -11,11 +11,11 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.wach.wach import WACH
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

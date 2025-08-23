@@ -1,7 +1,7 @@
 import logging
 import os
 from time import time
-from typing import Tuple, Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
 import numpy as np
@@ -9,11 +9,12 @@ import pandas as pd
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from counterfactuals.metrics.metrics import evaluate_cf
+
 from counterfactuals.cf_methods.cet.cet import CounterfactualExplanationTree
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 MAX_ITERATION = 50
 # LAMBDA, GAMMA = 0.01, 0.75

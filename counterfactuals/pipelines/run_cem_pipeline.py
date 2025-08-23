@@ -1,21 +1,21 @@
 import logging
 import os
 from time import time
-from typing import Tuple, Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
 import numpy as np
 import pandas as pd
 import torch
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.cem.cem import CEM_CF
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

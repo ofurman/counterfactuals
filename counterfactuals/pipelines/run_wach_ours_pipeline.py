@@ -11,11 +11,11 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.cf_methods.wach.wach_ours import WACH_OURS
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -164,7 +164,7 @@ def main(cfg: DictConfig) -> None:
 
     Runs a 5-fold CV routine: loads dataset, prepares models, performs CF search
     using WACH_OURS on non-target-class samples, evaluates with ``evaluate_cf``,
-    and saves results locally. 
+    and saves results locally.
 
     Args:
         cfg: Hydra configuration with dataset, model, and method parameters.

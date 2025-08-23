@@ -7,16 +7,15 @@ import hydra
 import numpy as np
 import pandas as pd
 import torch
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
-from counterfactuals.metrics import evaluate_cf_regression
 from counterfactuals.cf_methods.regression_ppcef import PPCEFR
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics import evaluate_cf_regression
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
