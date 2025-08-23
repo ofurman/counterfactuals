@@ -1,4 +1,3 @@
-import neptune
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -20,12 +19,10 @@ class NICE(BaseGenModel):
         dropout_probability=0.0,
         batch_norm_within_layers=False,
         batch_norm_between_layers=False,
-        neptune_run=None,
         device="cpu",
     ):
         super(NICE, self).__init__()
         self.device = device
-        self.neptune_run = neptune_run
         self.model = _SimpleRealNVP(
             features=features,
             hidden_features=hidden_features,
@@ -53,7 +50,6 @@ class NICE(BaseGenModel):
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
-        neptune_run: neptune.Run = None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         patience_counter = 0
@@ -86,9 +82,6 @@ class NICE(BaseGenModel):
             pbar.set_description(
                 f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
-            if neptune_run:
-                neptune_run["gen_train_nll"].append(train_loss)
-                neptune_run["gen_test_nll"].append(test_loss)
             if test_loss < (min_test_loss + eps):
                 min_test_loss = test_loss
                 patience_counter = 0
