@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-import torch
 import numpy as np
+import torch
 from torch.utils.data import DataLoader
 
-from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.generative_models.base import BaseGenModel
 
 
 @dataclass

@@ -1,9 +1,10 @@
-import torch
 import numpy as np
-from counterfactuals.cf_methods.base import BaseCounterfactual
-from torch.utils.data import DataLoader
+import torch
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+from counterfactuals.cf_methods.base import BaseCounterfactual
 
 
 class PPCEFR(BaseCounterfactual):

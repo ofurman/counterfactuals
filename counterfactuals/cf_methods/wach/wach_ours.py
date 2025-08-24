@@ -1,5 +1,5 @@
-import torch
 import numpy as np
+import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm

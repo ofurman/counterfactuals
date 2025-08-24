@@ -1,14 +1,13 @@
-import torch
 import numpy as np
-import torch.optim as optim
+import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual
 from counterfactuals.discriminative_models.base import BaseDiscModel
 from counterfactuals.generative_models.base import BaseGenModel
-
 
 # Experimenting with custom autograd function
 # TODO: Move to separate file
