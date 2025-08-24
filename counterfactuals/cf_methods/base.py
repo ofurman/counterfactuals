@@ -29,7 +29,6 @@ class BaseCounterfactual(ABC):
         disc_model: BaseDiscModel,
         disc_model_criterion: torch.nn.modules.loss._Loss = None,
         device: str = None,
-        neptune_run=None,
     ):
         """Initialize the class with arg1 and arg2."""
         pass
