@@ -2,6 +2,8 @@
 name = "counterfactuals"
 version = "0.1.0"
 description = "A package for demonstrating counterfactuals"
+readme = "README.md"
+requires-python = ">=3.10"
 
 dependencies = [
   "torchdiffeq",
@@ -20,8 +22,11 @@ dependencies = [
   "matplotlib",
   "plotly",
   "ipykernel",
-  "scikit-learn",
-  "mlflow",
+]
+
+# Tooling and test libs should be installed as an extra (dev) instead of runtime deps
+[project.optional-dependencies]
+dev = [
   "ruff",
   "pre-commit",
   "pytest",
@@ -31,7 +36,7 @@ dependencies = [
 requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages .find]
+[tool.setuptools.packages.find]
 where = ["."]
 
 [tool.ruff.lint.per-file-ignores]
