@@ -13,7 +13,6 @@ class PPCEFR(BaseCounterfactual):
         disc_model,
         disc_model_criterion,
         device=None,
-        neptune_run=None,
     ):
         # Initialize properly like PPCEF
         self.disc_model_criterion = disc_model_criterion
@@ -22,7 +21,6 @@ class PPCEFR(BaseCounterfactual):
         self.device = device if device is not None else "cpu"
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
-        self.neptune_run = neptune_run
 
     def search_step(
         self, x_param, x_origin, contexts_origin, context_target, **search_step_kwargs
@@ -140,10 +138,6 @@ class PPCEFR(BaseCounterfactual):
                     loss_components_logging.setdefault(
                         f"cf_search/{loss_name}", []
                     ).append(loss.mean().detach().cpu().item())
-                    if self.neptune_run:
-                        self.neptune_run[f"cf_search/{loss_name}"].append(
-                            loss.mean().detach().cpu().numpy()
-                        )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 prob_loss = loss_components["max_inner"].detach().cpu().mean().item()
