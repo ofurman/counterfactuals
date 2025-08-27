@@ -1,5 +1,5 @@
-import torch
 import numpy as np
+import torch
 from sklearn.cluster import KMeans
 
 from counterfactuals.cf_methods.group_ppcef.sparsemax import Sparsemax

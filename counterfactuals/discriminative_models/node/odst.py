@@ -1,10 +1,11 @@
+from warnings import warn
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 from tqdm import tqdm
 
-from .nn_utils import check_numpy, sparsemax, sparsemoid, ModuleWithInit
-from warnings import warn
+from .nn_utils import ModuleWithInit, check_numpy, sparsemax, sparsemoid
 
 
 class ODST(ModuleWithInit):

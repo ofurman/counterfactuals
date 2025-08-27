@@ -1,11 +1,10 @@
-import pytest
 import numpy as np
+import pytest
 import torch
+
 # from sklearn.neighbors import LocalOutlierFactor
 # from sklearn.ensemble import IsolationForest
-
 # from counterfactuals.metrics.distances import continuous_distance, categorical_distance, distance_combined
-
 from counterfactuals.metrics import CFMetrics
 
 

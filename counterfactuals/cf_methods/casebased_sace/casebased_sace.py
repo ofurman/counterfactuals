@@ -1,13 +1,13 @@
 import numpy as np
-from tqdm import tqdm
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
-from counterfactuals.discriminative_models.base import BaseDiscModel
 from counterfactuals.cf_methods.sace.blackbox import BlackBox
 from counterfactuals.cf_methods.sace.casebased_sace import (
     CaseBasedSACE as OrigCaseBasedSACE,
 )
+from counterfactuals.discriminative_models.base import BaseDiscModel
 
 
 class CaseBasedSACE(BaseCounterfactual):

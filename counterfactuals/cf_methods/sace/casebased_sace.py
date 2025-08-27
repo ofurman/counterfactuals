@@ -1,7 +1,7 @@
-import numpy as np
-
-from scipy.spatial.distance import cdist
 from collections import defaultdict
+
+import numpy as np
+from scipy.spatial.distance import cdist
 
 from counterfactuals.cf_methods.sace.sace import SACE
 

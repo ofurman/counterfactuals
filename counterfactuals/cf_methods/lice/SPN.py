@@ -4,9 +4,8 @@ from typing import Any
 import numpy as np
 from spn.algorithms.Inference import EPSILON, log_likelihood
 from spn.algorithms.LearningWrappers import learn_mspn
-from spn.structure.Base import Context, Leaf
+from spn.structure.Base import Context, Leaf, Product, Sum, get_topological_order
 from spn.structure.Base import Node as SPFlow_Node
-from spn.structure.Base import Product, Sum, get_topological_order
 from spn.structure.StatisticalTypes import MetaType
 
 from counterfactuals.cf_methods.lice.data.DataHandler import DataHandler

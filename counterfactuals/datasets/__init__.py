@@ -3,6 +3,8 @@ from counterfactuals.datasets.adult import AdultDataset
 from counterfactuals.datasets.audit import AuditDataset
 from counterfactuals.datasets.blobs import BlobsDataset
 from counterfactuals.datasets.compas import CompasDataset
+from counterfactuals.datasets.concrete_regression import ConcreteDataset
+from counterfactuals.datasets.diabetes_regression import DiabetesDataset
 from counterfactuals.datasets.digits import DigitsDataset
 from counterfactuals.datasets.german_credit import GermanCreditDataset
 from counterfactuals.datasets.heloc import HelocDataset
@@ -10,10 +12,8 @@ from counterfactuals.datasets.law import LawDataset
 from counterfactuals.datasets.mnist import MNISTDataset
 from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.polish_bankruptcy import PolishBankDataset
+from counterfactuals.datasets.scm20d_regression import Scm20dDataset
+from counterfactuals.datasets.toy_regression import ToyRegressionDataset
 from counterfactuals.datasets.wine import WineDataset
 from counterfactuals.datasets.wine_quality_regression import WineQualityDataset
 from counterfactuals.datasets.yacht_regression import YachtDataset
-from counterfactuals.datasets.concrete_regression import ConcreteDataset
-from counterfactuals.datasets.diabetes_regression import DiabetesDataset
-from counterfactuals.datasets.scm20d_regression import Scm20dDataset
-from counterfactuals.datasets.toy_regression import ToyRegressionDataset

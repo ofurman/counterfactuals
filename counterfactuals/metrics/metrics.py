@@ -1,17 +1,16 @@
-from typing import Optional, List, Union
 import logging
+from typing import List, Optional, Union
 
-import torch
 import numpy as np
-from sklearn.neighbors import LocalOutlierFactor
+import torch
 from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
 
 from counterfactuals.metrics.distances import (
-    continuous_distance,
     categorical_distance,
+    continuous_distance,
     distance_combined,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,24 +49,24 @@ class CFMetrics:
         prob_plausibility_threshold: Optional[float] = None,
     ) -> None:
         # precheck input assumptions
-        assert (
-            X_cf.shape[1] == X_train.shape[1] == X_test.shape[1]
-        ), "All input data should have the same number of features"
-        assert (
-            X_train.shape[0] == y_train.shape[0]
-        ), "X_train and y_train should have the same number of samples"
-        assert (
-            X_test.shape[0] == y_test.shape[0]
-        ), "X_test and y_test should have the same number of samples"
-        assert (
-            X_cf.shape[0] == y_test.shape[0]
-        ), "X_cf and y_test should have the same number of samples"
-        assert (
-            len(continuous_features) + len(categorical_features) == X_cf.shape[1]
-        ), "The sum of continuous and categorical features should equal the number of features in X_cf"
-        assert (
-            ratio_cont is None or 0 <= ratio_cont <= 1
-        ), "ratio_cont should be between 0 and 1"
+        assert X_cf.shape[1] == X_train.shape[1] == X_test.shape[1], (
+            "All input data should have the same number of features"
+        )
+        assert X_train.shape[0] == y_train.shape[0], (
+            "X_train and y_train should have the same number of samples"
+        )
+        assert X_test.shape[0] == y_test.shape[0], (
+            "X_test and y_test should have the same number of samples"
+        )
+        assert X_cf.shape[0] == y_test.shape[0], (
+            "X_cf and y_test should have the same number of samples"
+        )
+        assert len(continuous_features) + len(categorical_features) == X_cf.shape[1], (
+            "The sum of continuous and categorical features should equal the number of features in X_cf"
+        )
+        assert ratio_cont is None or 0 <= ratio_cont <= 1, (
+            "ratio_cont should be between 0 and 1"
+        )
 
         # convert everything to torch tensors if not already
         self.X_cf = self._convert_to_numpy(X_cf)

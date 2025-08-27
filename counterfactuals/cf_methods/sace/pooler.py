@@ -1,12 +1,15 @@
-import numpy as np
-
 from abc import ABC, abstractmethod
-from skimage.util.shape import view_as_windows
 
-from autoencoder.vae import VariationalAutoencoderImage
-from autoencoder.vae import VariationalAutoencoderTimeSeries
-from autoencoder.cvae import ConditionalVariationalAutoencoderImage
-from autoencoder.cvae import ConditionalVariationalAutoencoderTimeSeries
+import numpy as np
+from autoencoder.cvae import (
+    ConditionalVariationalAutoencoderImage,
+    ConditionalVariationalAutoencoderTimeSeries,
+)
+from autoencoder.vae import (
+    VariationalAutoencoderImage,
+    VariationalAutoencoderTimeSeries,
+)
+from skimage.util.shape import view_as_windows
 
 
 class Pooler(ABC):

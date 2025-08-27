@@ -1,9 +1,10 @@
 from typing import List, Tuple
+
 import torch
 import torch.nn as nn
-from torch import Tensor
-from maf_layer import MAFLayer
 from batch_norm_layer import BatchNormLayer
+from maf_layer import MAFLayer
+from torch import Tensor
 
 
 class MAF(nn.Module):

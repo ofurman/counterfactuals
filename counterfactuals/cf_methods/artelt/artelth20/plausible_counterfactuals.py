@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import cvxpy as cp
+import numpy as np
+
 from .tree import get_leafs_from_tree
 
 

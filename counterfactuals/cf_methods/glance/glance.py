@@ -127,9 +127,9 @@ class GlobalGLANCE:
         if isinstance(query_instance, pd.DataFrame):
             query_instance = query_instance.values
 
-        assert isinstance(
-            query_instance, np.ndarray
-        ), "Query instance must be a numpy array"
+        assert isinstance(query_instance, np.ndarray), (
+            "Query instance must be a numpy array"
+        )
 
         if len(query_instance.shape) == 2:
             query_instance = query_instance.squeeze(0)

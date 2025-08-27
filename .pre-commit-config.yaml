@@ -1,17 +1,13 @@
-repos:
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)
-        types_or: [ python, pyi ]
-        args: ["--profile", "black"]
-
+---
+repos: 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.12.10
     hooks:
       - id: ruff
         types_or: [ python, pyi, jupyter ]
         args: [ --fix, "--ignore", "F841,E741,E711" ]
+      - id: ruff
+        types_or: [ python, pyi, jupyter ]
+        args: ["check", "--select", "I", "--fix"]
       - id: ruff-format
         types_or: [ python, pyi, jupyter ]

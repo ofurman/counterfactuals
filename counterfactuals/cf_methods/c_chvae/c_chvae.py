@@ -1,5 +1,5 @@
-from typing import Dict, List, Tuple, Union
 import logging
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -7,13 +7,12 @@ import torch
 from numpy import linalg as LA
 
 from .mlmodel import MLModel
-from .vae import VariationalAutoencoder
 from .utils import (
     check_counterfactuals,
     merge_default_parameters,
     reconstruct_encoding_constraints,
 )
-
+from .vae import VariationalAutoencoder
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

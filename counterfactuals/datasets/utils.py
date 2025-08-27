@@ -6,7 +6,6 @@ import torch.nn as nn
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 
-
 ALPHA = 1e-6
 
 

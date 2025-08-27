@@ -1,7 +1,9 @@
+from typing import List
+
 import numpy as np
 import torch
 from tqdm import tqdm
-from typing import List
+
 from counterfactuals.discriminative_models.base import BaseDiscModel
 
 

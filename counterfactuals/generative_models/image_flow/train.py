@@ -1,12 +1,11 @@
-import torch
 import numpy as np
-from maf import MAF
-from made import MADE
+import torch
 from datasets.data_loaders import get_data, get_data_loaders
-from utils.train import train_one_epoch_maf, train_one_epoch_made
-from utils.validation import val_maf, val_made
-from utils.plot import sample_digits_maf, plot_losses
-
+from made import MADE
+from maf import MAF
+from utils.plot import plot_losses, sample_digits_maf
+from utils.train import train_one_epoch_made, train_one_epoch_maf
+from utils.validation import val_made, val_maf
 
 # --------- SET PARAMETERS ----------
 model_name = "maf"  # 'MAF' or 'MADE'

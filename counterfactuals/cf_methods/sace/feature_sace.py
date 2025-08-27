@@ -1,7 +1,7 @@
-import numpy as np
-
 from collections import defaultdict
 from itertools import combinations
+
+import numpy as np
 
 from counterfactuals.sace.sace import SACE
 

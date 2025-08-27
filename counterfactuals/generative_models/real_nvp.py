@@ -1,10 +1,10 @@
 import torch
-import torch.optim as optim
 import torch.nn.functional as F
-from counterfactuals.generative_models import BaseGenModel
+import torch.optim as optim
 from nflows.flows import SimpleRealNVP as _SimpleRealNVP
-
 from tqdm import tqdm
+
+from counterfactuals.generative_models import BaseGenModel
 
 
 class RealNVP(BaseGenModel):
