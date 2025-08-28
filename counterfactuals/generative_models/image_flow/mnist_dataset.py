@@ -1,7 +1,8 @@
-import numpy as np
 import gzip
 import pickle
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 """ 
 This is a version of: https://github.com/gpapamak/maf/blob/master/datasets/mnist.py, 

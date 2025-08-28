@@ -1,13 +1,14 @@
-import numpy as np
-import time
 import logging
-from counterfactuals.cf_methods.cet.utils import flatten, Cost
+import time
+
+import numpy as np
+
 from counterfactuals.cf_methods.cet.ce import ActionExtractor
 from counterfactuals.cf_methods.cet.rule_miner import (
     FeatureDiscretizer,
     FrequentRuleMiner,
 )
-from counterfactuals.cf_methods.cet.utils import LimeEstimator
+from counterfactuals.cf_methods.cet.utils import Cost, LimeEstimator, flatten
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

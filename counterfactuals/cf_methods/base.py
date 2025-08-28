@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-import torch
 import numpy as np
+import torch
 from torch.utils.data import DataLoader
 
-from counterfactuals.generative_models.base import BaseGenModel
 from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.generative_models.base import BaseGenModel
 
 
 @dataclass
@@ -29,7 +29,6 @@ class BaseCounterfactual(ABC):
         disc_model: BaseDiscModel,
         disc_model_criterion: torch.nn.modules.loss._Loss = None,
         device: str = None,
-        neptune_run=None,
     ):
         """Initialize the class with arg1 and arg2."""
         pass

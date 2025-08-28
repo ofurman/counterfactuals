@@ -1,11 +1,10 @@
-from typing import Tuple
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split, StratifiedKFold
-
 import torch
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 
 

@@ -168,7 +168,6 @@ outputs/
 env.sh
 .DS_Store
 .vscode/
-.neptune/
 .ruff_cache/
 
 #notebooks

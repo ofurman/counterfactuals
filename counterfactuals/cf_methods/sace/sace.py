@@ -1,8 +1,7 @@
-import numpy as np
-
 from abc import ABC, abstractmethod
-from scipy.spatial.distance import cdist, pdist, squareform
 
+import numpy as np
+from scipy.spatial.distance import cdist, pdist, squareform
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 

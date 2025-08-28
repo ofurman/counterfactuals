@@ -1,8 +1,9 @@
+import numpy as np
 import torch
 from torch import nn
-from .odst_block import DenseBlock
 from tqdm import tqdm
-import numpy as np
+
+from .odst_block import DenseBlock
 
 
 class Lambda(nn.Module):

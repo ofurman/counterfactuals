@@ -1,15 +1,17 @@
-import numpy as np
 import time
+
+import numpy as np
 import pulp
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
+
 from counterfactuals.cf_methods.cet.utils import (
-    flatten,
-    LimeEstimator,
     Action,
     ActionCandidates,
     ForestActionCandidates,
+    LimeEstimator,
+    flatten,
 )
 
 
@@ -718,10 +720,10 @@ def _check_ce(N=1, dataset="h", model="L", hinge_relax=False):
 
 
 def _check_sens(N=1, dataset="h"):
-    from sklearn.linear_model import LogisticRegression
-    from utils import DatasetHelper
     import pandas as pd
     from matplotlib import pyplot as plt
+    from sklearn.linear_model import LogisticRegression
+    from utils import DatasetHelper
 
     np.random.seed(0)
 

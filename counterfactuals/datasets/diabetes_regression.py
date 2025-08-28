@@ -1,10 +1,9 @@
-import torch
 import numpy as np
 import pandas as pd
-
-from torch.utils.data import DataLoader, TensorDataset
-from sklearn.preprocessing import MinMaxScaler
+import torch
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from torch.utils.data import DataLoader, TensorDataset
 
 from counterfactuals.datasets.base import AbstractDataset
 

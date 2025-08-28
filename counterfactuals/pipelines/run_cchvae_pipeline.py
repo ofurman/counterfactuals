@@ -1,21 +1,15 @@
 import logging
 import os
+from time import time
+from typing import Any, Dict, List, Optional, Tuple
+
 import hydra
 import numpy as np
 import pandas as pd
-from time import time
-from typing import List
 import torch
-import neptune
-from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.metrics.metrics import evaluate_cf
-
-from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.cf_methods.c_chvae import CCHVAE
 from counterfactuals.cf_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
@@ -24,7 +18,10 @@ from counterfactuals.datasets.utils import (
     dequantize,
     inverse_dequantize,
 )
-
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -59,11 +56,30 @@ def search_counterfactuals(
     dataset: DictConfig,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    run: neptune.Run,
     save_folder: str,
-) -> torch.nn.Module:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float]:
     """
-    Create a counterfactual model
+    Generate counterfactuals using the CCHVAE method.
+
+    Prepares the wrapped dataset/model, computes a log-probability threshold using the
+    generative model for plausibility, and generates counterfactuals for the filtered
+    test set (excluding the target class).
+
+    Args:
+        cfg: Hydra configuration containing experiment parameters
+        dataset: Dataset object containing train/test data and feature metadata
+        gen_model: Trained generative model for plausibility threshold
+        disc_model: Trained discriminative model wrapped by CCHVAE
+        save_folder: Directory where generated counterfactuals CSV will be saved
+
+    Returns:
+        Tuple containing:
+            - Xs_cfs: Generated counterfactuals (np.ndarray)
+            - Xs: Original instances used for CF generation (np.ndarray)
+            - log_prob_threshold: Computed log-probability threshold (float)
+            - ys_orig: Original labels (np.ndarray)
+            - ys_target: Target labels (np.ndarray)
+            - cf_search_time: Average counterfactual search time (float)
     """
 
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
@@ -91,7 +107,6 @@ def search_counterfactuals(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
-    run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
@@ -100,7 +115,7 @@ def search_counterfactuals(
     cfs = exp.get_counterfactuals_without_check(factuals)
 
     cf_search_time = np.mean(time() - time_start)
-    run["metrics/cf_search_time"] = cf_search_time
+    logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
@@ -109,7 +124,7 @@ def search_counterfactuals(
     ys_target = np.abs(1 - y_test_origin)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
+    logger.info("Counterfactuals saved to %s", counterfactuals_path)
     return (
         Xs_cfs,
         X_test_origin,
@@ -141,18 +156,34 @@ def calculate_metrics(
     disc_model: torch.nn.Module,
     Xs_cfs: np.ndarray,
     model_returned: np.ndarray,
-    categorical_features: list,
-    continuous_features: list,
+    categorical_features: List[int],
+    continuous_features: List[int],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    run: neptune.Run,
-    y_target: np.ndarray = None,
-):
+    y_target: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
     """
-    Calculate metrics for counterfactuals
+    Calculate evaluation metrics for generated counterfactual explanations.
+
+    Args:
+        gen_model: Generative model for plausibility computations
+        disc_model: Discriminative model for validity computations
+        Xs_cfs: Generated counterfactual examples
+        model_returned: Boolean mask for successful CF generations
+        categorical_features: Indices of categorical features
+        continuous_features: Indices of continuous features
+        X_train: Training features
+        y_train: Training labels
+        X_test: Original instances used for CFs
+        y_test: Original labels
+        median_log_prob: Plausibility threshold (median log-probability)
+        y_target: Optional target labels for CFs
+
+    Returns:
+        Dictionary containing computed evaluation metrics.
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
@@ -169,32 +200,19 @@ def calculate_metrics(
         median_log_prob=median_log_prob,
         y_target=y_target,
     )
-    run["metrics/cf"] = stringify_unsupported(metrics)
-    logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
+    logger.info(f"Metrics:\n{metrics}")
     return metrics
 
 
 @hydra.main(config_path="./conf", config_name="cchvae_config", version_base="1.2")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
-
-    log_parameters(cfg, run)
-    disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
-
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder, run)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
@@ -202,13 +220,11 @@ def main(cfg: DictConfig):
 
         dequantizer, _ = dequantize(dataset)
         dataset = instantiate(cfg.dataset)
-        gen_model = create_gen_model(cfg, dataset, gen_model_path, run)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         # Custom code
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-            search_counterfactuals(
-                cfg, dataset, gen_model, disc_model, run, save_folder
-            )
+            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
         Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
@@ -228,17 +244,13 @@ def main(cfg: DictConfig):
             y_test=ys_orig,
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
-            run=run,
         )
-        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )
-
-    run.stop()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
-import torch
 import numpy as np
+import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -16,7 +16,6 @@ class WACH_OURS(BaseCounterfactual):
         disc_model: BaseDiscModel,
         disc_model_criterion,
         device=None,
-        neptune_run=None,
     ):
         self.disc_model_criterion = disc_model_criterion
         self.gen_model = gen_model
@@ -24,7 +23,6 @@ class WACH_OURS(BaseCounterfactual):
         self.device = device if device is not None else "cpu"
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
-        self.neptune_run = neptune_run
 
     def _search_step(
         self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
@@ -128,10 +126,6 @@ class WACH_OURS(BaseCounterfactual):
                     loss_components_logging.setdefault(
                         f"cf_search/{loss_name}", []
                     ).append(loss.mean().detach().cpu().item())
-                    if self.neptune_run:
-                        self.neptune_run[f"cf_search/{loss_name}"].append(
-                            loss.mean().detach().cpu().numpy()
-                        )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 epoch_pbar.set_description(f"Discriminator loss: {disc_loss:.4f}")

@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import random
 import time
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KernelDensity
-from sklearn.mixture import GaussianMixture
-from sklearn.model_selection import GridSearchCV, KFold
-from sklearn.decomposition import PCA
-from sklearn.datasets import load_iris, load_digits, load_boston
-from sklearn.metrics import accuracy_score
-from sklearn.utils import shuffle
 
+import numpy as np
 from plausible_counterfactuals import (
     HighDensityEllipsoids,
-    PlausibleCounterfactualOfHyperplaneClassifier,
     PlausibleCounterfactualOfDecisionTree,
+    PlausibleCounterfactualOfHyperplaneClassifier,
 )
+from sklearn.datasets import load_boston, load_digits, load_iris
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.mixture import GaussianMixture
+from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.neighbors import KernelDensity
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils import shuffle
 
 
 def load_house_prices(file_path="housepricesdataset.npz"):

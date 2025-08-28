@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from tqdm import tqdm
+
 from counterfactuals.discriminative_models.base import BaseDiscModel
 
 

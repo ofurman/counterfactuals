@@ -1,6 +1,7 @@
+from abc import ABC, abstractmethod
+
 import torch
 from torch.utils.data import DataLoader
-from abc import ABC, abstractmethod
 
 
 class BaseDiscModel(torch.nn.Module, ABC):

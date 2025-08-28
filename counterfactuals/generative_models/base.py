@@ -1,8 +1,7 @@
+from abc import ABC, abstractmethod
+
 import torch
 import torch.nn as nn
-import neptune
-
-from abc import ABC, abstractmethod
 
 
 class BaseGenModel(nn.Module, ABC):
@@ -19,7 +18,6 @@ class BaseGenModel(nn.Module, ABC):
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
-        neptune_run: neptune.Run = None,
     ):
         pass
 

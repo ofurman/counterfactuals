@@ -1,8 +1,8 @@
 import numpy as np
-from tqdm import tqdm
 import tensorflow as tf
-from torch.utils.data import DataLoader
 from alibi.explainers import CEM
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
 from counterfactuals.discriminative_models.base import BaseDiscModel

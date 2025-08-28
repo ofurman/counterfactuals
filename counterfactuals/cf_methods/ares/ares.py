@@ -1,12 +1,13 @@
-from mlxtend.frequent_patterns import apriori
-from tqdm import tqdm
-import numpy as np
-from sklearn import preprocessing
-import pandas as pd
 import copy
-import matplotlib.pyplot as plt
 import itertools
 import warnings
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from mlxtend.frequent_patterns import apriori
+from sklearn import preprocessing
+from tqdm import tqdm
 
 
 def create_feature_values_tree(features_tree, use_values=False):

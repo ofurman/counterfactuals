@@ -1,14 +1,12 @@
 """Implementations of autoregressive flows."""
 
 import torch.nn.functional as F
-
 from nflows.distributions.normal import StandardNormal
 from nflows.flows.base import Flow
 from nflows.transforms.autoregressive import MaskedAffineAutoregressiveTransform
 from nflows.transforms.base import CompositeTransform
 from nflows.transforms.normalization import BatchNorm
 from nflows.transforms.permutations import RandomPermutation, ReversePermutation
-
 
 # class Dequantization(Transform):
 #     def __init__(self, alpha=1e-5, quants=256):

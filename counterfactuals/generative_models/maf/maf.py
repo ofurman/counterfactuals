@@ -1,11 +1,10 @@
-import neptune
 import torch
-import torch.optim as optim
 import torch.nn.functional as F
-from counterfactuals.generative_models import BaseGenModel
+import torch.optim as optim
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
-
 from tqdm import tqdm
+
+from counterfactuals.generative_models import BaseGenModel
 
 
 class MaskedAutoregressiveFlow(BaseGenModel):
@@ -23,12 +22,10 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         dropout_probability=0.0,
         batch_norm_within_layers=False,
         batch_norm_between_layers=False,
-        neptune_run=None,
         device="cpu",
     ):
         super(MaskedAutoregressiveFlow, self).__init__()
         self.device = device
-        self.neptune_run = neptune_run
         self.context_features = context_features
         self.model = _MaskedAutoregressiveFlow(
             features=features,
@@ -59,7 +56,6 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
-        neptune_run: neptune.Run = None,
         dequantizer=None,
     ):
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
@@ -99,9 +95,6 @@ class MaskedAutoregressiveFlow(BaseGenModel):
             pbar.set_description(
                 f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
-            if neptune_run:
-                neptune_run["gen_train_nll"].append(train_loss)
-                neptune_run["gen_test_nll"].append(test_loss)
             if test_loss < (min_test_loss + eps):
                 min_test_loss = test_loss
                 patience_counter = 0

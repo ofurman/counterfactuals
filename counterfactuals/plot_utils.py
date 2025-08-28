@@ -5,7 +5,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
 from PIL import Image
 from sklearn.inspection import DecisionBoundaryDisplay
 
@@ -115,12 +114,12 @@ def plot_metrics_textbox(ax, metrics_series):
 
 
 def plot(flow, disc_model, X_test, y_test, X_cf, metrics, prob_threshold):
-    assert (
-        X_test.shape == X_cf.shape
-    ), f"Sizes of test set and counterfactuals are not equal. Actual sizes: X_test: {X_test.shape}, X_cf: {X_cf.shape}"
-    assert (
-        y_test.shape[0] == X_cf.shape[0]
-    ), f"Sizes of targets and counterfactuals are not equal. Actual sizes: X_cf: {X_cf.shape}, y_test: {y_test.shape}"
+    assert X_test.shape == X_cf.shape, (
+        f"Sizes of test set and counterfactuals are not equal. Actual sizes: X_test: {X_test.shape}, X_cf: {X_cf.shape}"
+    )
+    assert y_test.shape[0] == X_cf.shape[0], (
+        f"Sizes of targets and counterfactuals are not equal. Actual sizes: X_cf: {X_cf.shape}, y_test: {y_test.shape}"
+    )
 
     fig, ax = plt.subplots(1, 1)
     fig.set_size_inches(20, 12)

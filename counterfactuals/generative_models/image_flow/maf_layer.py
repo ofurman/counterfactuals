@@ -1,8 +1,9 @@
 from typing import List, Tuple
+
 import torch
 import torch.nn as nn
-from torch import Tensor
 from made import MADE
+from torch import Tensor
 
 
 class MAFLayer(nn.Module):

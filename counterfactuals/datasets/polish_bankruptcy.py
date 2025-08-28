@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.impute import SimpleImputer
 
 from counterfactuals.datasets.base import AbstractDataset
 

@@ -1,16 +1,16 @@
 import numpy as np
-from tqdm import tqdm
-from torch.utils.data import DataLoader
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
-from counterfactuals.discriminative_models.base import BaseDiscModel
 from counterfactuals.cf_methods.artelt.artelth20.plausible_counterfactuals import (
     HighDensityEllipsoids,
     PlausibleCounterfactualOfHyperplaneClassifier,
 )
+from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
+from counterfactuals.discriminative_models.base import BaseDiscModel
 
 
 class Artelt(BaseCounterfactual):

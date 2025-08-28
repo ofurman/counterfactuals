@@ -1,14 +1,13 @@
-import torch
 import numpy as np
-import torch.optim as optim
+import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual
 from counterfactuals.discriminative_models.base import BaseDiscModel
 from counterfactuals.generative_models.base import BaseGenModel
-
 
 # Experimenting with custom autograd function
 # TODO: Move to separate file
@@ -75,7 +74,6 @@ class PPCEF(BaseCounterfactual):
         disc_model: BaseDiscModel,
         disc_model_criterion,
         device=None,
-        neptune_run=None,
     ):
         self.disc_model_criterion = disc_model_criterion
         self.gen_model = gen_model
@@ -83,7 +81,6 @@ class PPCEF(BaseCounterfactual):
         self.device = device if device is not None else "cpu"
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
-        self.neptune_run = neptune_run
         self.beta = 0
 
     def _search_step(
@@ -228,10 +225,6 @@ class PPCEF(BaseCounterfactual):
                     loss_components_logging.setdefault(
                         f"cf_search/{loss_name}", []
                     ).append(loss.mean().detach().cpu().item())
-                    if self.neptune_run:
-                        self.neptune_run[f"cf_search/{loss_name}"].append(
-                            loss.mean().detach().cpu().numpy()
-                        )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 prob_loss = loss_components["max_inner"].detach().cpu().mean().item()

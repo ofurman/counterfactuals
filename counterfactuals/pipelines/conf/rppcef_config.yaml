@@ -7,12 +7,6 @@ hydra:
   sweeper:
     max_batch_size: 1
 
-neptune:
-  enable: false
-  project: "ofurman/counterfactuals"
-  api_token: ${oc.env:NEPTUNE_API_TOKEN}
-  tags: ["19.05", "GCE", "no_plausability", "Q1_log_prob_threshold", "all_methods", "lambda_ablation"]
-
 experiment:
   output_folder: models/
   relabel_with_disc_model: true

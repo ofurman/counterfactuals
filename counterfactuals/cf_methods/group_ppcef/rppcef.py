@@ -1,14 +1,12 @@
 import numpy as np
-
 import torch
 from torch.utils.data import DataLoader
-
 from tqdm.auto import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual
-from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.cf_methods.group_ppcef.deltas import ARES, GCE, GLOBAL_CE, PPCEF_2
 from counterfactuals.discriminative_models.base import BaseDiscModel
-from counterfactuals.cf_methods.group_ppcef.deltas import PPCEF_2, ARES, GLOBAL_CE, GCE
+from counterfactuals.generative_models.base import BaseGenModel
 
 
 class RPPCEF(BaseCounterfactual):
@@ -24,7 +22,6 @@ class RPPCEF(BaseCounterfactual):
         device: str = None,
         # TODO: poprawa nazewnictwa
         actionable_features: list = None,
-        neptune_run=None,
     ):
         self.actionable_features = actionable_features
         self.delta = self._init_cf_method(
@@ -34,7 +31,6 @@ class RPPCEF(BaseCounterfactual):
         self.gen_model = gen_model
         self.disc_model = disc_model
         self.device = device if device else "cpu"
-        self.neptune_run = neptune_run
         self.loss_components_logs = {}
 
     def _init_cf_method(
@@ -145,10 +141,6 @@ class RPPCEF(BaseCounterfactual):
             self.loss_components_logs.setdefault(f"cf_search/{loss_name}", []).append(
                 loss.mean().detach().cpu().item()
             )
-            if self.neptune_run:
-                self.neptune_run[f"cf_search/{loss_name}"].append(
-                    loss.mean().detach().cpu().numpy()
-                )
 
     def explain_dataloader(
         self,

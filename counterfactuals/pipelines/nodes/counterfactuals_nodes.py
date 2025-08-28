@@ -1,13 +1,13 @@
 import logging
 import os
+from time import time
+
 import numpy as np
 import pandas as pd
-from time import time
 import torch
-import neptune
+import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-import torch.utils
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -18,7 +18,6 @@ def create_counterfactual_method(
     cfg: DictConfig,
     disc_model: torch.nn.Module,
     gen_model: torch.nn.Module,
-    run: neptune.Run,
     device: str = None,
 ) -> torch.nn.Module:
     """
@@ -29,12 +28,11 @@ def create_counterfactual_method(
         gen_model=gen_model,
         disc_model=disc_model,
         device=device,
-        neptune_run=run,
     )
     return cf_method
 
 
-def calculate_log_prob_threshold(gen_model, dataset, cfg, run):
+def calculate_log_prob_threshold(gen_model, dataset, cfg):
     """
     Calculate log_prob_threshold
     """
@@ -46,7 +44,6 @@ def calculate_log_prob_threshold(gen_model, dataset, cfg, run):
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
-    run["parameters/log_prob_threshold"] = log_prob_threshold
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
     return log_prob_threshold
 
@@ -57,7 +54,6 @@ def search_counterfactuals(
     X_test_origin: np.ndarray,
     y_test_origin: np.ndarray,
     log_prob_threshold: float,
-    run: neptune.Run,
 ) -> torch.nn.Module:
     logger.info("Handling counterfactual generation")
     cf_dataloader = torch.utils.data.DataLoader(
@@ -81,7 +77,7 @@ def search_counterfactuals(
         log_prob_threshold=log_prob_threshold,
     )
     cf_search_time = np.mean(time() - time_start)
-    run["metrics/cf_search_time"] = cf_search_time
+    logger.info("cf_search_time: %.6f", cf_search_time)
     return Xs_cfs, Xs, ys_orig, ys_target
 
 
@@ -90,7 +86,6 @@ def create_counterfactuals(
     dataset: AbstractDataset,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    run: neptune.Run,
     save_folder: str,
 ) -> torch.nn.Module:
     """
@@ -112,10 +107,9 @@ def create_counterfactuals(
         cfg=cfg,
         disc_model=disc_model,
         gen_model=gen_model,
-        run=run,
         device=cfg.device or "cpu",
     )
-    log_prob_threshold = calculate_log_prob_threshold(gen_model, dataset, cfg, run)
+    log_prob_threshold = calculate_log_prob_threshold(gen_model, dataset, cfg)
 
     Xs_cfs, Xs, ys_orig, ys_target = search_counterfactuals(
         cfg=cfg,
@@ -123,7 +117,6 @@ def create_counterfactuals(
         X_test_origin=X_test_origin,
         y_test_origin=y_test_origin,
         log_prob_threshold=log_prob_threshold,
-        run=run,
     )
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
@@ -132,5 +125,4 @@ def create_counterfactuals(
 
     # Xs_cfs = Xs + deltas[0]().detach().numpy()
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
     return Xs_cfs, log_prob_threshold, X_test_target

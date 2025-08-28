@@ -1,11 +1,9 @@
-import numpy as np
-
 from functools import partial
 
-from sklearn.tree._tree import TREE_LEAF
-from sklearn.tree import DecisionTreeClassifier
-
+import numpy as np
 from scipy.spatial.distance import hamming
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree._tree import TREE_LEAF
 
 from counterfactuals.sace.sace import SACE
 

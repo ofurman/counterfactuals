@@ -1,11 +1,12 @@
 from typing import List, Optional
+
 import numpy as np
-from numpy.random import permutation, randint
 import torch
 import torch.nn as nn
+from numpy.random import permutation, randint
 from torch import Tensor
-from torch.nn import functional as F
 from torch.nn import ReLU
+from torch.nn import functional as F
 
 # This implementation of MADE is copied from: https://github.com/e-hulten/made.
 
