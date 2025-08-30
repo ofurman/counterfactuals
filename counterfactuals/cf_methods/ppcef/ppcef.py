@@ -76,6 +76,7 @@ class PPCEF(BaseCounterfactual):
         disc_model_criterion,
         device=None,
         neptune_run=None,
+        zero_grad_dims=None,
     ):
         self.disc_model_criterion = disc_model_criterion
         self.gen_model = gen_model
@@ -85,6 +86,15 @@ class PPCEF(BaseCounterfactual):
         self.disc_model.to(self.device)
         self.neptune_run = neptune_run
         self.beta = 0
+        self.zero_grad_dims = zero_grad_dims
+
+    def _zero_grad_hook(self, grad):
+        """
+        Hook to zero gradients for specified dimensions of delta.
+        """
+        if self.zero_grad_dims is not None:
+            grad[:, self.zero_grad_dims] = 0
+        return grad
 
     def _search_step(
         self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
@@ -112,10 +122,10 @@ class PPCEF(BaseCounterfactual):
         if categorical_intervals:
             tau = 1.0 - 0.99 / self.epochs * epoch
             for interval in categorical_intervals:
-                # cf[:, interval] = torch.nn.functional.gumbel_softmax(
-                #     cf[:, interval], tau=tau, dim=1
-                # )
-                cf[:, interval] = torch.nn.functional.softmax(cf[:, interval], dim=1)
+                cf[:, interval] = torch.nn.functional.gumbel_softmax(
+                    cf[:, interval], tau=tau, dim=1
+                )
+                # cf[:, interval] = torch.nn.functional.softmax(cf[:, interval], dim=1)
 
         disc_logits = self.disc_model.forward(cf)
         disc_logits = (
@@ -206,6 +216,8 @@ class PPCEF(BaseCounterfactual):
             xs_origin = torch.as_tensor(xs_origin)
             xs_origin.requires_grad = False
             delta = torch.zeros_like(xs_origin, requires_grad=True)
+            if self.zero_grad_dims is not None:
+                delta.register_hook(self._zero_grad_hook)
 
             optimizer = optim.Adam([delta], lr=lr)
             loss_components_logging = {}

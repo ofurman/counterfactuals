@@ -55,11 +55,25 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
 
+    # Calculate non-actionable features (zero_grad_dims)
+    zero_grad_dims = None
+    if (
+        hasattr(dataset, "actionable_features")
+        and dataset.actionable_features is not None
+    ):
+        total_features = dataset.X_train.shape[1]
+        all_features = set(range(total_features))
+        actionable_features = set(dataset.actionable_features)
+        zero_grad_dims = list(all_features - actionable_features)
+        logger.info(f"Actionable features: {dataset.actionable_features}")
+        logger.info(f"Non-actionable features (zero_grad_dims): {zero_grad_dims}")
+
     cf_method = PPCEF(
         gen_model=gen_model,
         disc_model=disc_model,
         disc_model_criterion=disc_model_criterion,
         neptune_run=run,
+        zero_grad_dims=zero_grad_dims,
     )
 
     logger.info("Calculating log_prob_threshold")

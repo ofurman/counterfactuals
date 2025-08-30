@@ -32,7 +32,11 @@ logging.basicConfig(
 )
 
 
-def get_hyperparams(input_size):
+def get_hyperparams(input_size, mutable_size=None):
+    # Use mutable_size if provided, otherwise fall back to input_size
+    # The VAE encoder only processes mutable features, so the first layer should match mutable features count
+    vae_input_size = mutable_size if mutable_size is not None else input_size
+
     hyperparams = {
         "data_name": "law",
         "n_search_samples": 300,
@@ -42,7 +46,7 @@ def get_hyperparams(input_size):
         "clamp": True,
         "binary_cat_features": True,
         "vae_params": {
-            "layers": [input_size, 64, 32, 16],
+            "layers": [vae_input_size, 64, 32, 16],
             "train": True,
             "kl_weight": 0.3,
             "lambda_reg": 1e-6,
@@ -80,7 +84,10 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
 
     wrapped_model = CustomMLModel(disc_model, custom_dataset)
-    hyperparams = get_hyperparams(dataset.X_train.shape[1])
+    # Calculate the number of mutable (actionable) features for VAE input size
+    mutable_mask = wrapped_model.get_mutable_mask()
+    mutable_size = np.sum(mutable_mask)
+    hyperparams = get_hyperparams(dataset.X_train.shape[1], mutable_size)
     exp = CCHVAE(wrapped_model, hyperparams)
 
     logger.info("Calculating log_prob_threshold")

@@ -14,9 +14,11 @@ class LawDataset(AbstractDataset):
         self.categorical_features = []
         # include target column as last feature
         self.features = [
+            # continuous
             "lsat",
             "gpa",
             "zfygpa",
+            # categorical
             "sex",
             "race",
             "pass_bar",
@@ -98,6 +100,6 @@ class LawDataset(AbstractDataset):
         self.categorical_features = list(
             range(len(self.numerical_columns), X_train.shape[1])
         )
-        self.actionable_features = list(range(0, X_train.shape[1]))
+        self.actionable_features = list(range(3))
 
         return X_train, X_test, y_train, y_test

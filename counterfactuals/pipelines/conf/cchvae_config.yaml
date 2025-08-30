@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlr
+  - disc_model: mlp
 
 hydra:
   sweeper:

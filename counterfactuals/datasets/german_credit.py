@@ -101,6 +101,39 @@ class GermanCreditDataset(AbstractDataset):
         self.categorical_features = list(
             range(len(self.numerical_columns), X_train.shape[1])
         )
-        self.actionable_features = list(range(0, X_train.shape[1]))
+
+        # Define actionable features: duration_in_month, credit_amount, installment_as_income_perc, credits_this_bank, credit_history, job, savings, other_installment_plans
+        # Map original feature names to their indices in self.feature_columns
+        actionable_feature_names = [
+            "duration_in_month",
+            "credit_amount",
+            "installment_as_income_perc",
+            "credits_this_bank",
+            "credit_history",
+            "job",
+            "savings",
+            "other_installment_plans",
+        ]
+        actionable_original_indices = []
+
+        for feature_name in actionable_feature_names:
+            if feature_name in self.feature_columns:
+                actionable_original_indices.append(
+                    self.feature_columns.index(feature_name)
+                )
+
+        # Get feature names after transformation
+        feature_names = self.feature_transformer.get_feature_names_out()
+
+        actionable_indices = []
+
+        for i, feature_name in enumerate(feature_names):
+            # Check if this transformed feature corresponds to an actionable original feature
+            for orig_idx in actionable_original_indices:
+                if f"x{orig_idx}" in feature_name:
+                    actionable_indices.append(i)
+                    break
+
+        self.actionable_features = actionable_indices
 
         return X_train, X_test, y_train, y_test

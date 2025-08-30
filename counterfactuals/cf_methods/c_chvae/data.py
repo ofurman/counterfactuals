@@ -160,6 +160,13 @@ class CustomData(Data):
         self._df_train[self._target_column] = dataset.y_train
         self._df_test[self._target_column] = dataset.y_test
 
+        # Store actionable features if available
+        if hasattr(dataset, "actionable_features"):
+            self._actionable_features = dataset.actionable_features
+        else:
+            # Default to all features being actionable
+            self._actionable_features = list(range(dataset.X_train.shape[1]))
+
         class Encoder:
             def get_feature_names(self, categorical):
                 return [str(i) for i in dataset.categorical_features]
@@ -182,9 +189,18 @@ class CustomData(Data):
 
     @property
     def immutables(self):
-        """Column names of immutable features (example: demographic features)"""
-        # This is application-specific - for demonstration we'll consider no features immutable
-        return []
+        """Column names of immutable features (non-actionable features)"""
+        # Calculate immutable features as those that are not actionable
+        all_features = list(range(self._dataset.X_train.shape[1]))
+        immutable_indices = [
+            i for i in all_features if i not in self._actionable_features
+        ]
+        return [str(i) for i in immutable_indices]
+
+    @property
+    def actionable_features(self):
+        """Column names of actionable features"""
+        return [str(i) for i in self._actionable_features]
 
     @property
     def target(self):

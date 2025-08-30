@@ -245,3 +245,38 @@ class CustomMLModel(MLModel):
                 x = torch.tensor(x, dtype=torch.float32)
 
             return self._model.predict_proba(x)
+
+    def get_mutable_mask(self):
+        """
+        Get mask of mutable features based on actionable features.
+
+        For example with actionable features [0, 2] in a 4-feature dataset,
+        the mask would be [True, False, True, False] for feature_input_order ["0", "1", "2", "3"].
+
+        This mask can then be used to index data to only get the columns that are mutable (actionable).
+
+        Returns
+        -------
+        mutable_mask: np.array(bool)
+        """
+        # Check if data has actionable_features attribute
+        if hasattr(self.data, "actionable_features"):
+            # Get actionable features as strings (to match feature_input_order format)
+            actionable_features = self.data.actionable_features
+        else:
+            # Fall back to default behavior (use immutable features)
+            return super().get_mutable_mask()
+
+        # Create mask with all features initially set to False (immutable)
+        mutable_mask = np.zeros(len(self.feature_input_order), dtype=bool)
+
+        # Set actionable features to True (mutable)
+        for feature in actionable_features:
+            try:
+                feature_idx = self.feature_input_order.index(feature)
+                mutable_mask[feature_idx] = True
+            except ValueError:
+                # Feature not found in feature_input_order, skip it
+                continue
+
+        return mutable_mask
