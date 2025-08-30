@@ -4,7 +4,7 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from counterfactuals.datasets.base import AbstractDataset
 
-SAMPLES_KEEP = 1000
+SAMPLES_KEEP = 100000
 
 
 class GiveMeSomeCreditDataset(AbstractDataset):
