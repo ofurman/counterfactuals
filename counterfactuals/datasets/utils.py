@@ -14,36 +14,209 @@ class DequantizingFlow(nn.Module):
         super().__init__()
         self.gen_model = gen_model
         self.dequantizer = dequantizer
-        self.dequantize = dequantize
         self.dataset = dataset
 
     def forward(self, X, y):
         if isinstance(X, torch.Tensor):
             X = X.numpy()
-        _, X = self.dequantize(self.dataset, X, self.dequantizer)
+        
+        # Use the new Dequantizer class if available, fallback to legacy function
+        if isinstance(self.dequantizer, Dequantizer):
+            X = self.dequantizer.dequantize(self.dataset, X)
+        else:
+            # Legacy support
+            _, X = dequantize(self.dataset, X, self.dequantizer)
+            
         X = torch.from_numpy(X)
         log_probs = self.gen_model(X, y)
         return log_probs
 
 
+class Dequantizer:
+    """
+    A class for dequantizing categorical features in datasets.
+    
+    This class handles the transformation of categorical features using
+    CustomCategoricalTransformer instances, providing clean fit/transform
+    interface similar to scikit-learn transformers.
+    """
+    
+    def __init__(self):
+        self.transformer = None
+        self.is_fitted = False
+        
+    def fit(self, dataset):
+        """
+        Fit the dequantizer on the dataset's training data.
+        
+        Parameters:
+        -----------
+        dataset : Dataset object
+            Dataset containing categorical_features_lists and X_train
+            
+        Returns:
+        --------
+        self : Dequantizer
+            Returns self for method chaining
+        """
+        transformers = [
+            (f"cat_group_{i}", CustomCategoricalTransformer(), group)
+            for i, group in enumerate(dataset.categorical_features_lists)
+        ]
+
+        self.transformer = ColumnTransformer(
+            transformers=transformers,
+            remainder="drop",  # Drop continuous features
+        )
+        self.transformer.dropped_numerical = dataset.numerical_columns
+        
+        # Fit only on categorical features
+        self.transformer.fit(dataset.X_train)
+        self.is_fitted = True
+        
+        return self
+    
+    def dequantize(self, dataset, data=None):
+        """
+        Apply dequantization to categorical features.
+        
+        Parameters:
+        -----------
+        dataset : Dataset object
+            Dataset containing categorical_features_lists
+        data : np.ndarray, optional
+            Optional external data to transform. If None, transforms dataset.X_train/X_test
+            
+        Returns:
+        --------
+        np.ndarray or None
+            If data provided: returns transformed data
+            If data is None: modifies dataset in-place and returns None
+        """
+        if not self.is_fitted:
+            raise ValueError("Dequantizer must be fitted before use. Call fit() first.")
+            
+        if data is not None:
+            return self._transform_data(dataset, data)
+        else:
+            # Transform dataset in-place
+            self._transform_dataset_inplace(dataset)
+            return None
+    
+    def quantize(self, dataset, data=None):
+        """
+        Apply inverse dequantization (quantization) to categorical features.
+        
+        Parameters:
+        -----------
+        dataset : Dataset object
+            Dataset containing categorical_features_lists
+        data : np.ndarray, optional
+            Optional external data to transform. If None, transforms dataset.X_train/X_test
+            
+        Returns:
+        --------
+        np.ndarray or None
+            If data provided: returns transformed data
+            If data is None: modifies dataset in-place and returns None
+        """
+        if not self.is_fitted:
+            raise ValueError("Dequantizer must be fitted before use. Call fit() first.")
+            
+        if data is not None:
+            return self._inverse_transform_data(dataset, data)
+        else:
+            # Transform dataset in-place
+            self._inverse_transform_dataset_inplace(dataset)
+            return None
+    
+    def _transform_data(self, dataset, data):
+        """Transform external data."""
+        data_copy = data.copy()
+        
+        for i, group in enumerate(dataset.categorical_features_lists):
+            transformer_name = f"cat_group_{i}"
+            group_data = data_copy[:, group]
+            
+            transformed_data = self.transformer.named_transformers_[
+                transformer_name
+            ].transform(group_data)
+            
+            for j, feature_idx in enumerate(group):
+                data_copy[:, feature_idx] = transformed_data[:, j]
+                
+        return data_copy
+    
+    def _inverse_transform_data(self, dataset, data):
+        """Inverse transform external data."""
+        data_copy = data.copy()
+        
+        for i, group in enumerate(dataset.categorical_features_lists):
+            transformer_name = f"cat_group_{i}"
+            group_data = data_copy[:, group]
+            
+            transformed_data = self.transformer.named_transformers_[
+                transformer_name
+            ].inverse_transform(group_data)
+            
+            for j, feature_idx in enumerate(group):
+                data_copy[:, feature_idx] = transformed_data[:, j]
+                
+        return data_copy
+    
+    def _transform_dataset_inplace(self, dataset):
+        """Transform dataset in-place."""
+        X_train_original = dataset.X_train.copy()
+        X_test_original = dataset.X_test.copy()
+        
+        # Transform categorical features
+        cat_transformed_train = self.transformer.transform(dataset.X_train)
+        cat_transformed_test = self.transformer.transform(dataset.X_test)
+        
+        # Restore original data
+        dataset.X_train = X_train_original.copy()
+        dataset.X_test = X_test_original.copy()
+        
+        # Apply transformations to categorical features only
+        cat_idx = 0
+        for group in dataset.categorical_features_lists:
+            for i, feature_idx in enumerate(group):
+                dataset.X_train[:, feature_idx] = cat_transformed_train[:, cat_idx]
+                dataset.X_test[:, feature_idx] = cat_transformed_test[:, cat_idx]
+                cat_idx += 1
+    
+    def _inverse_transform_dataset_inplace(self, dataset):
+        """Inverse transform dataset in-place."""
+        X_train_copy = dataset.X_train.copy()
+        X_test_copy = dataset.X_test.copy()
+        
+        for i, group in enumerate(dataset.categorical_features_lists):
+            transformer_name = f"cat_group_{i}"
+            
+            # Transform training data
+            group_train = X_train_copy[:, group]
+            transformed_train = self.transformer.named_transformers_[
+                transformer_name
+            ].inverse_transform(group_train)
+            for j, feature_idx in enumerate(group):
+                X_train_copy[:, feature_idx] = transformed_train[:, j]
+            
+            # Transform test data
+            group_test = X_test_copy[:, group]
+            transformed_test = self.transformer.named_transformers_[
+                transformer_name
+            ].inverse_transform(group_test)
+            for j, feature_idx in enumerate(group):
+                X_test_copy[:, feature_idx] = transformed_test[:, j]
+        
+        dataset.X_train = X_train_copy
+        dataset.X_test = X_test_copy
+
+
 def dequantize(dataset, data=None, transformer=None):
     """
-    Apply dequantization, only affecting categorical features
-
-    Parameters:
-    -----------
-    dataset : Dataset object
-        Dataset containing categorical_features_lists
-    data : np.ndarray, optional
-        Optional external data to transform instead of dataset.X_train/X_test
-    transformer : ColumnTransformer, optional
-        Pre-fitted transformer to use for transformation. If None, create and fit a new one.
-
-    Returns:
-    --------
-    tuple or np.ndarray
-        If data is None: returns (transformer, None)
-        If data is provided: returns (transformer, transformed_data)
+    Legacy function for backward compatibility.
+    Consider using the Dequantizer class for new code.
     """
     # If no transformer is provided, create a new one
     if transformer is None:
@@ -220,3 +393,23 @@ class CustomCategoricalTransformer(BaseEstimator, TransformerMixin):
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
+
+
+# Example usage of the new Dequantizer class:
+"""
+# Create and fit the dequantizer
+dequantizer = Dequantizer()
+dequantizer.fit(dataset)
+
+# Dequantize the entire dataset (modifies in-place)
+dequantizer.dequantize(dataset)
+
+# Dequantize external data
+transformed_data = dequantizer.dequantize(dataset, external_data)
+
+# Quantize (inverse transform) external data
+original_data = dequantizer.quantize(dataset, transformed_data)
+
+# Quantize the entire dataset (modifies in-place)
+dequantizer.quantize(dataset)
+"""
