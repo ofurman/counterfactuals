@@ -109,10 +109,9 @@ class PPCEF(BaseCounterfactual):
         if categorical_intervals:
             tau = 1.0 - 0.99 / self.epochs * epoch
             for interval in categorical_intervals:
-                # cf[:, interval] = torch.nn.functional.gumbel_softmax(
-                #     cf[:, interval], tau=tau, dim=1
-                # )
-                cf[:, interval] = torch.nn.functional.softmax(cf[:, interval], dim=1)
+                cf[:, interval] = torch.nn.functional.gumbel_softmax(
+                    cf[:, interval], tau=tau, dim=1
+                )
 
         disc_logits = self.disc_model.forward(cf)
         disc_logits = (
