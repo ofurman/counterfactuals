@@ -69,10 +69,8 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.type(torch.float32)
                 if dequantizer:
-                    numerical_features = inputs[:, dequantizer.dropped_numerical]
                     inputs = dequantizer.transform(inputs.numpy())
                     inputs = torch.from_numpy(inputs)
-                    inputs = torch.cat([numerical_features, inputs], dim=1)
 
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)

@@ -16,10 +16,9 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.datasets.utils import (
+from counterfactuals.dequantization.gaussian import (
     DequantizingFlow,
-    dequantize,
-    inverse_dequantize,
+    GaussianDequantizer,
 )
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
@@ -245,12 +244,13 @@ def main(cfg: DictConfig):
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+        dequantizer = GaussianDequantizer()
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        dequantizer, _ = dequantize(dataset)
+        dequantizer.fit(dataset)
         dataset = instantiate(cfg.dataset)
         gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
@@ -259,23 +259,26 @@ def main(cfg: DictConfig):
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
+        Xs = dequantizer.quantize(dataset, data=Xs)
+        gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
+        dataset = instantiate(cfg.dataset)
         if dequantizer is None:
             raise ValueError(
-                "dequantizer is not initialized. Please check its assignment before inverse_dequantize."
+                "dequantizer is not initialized. Please check its assignment before quantize."
             )
 
         logger.info(
-            f"Calling inverse_dequantize with Xs of type: {type(Xs)} and shape: {getattr(Xs, 'shape', None)}"
+            f"Calling quantize with Xs of type: {type(Xs)} and shape: {getattr(Xs, 'shape', None)}"
         )
         logger.info(f"dequantizer type: {type(dequantizer)}")
 
         try:
-            Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+            Xs = dequantizer.quantize(dataset, data=Xs)
             logger.info(
                 f"inverse_dequantize successful, Xs shape: {getattr(Xs, 'shape', None)}"
             )
         except Exception as e:
-            logger.error(f"Error in inverse_dequantize: {e}")
+            logger.error(f"Error in quantize: {e}")
             logger.error(f"Xs type: {type(Xs)}, shape: {getattr(Xs, 'shape', None)}")
             logger.error(f"dequantizer: {dequantizer}")
             raise

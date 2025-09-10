@@ -13,10 +13,9 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.c_chvae import CCHVAE
 from counterfactuals.cf_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
-from counterfactuals.datasets.utils import (
+from counterfactuals.dequantization.gaussian import (
     DequantizingFlow,
-    dequantize,
-    inverse_dequantize,
+    GaussianDequantizer,
 )
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
@@ -213,13 +212,13 @@ def main(cfg: DictConfig) -> None:
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+        dequantizer = GaussianDequantizer()
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        dequantizer, _ = dequantize(dataset)
-        dataset = instantiate(cfg.dataset)
+        dequantizer.fit(dataset)
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         # Custom code
@@ -227,7 +226,7 @@ def main(cfg: DictConfig) -> None:
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
-        Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
+        Xs = dequantizer.quantize(dataset, data=Xs)
         gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
         dataset = instantiate(cfg.dataset)
 
