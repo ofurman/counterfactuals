@@ -13,10 +13,8 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.c_chvae import CCHVAE
 from counterfactuals.cf_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
-from counterfactuals.dequantization.gaussian import (
-    DequantizingFlow,
-    GaussianDequantizer,
-)
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -209,16 +207,16 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
-        dequantizer = GaussianDequantizer()
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        dequantizer.fit(dataset)
+        dequantizer.fit(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         # Custom code
@@ -226,9 +224,8 @@ def main(cfg: DictConfig) -> None:
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
-        Xs = dequantizer.quantize(dataset, data=Xs)
-        gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
-        dataset = instantiate(cfg.dataset)
+        Xs = dequantizer.inverse_transform(Xs)
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
