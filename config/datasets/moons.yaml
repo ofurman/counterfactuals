@@ -1,4 +1,4 @@
-raw_data_path: "data/moons.csv"
+raw_data_path: "../data/moons.csv"
 features: [0, 1]
 continuous_features: [0, 1]
 categorical_features: []
