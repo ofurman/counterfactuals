@@ -1,104 +1,78 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler
 
-from counterfactuals.datasets.base import AbstractDataset
+from counterfactuals.datasets.base import DatasetBase, DatasetParameters
 
 
-class HelocDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/heloc.csv", transform=True, shuffle=True):
-        """
-        Initialize the HELOC dataset.
-        """
-        self.categorical_features = []
-        self.features = [
-            "ExternalRiskEstimate",
-            "MSinceOldestTradeOpen",
-            "MSinceMostRecentTradeOpen",
-            "AverageMInFile",
-            "NumSatisfactoryTrades",
-            "NumTrades60Ever2DerogPubRec",
-            "NumTrades90Ever2DerogPubRec",
-            "PercentTradesNeverDelq",
-            "MSinceMostRecentDelq",
-            "MaxDelq2PublicRecLast12M",
-            "MaxDelqEver",
-            "NumTotalTrades",
-            "NumTradesOpeninLast12M",
-            "PercentInstallTrades",
-            "MSinceMostRecentInqexcl7days",
-            "NumInqLast6M",
-            "NumInqLast6Mexcl7days",
-            "NetFractionRevolvingBurden",
-            "NetFractionInstallBurden",
-            "NumRevolvingTradesWBalance",
-            "NumInstallTradesWBalance",
-            "NumBank2NatlTradesWHighUtilization",
-            "PercentTradesWBalance",
-            "RiskPerformance",
-        ]
-        self.raw_data = self.load(file_path=file_path, index_col=False)
-        self.raw_data = self.raw_data.sample(frac=0.005)
-        self.X, self.y = self.preprocess(raw_data=self.raw_data)
-        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y, shuffle=shuffle
-        )
-        if transform:
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                self.X_train, self.X_test, self.y_train, self.y_test
-            )
+class HelocDataset(DatasetBase):
+    """HELOC dataset loader compatible with DatasetBase."""
 
-    def preprocess(self, raw_data: pd.DataFrame):
+    def __init__(self, config: DatasetParameters, transform: bool = True, sample_frac: float = 0.005):
+        """Initialize the HELOC dataset.
+        
+        Args:
+            config: Dataset configuration object.
+            transform: Whether to apply MinMax scaling transformation.
+            sample_frac: Fraction of data to sample (to reduce dataset size).
         """
-        Preprocess the loaded data to X and y numpy arrays.
+        super().__init__(config)
+        self.transform_data = transform
+        self.sample_frac = sample_frac
+        self.raw_data = self._load_csv(config.raw_data_path)
+        self.X, self.y = self.preprocess(self.raw_data)
+        
+    def _load_csv(self, file_path: str) -> pd.DataFrame:
+        """Load dataset from CSV file.
+        
+        Args:
+            file_path: Path to the CSV file.
+            
+        Returns:
+            Loaded dataset as a pandas DataFrame.
         """
-        # Remove rows where all NaN
+        path = Path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file not found: {file_path}")
+        
+        # Load and sample the data
+        data = pd.read_csv(path, index_col=False)
+        if self.sample_frac < 1.0:
+            data = data.sample(frac=self.sample_frac, random_state=42)
+        return data
+
+    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """Preprocess raw data into feature and target arrays.
+        
+        Args:
+            raw_data: Raw dataset as a pandas DataFrame.
+            
+        Returns:
+            Tuple (X, y) as numpy arrays.
+        """
+        # Remove rows where all features are NaN
         raw_data = raw_data[(raw_data.iloc[:, 1:] >= 0).any(axis=1)].copy()
-
-        target_column = "RiskPerformance"
+        
+        # Process target column
+        target_column = self.config.target
         raw_data[target_column] = (
             raw_data[target_column].replace({"Bad": "0", "Good": "1"}).astype(int)
         )
-
+        
+        # Handle missing values (negative values are treated as NaN)
         raw_data[raw_data < 0] = np.nan
         raw_data = raw_data.apply(lambda col: col.fillna(col.median()), axis=0)
-
-        self.feature_columns = raw_data.columns.drop(target_column)
-
-        self.numerical_columns = list(range(0, len(self.feature_columns)))
-        self.actionable_features = list(range(0, 6))
-        self.not_actionable_features = list(range(6, len(self.feature_columns)))
-        self.categorical_columns = []
-
-        X = raw_data[self.feature_columns].to_numpy()
-        y = raw_data[target_column].to_numpy()
-
+        
+        # Extract features and target
+        X = raw_data[self.config.features].to_numpy().astype(np.float32)
+        y = raw_data[target_column].to_numpy().astype(np.int64)
+        
+        # Apply transformation if requested
+        if self.transform_data:
+            scaler = MinMaxScaler()
+            X = scaler.fit_transform(X)
+            # Store scaler for potential future use
+            self.feature_transformer = scaler
+        
         return X, y
-
-    def transform(
-        self,
-        X_train: np.ndarray,
-        X_test: np.ndarray,
-        y_train: np.ndarray,
-        y_test: np.ndarray,
-    ):
-        """
-        Transform the loaded data by applying Min-Max scaling to the features.
-        """
-        self.feature_transformer = MinMaxScaler()
-        X_train = self.feature_transformer.fit_transform(X_train)
-        X_test = self.feature_transformer.transform(X_test)
-
-        # self.target_transformer = LabelEncoder()
-        # y_train = self.target_transformer.fit_transform(y_train)
-        # y_test = self.target_transformer.transform(y_test)
-
-        X_train = np.array(X_train.astype(np.float32))
-        X_test = np.array(X_test.astype(np.float32))
-        y_train = np.array(y_train.astype(np.int64))
-        y_test = np.array(y_test.astype(np.int64))
-
-        self.categorical_features = []
-        self.numerical_features = list(range(0, len(self.feature_columns)))
-
-        return X_train, X_test, y_train, y_test

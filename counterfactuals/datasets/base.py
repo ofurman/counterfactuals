@@ -1,171 +1,129 @@
-from abc import ABC, abstractmethod
-from typing import Tuple
-
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Dict, Union, Optional, Tuple, Generator
 import numpy as np
 import pandas as pd
-import torch
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.model_selection import train_test_split, StratifiedKFold
 
 
-class AbstractDataset(ABC):
-    def __init__(self, data=None):
-        self.data = data
+class MonotonicityDirection(Enum):
+    """Enum representing monotonicity direction of a feature."""
+    INCREASE = "INCREASE"
+    DECREASE = "DECREASE"
 
-    @abstractmethod
-    def preprocess(
-        self,
-        X_train: np.ndarray,
-        X_test: np.ndarray,
-        y_train: np.ndarray,
-        y_test: np.ndarray,
-    ) -> Tuple[np.ndarray]:
-        """
-        Preprocess the loaded data, if necessary.
-        """
-        pass
 
-    def load(self, file_path, **kwargs) -> pd.DataFrame:
-        """
-        Load data from a CSV file and store it in the 'data' attribute.
-        """
-        try:
-            data = pd.read_csv(file_path, **kwargs)
-            return data
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading data from {file_path}: {e}")
+@dataclass
+class FeatureParameters:
+    """Configuration parameters for a single feature.
 
-    def save(self, file_path: str, data: pd.DataFrame, **kwargs):
-        """
-        Save the processed data (including scaled features) to a CSV file.
-        """
-        if data is not None:
-            try:
-                data.to_csv(file_path, **kwargs)
-                print(f"Data saved to {file_path}")
-            except Exception as e:
-                print(f"Error saving data to {file_path}: {e}")
-        else:
-            print("No data to save.")
+    Attributes:
+        actionable: Whether the feature can be changed in counterfactuals.
+        top_limit: Upper bound for the feature value.
+        bottom_limit: Lower bound for the feature value.
+        direction: Monotonicity direction, if applicable.
+    """
+    actionable: bool
+    top_limit: Optional[float] = None
+    bottom_limit: Optional[float] = None
+    direction: Optional[MonotonicityDirection] = None
 
-    def get_cv_splits(
-        self, n_splits: int = 5, shuffle: bool = True, transform: bool = True
-    ):
-        """
-        Sets and return the train and test splits for cross-validation.
-        """
-        cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=4)
-        for train_idx, test_idx in cv.split(self.X, self.y):
-            self.X_train, self.X_test = self.X[train_idx], self.X[test_idx]
-            self.y_train, self.y_test = self.y[train_idx], self.y[test_idx]
-            if transform:
-                self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                    X_train=self.X_train,
-                    X_test=self.X_test,
-                    y_train=self.y_train,
-                    y_test=self.y_test,
-                )
-            yield self.X_train, self.X_test, self.y_train, self.y_test
 
-    def get_target_class_splits(self, target_class: int) -> Tuple[np.ndarray]:
-        """
-        Sets and return the train and test splits for cross-validation.
-        """
-        try:
-            target_train_idx = np.where(self.y_train == target_class)[0]
-            target_test_idx = np.where(self.y_test == target_class)[0]
-            return (
-                self.X_train[target_train_idx],
-                self.X_test[target_test_idx],
-                self.y_train[target_train_idx],
-                self.y_test[target_test_idx],
-            )
-        except AttributeError:
-            raise AttributeError(
-                "X_train, X_test, y_train, and y_test must be set before calling this method."
-            )
+@dataclass
+class DatasetParameters:
+    """Configuration parameters for a dataset.
 
-    def get_non_target_class_splits(self, target_class: int) -> Tuple[np.ndarray]:
-        """
-        Sets and return the train and test splits for cross-validation.
-        """
-        try:
-            non_target_train_idx = np.where(self.y_train != target_class)[0]
-            non_target_test_idx = np.where(self.y_test != target_class)[0]
-            return (
-                self.X_train[non_target_train_idx],
-                self.X_test[non_target_test_idx],
-                self.y_train[non_target_train_idx],
-                self.y_test[non_target_test_idx],
-            )
-        except AttributeError:
-            raise AttributeError(
-                "X_train, X_test, y_train, and y_test must be set before calling this method."
-            )
+    Attributes:
+        raw_data_path: Path to the raw dataset file.
+        features: List of feature names or indices used as input variables.
+        continuous_features: List of continuous feature names or indices.
+        categorical_features: List of categorical feature names or indices.
+        feature_config: Mapping of feature name/index to FeatureParameters.
+        target: Name of the target column.
+    """
+    raw_data_path: str
+    features: List[Union[str, int]]
+    continuous_features: List[Union[str, int]]
+    categorical_features: List[Union[str, int]]
+    feature_config: Dict[Union[str, int], FeatureParameters]
+    target: str = "y"
 
-    def get_split_data(self, X: np.ndarray, y: np.ndarray, shuffle: bool = True):
-        X_train, X_test, y_train, y_test = train_test_split(
+
+class DatasetBase:
+    """Base class for datasets.
+
+    Provides functionality for preprocessing, splitting, and cross-validation.
+    Transformation logic should be handled outside this class.
+    """
+
+    def __init__(self, config: DatasetParameters):
+        """Initializes a dataset with configuration parameters.
+
+        Args:
+            config: Dataset configuration object.
+        """
+        self.config = config
+        self.X: Optional[np.ndarray] = None
+        self.y: Optional[np.ndarray] = None
+
+    def preprocess(self, raw_data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+        """Extracts input features and target from raw data.
+
+        Args:
+            raw_data: Raw dataset as a pandas DataFrame.
+
+        Returns:
+            A tuple of (X, y) numpy arrays.
+        """
+        X = raw_data[self.config.features].to_numpy()
+        y = raw_data[self.config.target].to_numpy()
+        self.X, self.y = X, y
+        return X, y
+
+    def split_data(
+        self, X: np.ndarray, y: np.ndarray, train_ratio: float = 0.8, stratify: bool = True
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Splits data into train and test sets.
+
+        Args:
+            X: Input features as numpy array.
+            y: Target labels as numpy array.
+            train_ratio: Proportion of data to include in the train split.
+            stratify: Whether to stratify the split by target variable.
+
+        Returns:
+            A tuple (X_train, X_test, y_train, y_test).
+        """
+        return train_test_split(
             X,
             y,
-            random_state=4,
-            test_size=0.2,
-            shuffle=shuffle,
-            stratify=y if shuffle else None,
-        )
-        return X_train, X_test, y_train, y_test
-
-    def train_dataloader(
-        self, batch_size: int, shuffle: bool, noise_lvl=0, **kwargs_dataloader
-    ):
-        def collate_fn(batch):
-            X, y = zip(*batch)
-            X = torch.stack(X)
-            y = torch.stack(y)
-
-            # Add Gaussian noise to train features
-            noise = torch.randn_like(X[:, self.numerical_features]) * noise_lvl
-            X[:, self.numerical_features] = X[:, self.numerical_features] + noise
-            return X, y
-
-        return DataLoader(
-            TensorDataset(
-                torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)
-            ),
-            batch_size=batch_size,
-            shuffle=shuffle,
-            collate_fn=collate_fn if noise_lvl else None,
-            **kwargs_dataloader,
+            train_size=train_ratio,
+            stratify=y if stratify else None,
+            random_state=42,
         )
 
-    def test_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
-        return DataLoader(
-            TensorDataset(torch.from_numpy(self.X_test), torch.from_numpy(self.y_test)),
-            batch_size=batch_size,
-            shuffle=shuffle,
-            **kwargs_dataloader,
-        )
+    def get_cv_splits(
+        self, n_splits: int = 5, shuffle: bool = True
+    ) -> Generator[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
+        """Generates stratified cross-validation splits.
 
-    @property
-    def categorical_features_lists(self) -> list:
-        categorical_features_lists = []
-        for col in self.categorical_columns:
-            n_cat = self.raw_data[self.feature_columns[col]].nunique()
-            if len(categorical_features_lists) == 0:
-                categorical_features_lists.append(
-                    list(
-                        range(
-                            len(self.numerical_columns),
-                            len(self.numerical_columns) + n_cat,
-                        )
-                    )
-                )
-            else:
-                categorical_features_lists.append(
-                    list(
-                        range(
-                            categorical_features_lists[-1][-1] + 1,
-                            categorical_features_lists[-1][-1] + 1 + n_cat,
-                        )
-                    )
-                )
-        return categorical_features_lists
+        Args:
+            n_splits: Number of folds.
+            shuffle: Whether to shuffle data before splitting.
+
+        Yields:
+            Tuples of (X_train, X_test, y_train, y_test) for each fold.
+
+        Raises:
+            ValueError: If preprocess has not been called before.
+        """
+        if self.X is None or self.y is None:
+            raise ValueError("Call preprocess() before generating CV splits.")
+        cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=42)
+        for train_idx, test_idx in cv.split(self.X, self.y):
+            yield (
+                self.X[train_idx],
+                self.X[test_idx],
+                self.y[train_idx],
+                self.y[test_idx],
+            )
+            
