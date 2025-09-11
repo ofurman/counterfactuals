@@ -223,6 +223,7 @@ def main(cfg: DictConfig):
 
         Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
         gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
+        del dataset
         dataset = instantiate(cfg.dataset)
 
         metrics = calculate_metrics(

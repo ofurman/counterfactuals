@@ -33,14 +33,19 @@ class GiveMeSomeCreditDataset(AbstractDataset):
         self.categorical_features = []
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
-        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y, shuffle=shuffle
-        )
 
         if transform:
             self._init_base_column_transformer()
+            # Transform the entire dataset before splitting to ensure consistent scaling
+            self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+                self.X, self.y, shuffle=shuffle
+            )
             self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
                 self.X_train, self.X_test, self.y_train, self.y_test
+            )
+        else:
+            self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
+                self.X, self.y, shuffle=shuffle
             )
 
     def preprocess(self, raw_data: pd.DataFrame):

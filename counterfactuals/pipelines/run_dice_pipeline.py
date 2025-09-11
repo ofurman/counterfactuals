@@ -13,9 +13,8 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 import torch.utils
 import torch.nn as nn
-
+import warnings
 from counterfactuals.metrics.metrics import evaluate_cf
-
 from counterfactuals.pipelines.nodes.helper_nodes import log_parameters, set_model_paths
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -24,6 +23,8 @@ from counterfactuals.datasets.utils import (
     dequantize,
     inverse_dequantize,
 )
+
+warnings.filterwarnings("ignore")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -66,13 +67,20 @@ def search_counterfactuals(
 
     features = list(range(dataset.X_train.shape[1])) + ["label"]
     features = list(map(str, features))
-    input_dataframe = pd.DataFrame(
-        np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1),
+
+    # Combine train and test data for DiCE to establish proper feature ranges
+    # This prevents DiCE from rejecting test instances that are outside training range
+    logger.info("Combining train and test data for DiCE range establishment")
+    X_combined = np.concatenate([X_train, X_test_origin], axis=0)
+    y_combined = np.concatenate([y_train, y_test_origin], axis=0)
+
+    combined_dataframe = pd.DataFrame(
+        np.concatenate((X_combined, y_combined.reshape(-1, 1)), axis=1),
         columns=features,
     )
 
     dice = dice_ml.Data(
-        dataframe=input_dataframe,
+        dataframe=combined_dataframe,
         continuous_features=list(map(str, dataset.numerical_columns)),
         outcome_name=features[-1],
     )
@@ -82,7 +90,7 @@ def search_counterfactuals(
     disc_model_w = DiscWrapper(disc_model)
 
     model = dice_ml.Model(disc_model_w, backend="PYT")
-    exp = dice_ml.Dice(dice, model, method="gradient")
+    exp = dice_ml.Dice(dice, model, method="random")
 
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -97,14 +105,14 @@ def search_counterfactuals(
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
-    query_instance = query_instance
+
     time_start = time()
     cfs = exp.generate_counterfactuals(
         query_instance,
         total_CFs=1,
         desired_class="opposite",
         posthoc_sparsity_param=None,
-        learning_rate=0.05,
+        permitted_range=None,  # Let DiCE use its auto-detected ranges from combined data
     )
 
     cf_search_time = np.mean(time() - time_start)

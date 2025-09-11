@@ -20,3 +20,5 @@ from counterfactuals.datasets.toy_regression import ToyRegressionDataset
 from counterfactuals.datasets.give_me_some_credit import GiveMeSomeCreditDataset
 from counterfactuals.datasets.bank_marketing import BankMarketingDataset
 from counterfactuals.datasets.lending_club import LendingClubDataset
+from counterfactuals.datasets.credit_default import CreditDefaultDataset
+from counterfactuals.datasets.adult_census import AdultCensusDataset
