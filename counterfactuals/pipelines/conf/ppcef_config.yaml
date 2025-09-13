@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.AdultDataset
+  _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
   train_model: false
@@ -22,7 +22,7 @@ disc_model:
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 100
