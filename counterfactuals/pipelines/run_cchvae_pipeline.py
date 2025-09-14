@@ -219,6 +219,8 @@ def main(cfg: DictConfig) -> None:
         dequantizer.fit(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+
         # Custom code
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)

@@ -289,6 +289,7 @@ def main(cfg: DictConfig) -> None:
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
         dequantizer.fit(dataset.X_train)
+        dataset.X_train = dequantizer.transform(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         # Custom code
