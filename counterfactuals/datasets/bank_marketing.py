@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
-SAMPLES_KEEP = 100000
+SAMPLES_KEEP = 30000
 
 
 class BankMarketingDataset(AbstractDataset):
