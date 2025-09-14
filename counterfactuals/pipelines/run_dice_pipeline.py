@@ -67,7 +67,6 @@ def search_counterfactuals(
         Tuple containing:
             - Xs_cfs: Generated counterfactual explanations
             - Xs: Original test instances used for CF generation
-            - log_prob_threshold: Computed log-probability threshold
             - ys_orig: Original predicted labels for the test instances
             - ys_target: Target labels corresponding to counterfactuals
             - cf_search_time: Average time taken for counterfactual search
@@ -104,16 +103,6 @@ def search_counterfactuals(
     model = dice_ml.Model(disc_model_w, backend="PYT")
     exp = dice_ml.Dice(dice, model, method="gradient")
 
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
-
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     query_instance = query_instance
@@ -149,7 +138,6 @@ def search_counterfactuals(
     return (
         Xs_cfs,
         X_test_origin,
-        log_prob_threshold,
         y_test_origin,
         ys_target,
         cf_search_time,
@@ -191,6 +179,24 @@ def apply_categorical_discretization(
         Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
 
     return Xs_cfs
+
+
+def get_log_prob_threshold(
+    gen_model: torch.nn.Module,
+    dataset: DictConfig,
+    batch_size: int,
+    log_prob_quantile: float,
+) -> float:
+    logger.info("Calculating log_prob_threshold")
+    train_dataloader_for_log_prob = dataset.train_dataloader(
+        batch_size=batch_size, shuffle=False
+    )
+    log_prob_threshold = torch.quantile(
+        gen_model.predict_log_prob(train_dataloader_for_log_prob),
+        log_prob_quantile,
+    )
+    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
+    return log_prob_threshold
 
 
 def calculate_metrics(
@@ -293,8 +299,16 @@ def main(cfg: DictConfig) -> None:
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         # Custom code
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = get_log_prob_threshold(
+            gen_model,
+            dataset,
+            cfg.counterfactuals_params.batch_size,
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+        Xs_cfs, Xs, ys_orig, ys_target, cf_search_time = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
 
         Xs = dequantizer.inverse_transform(Xs)

@@ -251,7 +251,9 @@ def main(cfg: DictConfig):
         dequantizer.fit(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
-        dataset.X_train = dequantizer.transform(dataset.X_train)
+        dataset.X_train = dequantizer.transform(
+            dataset.X_train
+        )  # dequantization for log prob threshold
         dataset.X_test = dequantizer.transform(dataset.X_test)
 
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
@@ -259,7 +261,6 @@ def main(cfg: DictConfig):
         )
 
         Xs = dequantizer.inverse_transform(Xs)
-        Xs_cfs = dequantizer.inverse_transform(Xs_cfs)
         gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
