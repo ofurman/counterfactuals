@@ -2,11 +2,11 @@ import setuptools
 
 
 def get_version():
-    version = "0.01"
+    version = "0.1.0"
     return version
 
 
 setuptools.setup(
-    name="counterfactual",
-    version="0.01",
+    name="counterfactuals",
+    version="0.1.0",
 )

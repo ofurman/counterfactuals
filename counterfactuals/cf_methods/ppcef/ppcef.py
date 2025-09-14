@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -38,33 +37,7 @@ from counterfactuals.generative_models.base import BaseGenModel
 
 #         return grad_input, None  # None corresponds to no gradient for temp
 
-
-class TorchDequantizer(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.alpha = 1e-6
-
-    def forward(self, x):
-        # x[:, 2:] = x[:, 2:] + torch.tensor(0.5)
-        x[:, 2:] = x[:, 2:] + torch.sigmoid(torch.randn(x[:, 2:].size()))
-        x[:, 2:] = x[:, 2:] / 2
-        x[:, 2:] = self.alpha + (1 - 2 * self.alpha) * x[:, 2:]
-        result = x.clone()
-        new_tensor = torch.log(x[:, 2:] / (torch.tensor(1.0) - x[:, 2:]))
-        result[:, 2:] = new_tensor
-        return result
-
-
-torch_dequantizer = TorchDequantizer()
-
-
 ALPHA = 1e-6
-
-
-def logit(x):
-    x_clone = x.clone()  # Clone to avoid in-place modification issues
-    x_clone[:, 2:4] = torch.logit(x[:, 2:4], eps=1e-6)
-    return x_clone
 
 
 class PPCEF(BaseCounterfactual):
@@ -109,10 +82,9 @@ class PPCEF(BaseCounterfactual):
         if categorical_intervals:
             tau = 1.0 - 0.99 / self.epochs * epoch
             for interval in categorical_intervals:
-                # cf[:, interval] = torch.nn.functional.gumbel_softmax(
-                #     cf[:, interval], tau=tau, dim=1
-                # )
-                cf[:, interval] = torch.nn.functional.softmax(cf[:, interval], dim=1)
+                cf[:, interval] = torch.nn.functional.gumbel_softmax(
+                    cf[:, interval], tau=tau, dim=1
+                )
 
         disc_logits = self.disc_model.forward(cf)
         disc_logits = (

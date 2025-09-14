@@ -177,3 +177,7 @@ notebooks/*.csv
 
 # models
 models/*
+
+# uv
+.uv/
+uv.lock
