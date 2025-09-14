@@ -3,6 +3,8 @@ from enum import Enum
 from typing import List, Dict, Union, Optional, Tuple, Generator
 import numpy as np
 import pandas as pd
+from pathlib import Path
+import yaml
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
 
@@ -126,4 +128,35 @@ class DatasetBase:
                 self.y[train_idx],
                 self.y[test_idx],
             )
+    
+    def _load_config(self, yaml_path: Path) -> DatasetParameters:
+        """Loads dataset parameters from YAML config.
+        
+        Args:
+            yaml_path: Path to the YAML config file.
+
+        Returns:
+            DatasetParameters object containing the loaded configuration.   
+
+        """
+        yaml_path = Path(yaml_path)
+        if not yaml_path.exists():
+            raise FileNotFoundError(f"Config file not found: {yaml_path}")
+
+        with open(yaml_path, "r") as f:
+            cfg = yaml.safe_load(f)
+
+        # Parse feature_config into FeatureParameters
+        feature_config = {
+            k: FeatureParameters(**v) for k, v in cfg.get("feature_config", {}).items()
+        }
+
+        return DatasetParameters(
+            raw_data_path=cfg["raw_data_path"],
+            features=cfg["features"],
+            continuous_features=cfg.get("continuous_features", []),
+            categorical_features=cfg.get("categorical_features", []),
+            feature_config=feature_config,
+            target=cfg.get("target", "y"),
+        )
             
