@@ -15,7 +15,7 @@ dataset:
   _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
   patience: 300
