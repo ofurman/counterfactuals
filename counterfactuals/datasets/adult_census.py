@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
-NUM_SAMPLES = 32000
+SAMPLES_KEEP = 32000
 
 
 class AdultCensusDataset(AbstractDataset):
@@ -60,7 +60,7 @@ class AdultCensusDataset(AbstractDataset):
         """
         raw_data = raw_data.copy()
         raw_data = raw_data.dropna()
-        raw_data = raw_data[:NUM_SAMPLES]
+        raw_data = raw_data[:SAMPLES_KEEP]
         self.feature_columns = self.features[:-1]
         target_column = "income"
 

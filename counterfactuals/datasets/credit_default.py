@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
-NUM_SAMPLES = 27000
+SAMPLES_KEEP = 27000
 
 
 class CreditDefaultDataset(AbstractDataset):
@@ -85,7 +85,7 @@ class CreditDefaultDataset(AbstractDataset):
         self.feature_columns = self.features[:-1]
 
         raw_data = raw_data.dropna()
-        raw_data = raw_data[:NUM_SAMPLES]
+        raw_data = raw_data[:SAMPLES_KEEP]
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
