@@ -1,15 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Dict, Union, Optional, Tuple, Generator
+from pathlib import Path
+from typing import Dict, Generator, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import yaml
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
 class MonotonicityDirection(Enum):
     """Enum representing monotonicity direction of a feature."""
+
     INCREASE = "INCREASE"
     DECREASE = "DECREASE"
 
@@ -24,6 +26,7 @@ class FeatureParameters:
         bottom_limit: Lower bound for the feature value.
         direction: Monotonicity direction, if applicable.
     """
+
     actionable: bool
     top_limit: Optional[float] = None
     bottom_limit: Optional[float] = None
@@ -42,6 +45,7 @@ class DatasetParameters:
         feature_config: Mapping of feature name/index to FeatureParameters.
         target: Name of the target column.
     """
+
     raw_data_path: str
     features: List[Union[str, int]]
     continuous_features: List[Union[str, int]]
@@ -82,7 +86,11 @@ class DatasetBase:
         return X, y
 
     def split_data(
-        self, X: np.ndarray, y: np.ndarray, train_ratio: float = 0.8, stratify: bool = True
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        train_ratio: float = 0.8,
+        stratify: bool = True,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Splits data into train and test sets.
 
@@ -128,15 +136,15 @@ class DatasetBase:
                 self.y[train_idx],
                 self.y[test_idx],
             )
-    
+
     def _load_config(self, yaml_path: Path) -> DatasetParameters:
         """Loads dataset parameters from YAML config.
-        
+
         Args:
             yaml_path: Path to the YAML config file.
 
         Returns:
-            DatasetParameters object containing the loaded configuration.   
+            DatasetParameters object containing the loaded configuration.
 
         """
         yaml_path = Path(yaml_path)
@@ -159,4 +167,3 @@ class DatasetBase:
             feature_config=feature_config,
             target=cfg.get("target", "y"),
         )
-            

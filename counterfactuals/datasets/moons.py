@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
 from pathlib import Path
 
-from counterfactuals.datasets.base import DatasetBase, DatasetParameters, FeatureParameters
+import pandas as pd
+
+from counterfactuals.datasets.base import DatasetBase
 
 
 class MoonsDataset(DatasetBase):
@@ -10,7 +10,12 @@ class MoonsDataset(DatasetBase):
 
     # Path relative to this file: counterfactuals/datasets/moons.py
     # Go up 3 levels to project root, then to config
-    CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "datasets" / "moons.yaml"
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent.parent.parent
+        / "config"
+        / "datasets"
+        / "moons.yaml"
+    )
 
     def __init__(self, config_path: Path = CONFIG_PATH):
         """Initializes the Moons dataset with YAML config.
@@ -41,7 +46,7 @@ class MoonsDataset(DatasetBase):
         # Resolve path relative to project root
         project_root = Path(__file__).resolve().parent.parent.parent
         path = project_root / file_path
-        
+
         if not path.exists():
             raise FileNotFoundError(f"Dataset file not found: {path}")
         return pd.read_csv(path, header=None)
