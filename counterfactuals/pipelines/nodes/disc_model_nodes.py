@@ -44,10 +44,14 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     )
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
+    # Determine device - use auto to let the model decide based on CUDA availability
+    device = getattr(cfg, "device", "auto")
+
     disc_model = instantiate(
         cfg.disc_model.model,
         input_size=dataset.X_train.shape[1],
         target_size=num_classes,
+        device=device,
     )
     return disc_model
 

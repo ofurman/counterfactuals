@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlp
+  - disc_model: node
 
 hydra:
   sweeper:
@@ -50,4 +50,3 @@ counterfactuals_params:
   beta: 0.01
   patience: 1000
   use_categorical: true
-    
