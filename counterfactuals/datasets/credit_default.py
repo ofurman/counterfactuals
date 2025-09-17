@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -89,12 +89,10 @@ class CreditDefaultDataset(AbstractDataset):
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
-
-        self.numerical_columns = list(range(0, len(self.numerical_columns)))
-        self.categorical_columns = list(
+        self.numerical_features = list(range(0, len(self.numerical_columns)))
+        self.categorical_features = list(
             range(len(self.numerical_columns), len(self.feature_columns))
         )
-
         return X, y
 
     def transform(
@@ -107,31 +105,58 @@ class CreditDefaultDataset(AbstractDataset):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """
+        scaler = MinMaxScaler()
+
+        X_train_numerical = scaler.fit_transform(X_train[:, self.numerical_columns])
+        X_test_numerical = scaler.transform(X_test[:, self.numerical_columns])
+
+        X_train_categorical = self.base_onehot_encoder.transform(
+            X_train[:, self.categorical_columns]
+        )
+        X_test_categorical = self.base_onehot_encoder.transform(
+            X_test[:, self.categorical_columns]
+        )
+
+        X_train = np.concatenate([X_train_numerical, X_train_categorical], axis=1)
+        X_test = np.concatenate([X_test_numerical, X_test_categorical], axis=1)
 
         self.feature_transformer = ColumnTransformer(
             [
-                ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                (
-                    "OneHotEncoder",
-                    OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                    self.categorical_columns,
-                ),
+                ("MinMaxScaler", scaler, self.numerical_columns),
+                ("OneHotEncoder", self.base_onehot_encoder, self.categorical_columns),
             ],
         )
 
-        X_train = self.feature_transformer.fit_transform(X_train)
-        X_test = self.feature_transformer.transform(X_test)
-
-        X_train = X_train.astype(np.float32)
-        X_test = X_test.astype(np.float32)
-        y_train = y_train.astype(np.int64)
-        y_test = y_test.astype(np.int64)
-
-        self.numerical_columns = list(range(0, len(self.numerical_columns)))
-        self.categorical_columns = list(
-            range(len(self.numerical_columns), len(self.feature_columns))
+        X_train = np.array(X_train.astype(np.float32))
+        X_test = np.array(X_test.astype(np.float32))
+        y_train = np.array(y_train.astype(np.int64))
+        y_test = np.array(y_test.astype(np.int64))
+        self.numerical_features = list(range(0, len(self.numerical_columns)))
+        self.categorical_features = list(
+            range(len(self.numerical_columns), X_train.shape[1])
         )
-
         self.actionable_features = list(range(0, X_train.shape[1]))
 
         return X_train, X_test, y_train, y_test
+
+    @property
+    def categorical_features_lists(self) -> list:
+        """
+        Override the base class property to return correct categorical feature groupings
+        based on actual one-hot encoded features.
+
+        Returns:
+            list: List of lists, where each inner list contains the indices of
+                  one-hot encoded features for each original categorical variable.
+        """
+        categorical_features_lists = []
+        current_idx = len(self.numerical_columns)
+
+        for categories in self.base_onehot_encoder.categories_:
+            n_categories = len(categories)
+            categorical_features_lists.append(
+                list(range(current_idx, current_idx + n_categories))
+            )
+            current_idx += n_categories
+
+        return categorical_features_lists

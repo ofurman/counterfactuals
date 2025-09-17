@@ -9,11 +9,11 @@ SAMPLES_KEEP = 32000
 
 
 class AdultCensusDataset(AbstractDataset):
-    def __init__(self, file_path: str = "data/adult_raw.csv"):
+    def __init__(
+        self, file_path: str = "data/adult_raw.csv", transform=True, shuffle=True
+    ):
         self.features = [
             "age",
-            "fnlwgt",
-            "education-num",
             "capital-gain",
             "capital-loss",
             "hours-per-week",
@@ -25,17 +25,15 @@ class AdultCensusDataset(AbstractDataset):
             "race",
             "sex",
             "native-country",
-            "income",
+            "class",
         ]
-        self.numerical_features = [
+        self.numerical_columns = [
             "age",
-            "fnlwgt",
-            "education-num",
             "capital-gain",
             "capital-loss",
             "hours-per-week",
         ]
-        self.categorical_features = [
+        self.categorical_columns = [
             "workclass",
             "education",
             "marital-status",
@@ -48,11 +46,14 @@ class AdultCensusDataset(AbstractDataset):
         self.raw_data = self.load(file_path=file_path, index_col=False)
         self.X, self.y = self.preprocess(raw_data=self.raw_data)
         self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y
+            self.X, self.y, shuffle=shuffle
         )
-        self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-            self.X_train, self.X_test, self.y_train, self.y_test
-        )
+
+        if transform:
+            self._init_base_column_transformer()
+            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
+                self.X_train, self.X_test, self.y_train, self.y_test
+            )
 
     def preprocess(self, raw_data: pd.DataFrame):
         """
@@ -62,19 +63,29 @@ class AdultCensusDataset(AbstractDataset):
         raw_data = raw_data.dropna()
         raw_data = raw_data[:SAMPLES_KEEP]
         self.feature_columns = self.features[:-1]
-        target_column = "income"
+        target_column = "class"
 
         raw_data[target_column] = raw_data[target_column].apply(
             lambda x: 1 if x.strip() == ">50K" else 0
         )
 
-        X = raw_data[self.numerical_features + self.categorical_features].to_numpy()
+        X = raw_data[self.numerical_columns + self.categorical_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
-        self.numerical_columns = list(range(0, len(self.numerical_features)))
+        self.numerical_columns = list(range(0, len(self.numerical_columns)))
         self.categorical_columns = list(
-            range(len(self.numerical_features), len(self.feature_columns))
+            range(len(self.numerical_columns), len(self.feature_columns))
         )
         return X, y
+
+    def _init_base_column_transformer(self):
+        """
+        Initialize base ColumnTransformer with OneHotEncoder fitted on full dataset
+        to ensure consistent features across CV folds.
+        """
+        self.base_onehot_encoder = OneHotEncoder(
+            handle_unknown="ignore", sparse_output=False
+        )
+        self.base_onehot_encoder.fit(self.X[:, self.categorical_columns])
 
     def transform(
         self,
@@ -86,24 +97,32 @@ class AdultCensusDataset(AbstractDataset):
         """
         Transform the loaded data by applying Min-Max scaling to the features.
         """
+        scaler = MinMaxScaler()
+
+        X_train_numerical = scaler.fit_transform(X_train[:, self.numerical_columns])
+        X_test_numerical = scaler.transform(X_test[:, self.numerical_columns])
+
+        X_train_categorical = self.base_onehot_encoder.transform(
+            X_train[:, self.categorical_columns]
+        )
+        X_test_categorical = self.base_onehot_encoder.transform(
+            X_test[:, self.categorical_columns]
+        )
+
+        X_train = np.concatenate([X_train_numerical, X_train_categorical], axis=1)
+        X_test = np.concatenate([X_test_numerical, X_test_categorical], axis=1)
+
         self.feature_transformer = ColumnTransformer(
             [
-                ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
-                (
-                    "OneHotEncoder",
-                    OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                    self.categorical_columns,
-                ),
+                ("MinMaxScaler", scaler, self.numerical_columns),
+                ("OneHotEncoder", self.base_onehot_encoder, self.categorical_columns),
             ],
         )
 
-        X_train = self.feature_transformer.fit_transform(X_train)
-        X_test = self.feature_transformer.transform(X_test)
-
-        X_train = X_train.astype(np.float32)
-        X_test = X_test.astype(np.float32)
-        y_train = y_train.astype(np.int64)
-        y_test = y_test.astype(np.int64)
+        X_train = np.array(X_train.astype(np.float32))
+        X_test = np.array(X_test.astype(np.float32))
+        y_train = np.array(y_train.astype(np.int64))
+        y_test = np.array(y_test.astype(np.int64))
 
         self.numerical_features = list(range(0, len(self.numerical_columns)))
         self.categorical_features = list(
@@ -112,3 +131,25 @@ class AdultCensusDataset(AbstractDataset):
         self.actionable_features = list(range(0, X_train.shape[1]))
 
         return X_train, X_test, y_train, y_test
+
+    @property
+    def categorical_features_lists(self) -> list:
+        """
+        Override the base class property to return correct categorical feature groupings
+        based on actual one-hot encoded features.
+
+        Returns:
+            list: List of lists, where each inner list contains the indices of
+                  one-hot encoded features for each original categorical variable.
+        """
+        categorical_features_lists = []
+        current_idx = len(self.numerical_columns)
+
+        for categories in self.base_onehot_encoder.categories_:
+            n_categories = len(categories)
+            categorical_features_lists.append(
+                list(range(current_idx, current_idx + n_categories))
+            )
+            current_idx += n_categories
+
+        return categorical_features_lists

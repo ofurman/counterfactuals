@@ -80,7 +80,6 @@ class LendingClubDataset(AbstractDataset):
         X = data_df[self.numerical_columns + self.categorical_columns].to_numpy()
         y = data_df[target_column].to_numpy()
 
-        # Convert to indices for transformed data
         self.numerical_columns = list(range(0, len(self.numerical_columns)))
         self.categorical_columns = list(
             range(

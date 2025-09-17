@@ -51,7 +51,6 @@ class GiveMeSomeCreditDataset(AbstractDataset):
 
         if transform:
             self._init_base_column_transformer()
-            # Transform the entire dataset before splitting to ensure consistent scaling
             self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
                 self.X, self.y, shuffle=shuffle
             )
@@ -59,6 +58,7 @@ class GiveMeSomeCreditDataset(AbstractDataset):
                 self.X_train, self.X_test, self.y_train, self.y_test
             )
         else:
+            self._init_base_column_transformer()
             self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
                 self.X, self.y, shuffle=shuffle
             )
@@ -67,7 +67,7 @@ class GiveMeSomeCreditDataset(AbstractDataset):
         """
         Preprocess the loaded data to X and y numpy arrays.
         """
-        self.feature_columns = self.features[:-1]  # Store original feature column names
+        self.feature_columns = self.features[:-1]
         target_column = "SeriousDlqin2yrs"
 
         data_df = raw_data.dropna()
@@ -75,7 +75,6 @@ class GiveMeSomeCreditDataset(AbstractDataset):
         X = data_df[self.numerical_columns + self.categorical_columns].to_numpy()
         y = data_df[target_column].to_numpy()
 
-        # Convert to indices for transformed data
         self.numerical_columns = list(range(0, len(self.numerical_columns)))
         self.categorical_columns = list(
             range(
