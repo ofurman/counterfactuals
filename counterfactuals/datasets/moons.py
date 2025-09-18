@@ -1,69 +1,53 @@
-import numpy as np
+from pathlib import Path
+
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from omegaconf import OmegaConf
 
-from counterfactuals.datasets.base import AbstractDataset
+from counterfactuals.datasets.base import DatasetBase
 
 
-class MoonsDataset(AbstractDataset):
-    def __init__(
-        self,
-        file_path: str = "data/moons.csv",
-        shuffle: bool = True,
-        transform: bool = True,
-    ):
+class MoonsDataset(DatasetBase):
+    """Moons dataset loader compatible with DatasetBase."""
+
+    # Path relative to this file: counterfactuals/datasets/moons.py
+    # Go up 3 levels to project root, then to config
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent.parent.parent
+        / "config"
+        / "datasets"
+        / "moons.yaml"
+    )
+
+    def __init__(self, config_path: Path = CONFIG_PATH):
+        """Initializes the Moons dataset with OmegaConf config.
+
+        Args:
+            config_path: Path to the dataset configuration file.
         """
-        Initialize the Moons dataset.
-        """
-        self.categorical_features = []
-        self.features = [
-            "Feature 1",
-            "Feature 2",
-            "Target",
-        ]
-        self.raw_data = self.load(file_path=file_path, header=None)
-        self.X, self.y = self.preprocess(raw_data=self.raw_data)
-        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y, shuffle=shuffle
+        conf = OmegaConf.load(str(config_path))
+        super().__init__(config=conf)
+
+        self.raw_data = self._load_csv(conf.raw_data_path)
+        self.X, self.y = self.preprocess(self.raw_data)
+
+        # Train/test split
+        self.X_train, self.X_test, self.y_train, self.y_test = self.split_data(
+            self.X, self.y
         )
-        if transform:
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                self.X_train, self.X_test, self.y_train, self.y_test
-            )
 
-    def preprocess(self, raw_data: pd.DataFrame):
+    def _load_csv(self, file_path: str) -> pd.DataFrame:
+        """Loads dataset from CSV file.
+
+        Args:
+            file_path: Path to the CSV file (relative to project root).
+
+        Returns:
+            Loaded dataset as a pandas DataFrame.
         """
-        Preprocess the loaded data to X and y numpy arrays.
-        """
-        self.categorical_columns = []
-        X = raw_data[raw_data.columns[:-1]].to_numpy()
-        y = raw_data[raw_data.columns[-1]].to_numpy()
+        # Resolve path relative to project root
+        project_root = Path(__file__).resolve().parent.parent.parent
+        path = project_root / file_path
 
-        self.numerical_features = [0, 1]
-        self.numerical_columns = [0, 1]
-        self.categorical_features = []
-        self.actionable_features = [0, 1]
-        return X, y
-
-    def transform(
-        self,
-        X_train: np.ndarray,
-        X_test: np.ndarray,
-        y_train: np.ndarray,
-        y_test: np.ndarray,
-    ):
-        """
-        Transform the loaded data by applying Min-Max scaling to the features.
-        """
-        self.feature_transformer = MinMaxScaler()
-        X_train = self.feature_transformer.fit_transform(X_train)
-        X_test = self.feature_transformer.transform(X_test)
-
-        y_train = y_train.reshape(-1)
-        y_test = y_test.reshape(-1)
-
-        X_train = X_train.astype(np.float32)
-        X_test = X_test.astype(np.float32)
-        y_train = y_train.astype(np.int64)
-        y_test = y_test.astype(np.int64)
-        return X_train, X_test, y_train, y_test
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file not found: {path}")
+        return pd.read_csv(path, header=None)
