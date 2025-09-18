@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+from omegaconf import OmegaConf
 
 from counterfactuals.datasets.base import DatasetBase
 
@@ -18,15 +19,15 @@ class MoonsDataset(DatasetBase):
     )
 
     def __init__(self, config_path: Path = CONFIG_PATH):
-        """Initializes the Moons dataset with YAML config.
+        """Initializes the Moons dataset with OmegaConf config.
 
         Args:
             config_path: Path to the dataset configuration file.
         """
-        config = self._load_config(config_path)
-        super().__init__(config=config)
+        conf = OmegaConf.load(str(config_path))
+        super().__init__(config=conf)
 
-        self.raw_data = self._load_csv(config.raw_data_path)
+        self.raw_data = self._load_csv(conf.raw_data_path)
         self.X, self.y = self.preprocess(self.raw_data)
 
         # Train/test split

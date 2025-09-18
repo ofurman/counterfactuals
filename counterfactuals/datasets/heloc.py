@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from omegaconf import OmegaConf
 from sklearn.preprocessing import MinMaxScaler
 
 from counterfactuals.datasets.base import DatasetBase
@@ -25,18 +26,18 @@ class HelocDataset(DatasetBase):
         transform: bool = True,
         sample_frac: float = 0.005,
     ):
-        """Initialize the HELOC dataset.
+        """Initialize the HELOC dataset with OmegaConf config.
 
         Args:
             config_path: Path to the dataset configuration file.
             transform: Whether to apply MinMax scaling transformation.
             sample_frac: Fraction of data to sample (to reduce dataset size).
         """
-        config = self._load_config(config_path)
-        super().__init__(config)
+        conf = OmegaConf.load(str(config_path))
+        super().__init__(config=conf)
         self.transform_data = transform
         self.sample_frac = sample_frac
-        self.raw_data = self._load_csv(config.raw_data_path)
+        self.raw_data = self._load_csv(conf.raw_data_path)
         self.X, self.y = self.preprocess(self.raw_data)
 
         # Train/test split
