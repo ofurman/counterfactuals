@@ -43,7 +43,7 @@ class GroupTransformer(BaseEstimator, TransformerMixin):
         if any(len(g) == 0 for g in groups):
             raise ValueError("Each group in `groups` must contain at least one index.")
         self.groups = groups
-        self._make_transformer = transformer_factory
+        self.transformer_factory = transformer_factory
 
     def fit(self, X):
         """Fit one transformer per categorical group.
@@ -64,7 +64,7 @@ class GroupTransformer(BaseEstimator, TransformerMixin):
         X = self._validate_X(X, for_fit=True)
         self.transformers_ = []
         for g in self.groups:
-            transformer = self._make_transformer()
+            transformer = self.transformer_factory()
             transformer.fit(X[:, g])
             self.transformers_.append(transformer)
         self.n_features_in_ = X.shape[1]
