@@ -1,20 +1,32 @@
+from typing import Optional
+
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.discriminative_models.pytorch_base import PytorchBase
+from counterfactuals.discriminative_models.regression_mixin import RegressionPytorchMixin
 
 
-class LinearRegression(BaseDiscModel):
-    def __init__(self, input_size, target_size):
-        super(LinearRegression, self).__init__()
-        self.linear = torch.nn.Linear(input_size, target_size)
+class LinearRegression(PytorchBase, RegressionPytorchMixin):
+    def __init__(self, num_inputs: int, num_targets: int):
+        super(LinearRegression, self).__init__(num_inputs, num_targets)
+        self.linear = torch.nn.Linear(num_inputs, num_targets)
 
     def forward(self, x):
         y_pred = self.linear(x)
         return y_pred
 
-    def fit(self, train_loader, test_loader=None, epochs=200, lr=0.003, patience=100):
+    def fit(
+        self,
+        train_loader: DataLoader,
+        test_loader: Optional[DataLoader] = None,
+        epochs: int = 200,
+        lr: float = 0.003,
+        patience: int = 100,
+        **kwargs
+    ) -> None:
         optimizer = torch.optim.Adam(self.linear.parameters(), lr=lr)
         criterion = torch.nn.MSELoss()
         patience_counter = 0
@@ -51,14 +63,14 @@ class LinearRegression(BaseDiscModel):
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}, Patience: {patience_counter}"
             )
 
-    def predict(self, X_test):
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
         if not isinstance(X_test, torch.Tensor):
             X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
             preds = self.forward(X_test)
-            return preds.float()
+            return preds.cpu().numpy()
 
-    def predict_proba(self, X_test):
+    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
     def save(self, path):

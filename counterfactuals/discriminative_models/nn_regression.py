@@ -1,23 +1,28 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from counterfactuals.discriminative_models.pytorch_base import PytorchBase
+from counterfactuals.discriminative_models.regression_mixin import RegressionPytorchMixin
 
-class NNRegression(nn.Module):
+
+class MLPRegressor(PytorchBase, RegressionPytorchMixin):
     def __init__(
         self,
-        input_size: int,
+        num_inputs: int,
+        num_targets: int,
         hidden_layer_sizes: List[int],
-        target_size: int,
         dropout: float = 0.2,
     ):
-        super(NNRegression, self).__init__()
-        self.input_size = input_size
-        self.target_size = target_size
-        layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
+        super(MLPRegressor, self).__init__(num_inputs, num_targets)
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.dropout_rate = dropout
+        
+        layer_sizes = [num_inputs] + hidden_layer_sizes + [num_targets]
         self.layers = nn.ModuleList()
         for i in range(len(layer_sizes) - 1):
             self.layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
@@ -34,14 +39,15 @@ class NNRegression(nn.Module):
 
     def fit(
         self,
-        train_loader,
-        test_loader=None,
-        epochs=200,
-        lr=0.001,
+        train_loader: DataLoader,
+        test_loader: Optional[DataLoader] = None,
+        epochs: int = 200,
+        lr: float = 0.001,
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
-    ):
+        **kwargs
+    ) -> None:
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         criterion = nn.MSELoss()
         patience_counter = 0
@@ -82,14 +88,14 @@ class NNRegression(nn.Module):
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {avg_test_loss:.4f}, Patience: {patience_counter}"
             )
 
-    def predict(self, X_test):
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
         if not isinstance(X_test, torch.Tensor):
             X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
             preds = self.forward(X_test)
-            return preds.float()
+            return preds.cpu().numpy()
 
-    def predict_proba(self, X_test):
+    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
     def save(self, path):
