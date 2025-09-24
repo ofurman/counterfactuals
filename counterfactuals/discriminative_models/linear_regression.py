@@ -6,7 +6,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from counterfactuals.discriminative_models.pytorch_base import PytorchBase
-from counterfactuals.discriminative_models.regression_mixin import RegressionPytorchMixin
+from counterfactuals.discriminative_models.regression_mixin import (
+    RegressionPytorchMixin,
+)
 
 
 class LinearRegression(PytorchBase, RegressionPytorchMixin):
@@ -25,7 +27,7 @@ class LinearRegression(PytorchBase, RegressionPytorchMixin):
         epochs: int = 200,
         lr: float = 0.003,
         patience: int = 100,
-        **kwargs
+        **kwargs,
     ) -> None:
         optimizer = torch.optim.Adam(self.linear.parameters(), lr=lr)
         criterion = torch.nn.MSELoss()
