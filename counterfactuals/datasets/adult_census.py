@@ -1,155 +1,97 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from omegaconf import OmegaConf
 
-from counterfactuals.datasets.base import AbstractDataset
+from counterfactuals.datasets.base import DatasetBase
 
 SAMPLES_KEEP = 32000
 
 
-class AdultCensusDataset(AbstractDataset):
+class AdultCensusDataset(DatasetBase):
+    """Adult Census dataset loader compatible with DatasetBase."""
+
+    # Path relative to this file: counterfactuals/datasets/adult_census.py
+    # Go up 3 levels to project root, then to config
+    CONFIG_PATH = (
+        Path(__file__).resolve().parent.parent.parent
+        / "config"
+        / "datasets"
+        / "adult_census.yaml"
+    )
+
     def __init__(
-        self, file_path: str = "data/adult_raw.csv", transform=True, shuffle=True
+        self, 
+        config_path: Path = CONFIG_PATH,
+        samples_keep: int = SAMPLES_KEEP,
+        shuffle: bool = True
     ):
-        self.features = [
-            "age",
-            "capital-gain",
-            "capital-loss",
-            "hours-per-week",
-            "workclass",
-            "education",
-            "marital-status",
-            "occupation",
-            "relationship",
-            "race",
-            "sex",
-            "native-country",
-            "class",
-        ]
-        self.numerical_columns = [
-            "age",
-            "capital-gain",
-            "capital-loss",
-            "hours-per-week",
-        ]
-        self.categorical_columns = [
-            "workclass",
-            "education",
-            "marital-status",
-            "occupation",
-            "relationship",
-            "race",
-            "sex",
-            "native-country",
-        ]
-        self.raw_data = self.load(file_path=file_path, index_col=False)
-        self.X, self.y = self.preprocess(raw_data=self.raw_data)
-        self.X_train, self.X_test, self.y_train, self.y_test = self.get_split_data(
-            self.X, self.y, shuffle=shuffle
+        """Initialize the Adult Census dataset with OmegaConf config.
+
+        Args:
+            config_path: Path to the dataset configuration file.
+            samples_keep: Maximum number of samples to keep from the dataset.
+            shuffle: Whether to shuffle data before splitting.
+        """
+        conf = OmegaConf.load(str(config_path))
+        super().__init__(config=conf)
+        self.samples_keep = samples_keep
+        self.raw_data = self._load_csv(conf.raw_data_path)
+        self.X, self.y = self.preprocess(self.raw_data)
+
+        # Train/test split with optional shuffling
+        self.X_train, self.X_test, self.y_train, self.y_test = self.split_data(
+            self.X, self.y
         )
 
-        if transform:
-            self._init_base_column_transformer()
-            self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
-                self.X_train, self.X_test, self.y_train, self.y_test
-            )
+    def _load_csv(self, file_path: str) -> pd.DataFrame:
+        """Load dataset from CSV file.
 
-    def preprocess(self, raw_data: pd.DataFrame):
+        Args:
+            file_path: Path to the CSV file (relative to project root).
+
+        Returns:
+            Loaded dataset as a pandas DataFrame.
         """
-        Preprocess the loaded data to X and y numpy arrays.
+        # Resolve path relative to project root
+        project_root = Path(__file__).resolve().parent.parent.parent
+        path = project_root / file_path
+
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file not found: {path}")
+
+        return pd.read_csv(path, index_col=False)
+
+    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """Preprocess raw data into feature and target arrays.
+
+        Args:
+            raw_data: Raw dataset as a pandas DataFrame.
+
+        Returns:
+            Tuple (X, y) as numpy arrays.
         """
+        # Copy and clean data
         raw_data = raw_data.copy()
         raw_data = raw_data.dropna()
-        raw_data = raw_data[:SAMPLES_KEEP]
-        self.feature_columns = self.features[:-1]
-        target_column = "class"
-
+        raw_data = raw_data[:self.samples_keep]
+        
+        # Process target column (>50K vs <=50K)
+        target_column = self.config.target
         raw_data[target_column] = raw_data[target_column].apply(
             lambda x: 1 if x.strip() == ">50K" else 0
         )
+        
+        # Process categorical features using label encoding for simplicity
+        processed_data = raw_data.copy()
+        for feature in self.config.categorical_features:
+            if feature in processed_data.columns:
+                # Convert categorical to numeric codes
+                processed_data[feature] = pd.Categorical(processed_data[feature]).codes
+        
+        # Extract features and target
+        X = processed_data[self.config.features].to_numpy().astype(np.float32)
+        y = processed_data[target_column].to_numpy().astype(np.int64)
 
-        X = raw_data[self.numerical_columns + self.categorical_columns].to_numpy()
-        y = raw_data[target_column].to_numpy()
-        self.numerical_columns = list(range(0, len(self.numerical_columns)))
-        self.categorical_columns = list(
-            range(len(self.numerical_columns), len(self.feature_columns))
-        )
         return X, y
-
-    def _init_base_column_transformer(self):
-        """
-        Initialize base ColumnTransformer with OneHotEncoder fitted on full dataset
-        to ensure consistent features across CV folds.
-        """
-        self.base_onehot_encoder = OneHotEncoder(
-            handle_unknown="ignore", sparse_output=False
-        )
-        self.base_onehot_encoder.fit(self.X[:, self.categorical_columns])
-
-    def transform(
-        self,
-        X_train: np.ndarray,
-        X_test: np.ndarray,
-        y_train: np.ndarray,
-        y_test: np.ndarray,
-    ):
-        """
-        Transform the loaded data by applying Min-Max scaling to the features.
-        """
-        scaler = MinMaxScaler()
-
-        X_train_numerical = scaler.fit_transform(X_train[:, self.numerical_columns])
-        X_test_numerical = scaler.transform(X_test[:, self.numerical_columns])
-
-        X_train_categorical = self.base_onehot_encoder.transform(
-            X_train[:, self.categorical_columns]
-        )
-        X_test_categorical = self.base_onehot_encoder.transform(
-            X_test[:, self.categorical_columns]
-        )
-
-        X_train = np.concatenate([X_train_numerical, X_train_categorical], axis=1)
-        X_test = np.concatenate([X_test_numerical, X_test_categorical], axis=1)
-
-        self.feature_transformer = ColumnTransformer(
-            [
-                ("MinMaxScaler", scaler, self.numerical_columns),
-                ("OneHotEncoder", self.base_onehot_encoder, self.categorical_columns),
-            ],
-        )
-
-        X_train = np.array(X_train.astype(np.float32))
-        X_test = np.array(X_test.astype(np.float32))
-        y_train = np.array(y_train.astype(np.int64))
-        y_test = np.array(y_test.astype(np.int64))
-
-        self.numerical_features = list(range(0, len(self.numerical_columns)))
-        self.categorical_features = list(
-            range(len(self.numerical_columns), X_train.shape[1])
-        )
-        self.actionable_features = list(range(0, X_train.shape[1]))
-
-        return X_train, X_test, y_train, y_test
-
-    @property
-    def categorical_features_lists(self) -> list:
-        """
-        Override the base class property to return correct categorical feature groupings
-        based on actual one-hot encoded features.
-
-        Returns:
-            list: List of lists, where each inner list contains the indices of
-                  one-hot encoded features for each original categorical variable.
-        """
-        categorical_features_lists = []
-        current_idx = len(self.numerical_columns)
-
-        for categories in self.base_onehot_encoder.categories_:
-            n_categories = len(categories)
-            categorical_features_lists.append(
-                list(range(current_idx, current_idx + n_categories))
-            )
-            current_idx += n_categories
-
-        return categorical_features_lists
