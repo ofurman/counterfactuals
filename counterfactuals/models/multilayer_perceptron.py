@@ -5,10 +5,8 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.discriminative_models.classifier_mixin import (
-    ClassifierPytorchMixin,
-)
-from counterfactuals.discriminative_models.pytorch_base import PytorchBase
+from counterfactuals.models.classifier_mixin import ClassifierPytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class MLPClassifier(PytorchBase, ClassifierPytorchMixin):

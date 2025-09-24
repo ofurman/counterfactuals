@@ -6,10 +6,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.discriminative_models.pytorch_base import PytorchBase
-from counterfactuals.discriminative_models.regression_mixin import (
-    RegressionPytorchMixin,
-)
+from counterfactuals.models.pytorch_base import PytorchBase
+from counterfactuals.models.regression_mixin import RegressionPytorchMixin
 
 
 class MLPRegressor(PytorchBase, RegressionPytorchMixin):
