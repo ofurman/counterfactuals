@@ -42,7 +42,7 @@ def get_categorical_intervals(
     return categorical_features_lists if use_categorical else None
 
 
-@hydra.main(config_path="./conf", config_name="ppcef_config", version_base="1.2")
+@hydra.main(config_path="./conf", config_name="training_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
 
