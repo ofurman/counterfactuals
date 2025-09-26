@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from counterfactuals.datasets.base import AbstractDataset
 
@@ -72,6 +72,7 @@ class CreditDefaultDataset(AbstractDataset):
             self.X, self.y
         )
         if transform:
+            self._init_base_column_transformer()
             self.X_train, self.X_test, self.y_train, self.y_test = self.transform(
                 self.X_train, self.X_test, self.y_train, self.y_test
             )
@@ -84,16 +85,26 @@ class CreditDefaultDataset(AbstractDataset):
         target_column = "default payment next month"
         self.feature_columns = self.features[:-1]
 
-        raw_data = raw_data.dropna()
-        raw_data = raw_data[:SAMPLES_KEEP]
+        data_df = raw_data.dropna()
+        data_df = data_df[:SAMPLES_KEEP]
 
-        X = raw_data[self.feature_columns].to_numpy()
-        y = raw_data[target_column].to_numpy()
-        self.numerical_features = list(range(0, len(self.numerical_columns)))
-        self.categorical_features = list(
+        X = data_df[self.numerical_columns + self.categorical_columns].to_numpy()
+        y = data_df[target_column].to_numpy()
+        self.numerical_columns = list(range(0, len(self.numerical_columns)))
+        self.categorical_columns = list(
             range(len(self.numerical_columns), len(self.feature_columns))
         )
         return X, y
+
+    def _init_base_column_transformer(self):
+        """
+        Initialize base ColumnTransformer with OneHotEncoder fitted on full dataset
+        to ensure consistent features across CV folds.
+        """
+        self.base_onehot_encoder = OneHotEncoder(
+            handle_unknown="ignore", sparse_output=False
+        )
+        self.base_onehot_encoder.fit(self.X[:, self.categorical_columns])
 
     def transform(
         self,
