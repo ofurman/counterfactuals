@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.AdultDataset
+  _target_: counterfactuals.datasets.CreditDefaultDataset
 
 disc_model:
   train_model: false
