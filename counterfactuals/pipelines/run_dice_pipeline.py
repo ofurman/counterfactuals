@@ -1,7 +1,8 @@
 import logging
 import os
+import warnings
 from time import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import dice_ml
 import hydra
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
+warnings.filterwarnings("ignore")
 
 
 class DiscWrapper(nn.Module):
@@ -47,29 +50,9 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float]:
+) -> torch.nn.Module:
     """
-    Generate counterfactual explanations using the DiCE method.
-
-    This function constructs a `dice-ml` Data and Model interface around the provided
-    dataset and discriminator, computes a plausibility threshold (log-probability)
-    using the generative model, and generates one counterfactual per eligible test
-    instance (those not in the target class).
-
-    Args:
-        cfg: Hydra configuration containing experiment parameters
-        dataset: Dataset object with training/test splits and metadata
-        gen_model: Trained generative model used to compute plausibility threshold
-        disc_model: Trained discriminative model used for classification
-        save_folder: Directory path where generated counterfactuals will be saved
-
-    Returns:
-        Tuple containing:
-            - Xs_cfs: Generated counterfactual explanations
-            - Xs: Original test instances used for CF generation
-            - ys_orig: Original predicted labels for the test instances
-            - ys_target: Target labels corresponding to counterfactuals
-            - cf_search_time: Average time taken for counterfactual search
+    Create a counterfactual model
     """
 
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
@@ -85,13 +68,20 @@ def search_counterfactuals(
 
     features = list(range(dataset.X_train.shape[1])) + ["label"]
     features = list(map(str, features))
-    input_dataframe = pd.DataFrame(
-        np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1),
+
+    # Combine train and test data for DiCE to establish proper feature ranges
+    # This prevents DiCE from rejecting test instances that are outside training range
+    logger.info("Combining train and test data for DiCE range establishment")
+    X_combined = np.concatenate([X_train, X_test_origin], axis=0)
+    y_combined = np.concatenate([y_train, y_test_origin], axis=0)
+
+    combined_dataframe = pd.DataFrame(
+        np.concatenate((X_combined, y_combined.reshape(-1, 1)), axis=1),
         columns=features,
     )
 
     dice = dice_ml.Data(
-        dataframe=input_dataframe,
+        dataframe=combined_dataframe,
         continuous_features=list(map(str, dataset.numerical_columns)),
         outcome_name=features[-1],
     )
@@ -101,23 +91,21 @@ def search_counterfactuals(
     disc_model_w = DiscWrapper(disc_model)
 
     model = dice_ml.Model(disc_model_w, backend="PYT")
-    exp = dice_ml.Dice(dice, model, method="gradient")
+    exp = dice_ml.Dice(dice, model, method="random")
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
-    query_instance = query_instance
+
     time_start = time()
     cfs = exp.generate_counterfactuals(
         query_instance,
         total_CFs=1,
         desired_class="opposite",
         posthoc_sparsity_param=None,
-        learning_rate=0.05,
+        permitted_range=None,  # Let DiCE use its auto-detected ranges from combined data
     )
 
     cf_search_time = np.mean(time() - time_start)
-    logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
-
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
@@ -134,7 +122,6 @@ def search_counterfactuals(
     ys_target = np.abs(1 - y_test_origin)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    logger.info("Counterfactuals saved to %s", counterfactuals_path)
     return (
         Xs_cfs,
         X_test_origin,
@@ -295,8 +282,7 @@ def main(cfg: DictConfig) -> None:
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
         dequantizer.fit(dataset.X_train)
-        dataset.X_train = dequantizer.transform(dataset.X_train)
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
         # Custom code
         dataset.X_train = dequantizer.transform(dataset.X_train)
@@ -311,7 +297,6 @@ def main(cfg: DictConfig) -> None:
             cfg, dataset, gen_model, disc_model, save_folder
         )
 
-        Xs = dequantizer.inverse_transform(Xs)
         gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
