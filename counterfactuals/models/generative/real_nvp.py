@@ -1,27 +1,48 @@
+from typing import Optional, Tuple
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from nflows.flows import SimpleRealNVP as _SimpleRealNVP
 from tqdm import tqdm
 
-from counterfactuals.generative_models import BaseGenModel
+from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class NICE(BaseGenModel):
+class RealNVP(PytorchBase, GenerativePytorchMixin):
     def __init__(
         self,
-        features,
-        hidden_features,
-        context_features=None,
-        num_layers=5,
-        num_blocks_per_layer=2,
+        num_inputs: int,
+        num_targets: int,
+        features: int,
+        hidden_features: int,
+        context_features: Optional[int] = None,
+        num_layers: int = 5,
+        num_blocks_per_layer: int = 2,
+        use_residual_blocks: bool = True,
+        use_random_masks: bool = False,
+        use_random_permutations: bool = False,
         activation=F.relu,
-        dropout_probability=0.0,
-        batch_norm_within_layers=False,
-        batch_norm_between_layers=False,
-        device="cpu",
+        dropout_probability: float = 0.0,
+        batch_norm_within_layers: bool = False,
+        batch_norm_between_layers: bool = False,
+        device: str = "cpu",
     ):
-        super(NICE, self).__init__()
+        super(RealNVP, self).__init__(num_inputs, num_targets)
+        self.features = features
+        self.hidden_features = hidden_features
+        self.context_features = context_features
+        self.num_layers = num_layers
+        self.num_blocks_per_layer = num_blocks_per_layer
+        self.use_residual_blocks = use_residual_blocks
+        self.use_random_masks = use_random_masks
+        self.use_random_permutations = use_random_permutations
+        self.activation = activation
+        self.dropout_probability = dropout_probability
+        self.batch_norm_within_layers = batch_norm_within_layers
+        self.batch_norm_between_layers = batch_norm_between_layers
         self.device = device
         self.model = _SimpleRealNVP(
             features=features,
@@ -30,7 +51,7 @@ class NICE(BaseGenModel):
             num_layers=num_layers,
             num_blocks_per_layer=num_blocks_per_layer,
             activation=activation,
-            use_volume_preserving=True,
+            use_volume_preserving=False,
             dropout_probability=dropout_probability,
             batch_norm_within_layers=batch_norm_within_layers,
             batch_norm_between_layers=batch_norm_between_layers,
@@ -103,6 +124,34 @@ class NICE(BaseGenModel):
                 log_probs.append(outputs)
 
         return torch.hstack(log_probs)
+
+    def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
+        """Predict log probabilities for input data."""
+        if isinstance(X_test, np.ndarray):
+            X_test = torch.from_numpy(X_test).float()
+
+        self.eval()
+        with torch.no_grad():
+            log_probs = self.model.log_prob(X_test)
+            return log_probs.cpu().numpy()
+
+    def sample_and_log_proba(
+        self, n_samples: int, context: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Sample from RealNVP and return log probabilities."""
+        if isinstance(context, np.ndarray):
+            context_tensor = torch.from_numpy(context).float()
+        else:
+            context_tensor = context
+
+        self.eval()
+        with torch.no_grad():
+            # Sample from the model
+            samples = self.model.sample(n_samples, context=context_tensor)
+            # Get log probabilities for samples
+            log_probs = self.model.log_prob(samples, context=context_tensor)
+
+            return samples.cpu().numpy(), log_probs.cpu().numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)

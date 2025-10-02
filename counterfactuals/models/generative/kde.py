@@ -6,7 +6,8 @@ import numpy as np
 import torch
 from torch import distributions, nn
 
-from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 def _default_sample_fn(logits):
@@ -167,9 +168,11 @@ class KernelDensityEstimator(GenerativeModel):
         return self.kernel.sample(self.train_Xs[idxs])
 
 
-class KDE(BaseGenModel):
-    def __init__(self, bandwidth=0.1, **kwargs):  # Ignores kwargs!
-        super(KDE, self).__init__()
+class KDE(PytorchBase, GenerativePytorchMixin):
+    def __init__(
+        self, num_inputs: int, num_targets: int, bandwidth: float = 0.1, **kwargs
+    ):
+        super(KDE, self).__init__(num_inputs, num_targets)
         self.bandwidth = bandwidth
         self.models = nn.ModuleDict()
 
@@ -235,6 +238,31 @@ class KDE(BaseGenModel):
             model = self._get_model_for_context(context[i].item())
             preds[i] = model(inputs[i].unsqueeze(0))
         return preds
+
+    def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
+        """Predict log probabilities for input data."""
+        # Convert to torch tensor if needed
+        if isinstance(X_test, np.ndarray):
+            X_test = torch.from_numpy(X_test).float()
+
+        # Get log probabilities from KDE
+        with torch.no_grad():
+            log_probs = self.forward(X_test)
+            return log_probs.cpu().numpy()
+
+    def sample_and_log_proba(self, n_samples: int, context: np.ndarray) -> tuple:
+        """Sample from KDE and return log probabilities."""
+        # Get model for context
+        context_key = self._context_to_key(context[0])  # Assuming single context
+        model = self._get_model_for_context(context[0])
+
+        # Sample from the model
+        samples = model.sample(n_samples)
+
+        # Get log probabilities for samples
+        log_probs = model.forward(samples)
+
+        return samples.cpu().numpy(), log_probs.cpu().numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)

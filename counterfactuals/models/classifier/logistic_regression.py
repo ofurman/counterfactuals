@@ -2,15 +2,14 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.models.classifier_mixin import ClassifierPytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class LogisticRegression(BaseDiscModel):
-    def __init__(self, input_size, target_size):
-        super(LogisticRegression, self).__init__()
-        self.input_size = input_size
-        self.target_size = target_size
-        self.linear = torch.nn.Linear(input_size, target_size)
+class LogisticRegression(PytorchBase, ClassifierPytorchMixin):
+    def __init__(self, num_inputs: int, num_targets: int):
+        super(LogisticRegression, self).__init__(num_inputs, num_targets)
+        self.linear = torch.nn.Linear(num_inputs, num_targets)
 
     def forward(self, x):
         y_pred = torch.sigmoid(self.linear(x))
@@ -65,21 +64,21 @@ class LogisticRegression(BaseDiscModel):
                 break
         self.load(checkpoint_path)
 
-    def predict(self, X_test):
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
         if not isinstance(X_test, torch.Tensor):
             X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
             probs = self.forward(X_test)
             probs = probs > 0.5
-            return probs.float().view(-1)
+            return probs.float().view(-1).cpu().numpy()
 
-    def predict_proba(self, X_test):
+    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
         if not isinstance(X_test, torch.Tensor):
             X_test = torch.from_numpy(X_test).type(torch.float32)
         with torch.no_grad():
             probs = self.forward(X_test).type(torch.float32)
             probs = torch.hstack([1 - probs, probs]).detach().float()
-            return probs
+            return probs.cpu().numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)
@@ -88,10 +87,10 @@ class LogisticRegression(BaseDiscModel):
         self.load_state_dict(torch.load(path))
 
 
-class MultinomialLogisticRegression(BaseDiscModel):
-    def __init__(self, input_size, target_size):
-        super(MultinomialLogisticRegression, self).__init__()
-        self.linear = torch.nn.Linear(input_size, target_size)
+class MultinomialLogisticRegression(PytorchBase, ClassifierPytorchMixin):
+    def __init__(self, num_inputs: int, num_targets: int):
+        super(MultinomialLogisticRegression, self).__init__(num_inputs, num_targets)
+        self.linear = torch.nn.Linear(num_inputs, num_targets)
 
     def forward(self, x):
         y_pred = self.linear(x)

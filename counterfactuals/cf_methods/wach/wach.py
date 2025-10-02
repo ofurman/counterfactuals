@@ -5,13 +5,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
-from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class WACH(BaseCounterfactual):
     def __init__(
         self,
-        disc_model: BaseDiscModel,
+        disc_model: PytorchBase,
         target_class: int = "other",  # any class other than origin will do
         **kwargs,  # ignore other arguments
     ) -> None:

@@ -23,6 +23,7 @@ dependencies = [
   "matplotlib",
   "plotly",
   "ipykernel",
+  "dice-ml>=0.12",
 ]
 
 # Tooling and test libs should be installed as an extra (dev) instead of runtime deps

@@ -10,11 +10,11 @@ from counterfactuals.cf_methods.artelt.artelth20.plausible_counterfactuals impor
     PlausibleCounterfactualOfHyperplaneClassifier,
 )
 from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
-from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class Artelt(BaseCounterfactual):
-    def __init__(self, disc_model: BaseDiscModel, **kwargs) -> None:
+    def __init__(self, disc_model: PytorchBase, **kwargs) -> None:
         self.disc_model = disc_model
         self.density_estimators = {}
         self.kernel_density_estimators = {}

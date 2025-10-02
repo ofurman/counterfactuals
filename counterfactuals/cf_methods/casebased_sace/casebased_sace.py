@@ -7,13 +7,13 @@ from counterfactuals.cf_methods.sace.blackbox import BlackBox
 from counterfactuals.cf_methods.sace.casebased_sace import (
     CaseBasedSACE as OrigCaseBasedSACE,
 )
-from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class CaseBasedSACE(BaseCounterfactual):
     def __init__(
         self,
-        disc_model: BaseDiscModel,
+        disc_model: PytorchBase,
         variable_features=None,
         weights=None,
         metric=("euclidean", "jaccard"),
