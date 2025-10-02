@@ -5,8 +5,8 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual
-from counterfactuals.discriminative_models.base import BaseDiscModel
-from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 # Experimenting with custom autograd function
 # TODO: Move to separate file
@@ -43,8 +43,8 @@ ALPHA = 1e-6
 class PPCEF(BaseCounterfactual):
     def __init__(
         self,
-        gen_model: BaseGenModel,
-        disc_model: BaseDiscModel,
+        gen_model: GenerativePytorchMixin,
+        disc_model: PytorchBase,
         disc_model_criterion,
         device=None,
     ):

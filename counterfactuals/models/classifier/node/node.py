@@ -6,8 +6,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from ..classifier_mixin import ClassifierPytorchMixin
-from ..pytorch_base import PytorchBase
+from counterfactuals.models.classifier_mixin import ClassifierPytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
+
 from .odst_block import DenseBlock
 
 

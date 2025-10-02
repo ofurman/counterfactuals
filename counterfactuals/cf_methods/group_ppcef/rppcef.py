@@ -5,16 +5,16 @@ from tqdm.auto import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual
 from counterfactuals.cf_methods.group_ppcef.deltas import ARES, GCE, GLOBAL_CE, PPCEF_2
-from counterfactuals.discriminative_models.base import BaseDiscModel
-from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class RPPCEF(BaseCounterfactual):
     def __init__(
         self,
         cf_method_type: str,
-        gen_model: BaseGenModel,
-        disc_model: BaseDiscModel,
+        gen_model: GenerativePytorchMixin,
+        disc_model: PytorchBase,
         disc_model_criterion: torch.nn.modules.loss._Loss,
         init_cf_method_from_kmeans: bool = False,
         K: int = None,

@@ -5,8 +5,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from counterfactuals.discriminative_models.base import BaseDiscModel
-from counterfactuals.generative_models.base import BaseGenModel
+from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 @dataclass
@@ -25,8 +25,8 @@ class BaseCounterfactual(ABC):
     @abstractmethod
     def __init__(
         self,
-        gen_model: BaseGenModel,
-        disc_model: BaseDiscModel,
+        gen_model: GenerativePytorchMixin,
+        disc_model: PytorchBase,
         disc_model_criterion: torch.nn.modules.loss._Loss = None,
         device: str = None,
     ):

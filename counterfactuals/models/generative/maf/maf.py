@@ -4,10 +4,10 @@ import torch.optim as optim
 from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
 from tqdm import tqdm
 
-from counterfactuals.generative_models import BaseGenModel
+from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 
 
-class MaskedAutoregressiveFlow(BaseGenModel):
+class MaskedAutoregressiveFlow(GenerativePytorchMixin):
     def __init__(
         self,
         features,

@@ -5,13 +5,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
-from counterfactuals.discriminative_models.base import BaseDiscModel
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class CEGP(BaseCounterfactual):
     def __init__(
         self,
-        disc_model: BaseDiscModel,
+        disc_model: PytorchBase,
         beta: float = 0.01,
         c_init: float = 1.0,
         c_steps: int = 5,
