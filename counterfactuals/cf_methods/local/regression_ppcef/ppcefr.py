@@ -4,10 +4,13 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual
+from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 
 
-class PPCEFR(BaseCounterfactual):
+class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         gen_model,

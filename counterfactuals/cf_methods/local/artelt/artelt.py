@@ -9,11 +9,17 @@ from counterfactuals.cf_methods.artelt.artelth20.plausible_counterfactuals impor
     HighDensityEllipsoids,
     PlausibleCounterfactualOfHyperplaneClassifier,
 )
-from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class Artelt(BaseCounterfactual):
+class Artelt(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(self, disc_model: PytorchBase, **kwargs) -> None:
         self.disc_model = disc_model
         self.density_estimators = {}

@@ -4,43 +4,15 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual
+from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 from counterfactuals.models.pytorch_base import PytorchBase
 
-# Experimenting with custom autograd function
-# TODO: Move to separate file
-# class OneHotSoftmax(torch.autograd.Function):
-#     @staticmethod
-#     def forward(ctx, input, temp=0.03):
-#         # Store input and temperature for use in backward
-#         ctx.save_for_backward(input)
-#         ctx.temp = temp
 
-#         # Compute argmax and one-hot encode it
-#         indices = input.argmax(dim=1)
-#         one_hot = torch.nn.functional.one_hot(
-#             indices, num_classes=input.size(1)
-#         ).float()
-
-#         return one_hot
-
-#     @staticmethod
-#     def backward(ctx, grad_output):
-#         # Retrieve saved input and temperature
-#         (input,) = ctx.saved_tensors
-#         temp = ctx.temp
-
-#         # Compute gradients of softmax with respect to input
-#         softmax = torch.nn.functional.softmax(input / temp, dim=1)
-#         grad_input = grad_output * (softmax * (1 - softmax) / temp)
-
-#         return grad_input, None  # None corresponds to no gradient for temp
-
-ALPHA = 1e-6
-
-
-class PPCEF(BaseCounterfactual):
+class WACH_OURS(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         gen_model: GenerativePytorchMixin,
@@ -54,7 +26,6 @@ class PPCEF(BaseCounterfactual):
         self.device = device if device is not None else "cpu"
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
-        self.beta = 0
 
     def _search_step(
         self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
@@ -67,26 +38,12 @@ class PPCEF(BaseCounterfactual):
         :return: dict with loss and additional components to log.
         """
         alpha = search_step_kwargs.get("alpha", None)
-        epoch = search_step_kwargs.get("epoch", None)
-        categorical_intervals = search_step_kwargs.get("categorical_intervals", None)
-
-        log_prob_threshold = search_step_kwargs.get("log_prob_threshold", None)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
-        if log_prob_threshold is None:
-            raise ValueError("Parameter 'log_prob_threshold' should be in kwargs")
 
         dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
 
-        cf = x_origin + delta
-        if categorical_intervals:
-            tau = 1.0 - 0.99 / self.epochs * epoch
-            for interval in categorical_intervals:
-                cf[:, interval] = torch.nn.functional.gumbel_softmax(
-                    cf[:, interval], tau=tau, dim=1
-                )
-
-        disc_logits = self.disc_model.forward(cf)
+        disc_logits = self.disc_model.forward(x_origin + delta)
         disc_logits = (
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
@@ -97,35 +54,12 @@ class PPCEF(BaseCounterfactual):
         )
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
-        p_x_param_c_target = self.gen_model(
-            x_origin + delta, context=context_target.type(torch.float32)
-        )
-
-        max_inner = torch.nn.functional.relu(
-            log_prob_threshold * 0.5 - p_x_param_c_target
-        )
-
-        # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)
-
-        loss = dist + alpha * (loss_disc + max_inner)
+        loss = dist + alpha * (loss_disc)
         return {
             "loss": loss,
             "dist": dist,
-            "max_inner": max_inner,
             "loss_disc": loss_disc,
         }
-
-    def compute_regularization_loss(
-        self, cf: torch.Tensor, categorical_intervals
-    ) -> torch.Tensor:
-        # deprecated, categorical_intervals follow different implementation now.
-        regularization_loss = 0.0
-        for v in categorical_intervals:
-            regularization_loss += torch.pow(
-                torch.sum((torch.sum(cf[:, v[0] : v[1]], dim=1) - 1.0)), 2
-            )
-
-        return regularization_loss
 
     def explain(
         self,
@@ -151,7 +85,6 @@ class PPCEF(BaseCounterfactual):
         """
         Search counterfactual explanations for the given dataloader.
         """
-        self.epochs = epochs
         self.gen_model.eval()
         for param in self.gen_model.parameters():
             param.requires_grad = False
@@ -179,8 +112,7 @@ class PPCEF(BaseCounterfactual):
             optimizer = optim.Adam([delta], lr=lr)
             loss_components_logging = {}
 
-            for epoch in (epoch_pbar := tqdm(range(epochs))):
-                search_step_kwargs["epoch"] = epoch
+            for _ in (epoch_pbar := tqdm(range(epochs))):
                 optimizer.zero_grad()
                 loss_components = self._search_step(
                     delta,
@@ -199,12 +131,9 @@ class PPCEF(BaseCounterfactual):
                     ).append(loss.mean().detach().cpu().item())
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
-                prob_loss = loss_components["max_inner"].detach().cpu().mean().item()
-                epoch_pbar.set_description(
-                    f"Discriminator loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f}"
-                )
-                # if disc_loss < patience_eps and prob_loss < patience_eps:
-                #     break
+                epoch_pbar.set_description(f"Discriminator loss: {disc_loss:.4f}")
+                if disc_loss < patience_eps:
+                    break
 
             deltas.append(delta.detach().cpu().numpy())
             original.append(xs_origin.detach().cpu().numpy())

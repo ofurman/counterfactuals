@@ -4,11 +4,17 @@ from alibi.explainers import Counterfactual
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class WACH(BaseCounterfactual):
+class WACH(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         disc_model: PytorchBase,
