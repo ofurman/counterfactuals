@@ -5,8 +5,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from counterfactuals.cf_methods.lice.data.Features.Feature import Feature, Monotonicity
-from counterfactuals.cf_methods.lice.data.Types import CategValue, OneDimData
+from counterfactuals.cf_methods.local.lice.data.Features.Feature import Feature, Monotonicity
+from counterfactuals.cf_methods.local.lice.data.Types import CategValue, OneDimData
 
 
 class Binary(Feature):

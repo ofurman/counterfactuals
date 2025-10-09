@@ -9,9 +9,9 @@ from omlt.neuralnet import FullSpaceNNFormulation
 from pyomo.contrib.iis import write_iis
 from pyomo.opt import SolverStatus, TerminationCondition
 
-from counterfactuals.cf_methods.lice.data.DataHandler import DataHandler
-from counterfactuals.cf_methods.lice.data.Types import DataLike
-from counterfactuals.cf_methods.lice.SPN import SPN
+from counterfactuals.cf_methods.local.lice.data.DataHandler import DataHandler
+from counterfactuals.cf_methods.local.lice.data.Types import DataLike
+from counterfactuals.cf_methods.local.lice.SPN import SPN
 
 from .data_enc import decode_input_change, encode_input_change
 from .spn_enc import encode_spn
