@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 
-from counterfactuals.cf_methods.cet.utils import (
+from counterfactuals.cf_methods.local.cet.utils import (
     Action,
     ActionCandidates,
     ForestActionCandidates,

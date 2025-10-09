@@ -7,7 +7,6 @@ requires-python = ">=3.10"
 
 dependencies = [
   "torchdiffeq",
-  "alibi[tensorflow]; sys_platform != 'win32'",
   "numpy",
   "scipy",
   "cvxpy",
@@ -24,6 +23,10 @@ dependencies = [
   "plotly",
   "ipykernel",
   "dice-ml>=0.12",
+  "mlxtend>=0.23.4",
+  "pulp>=3.3.0",
+  "lingam>=1.11.0",
+  "alibi>=0.9.6",
 ]
 
 # Tooling and test libs should be installed as an extra (dev) instead of runtime deps
