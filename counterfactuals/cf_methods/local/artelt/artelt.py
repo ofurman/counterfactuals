@@ -5,7 +5,7 @@ from sklearn.neighbors import KernelDensity
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.artelt.artelth20.plausible_counterfactuals import (
+from counterfactuals.cf_methods.local.artelt.artelth20.plausible_counterfactuals import (
     HighDensityEllipsoids,
     PlausibleCounterfactualOfHyperplaneClassifier,
 )

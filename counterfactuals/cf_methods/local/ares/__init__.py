@@ -1,1 +1,1 @@
-from .ares import AReS  # noqa: F401
+from .ares import AReS as ARES  # noqa: F401

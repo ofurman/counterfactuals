@@ -1,6 +1,6 @@
 """Local counterfactual methods package."""
 
-from .ares.ares import ARES
+from .ares.ares import AReS as ARES
 from .artelt.artelt import Artelt
 from .casebased_sace.casebased_sace import CaseBasedSACE
 from .cegp.cegp import CEGP
