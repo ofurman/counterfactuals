@@ -64,14 +64,14 @@ class AdultDataset(DatasetBase):
         """
         # Drop rows with missing values in feature columns
         raw_data = raw_data.dropna(subset=self.config.features).copy()
-        
+
         # Process categorical features using label encoding for simplicity
         processed_data = raw_data.copy()
         for feature in self.config.categorical_features:
             if feature in processed_data.columns:
                 # Convert categorical to numeric codes
                 processed_data[feature] = pd.Categorical(processed_data[feature]).codes
-        
+
         # Extract features and target
         X = processed_data[self.config.features].to_numpy().astype(np.float32)
         y = processed_data[self.config.target].to_numpy().astype(np.int64)
