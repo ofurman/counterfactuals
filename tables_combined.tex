@@ -1,0 +1,222 @@
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets - Main Metrics. Results demonstrate the effectiveness of PPCEF in achieving high coverage, validity, and probabilistic plausibility compared to baseline methods across various financial and demographic datasets. \textbf{MNLogisticRegression}}
+    \label{tab:ours_mix_multinomiallogisticregression_main}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrrrr}
+    \toprule
+    Dataset & Method & Cov. $\uparrow$ & Val. $\uparrow$ & PP $\uparrow$ & LOF $\downarrow$ & IF $\downarrow$ & LD $\uparrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.61$\pm$0.47 & 1.38$\pm$0.03 & 0.00$\pm$0.01 & -21.16$\pm$15.53 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.37$\pm$0.23 & 3.21$\pm$0.33 & 0.04$\pm$0.01 & -26.49$\pm$6.64 \\
+     & DiCE & 1.00$\pm$0.00 & 0.62$\pm$0.21 & 0.01$\pm$0.01 & 4.64$\pm$0.28 & 0.01$\pm$0.01 & -346.87$\pm$358.73 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.01 & 0.69$\pm$0.39 & 1.89$\pm$0.07 & -0.06$\pm$0.03 & -448.78$\pm$1000.21 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.06$\pm$0.06 & 10.40$\pm$3.38 & -0.09$\pm$0.02 & -37.48$\pm$52.99 \\
+     & DiCE & 1.00$\pm$0.00 & 0.87$\pm$0.15 & 0.00$\pm$0.01 & 6.73$\pm$1.02 & -0.11$\pm$0.01 & -42197.04$\pm$92756.88 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.72$\pm$0.03 & 1.40$\pm$0.01 & 0.02$\pm$0.01 & -36.54$\pm$1.73 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.79$\pm$0.05 & 2.17$\pm$0.15 & 0.07$\pm$0.00 & -31.35$\pm$2.20 \\
+     & DiCE & 1.00$\pm$0.00 & 0.90$\pm$0.06 & 0.15$\pm$0.02 & 4.09$\pm$0.32 & 0.02$\pm$0.00 & -12887.06$\pm$28135.17 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.55$\pm$0.22 & 1.64$\pm$0.02 & -0.06$\pm$0.02 & -1718.49$\pm$2341.24 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.41$\pm$0.08 & 4.26$\pm$0.39 & 0.05$\pm$0.00 & -1117.17$\pm$901.92 \\
+     & DiCE & 1.00$\pm$0.00 & 0.86$\pm$0.09 & 0.02$\pm$0.01 & 3.62$\pm$0.12 & 0.01$\pm$0.00 & -12041.87$\pm$16855.83 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.59$\pm$0.04 & 1.50$\pm$0.01 & -0.04$\pm$0.01 & -195.16$\pm$41.15 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.77$\pm$0.03 & 6.43$\pm$0.99 & 0.14$\pm$0.00 & -173.03$\pm$62.12 \\
+     & DiCE & 1.00$\pm$0.00 & 0.96$\pm$0.01 & 0.34$\pm$0.01 & 8.17$\pm$0.14 & 0.12$\pm$0.00 & -694.05$\pm$626.51 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets for Proximity and Efficiency Metrics. (\textbf{MNLogisticRegression})}
+    \label{tab:ours_mix_multinomiallogisticregression_add}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrr}
+    \toprule
+    Dataset & Method & Hamming $\downarrow$ & L1 $\downarrow$ & L2 $\downarrow$ & Time $\downarrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 0.35$\pm$0.04 & 1.00$\pm$0.10 & 0.78$\pm$0.04 & 863.37$\pm$69.44 \\
+     & C-CHVAE & 0.25$\pm$0.01 & 0.77$\pm$0.02 & 0.63$\pm$0.02 & 320.67$\pm$198.23 \\
+     & DiCE & 0.23$\pm$0.02 & 0.43$\pm$0.09 & 0.38$\pm$0.08 & 400.97$\pm$56.69 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 0.22$\pm$0.04 & 0.85$\pm$0.03 & 0.82$\pm$0.03 & 121.58$\pm$60.90 \\
+     & C-CHVAE & 0.07$\pm$0.01 & 0.36$\pm$0.05 & 0.34$\pm$0.04 & 0.22$\pm$0.14 \\
+     & DiCE & 0.07$\pm$0.01 & 0.22$\pm$0.01 & 0.22$\pm$0.01 & 5.99$\pm$1.00 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 0.08$\pm$0.00 & 0.17$\pm$0.01 & 0.12$\pm$0.02 & 54.95$\pm$1.55 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.14$\pm$0.01 & 0.11$\pm$0.01 & 0.21$\pm$0.13 \\
+     & DiCE & 0.06$\pm$0.01 & 0.12$\pm$0.00 & 0.12$\pm$0.00 & 11.73$\pm$1.08 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 0.21$\pm$0.02 & 0.83$\pm$0.08 & 0.66$\pm$0.09 & 317.21$\pm$35.58 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.30$\pm$0.02 & 0.26$\pm$0.02 & 21.28$\pm$9.78 \\
+     & DiCE & 0.08$\pm$0.01 & 0.14$\pm$0.01 & 0.14$\pm$0.01 & 80.12$\pm$2.41 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 0.02$\pm$0.00 & 0.14$\pm$0.04 & 0.13$\pm$0.04 & 263.57$\pm$6.79 \\
+     & C-CHVAE & 0.02$\pm$0.00 & 0.27$\pm$0.02 & 0.27$\pm$0.02 & 88.65$\pm$8.28 \\
+     & DiCE & 0.01$\pm$0.00 & 0.14$\pm$0.00 & 0.14$\pm$0.00 & 259.55$\pm$5.70 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets - Main Metrics. Results demonstrate the effectiveness of PPCEF in achieving high coverage, validity, and probabilistic plausibility compared to baseline methods across various financial and demographic datasets. \textbf{MLPerceptron}}
+    \label{tab:ours_mix_multilayerperceptron_main}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrrrr}
+    \toprule
+    Dataset & Method & Cov. $\uparrow$ & Val. $\uparrow$ & PP $\uparrow$ & LOF $\downarrow$ & IF $\downarrow$ & LD $\uparrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.89$\pm$0.06 & 1.38$\pm$0.04 & 0.01$\pm$0.02 & -10.65$\pm$4.20 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.60$\pm$0.19 & 2.04$\pm$0.22 & 0.02$\pm$0.00 & -20.60$\pm$4.13 \\
+     & DiCE & 1.00$\pm$0.00 & 0.79$\pm$0.22 & 0.02$\pm$0.01 & 4.77$\pm$0.24 & -0.03$\pm$0.01 & -1032.64$\pm$1764.35 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.57$\pm$0.36 & 1.90$\pm$0.03 & -0.06$\pm$0.03 & -35.89$\pm$88.52 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.05$\pm$0.05 & 10.72$\pm$1.78 & -0.09$\pm$0.01 & -141.05$\pm$149.08 \\
+     & DiCE & 1.00$\pm$0.00 & 0.73$\pm$0.16 & 0.00$\pm$0.00 & 6.24$\pm$0.86 & -0.09$\pm$0.01 & -321.78$\pm$254.74 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.76$\pm$0.03 & 1.40$\pm$0.01 & 0.02$\pm$0.01 & -34.51$\pm$5.23 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.81$\pm$0.03 & 2.26$\pm$0.23 & 0.07$\pm$0.00 & -29.58$\pm$5.88 \\
+     & DiCE & 1.00$\pm$0.00 & 0.96$\pm$0.08 & 0.16$\pm$0.01 & 4.27$\pm$0.32 & 0.02$\pm$0.00 & -133.04$\pm$32.46 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.62$\pm$0.07 & 1.63$\pm$0.02 & -0.05$\pm$0.01 & -633.76$\pm$198.52 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.39$\pm$0.04 & 4.49$\pm$0.41 & 0.05$\pm$0.00 & -123.63$\pm$93.69 \\
+     & DiCE & 1.00$\pm$0.00 & 0.96$\pm$0.07 & 0.03$\pm$0.01 & 3.94$\pm$0.12 & 0.00$\pm$0.00 & -5313.56$\pm$5358.56 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.64$\pm$0.06 & 1.50$\pm$0.01 & -0.04$\pm$0.01 & -229.36$\pm$62.94 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.74$\pm$0.03 & 5.31$\pm$0.78 & 0.13$\pm$0.00 & -210.99$\pm$136.06 \\
+     & DiCE & 1.00$\pm$0.00 & 0.99$\pm$0.01 & 0.35$\pm$0.03 & 8.50$\pm$0.32 & 0.12$\pm$0.00 & -693.93$\pm$666.64 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets for Proximity and Efficiency Metrics. (\textbf{MLPerceptron})}
+    \label{tab:ours_mix_multilayerperceptron_add}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrr}
+    \toprule
+    Dataset & Method & Hamming $\downarrow$ & L1 $\downarrow$ & L2 $\downarrow$ & Time $\downarrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 0.33$\pm$0.01 & 0.93$\pm$0.03 & 0.77$\pm$0.01 & 1072.96$\pm$171.58 \\
+     & C-CHVAE & 0.27$\pm$0.01 & 0.80$\pm$0.03 & 0.67$\pm$0.02 & 339.02$\pm$54.06 \\
+     & DiCE & 0.28$\pm$0.02 & 0.63$\pm$0.05 & 0.56$\pm$0.04 & 679.38$\pm$71.29 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 0.22$\pm$0.02 & 0.82$\pm$0.11 & 0.75$\pm$0.13 & 82.88$\pm$2.01 \\
+     & C-CHVAE & 0.09$\pm$0.01 & 0.42$\pm$0.04 & 0.40$\pm$0.05 & 0.10$\pm$0.08 \\
+     & DiCE & 0.11$\pm$0.02 & 0.20$\pm$0.02 & 0.19$\pm$0.02 & 1.70$\pm$0.54 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 0.07$\pm$0.01 & 0.16$\pm$0.02 & 0.12$\pm$0.02 & 71.81$\pm$11.97 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.12$\pm$0.01 & 0.09$\pm$0.01 & 0.62$\pm$0.40 \\
+     & DiCE & 0.05$\pm$0.00 & 0.12$\pm$0.00 & 0.12$\pm$0.00 & 20.15$\pm$4.95 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 0.21$\pm$0.02 & 0.83$\pm$0.04 & 0.70$\pm$0.03 & 395.38$\pm$103.94 \\
+     & C-CHVAE & 0.07$\pm$0.00 & 0.32$\pm$0.01 & 0.28$\pm$0.01 & 26.33$\pm$2.53 \\
+     & DiCE & 0.10$\pm$0.00 & 0.18$\pm$0.01 & 0.17$\pm$0.01 & 84.53$\pm$2.69 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 0.02$\pm$0.01 & 0.13$\pm$0.05 & 0.12$\pm$0.04 & 297.67$\pm$18.13 \\
+     & C-CHVAE & 0.02$\pm$0.00 & 0.29$\pm$0.02 & 0.29$\pm$0.02 & 104.55$\pm$16.93 \\
+     & DiCE & 0.01$\pm$0.00 & 0.15$\pm$0.00 & 0.15$\pm$0.00 & 288.35$\pm$53.37 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets - Main Metrics. Results demonstrate the effectiveness of PPCEF in achieving high coverage, validity, and probabilistic plausibility compared to baseline methods across various financial and demographic datasets. \textbf{NODE}}
+    \label{tab:ours_mix_node_main}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrrrr}
+    \toprule
+    Dataset & Method & Cov. $\uparrow$ & Val. $\uparrow$ & PP $\uparrow$ & LOF $\downarrow$ & IF $\downarrow$ & LD $\uparrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 1.00$\pm$0.00 & 0.89$\pm$0.24 & 0.76$\pm$0.24 & 1.41$\pm$0.08 & 0.01$\pm$0.02 & -26.02$\pm$22.86 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.56$\pm$0.25 & 2.22$\pm$0.26 & 0.03$\pm$0.00 & -21.26$\pm$3.07 \\
+     & DiCE & 1.00$\pm$0.00 & 0.89$\pm$0.05 & 0.03$\pm$0.02 & 5.28$\pm$0.10 & -0.01$\pm$0.01 & -172.80$\pm$151.38 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.95$\pm$0.03 & 1.87$\pm$0.06 & -0.03$\pm$0.01 & 35.92$\pm$10.39 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.18$\pm$0.06 & 10.26$\pm$2.90 & -0.05$\pm$0.01 & 8.04$\pm$5.61 \\
+     & DiCE & 1.00$\pm$0.00 & 0.85$\pm$0.07 & 0.03$\pm$0.02 & 12.06$\pm$0.77 & -0.09$\pm$0.01 & -1723.22$\pm$1689.46 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.76$\pm$0.01 & 1.40$\pm$0.02 & 0.02$\pm$0.01 & -34.22$\pm$2.17 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.83$\pm$0.03 & 2.64$\pm$0.29 & 0.07$\pm$0.00 & -29.93$\pm$2.49 \\
+     & DiCE & 1.00$\pm$0.00 & 0.92$\pm$0.11 & 0.24$\pm$0.04 & 4.19$\pm$0.33 & 0.03$\pm$0.00 & -312.16$\pm$479.24 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 1.00$\pm$0.00 & 0.99$\pm$0.01 & 0.63$\pm$0.33 & 1.63$\pm$0.01 & -0.04$\pm$0.01 & -282.79$\pm$228.85 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.45$\pm$0.09 & 3.77$\pm$0.27 & 0.05$\pm$0.00 & -236.44$\pm$258.33 \\
+     & DiCE & 1.00$\pm$0.00 & 0.82$\pm$0.07 & 0.05$\pm$0.02 & 4.00$\pm$0.21 & 0.01$\pm$0.00 & -23103.73$\pm$43717.85 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 1.00$\pm$0.00 & 0.98$\pm$0.02 & 0.68$\pm$0.06 & 1.50$\pm$0.01 & -0.04$\pm$0.01 & -209.88$\pm$46.95 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.77$\pm$0.04 & 7.41$\pm$0.93 & 0.14$\pm$0.00 & -140.24$\pm$22.16 \\
+     & DiCE & 1.00$\pm$0.00 & 0.86$\pm$0.12 & 0.38$\pm$0.03 & 8.83$\pm$0.27 & 0.12$\pm$0.00 & -405.53$\pm$140.29 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets for Proximity and Efficiency Metrics. (\textbf{NODE})}
+    \label{tab:ours_mix_node_add}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrr}
+    \toprule
+    Dataset & Method & Hamming $\downarrow$ & L1 $\downarrow$ & L2 $\downarrow$ & Time $\downarrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 0.31$\pm$0.02 & 0.90$\pm$0.05 & 0.75$\pm$0.04 & 8503.14$\pm$109.93 \\
+     & C-CHVAE & 0.24$\pm$0.01 & 0.71$\pm$0.04 & 0.58$\pm$0.03 & 991.07$\pm$222.09 \\
+     & DiCE & 0.21$\pm$0.01 & 0.38$\pm$0.03 & 0.35$\pm$0.03 & 564.72$\pm$50.99 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 0.18$\pm$0.04 & 0.76$\pm$0.04 & 0.73$\pm$0.04 & 252.02$\pm$44.72 \\
+     & C-CHVAE & 0.06$\pm$0.01 & 0.29$\pm$0.03 & 0.27$\pm$0.03 & 2.61$\pm$1.22 \\
+     & DiCE & 0.06$\pm$0.01 & 0.24$\pm$0.01 & 0.24$\pm$0.01 & 10.10$\pm$1.08 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 0.06$\pm$0.01 & 0.14$\pm$0.01 & 0.10$\pm$0.01 & 144.21$\pm$4.31 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.13$\pm$0.00 & 0.11$\pm$0.00 & 2.55$\pm$1.51 \\
+     & DiCE & 0.05$\pm$0.00 & 0.12$\pm$0.00 & 0.12$\pm$0.00 & 22.59$\pm$0.94 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 0.17$\pm$0.04 & 0.72$\pm$0.13 & 0.60$\pm$0.11 & 1109.93$\pm$106.00 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.27$\pm$0.01 & 0.23$\pm$0.01 & 41.56$\pm$8.29 \\
+     & DiCE & 0.05$\pm$0.00 & 0.14$\pm$0.01 & 0.14$\pm$0.01 & 93.87$\pm$6.74 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 0.02$\pm$0.00 & 0.13$\pm$0.06 & 0.12$\pm$0.06 & 2390.94$\pm$62.80 \\
+     & C-CHVAE & 0.02$\pm$0.00 & 0.23$\pm$0.02 & 0.23$\pm$0.02 & 197.33$\pm$5.11 \\
+     & DiCE & 0.01$\pm$0.00 & 0.17$\pm$0.00 & 0.17$\pm$0.00 & 322.73$\pm$13.74 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}

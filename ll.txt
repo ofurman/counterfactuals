@@ -1,0 +1,137 @@
+[2025-10-06 11:51:25,920][__main__][INFO] - Initializing pipeline
+[2025-10-06 11:51:25,920][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Setting model paths
+[2025-10-06 11:51:25,920][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Creatied output folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset
+[2025-10-06 11:51:25,920][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Created save folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/PPCEF
+[2025-10-06 11:51:25,921][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Disc model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:25,921][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Gen model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/gen_model_MaskedAutoregressiveFlow_relabeled_by_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:25,921][__main__][INFO] - Loading dataset
+[2025-10-06 11:51:26,103][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Setting model paths
+[2025-10-06 11:51:26,103][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Creatied output folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_0
+[2025-10-06 11:51:26,103][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Created save folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/PPCEF/fold_0
+[2025-10-06 11:51:26,103][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Disc model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_0/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:26,103][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Gen model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_0/gen_model_MaskedAutoregressiveFlow_relabeled_by_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:26,103][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Creating discriminator model
+/Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_0/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:26,109][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Loading discriminator model
+[2025-10-06 11:51:26,113][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Evaluating discriminator model
+              precision    recall  f1-score   support
+
+           0       0.88      0.93      0.91      4859
+           1       0.73      0.61      0.67      1541
+
+    accuracy                           0.85      6400
+   macro avg       0.81      0.77      0.79      6400
+weighted avg       0.85      0.85      0.85      6400
+
+[2025-10-06 11:51:26,134][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Discriminator model evaluation results:
+ {'0': {'precision': 0.8825713169206721, 'recall': 0.9296151471496192, 'f1-score': 0.9054826100030069, 'support': 4859.0}, '1': {'precision': 0.733229329173167, 'recall': 0.6099935107073329, 'f1-score': 0.6659582004959264, 'support': 1541.0}, 'accuracy': 0.85265625, 'macro avg': {'precision': 0.8079003230469195, 'recall': 0.7698043289284761, 'f1-score': 0.7857204052494666, 'support': 6400.0}, 'weighted avg': {'precision': 0.8466125664333431, 'recall': 0.85265625, 'f1-score': 0.8478096232763802, 'support': 6400.0}}
+[2025-10-06 11:51:26,143][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Creating generative model
+[2025-10-06 11:51:26,157][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Loading generative model
+[2025-10-06 11:51:26,178][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:26,178][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:26,558][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Generative model evaluation results:
+ train_ll: -213.4226, test_ll: -213.3677
+[2025-10-06 11:51:26,775][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Setting model paths
+[2025-10-06 11:51:26,775][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Creatied output folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_1
+[2025-10-06 11:51:26,775][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Created save folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/PPCEF/fold_1
+[2025-10-06 11:51:26,775][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Disc model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_1/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:26,775][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Gen model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_1/gen_model_MaskedAutoregressiveFlow_relabeled_by_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:26,775][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Creating discriminator model
+/Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_1/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:26,776][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Loading discriminator model
+[2025-10-06 11:51:26,777][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Evaluating discriminator model
+              precision    recall  f1-score   support
+
+           0       0.88      0.93      0.90      4859
+           1       0.73      0.59      0.65      1541
+
+    accuracy                           0.85      6400
+   macro avg       0.80      0.76      0.78      6400
+weighted avg       0.84      0.85      0.84      6400
+
+[2025-10-06 11:51:26,786][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Discriminator model evaluation results:
+ {'0': {'precision': 0.8774005819592628, 'recall': 0.9308499691294505, 'f1-score': 0.9033353305372479, 'support': 4859.0}, '1': {'precision': 0.7301204819277108, 'recall': 0.5898767034393251, 'f1-score': 0.6525484565685571, 'support': 1541.0}, 'accuracy': 0.84875, 'macro avg': {'precision': 0.8037605319434868, 'recall': 0.7603633362843878, 'f1-score': 0.7779418935529026, 'support': 6400.0}, 'weighted avg': {'precision': 0.8419382953735408, 'recall': 0.84875, 'f1-score': 0.842950553539474, 'support': 6400.0}}
+[2025-10-06 11:51:26,795][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Creating generative model
+[2025-10-06 11:51:26,800][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Loading generative model
+[2025-10-06 11:51:26,821][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:26,822][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:27,260][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Generative model evaluation results:
+ train_ll: -208.8426, test_ll: -208.3177
+[2025-10-06 11:51:27,471][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Setting model paths
+[2025-10-06 11:51:27,471][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Creatied output folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_2
+[2025-10-06 11:51:27,471][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Created save folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/PPCEF/fold_2
+[2025-10-06 11:51:27,471][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Disc model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_2/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:27,471][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Gen model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_2/gen_model_MaskedAutoregressiveFlow_relabeled_by_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:27,471][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Creating discriminator model
+/Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_2/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:27,472][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Loading discriminator model
+[2025-10-06 11:51:27,473][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Evaluating discriminator model
+              precision    recall  f1-score   support
+
+           0       0.88      0.93      0.90      4858
+           1       0.73      0.59      0.66      1542
+
+    accuracy                           0.85      6400
+   macro avg       0.80      0.76      0.78      6400
+weighted avg       0.84      0.85      0.84      6400
+
+[2025-10-06 11:51:27,482][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Discriminator model evaluation results:
+ {'0': {'precision': 0.8785228377065112, 'recall': 0.9304240428159737, 'f1-score': 0.9037288813355994, 'support': 4858.0}, '1': {'precision': 0.7306772908366533, 'recall': 0.5946822308690013, 'f1-score': 0.6557025384340365, 'support': 1542.0}, 'accuracy': 0.84953125, 'macro avg': {'precision': 0.8046000642715823, 'recall': 0.7625531368424875, 'f1-score': 0.779715709884818, 'support': 6400.0}, 'weighted avg': {'precision': 0.8429013012575548, 'recall': 0.84953125, 'f1-score': 0.8439700343427541, 'support': 6400.0}}
+[2025-10-06 11:51:27,491][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Creating generative model
+[2025-10-06 11:51:27,496][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Loading generative model
+[2025-10-06 11:51:27,519][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:27,519][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:27,890][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Generative model evaluation results:
+ train_ll: -211.0063, test_ll: -210.4679
+[2025-10-06 11:51:28,100][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Setting model paths
+[2025-10-06 11:51:28,100][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Creatied output folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_3
+[2025-10-06 11:51:28,100][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Created save folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/PPCEF/fold_3
+[2025-10-06 11:51:28,100][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Disc model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_3/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:28,100][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Gen model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_3/gen_model_MaskedAutoregressiveFlow_relabeled_by_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:28,100][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Creating discriminator model
+/Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_3/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:28,101][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Loading discriminator model
+[2025-10-06 11:51:28,101][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Evaluating discriminator model
+              precision    recall  f1-score   support
+
+           0       0.88      0.93      0.90      4858
+           1       0.74      0.59      0.66      1542
+
+    accuracy                           0.85      6400
+   macro avg       0.81      0.76      0.78      6400
+weighted avg       0.84      0.85      0.84      6400
+
+[2025-10-06 11:51:28,112][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Discriminator model evaluation results:
+ {'0': {'precision': 0.877685310625121, 'recall': 0.9335117332235487, 'f1-score': 0.9047381546134663, 'support': 4858.0}, '1': {'precision': 0.7380373073803731, 'recall': 0.5901426718547341, 'f1-score': 0.6558558558558558, 'support': 1542.0}, 'accuracy': 0.85078125, 'macro avg': {'precision': 0.8078613090027471, 'recall': 0.7618272025391415, 'f1-score': 0.7802970052346611, 'support': 6400.0}, 'weighted avg': {'precision': 0.8440388698433395, 'recall': 0.85078125, 'f1-score': 0.8447730757565545, 'support': 6400.0}}
+[2025-10-06 11:51:28,121][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Creating generative model
+[2025-10-06 11:51:28,127][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Loading generative model
+[2025-10-06 11:51:28,149][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:28,149][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:28,527][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Generative model evaluation results:
+ train_ll: -229.9525, test_ll: -229.8507
+[2025-10-06 11:51:28,736][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Setting model paths
+[2025-10-06 11:51:28,737][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Creatied output folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_4
+[2025-10-06 11:51:28,737][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Created save folder /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/PPCEF/fold_4
+[2025-10-06 11:51:28,737][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Disc model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_4/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:28,737][counterfactuals.pipelines.nodes.helper_nodes][INFO] - Gen model path: /Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_4/gen_model_MaskedAutoregressiveFlow_relabeled_by_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:28,737][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Creating discriminator model
+/Users/lukasz/genwro/counterfactuals/models/AdultCensusDataset/fold_4/disc_model_MultinomialLogisticRegression.pt
+[2025-10-06 11:51:28,738][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Loading discriminator model
+[2025-10-06 11:51:28,738][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Evaluating discriminator model
+              precision    recall  f1-score   support
+
+           0       0.88      0.93      0.90      4858
+           1       0.73      0.61      0.66      1542
+
+    accuracy                           0.85      6400
+   macro avg       0.81      0.77      0.78      6400
+weighted avg       0.85      0.85      0.85      6400
+
+[2025-10-06 11:51:28,747][counterfactuals.pipelines.nodes.disc_model_nodes][INFO] - Discriminator model evaluation results:
+ {'0': {'precision': 0.8818928431755964, 'recall': 0.9283655825442569, 'f1-score': 0.9045326915363017, 'support': 4858.0}, '1': {'precision': 0.7293934681181959, 'recall': 0.6083009079118028, 'f1-score': 0.6633663366336634, 'support': 1542.0}, 'accuracy': 0.85125, 'macro avg': {'precision': 0.8056431556468961, 'recall': 0.7683332452280298, 'f1-score': 0.7839495140849826, 'support': 6400.0}, 'weighted avg': {'precision': 0.8451500249977041, 'recall': 0.85125, 'f1-score': 0.8464266729019472, 'support': 6400.0}}
+[2025-10-06 11:51:28,755][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Creating generative model
+[2025-10-06 11:51:28,761][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Loading generative model
+[2025-10-06 11:51:28,782][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:28,782][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Evaluating generative model
+[2025-10-06 11:51:29,218][counterfactuals.pipelines.nodes.gen_model_nodes][INFO] - Generative model evaluation results:
+ train_ll: -237.5786, test_ll: -237.3160

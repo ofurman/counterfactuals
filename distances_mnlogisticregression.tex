@@ -1,0 +1,37 @@
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets for Proximity and Efficiency Metrics. (\textbf{MNLogisticRegression})}
+    \label{tab:ours_mix_multinomiallogisticregression_add}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrr}
+    \toprule
+    Dataset & Method & Hamming $\downarrow$ & L1 $\downarrow$ & L2 $\downarrow$ & Time $\downarrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 0.35$\pm$0.04 & 1.00$\pm$0.10 & 0.78$\pm$0.04 & 863.37$\pm$69.44 \\
+     & C-CHVAE & 0.25$\pm$0.01 & 0.77$\pm$0.02 & 0.63$\pm$0.02 & 320.67$\pm$198.23 \\
+     & DiCE & 0.23$\pm$0.02 & 0.43$\pm$0.09 & 0.38$\pm$0.08 & 400.97$\pm$56.69 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 0.22$\pm$0.04 & 0.85$\pm$0.03 & 0.82$\pm$0.03 & 121.58$\pm$60.90 \\
+     & C-CHVAE & 0.07$\pm$0.01 & 0.36$\pm$0.05 & 0.34$\pm$0.04 & 0.22$\pm$0.14 \\
+     & DiCE & 0.07$\pm$0.01 & 0.22$\pm$0.01 & 0.22$\pm$0.01 & 5.99$\pm$1.00 \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 0.08$\pm$0.00 & 0.17$\pm$0.01 & 0.12$\pm$0.02 & 54.95$\pm$1.55 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.14$\pm$0.01 & 0.11$\pm$0.01 & 0.21$\pm$0.13 \\
+     & DiCE & 0.06$\pm$0.01 & 0.12$\pm$0.00 & 0.12$\pm$0.00 & 11.73$\pm$1.08 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & 0.21$\pm$0.02 & 0.83$\pm$0.08 & 0.66$\pm$0.09 & 317.21$\pm$35.58 \\
+     & C-CHVAE & 0.06$\pm$0.00 & 0.30$\pm$0.02 & 0.26$\pm$0.02 & 21.28$\pm$9.78 \\
+     & DiCE & 0.08$\pm$0.01 & 0.14$\pm$0.01 & 0.14$\pm$0.01 & 80.12$\pm$2.41 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 0.02$\pm$0.00 & 0.14$\pm$0.04 & 0.13$\pm$0.04 & 263.57$\pm$6.79 \\
+     & C-CHVAE & 0.02$\pm$0.00 & 0.27$\pm$0.02 & 0.27$\pm$0.02 & 88.65$\pm$8.28 \\
+     & DiCE & 0.01$\pm$0.00 & 0.14$\pm$0.00 & 0.14$\pm$0.00 & 259.55$\pm$5.70 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+\end{table}

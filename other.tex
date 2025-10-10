@@ -1,0 +1,37 @@
+
+\begin{table}[th]
+    \centering
+    \caption{Performance Analysis Across Different Datasets - Main Metrics. Results demonstrate the effectiveness of PPCEF in achieving high coverage, validity, and probabilistic plausibility compared to baseline methods across various financial and demographic datasets. \textbf{LR}}
+    \label{tab:ours_mix_lr_main}
+    \begin{center}
+    \begin{sc}
+    \begin{tiny}
+    \begin{tabular}{l|l|rrrrrrr}
+    \toprule
+    Dataset & Method & Cov. $\uparrow$ & Val. $\uparrow$ & PP $\uparrow$ & LOF $\downarrow$ & IF $\downarrow$ & LD $\uparrow$ \\
+    \midrule
+    \multirow{3}{*}{Lending Club} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.65$\pm$0.29 & 4.84$\pm$2.02 & 0.01$\pm$0.02 & -30.02$\pm$11.60 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 0.98$\pm$0.00 & 0.90$\pm$0.05 & 4.67$\pm$0.52 & 0.03$\pm$0.01 & -22.55$\pm$8.16 \\
+     & DiCE & 1.00$\pm$0.00 & 0.87$\pm$0.11 & 0.07$\pm$0.05 & 6.82$\pm$0.36 & 0.03$\pm$0.00 & -201.09$\pm$69.88 \\
+    \midrule
+    \multirow{3}{*}{GMSC} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.07$\pm$0.10 & 7.65$\pm$1.83 & -0.03$\pm$0.02 & -55.79$\pm$61.13 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 0.14$\pm$0.01 & 0.29$\pm$0.05 & 15.61$\pm$2.27 & -0.06$\pm$0.00 & -47.30$\pm$42.90 \\
+     & DiCE & -- & -- & -- & -- & -- & -- \\
+    \midrule
+    \multirow{3}{*}{Bank Marketing} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.84$\pm$0.02 & 4.81$\pm$0.14 & 0.08$\pm$0.01 & -37.34$\pm$2.42 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 0.32$\pm$0.01 & 0.38$\pm$0.18 & 2.64$\pm$0.27 & 0.03$\pm$0.01 & -53.92$\pm$4.03 \\
+     & DiCE & 1.00$\pm$0.00 & 0.32$\pm$0.13 & 0.14$\pm$0.06 & 4.55$\pm$0.11 & 0.02$\pm$0.00 & -101.27$\pm$13.69 \\
+    \midrule
+    \multirow{3}{*}{Credit Default} & PPCEF & -- & -- & -- & -- & -- & -- \\
+     & C-CHVAE & 1.00 ± 0.00 & 1.00 ± 0.00 & 0.42 ± 0.09 & 4.26 ± 0.33 & 0.05 ± 0.00 & -956.20 ± 926.62 \\
+     & DiCE & 1.00 ± 0.00 & 0.84 ± 0.11 & 0.02 ± 0.01 & 3.61 ± 0.08 & 0.01 ± 0.00 & -37464.76 ± 63595.74 \\
+    \midrule
+    \multirow{3}{*}{Adult Census} & PPCEF & 1.00$\pm$0.00 & 1.00$\pm$0.00 & 0.84$\pm$0.12 & 5.62$\pm$3.89 & 0.10$\pm$0.01 & -44.28$\pm$20.97 \\
+     & C-CHVAE & 1.00$\pm$0.00 & 0.60$\pm$0.01 & 0.87$\pm$0.04 & 5.60$\pm$0.31 & 0.10$\pm$0.00 & -503907.55$\pm$959867.10 \\
+     & DiCE & 1.00$\pm$0.00 & 0.59$\pm$0.12 & 0.46$\pm$0.03 & 7.30$\pm$0.35 & 0.07$\pm$0.00 & -36759.28$\pm$64648.53 \\
+    \bottomrule
+    \end{tabular}
+    \end{tiny}
+    \end{sc}
+    \end{center}
+    \end{table}
