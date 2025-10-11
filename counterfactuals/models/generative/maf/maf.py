@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -5,13 +6,16 @@ from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
 from tqdm import tqdm
 
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class MaskedAutoregressiveFlow(GenerativePytorchMixin):
+class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
     def __init__(
         self,
-        features,
-        hidden_features,
+        num_inputs: int,
+        num_targets: int,
+        features: int,
+        hidden_features: int,
         context_features=None,
         num_layers=5,
         num_blocks_per_layer=2,
@@ -24,9 +28,20 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
         batch_norm_between_layers=False,
         device="cpu",
     ):
-        super(MaskedAutoregressiveFlow, self).__init__()
+        super(MaskedAutoregressiveFlow, self).__init__(num_inputs, num_targets)
+        self.features = features
+        self.hidden_features = hidden_features
         self.device = device
         self.context_features = context_features
+        self.num_layers = num_layers
+        self.num_blocks_per_layer = num_blocks_per_layer
+        self.use_residual_blocks = use_residual_blocks
+        self.use_random_masks = use_random_masks
+        self.use_random_permutations = use_random_permutations
+        self.activation = activation
+        self.dropout_probability = dropout_probability
+        self.batch_norm_within_layers = batch_norm_within_layers
+        self.batch_norm_between_layers = batch_norm_between_layers
         self.model = _MaskedAutoregressiveFlow(
             features=features,
             hidden_features=hidden_features,
@@ -106,6 +121,7 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
     def predict_log_prob(self, dataloader) -> torch.Tensor:
         """
         Predict log probabilities for the given dataset using the context included in the dataset.
+        Returns a torch tensor stacked across batches.
         """
         self.eval()
         log_probs = []
@@ -115,15 +131,38 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
                 labels = labels.type(torch.float32)
                 outputs = self(inputs, labels)
                 log_probs.append(outputs)
-        results = torch.concat(log_probs)
+        results = torch.hstack(log_probs)
 
         assert len(dataloader.dataset) == len(results)
         return results
 
-    def sample_and_log_prob(self, num_samples, context=None):
-        if context is not None:
-            context = context.view(-1, self.context_features)
-        return self.model.sample_and_log_prob(num_samples=num_samples, context=context)
+    def sample_and_log_proba(self, n_samples: int, context: np.ndarray = None):
+        """Sample from the model and return (samples, log_probs) as numpy arrays."""
+        # Accept numpy arrays for context and convert to torch.tensor
+        if isinstance(context, np.ndarray):
+            context_tensor = torch.from_numpy(context).float()
+        else:
+            context_tensor = context
+
+        if context_tensor is not None:
+            context_tensor = context_tensor.view(-1, self.context_features)
+
+        self.eval()
+        with torch.no_grad():
+            samples, log_probs = self.model.sample_and_log_prob(num_samples=n_samples, context=context_tensor)
+            return samples.cpu().numpy(), log_probs.cpu().numpy()
+
+    def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
+        """Predict log probabilities for input data (numpy array) and return numpy array."""
+        if isinstance(X_test, np.ndarray):
+            X_test_tensor = torch.from_numpy(X_test).float()
+        else:
+            X_test_tensor = X_test
+
+        self.eval()
+        with torch.no_grad():
+            log_probs = self.model.log_prob(X_test_tensor)
+            return log_probs.cpu().numpy()
 
     # Deprecated due tu multiclass support, use self.forward instead
     # def predict_log_probs(self, X: Union[np.ndarray, torch.Tensor]):
@@ -159,3 +198,37 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
             inputs, labels = batch[0], None
             inputs = inputs.to(self.device)
         return inputs, labels
+
+    # Compatibility with PytorchBase abstract interface -------------------------------------------------
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
+        """
+        Return point predictions for input X. For a generative flow this is not a class label
+        prediction; we expose the model's log-probabilities as a sensible default.
+
+        Accepts numpy arrays or torch tensors and returns a numpy array.
+        """
+        # delegate to predict_log_proba which already supports numpy inputs
+        return self.predict_log_proba(X_test)
+
+    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
+        """
+        For consistency with the classifier interface, expose probabilities derived from
+        log-probabilities. Here we return normalized probabilities via softmax across a
+        singleton axis so callers expecting a (N, C) shape get a 2D array. For pure density
+        models this is somewhat synthetic but keeps API compatibility.
+        """
+        logp = self.predict_log_proba(X_test)
+        # Ensure we have a 2D array (N, ) -> (N, 1)
+        import numpy as _np
+
+        logp = _np.asarray(logp)
+        if logp.ndim == 1:
+            # create a single-column probability by exponentiating and normalizing to 1
+            probs = _np.exp(logp - _np.max(logp))
+            probs = probs / probs.sum()
+            # return shape (N,1)
+            return probs.reshape(-1, 1)
+        else:
+            # if logp already multi-dimensional, softmax along last axis
+            exp = _np.exp(logp - _np.max(logp, axis=1, keepdims=True))
+            return exp / exp.sum(axis=1, keepdims=True)

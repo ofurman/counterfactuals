@@ -6,42 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 
 
-class ClassifierPytorchMixin(ABC):
-    """
-    Abstract mixin class defining the classifier interface.
-
-    This mixin provides the standard classifier methods that should be
-    implemented by all PyTorch-based classifiers.
-    """
-
-    @abstractmethod
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Predict class labels for input data.
-
-        Args:
-            X_test: Input data as numpy array
-
-        Returns:
-            Predicted class labels as numpy array
-        """
-        pass
-
-    @abstractmethod
-    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Predict class probabilities for input data.
-
-        Args:
-            X_test: Input data as numpy array
-
-        Returns:
-            Class probabilities for each class as numpy array
-        """
-        pass
-
-
-class PytorchBase(torch.nn.Module, ClassifierPytorchMixin, ABC):
+class PytorchBase(torch.nn.Module, ABC):
     """
     Base class for PyTorch-based discriminative models.
 

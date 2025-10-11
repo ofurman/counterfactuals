@@ -7,7 +7,7 @@ from .cegp.cegp import CEGP
 from .cem.cem import CEM_CF
 from .cet.cet import CounterfactualExplanationTree as CET
 from .dice.dice import DiceExplainerWrapper
-from .lice.lice import LiCE
+#from .lice.lice import LiCE
 from .ppcef.ppcef import PPCEF
 from .regression_ppcef.ppcefr import PPCEFR
 from .sace.sace import SACE
