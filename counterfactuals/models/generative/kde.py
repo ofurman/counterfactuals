@@ -201,7 +201,9 @@ class KDE(PytorchBase, GenerativePytorchMixin):
     def fit(
         self,
         train_loader: torch.utils.data.DataLoader,
-        test_loader: torch.utils.data.DataLoader,
+        test_loader: torch.utils.data.DataLoader = None,
+        epochs: int = 200,
+        lr: float = 0.003,
         checkpoint_path: str = "best_model.pth",
         **kwargs,
     ):
@@ -218,13 +220,24 @@ class KDE(PytorchBase, GenerativePytorchMixin):
             )
         self.save(checkpoint_path)
 
-        train_log_probs = self.predict_log_prob(train_loader)
-        test_log_probs = self.predict_log_prob(test_loader)
-        print(f"Train log-likelihood: {train_log_probs.float().mean()}")
-        print(f"Test log-likelihood: {test_log_probs.float().mean()}")
+        if test_loader:
+            train_log_probs = self.predict_log_prob(train_loader)
+            test_log_probs = self.predict_log_prob(test_loader)
+            print(f"Train log-likelihood: {train_log_probs.float().mean()}")
+            print(f"Test log-likelihood: {test_log_probs.float().mean()}")
 
-    def forward(self, x: torch.Tensor, context: torch.Tensor):
-        preds = torch.zeros_like(context)
+    def forward(self, x: torch.Tensor, context: torch.Tensor = None):
+        """Forward pass with optional context for compatibility."""
+        if context is None:
+            # If no context provided, try to use all available models
+            # This is a fallback for PytorchBase compatibility
+            if len(self.models) == 1:
+                model = next(iter(self.models.values()))
+                return model(x).view(-1)
+            else:
+                raise ValueError("Context must be provided when multiple models exist")
+        
+        preds = torch.zeros_like(context, dtype=torch.float32)
         for i in range(x.shape[0]):
             model = self._get_model_for_context(context[i].item())
             preds[i] = model(x[i].unsqueeze(0))
@@ -242,19 +255,40 @@ class KDE(PytorchBase, GenerativePytorchMixin):
     def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
         """Predict log probabilities for input data."""
         # Convert to torch tensor if needed
-        if isinstance(X_test, np.ndarray):
-            X_test = torch.from_numpy(X_test).float()
+        if isinstance(X_test, torch.Tensor):
+            X_test_tensor = X_test
+            X_test = X_test.cpu().numpy()
+        else:
+            X_test_tensor = torch.from_numpy(X_test).float()
 
-        # Get log probabilities from KDE
-        with torch.no_grad():
-            log_probs = self.forward(X_test)
-            return log_probs.cpu().numpy()
+        # For compatibility, if only one model exists, use it
+        if len(self.models) == 1:
+            model = next(iter(self.models.values()))
+            with torch.no_grad():
+                log_probs = model(X_test_tensor)
+                return log_probs.cpu().numpy()
+        else:
+            # If multiple models exist, compute weighted average across all models
+            # This provides a reasonable default behavior
+            all_log_probs = []
+            with torch.no_grad():
+                for model in self.models.values():
+                    log_probs = model(X_test_tensor)
+                    all_log_probs.append(log_probs.cpu().numpy())
+            
+            # Return the mean log probability across all models
+            return np.mean(all_log_probs, axis=0)
 
     def sample_and_log_proba(self, n_samples: int, context: np.ndarray) -> tuple:
         """Sample from KDE and return log probabilities."""
+        # Handle context conversion
+        if isinstance(context, np.ndarray):
+            context_val = context[0] if len(context) > 0 else 0
+        else:
+            context_val = context
+            
         # Get model for context
-        context_key = self._context_to_key(context[0])  # Assuming single context
-        model = self._get_model_for_context(context[0])
+        model = self._get_model_for_context(context_val)
 
         # Sample from the model
         samples = model.sample(n_samples)
@@ -269,3 +303,55 @@ class KDE(PytorchBase, GenerativePytorchMixin):
 
     def load(self, path):
         self.load_state_dict(torch.load(path))
+
+    def predict_log_proba_with_context(self, X_test: np.ndarray, context: np.ndarray) -> np.ndarray:
+        """Predict log probabilities for input data with specific context."""
+        # Convert to torch tensor if needed
+        if isinstance(X_test, torch.Tensor):
+            X_test_tensor = X_test
+        else:
+            X_test_tensor = torch.from_numpy(X_test).float()
+            
+        if isinstance(context, torch.Tensor):
+            context = context.cpu().numpy()
+            
+        results = []
+        for i, ctx in enumerate(context):
+            model = self._get_model_for_context(ctx)
+            with torch.no_grad():
+                log_prob = model(X_test_tensor[i:i+1])
+                results.append(log_prob.cpu().numpy()[0])
+        
+        return np.array(results)
+
+    # Abstract methods from PytorchBase
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """
+        Make predictions on input data.
+        For KDE, this returns log probabilities as predictions.
+
+        Args:
+            x: Input data as numpy array
+
+        Returns:
+            Predictions as numpy array
+        """
+        return self.predict_log_proba(x)
+
+    def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """
+        Predict class probabilities for input data.
+        For KDE, this returns normalized probabilities from log probabilities.
+
+        Args:
+            x: Input data as numpy array
+
+        Returns:
+            Class probabilities as numpy array
+        """
+        log_probs = self.predict_log_proba(x)
+        # Convert log probabilities to probabilities and normalize
+        probs = np.exp(log_probs - np.max(log_probs))
+        probs = probs / np.sum(probs)
+        # Return as (N, 1) shape for compatibility
+        return probs.reshape(-1, 1)
