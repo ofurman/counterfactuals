@@ -5,19 +5,21 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
+from counterfactuals.models.pytorch_base import PytorchBase
+from counterfactuals.models.regression_mixin import RegressionPytorchMixin
 
-class NNRegression(nn.Module):
+class NNRegression(PytorchBase, RegressionPytorchMixin):
     def __init__(
         self,
-        input_size: int,
+        num_inputs: int,
+        num_targets: int,
         hidden_layer_sizes: List[int],
-        target_size: int,
         dropout: float = 0.2,
     ):
-        super(NNRegression, self).__init__()
-        self.input_size = input_size
-        self.target_size = target_size
-        layer_sizes = [input_size] + hidden_layer_sizes + [target_size]
+        super(NNRegression, self).__init__(num_inputs, num_targets)
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.dropout_rate = dropout
+        layer_sizes = [num_inputs] + hidden_layer_sizes + [num_targets]
         self.layers = nn.ModuleList()
         for i in range(len(layer_sizes) - 1):
             self.layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
@@ -37,10 +39,11 @@ class NNRegression(nn.Module):
         train_loader,
         test_loader=None,
         epochs=200,
-        lr=0.001,
+        lr=0.003,
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
+        **kwargs,
     ):
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         criterion = nn.MSELoss()
@@ -82,15 +85,41 @@ class NNRegression(nn.Module):
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {avg_test_loss:.4f}, Patience: {patience_counter}"
             )
 
-    def predict(self, X_test):
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
+        """
+        Make predictions on test data.
+
+        Args:
+            X_test: Input data as numpy array of shape (n_samples, n_features)
+
+        Returns:
+            np.ndarray: Predicted values of shape (n_samples,) or (n_samples, n_outputs)
+        """
         if not isinstance(X_test, torch.Tensor):
             X_test = torch.from_numpy(X_test).type(torch.float32)
+        
+        self.eval()
         with torch.no_grad():
             preds = self.forward(X_test)
-            return preds.float()
+            return preds.cpu().numpy().astype(np.float64)
 
-    def predict_proba(self, X_test):
-        raise NotImplementedError
+    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
+        """
+        Return prediction confidence/uncertainty for regression.
+        
+        For regression, this returns the predictions reshaped to (n_samples, 1)
+        to maintain compatibility with the classifier interface.
+
+        Args:
+            X_test: Input data as numpy array of shape (n_samples, n_features)
+
+        Returns:
+            np.ndarray: Predictions of shape (n_samples, 1)
+        """
+        predictions = self.predict(X_test)
+        if predictions.ndim == 1:
+            return predictions.reshape(-1, 1)
+        return predictions
 
     def save(self, path):
         torch.save(self.state_dict(), path)
