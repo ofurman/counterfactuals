@@ -4,10 +4,15 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.group.group_ppcef.deltas import (
+    ARES,
+    GCE,
+    GLOBAL_CE,
+    PPCEF_2,
+)
 from counterfactuals.cf_methods.group_counterfactual_mixin import (
     GroupCounterfactualMixin,
 )
-from counterfactuals.cf_methods.group.group_ppcef.deltas import ARES, GCE, GLOBAL_CE, PPCEF_2
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 from counterfactuals.models.pytorch_base import PytorchBase
 

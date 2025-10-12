@@ -3,7 +3,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from counterfactuals.cf_methods.local.lice.data.Features.Feature import Feature, Monotonicity
+from counterfactuals.cf_methods.local.lice.data.Features.Feature import (
+    Feature,
+    Monotonicity,
+)
 from counterfactuals.cf_methods.local.lice.data.Types import OneDimData
 
 

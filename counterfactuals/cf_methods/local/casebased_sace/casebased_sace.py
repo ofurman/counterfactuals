@@ -6,12 +6,12 @@ from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
-from counterfactuals.cf_methods.local_counterfactual_mixin import (
-    LocalCounterfactualMixin,
-)
 from counterfactuals.cf_methods.local.sace.blackbox import BlackBox
 from counterfactuals.cf_methods.local.sace.casebased_sace import (
     CaseBasedSACE as OrigCaseBasedSACE,
+)
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
 )
 from counterfactuals.models.pytorch_base import PytorchBase
 

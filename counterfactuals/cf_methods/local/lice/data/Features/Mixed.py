@@ -7,7 +7,10 @@ import pandas as pd
 
 from counterfactuals.cf_methods.local.lice.data.Features.Categorical import Categorical
 from counterfactuals.cf_methods.local.lice.data.Features.Contiguous import Contiguous
-from counterfactuals.cf_methods.local.lice.data.Features.Feature import Feature, Monotonicity
+from counterfactuals.cf_methods.local.lice.data.Features.Feature import (
+    Feature,
+    Monotonicity,
+)
 from counterfactuals.cf_methods.local.lice.data.Types import CategValue, OneDimData
 
 

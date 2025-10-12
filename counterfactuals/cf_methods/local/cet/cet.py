@@ -3,17 +3,16 @@ import time
 
 import numpy as np
 
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
 from counterfactuals.cf_methods.local.cet.ce import ActionExtractor
 from counterfactuals.cf_methods.local.cet.rule_miner import (
     FeatureDiscretizer,
     FrequentRuleMiner,
 )
 from counterfactuals.cf_methods.local.cet.utils import Cost, LimeEstimator, flatten
-
-from counterfactuals.cf_methods.counterfactual_base import (
-    BaseCounterfactualMethod,
-    ExplanationResult,
-)
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
@@ -262,7 +261,12 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
         self.rule_probability_ = (1 / self.rule_length_) / (1 / self.rule_length_).sum()
 
     def explain(
-        self, X: np.ndarray, y_origin: np.ndarray | None = None, y_target: np.ndarray | None = None, X_train: np.ndarray | None = None, **kwargs
+        self,
+        X: np.ndarray,
+        y_origin: np.ndarray | None = None,
+        y_target: np.ndarray | None = None,
+        X_train: np.ndarray | None = None,
+        **kwargs,
     ) -> ExplanationResult:
         """Wrapper to produce ExplanationResult for compatibility.
 
@@ -280,7 +284,9 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
             else np.zeros((X.shape[0],), dtype=int)
         )
         y_origin_arr = (
-            np.array(y_origin) if y_origin is not None else np.zeros((X.shape[0],), dtype=int)
+            np.array(y_origin)
+            if y_origin is not None
+            else np.zeros((X.shape[0],), dtype=int)
         )
 
         return ExplanationResult(
