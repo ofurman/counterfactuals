@@ -63,6 +63,13 @@ def test_model_fit_binary(model_class: type[MLPClassifier | LogisticRegression |
     model.fit(train_dataloader, test_dataloader, epochs=10, lr=0.001)
     assert model.num_inputs == dataset.X_train.shape[1]
 
+    predictions = model.predict(dataset.X_test)
+    assert predictions.shape == (dataset.X_test.shape[0],)
+    predictions_proba = model.predict_proba(dataset.X_test)
+    assert predictions_proba.shape == (dataset.X_test.shape[0], 2)
+    model.save("test_model.pth")
+    model.load("test_model.pth")
+
 
 @pytest.mark.parametrize(
     "model_class", [MLPClassifier, MultinomialLogisticRegression, NODE]
@@ -99,3 +106,10 @@ def test_model_fit_multiclass(
     model = model_class(num_inputs=dataset.X_train.shape[1], num_targets=3)
     model.fit(train_dataloader, test_dataloader, epochs=10, lr=0.001)
     assert model.num_inputs == dataset.X_train.shape[1]
+
+    predictions = model.predict(dataset.X_test)
+    assert predictions.shape == (dataset.X_test.shape[0],)
+    predictions_proba = model.predict_proba(dataset.X_test)
+    assert predictions_proba.shape == (dataset.X_test.shape[0], 3)
+    model.save("test_model.pth")
+    model.load("test_model.pth")
