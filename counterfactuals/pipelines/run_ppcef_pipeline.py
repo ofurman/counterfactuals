@@ -15,7 +15,7 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.ppcef import PPCEF
+from counterfactuals.cf_methods.local.ppcef import PPCEF
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
@@ -82,7 +82,7 @@ def search_counterfactuals(
         batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
     )
     log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
+        gen_model.predict_log_proba(train_dataloader_for_log_prob),
         cfg.counterfactuals_params.log_prob_quantile,
     )
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
@@ -245,8 +245,8 @@ def main(cfg: DictConfig):
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
         dequantizer.fit(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
@@ -278,6 +278,7 @@ def main(cfg: DictConfig):
             median_log_prob=log_prob_threshold,
         )
         logger.info(f"Metrics for fold {fold_n}: {metrics}")
+        return
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
