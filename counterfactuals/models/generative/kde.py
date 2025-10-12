@@ -1,6 +1,7 @@
 """Implementations of various mixture models."""
 
 import abc
+from typing import Optional
 
 import numpy as np
 import torch
@@ -169,10 +170,8 @@ class KernelDensityEstimator(GenerativeModel):
 
 
 class KDE(PytorchBase, GenerativePytorchMixin):
-    def __init__(
-        self, num_inputs: int, num_targets: int, bandwidth: float = 0.1, **kwargs
-    ):
-        super(KDE, self).__init__(num_inputs, num_targets)
+    def __init__(self, bandwidth: float = 0.1, **kwargs):
+        super(KDE, self).__init__(None, None)
         self.bandwidth = bandwidth
         self.models = nn.ModuleDict()
 
@@ -236,7 +235,7 @@ class KDE(PytorchBase, GenerativePytorchMixin):
                 return model(x).view(-1)
             else:
                 raise ValueError("Context must be provided when multiple models exist")
-        
+
         preds = torch.zeros_like(context, dtype=torch.float32)
         for i in range(x.shape[0]):
             model = self._get_model_for_context(context[i].item())
@@ -252,106 +251,28 @@ class KDE(PytorchBase, GenerativePytorchMixin):
             preds[i] = model(inputs[i].unsqueeze(0))
         return preds
 
-    def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
+    def predict_log_proba(
+        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """Predict log probabilities for input data."""
         # Convert to torch tensor if needed
-        if isinstance(X_test, torch.Tensor):
-            X_test_tensor = X_test
-            X_test = X_test.cpu().numpy()
-        else:
-            X_test_tensor = torch.from_numpy(X_test).float()
+        assert context is not None, "Context must be provided for KDE"
+        X_test = torch.from_numpy(X_test).float()
+        context = torch.from_numpy(context).float()
+        preds = torch.zeros_like(context, dtype=torch.float32)
+        for i in range(X_test.shape[0]):
+            model = self._get_model_for_context(context[i].item())
+            preds[i] = model(X_test[i].unsqueeze(0))
+        return preds.cpu().numpy()
 
-        # For compatibility, if only one model exists, use it
-        if len(self.models) == 1:
-            model = next(iter(self.models.values()))
-            with torch.no_grad():
-                log_probs = model(X_test_tensor)
-                return log_probs.cpu().numpy()
-        else:
-            # If multiple models exist, compute weighted average across all models
-            # This provides a reasonable default behavior
-            all_log_probs = []
-            with torch.no_grad():
-                for model in self.models.values():
-                    log_probs = model(X_test_tensor)
-                    all_log_probs.append(log_probs.cpu().numpy())
-            
-            # Return the mean log probability across all models
-            return np.mean(all_log_probs, axis=0)
-
-    def sample_and_log_proba(self, n_samples: int, context: np.ndarray) -> tuple:
+    def sample_and_log_proba(
+        self, n_samples: int, context: Optional[np.ndarray] = None
+    ) -> tuple:
         """Sample from KDE and return log probabilities."""
-        # Handle context conversion
-        if isinstance(context, np.ndarray):
-            context_val = context[0] if len(context) > 0 else 0
-        else:
-            context_val = context
-            
-        # Get model for context
-        model = self._get_model_for_context(context_val)
-
-        # Sample from the model
-        samples = model.sample(n_samples)
-
-        # Get log probabilities for samples
-        log_probs = model.forward(samples)
-
-        return samples.cpu().numpy(), log_probs.cpu().numpy()
+        raise NotImplementedError("Sampling from KDE is not implemented")
 
     def save(self, path):
         torch.save(self.state_dict(), path)
 
     def load(self, path):
         self.load_state_dict(torch.load(path))
-
-    def predict_log_proba_with_context(self, X_test: np.ndarray, context: np.ndarray) -> np.ndarray:
-        """Predict log probabilities for input data with specific context."""
-        # Convert to torch tensor if needed
-        if isinstance(X_test, torch.Tensor):
-            X_test_tensor = X_test
-        else:
-            X_test_tensor = torch.from_numpy(X_test).float()
-            
-        if isinstance(context, torch.Tensor):
-            context = context.cpu().numpy()
-            
-        results = []
-        for i, ctx in enumerate(context):
-            model = self._get_model_for_context(ctx)
-            with torch.no_grad():
-                log_prob = model(X_test_tensor[i:i+1])
-                results.append(log_prob.cpu().numpy()[0])
-        
-        return np.array(results)
-
-    # Abstract methods from PytorchBase
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        """
-        Make predictions on input data.
-        For KDE, this returns log probabilities as predictions.
-
-        Args:
-            x: Input data as numpy array
-
-        Returns:
-            Predictions as numpy array
-        """
-        return self.predict_log_proba(x)
-
-    def predict_proba(self, x: np.ndarray) -> np.ndarray:
-        """
-        Predict class probabilities for input data.
-        For KDE, this returns normalized probabilities from log probabilities.
-
-        Args:
-            x: Input data as numpy array
-
-        Returns:
-            Class probabilities as numpy array
-        """
-        log_probs = self.predict_log_proba(x)
-        # Convert log probabilities to probabilities and normalize
-        probs = np.exp(log_probs - np.max(log_probs))
-        probs = probs / np.sum(probs)
-        # Return as (N, 1) shape for compatibility
-        return probs.reshape(-1, 1)

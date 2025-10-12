@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
@@ -66,31 +65,5 @@ class PytorchBase(torch.nn.Module, ABC):
             epochs: Number of training epochs
             lr: Learning rate
             **kwargs: Additional training parameters
-        """
-        pass
-
-    @abstractmethod
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        """
-        Make predictions on input data.
-
-        Args:
-            x: Input data as numpy array
-
-        Returns:
-            Predictions as numpy array
-        """
-        pass
-
-    @abstractmethod
-    def predict_proba(self, x: np.ndarray) -> np.ndarray:
-        """
-        Predict class probabilities for input data.
-
-        Args:
-            x: Input data as numpy array
-
-        Returns:
-            Class probabilities as numpy array
         """
         pass
