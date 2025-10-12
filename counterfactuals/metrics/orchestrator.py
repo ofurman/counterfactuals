@@ -5,6 +5,7 @@ from typing import Any, Optional, Union
 
 import numpy as np
 import torch
+from omegaconf import OmegaConf
 
 from counterfactuals.metrics.utils import _METRIC_REGISTRY
 from counterfactuals.metrics.validation import convert_to_numpy, validate_metric_inputs
@@ -45,8 +46,10 @@ class MetricsOrchestrator:
         categorical_features: list[int],
         ratio_cont: Optional[float] = None,
         prob_plausibility_threshold: Optional[float] = None,
+        metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
     ) -> None:
         """Initialize the metrics orchestrator with data and models."""
+        self.metrics_to_compute = OmegaConf.load(metrics_conf_path).metrics_to_compute
         # Convert everything to numpy arrays if not already
         self.X_cf = convert_to_numpy(X_cf)
         self.y_target = convert_to_numpy(np.squeeze(y_target))
@@ -131,30 +134,9 @@ class MetricsOrchestrator:
         # Prepare all available inputs
         available_inputs = self._prepare_inputs()
 
-        metrics_to_compute = [
-            "coverage",
-            "validity",
-            "actionability",
-            "sparsity",
-            "proximity_categorical_hamming",
-            "proximity_categorical_jaccard",
-            "proximity_continuous_manhattan",
-            "proximity_continuous_euclidean",
-            "proximity_continuous_mad",
-            "proximity_l2_jaccard",
-            "proximity_mad_hamming",
-            "prob_plausibility",
-            "log_density_cf",
-            "log_density_test",
-            "lof_scores_cf",
-            "lof_scores_test",
-            "isolation_forest_scores_cf",
-            "isolation_forest_scores_test",
-        ]
-
         results: dict[str, float] = {}
 
-        for metric_name in metrics_to_compute:
+        for metric_name in self.metrics_to_compute:
             # Get metric class from registry
             metric_cls = _METRIC_REGISTRY.get(metric_name)
             if metric_cls is None:

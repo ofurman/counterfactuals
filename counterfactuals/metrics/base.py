@@ -1,10 +1,18 @@
-from typing import Any, Protocol, runtime_checkable
+from abc import ABC, abstractmethod
+from typing import Any
 
 
-@runtime_checkable
-class Metric(Protocol):
+class Metric(ABC):
     name: str
 
-    def required_inputs(self) -> set[str]: ...
+    @abstractmethod
+    def required_inputs(self) -> set[str]:
+        """Return the set of required input keys.
 
-    def __call__(self, **inputs: Any) -> Any: ...
+        Returns:
+            set[str]: The set of required input keys.
+        """
+
+    @abstractmethod
+    def __call__(self, **inputs: Any) -> Any:
+        pass
