@@ -60,6 +60,7 @@ class DatasetParameters:
     target_mapping: Dict[str, int]
     samples_keep: int = -1
 
+
 class DatasetBase:
     """Base class for datasets.
 

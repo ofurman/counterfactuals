@@ -1,6 +1,7 @@
 """Minimal tests for AdultCensusDataset functionality."""
-import pytest
+
 import numpy as np
+import pytest
 
 from counterfactuals.datasets.file_dataset import FileDataset
 

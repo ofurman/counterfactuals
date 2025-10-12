@@ -1,6 +1,6 @@
-import numpy as np
 import pandas as pd
 from sklearn.datasets import load_digits
+
 
 def preprocess_digits() -> pd.DataFrame:
     data = load_digits(n_class=10)

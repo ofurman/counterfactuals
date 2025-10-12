@@ -1,6 +1,7 @@
 """Minimal tests for AdultCensusDataset functionality."""
-import pytest
+
 import numpy as np
+import pytest
 
 from counterfactuals.datasets.regression_file_dataset import RegressionFileDataset
 
@@ -61,7 +62,9 @@ def test_dataset_samples_keep(config_path: str):
     """Test that `samples_keep` parameter works."""
     if hasattr(RegressionFileDataset, "samples_keep"):
         dataset_full = RegressionFileDataset(config_path=config_path, samples_keep=1000)
-        dataset_sampled = RegressionFileDataset(config_path=config_path, samples_keep=100)
+        dataset_sampled = RegressionFileDataset(
+            config_path=config_path, samples_keep=100
+        )
 
         assert dataset_sampled.X.shape[0] < dataset_full.X.shape[0]
         assert dataset_sampled.X.shape[0] == 100

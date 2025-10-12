@@ -57,4 +57,6 @@ class RegressionFileDataset(DatasetBase):
         raw_data[self.config.target] = raw_data[self.config.target].replace(
             self.config.target_mapping
         )
-        return raw_data[self.config.features].to_numpy(), raw_data[self.config.target].to_numpy()
+        return raw_data[self.config.features].to_numpy(), raw_data[
+            self.config.target
+        ].to_numpy()

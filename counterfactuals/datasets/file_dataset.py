@@ -53,8 +53,12 @@ class FileDataset(DatasetBase):
             Tuple (X, y) as numpy arrays.
         """
         raw_data = raw_data.dropna(subset=self.config.features)
-        raw_data = raw_data.sample(min(self.samples_keep,len(raw_data)), random_state=42)
+        raw_data = raw_data.sample(
+            min(self.samples_keep, len(raw_data)), random_state=42
+        )
         raw_data[self.config.target] = raw_data[self.config.target].replace(
             self.config.target_mapping
         )
-        return raw_data[self.config.features].to_numpy(), raw_data[self.config.target].to_numpy()
+        return raw_data[self.config.features].to_numpy(), raw_data[
+            self.config.target
+        ].to_numpy()
