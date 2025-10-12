@@ -1,0 +1,73 @@
+raw_data_path: data/lending_club.csv
+features:
+- loan_amnt
+- term
+- int_rate
+- installment
+- grade
+- emp_length
+- home_ownership
+- annual_inc
+- dti
+- delinq_2yrs
+- fico_range_low
+- fico_range_high
+continuous_features:
+- loan_amnt
+- int_rate
+- installment
+- annual_inc
+- dti
+- delinq_2yrs
+- fico_range_low
+- fico_range_high
+categorical_features:
+- term
+- grade
+- emp_length
+- home_ownership
+feature_config:
+  loan_amnt:
+    actionable: true
+  term:
+    actionable: true
+  int_rate:
+    actionable: true
+  installment:
+    actionable: true
+  grade:
+    actionable: true
+  emp_length:
+    actionable: true
+  home_ownership:
+    actionable: true
+  annual_inc:
+    actionable: true
+  dti:
+    actionable: true
+  delinq_2yrs:
+    actionable: true
+  fico_range_low:
+    actionable: true
+  fico_range_high:
+    actionable: true
+target: loan_status
+target_mapping:
+  Fully Paid: 1
+  Does not meet the credit policy. Status:Fully Paid: 1
+  Current: 0
+  Charged Off: 0
+  Late (31-120 days): 0
+  Late (16-30 days): 0
+  Late (90+ days): 0
+  In Grace Period: 0
+  Default: 0
+  Current: 0
+  Charged Off: 0
+  Late (31-120 days): 0
+  Late (16-30 days): 0
+  Late (90+ days): 0
+  In Grace Period: 0
+  Default: 0
+
+samples_keep: 30000

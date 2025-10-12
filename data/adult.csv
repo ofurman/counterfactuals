@@ -1,4 +1,3 @@
-
 age,workclass,education,marital_status,occupation,race,gender,hours_per_week,income
 39,Government,Bachelors,Single,White-Collar,White,Male,40,0
 50,Self-Employed,Bachelors,Married,White-Collar,White,Male,13,0

@@ -1,0 +1,46 @@
+raw_data_path: data/compas/compas.csv
+features:
+- age
+- priors_count
+- days_b_screening_arrest
+- length_of_stay
+- is_recid
+- is_violent_recid
+- two_year_recid
+- c_charge_degree
+- sex
+- race
+continuous_features:
+- age
+- priors_count
+- days_b_screening_arrest
+- length_of_stay
+- is_recid
+- is_violent_recid
+- two_year_recid
+categorical_features:
+- c_charge_degree
+- sex
+- race
+feature_config:
+  age:
+    actionable: true
+  priors_count:
+    actionable: true
+  days_b_screening_arrest:
+    actionable: true
+  length_of_stay:
+    actionable: true
+  is_recid:
+    actionable: true
+  is_violent_recid:
+    actionable: true
+  two_year_recid:
+    actionable: true
+  c_charge_degree:
+    actionable: true
+  sex:
+    actionable: false
+  race:
+    actionable: false
+target: class

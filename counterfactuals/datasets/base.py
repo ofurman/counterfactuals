@@ -1,12 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import yaml
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
+
+try:
+    from omegaconf import DictConfig
+except ImportError:  # pragma: no cover - optional dependency during testing
+    DictConfig = None
 
 
 class MonotonicityDirection(Enum):
@@ -51,7 +56,9 @@ class DatasetParameters:
     continuous_features: List[Union[str, int]]
     categorical_features: List[Union[str, int]]
     feature_config: Dict[Union[str, int], FeatureParameters]
-    target: str = "y"
+    target: str
+    target_mapping: Dict[str, int]
+    samples_keep: int = -1
 
 
 class DatasetBase:
@@ -61,15 +68,22 @@ class DatasetBase:
     Transformation logic should be handled outside this class.
     """
 
-    def __init__(self, config: DatasetParameters):
-        """Initializes a dataset with configuration parameters.
+    def __init__(self, config_path: Path):
+        """Initializes a dataset with configuration parameters from a YAML file.
 
         Args:
-            config: Dataset configuration object.
+            config_path: Path to the YAML config file.
         """
-        self.config = config
+        self.config = self._load_config(config_path)
         self.X: Optional[np.ndarray] = None
         self.y: Optional[np.ndarray] = None
+        self.features: List[Any] = self.config.features
+        self.numerical_features: List[Any] = self.config.continuous_features
+        self.categorical_features: List[Any] = self.config.categorical_features
+        self.actionable_features: List[Any] = [
+            k for k, v in self.config.feature_config.items() if v.actionable
+        ]
+        self.task_type: str = "classification"
 
     def preprocess(self, raw_data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         """Extracts input features and target from raw data.
@@ -84,6 +98,16 @@ class DatasetBase:
         y = raw_data[self.config.target].to_numpy()
         self.X, self.y = X, y
         return X, y
+
+    def _resolve_data_path(self, file_path: Union[str, Path]) -> Path:
+        project_root = Path(__file__).resolve().parent.parent.parent
+        return project_root / Path(file_path)
+
+    def _load_csv(self, file_path: str, **read_csv_kwargs: Any) -> pd.DataFrame:
+        path = self._resolve_data_path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Dataset file not found: {path}")
+        return pd.read_csv(path, **read_csv_kwargs)
 
     def split_data(
         self,
@@ -128,14 +152,25 @@ class DatasetBase:
         """
         if self.X is None or self.y is None:
             raise ValueError("Call preprocess() before generating CV splits.")
-        cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=42)
-        for train_idx, test_idx in cv.split(self.X, self.y):
-            yield (
-                self.X[train_idx],
-                self.X[test_idx],
-                self.y[train_idx],
-                self.y[test_idx],
-            )
+
+        if self.task_type == "classification":
+            cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=42)
+            for train_idx, test_idx in cv.split(self.X, self.y):
+                yield (
+                    self.X[train_idx],
+                    self.X[test_idx],
+                    self.y[train_idx],
+                    self.y[test_idx],
+                )
+        else:
+            cv = KFold(n_splits=n_splits, shuffle=shuffle, random_state=42)
+            for train_idx, test_idx in cv.split(self.X):
+                yield (
+                    self.X[train_idx],
+                    self.X[test_idx],
+                    self.y[train_idx],
+                    self.y[test_idx],
+                )
 
     def _load_config(self, yaml_path: Path) -> DatasetParameters:
         """Loads dataset parameters from YAML config.
@@ -166,4 +201,6 @@ class DatasetBase:
             categorical_features=cfg.get("categorical_features", []),
             feature_config=feature_config,
             target=cfg.get("target", "y"),
+            target_mapping=cfg.get("target_mapping", {}),
+            samples_keep=cfg.get("samples_keep", 1000),
         )

@@ -1,0 +1,78 @@
+raw_data_path: data/german_credit.csv
+features:
+- duration_in_month
+- credit_amount
+- installment_as_income_perc
+- present_res_since
+- age
+- credits_this_bank
+- people_under_maintenance
+- account_check_status
+- credit_history
+- purpose
+- savings
+- present_emp_since
+- personal_status_sex
+- other_debtors
+- property
+- other_installment_plans
+- housing
+- job
+continuous_features:
+- duration_in_month
+- credit_amount
+- installment_as_income_perc
+- present_res_since
+- age
+- credits_this_bank
+- people_under_maintenance
+categorical_features:
+- account_check_status
+- credit_history
+- purpose
+- savings
+- present_emp_since
+- personal_status_sex
+- other_debtors
+- property
+- other_installment_plans
+- housing
+- job
+feature_config:
+  duration_in_month:
+    actionable: true
+  credit_amount:
+    actionable: true
+  installment_as_income_perc:
+    actionable: true
+  present_res_since:
+    actionable: true
+  age:
+    actionable: true
+  credits_this_bank:
+    actionable: true
+  people_under_maintenance:
+    actionable: true
+  account_check_status:
+    actionable: true
+  credit_history:
+    actionable: true
+  purpose:
+    actionable: true
+  savings:
+    actionable: true
+  present_emp_since:
+    actionable: true
+  personal_status_sex:
+    actionable: false
+  other_debtors:
+    actionable: true
+  property:
+    actionable: true
+  other_installment_plans:
+    actionable: true
+  housing:
+    actionable: true
+  job:
+    actionable: true
+target: default

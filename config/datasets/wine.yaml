@@ -1,0 +1,58 @@
+raw_data_path: data/wine.csv
+features:
+- Alcohol
+- Malic acid
+- Ash
+- Alcalinity of ash
+- Magnesium
+- Total phenols
+- Flavanoids
+- Nonflavanoid phenols
+- Proanthocyanins
+- Color intensity
+- Hue
+- OD280/OD315 of diluted wines
+- Proline
+continuous_features:
+- Alcohol
+- Malic acid
+- Ash
+- Alcalinity of ash
+- Magnesium
+- Total phenols
+- Flavanoids
+- Nonflavanoid phenols
+- Proanthocyanins
+- Color intensity
+- Hue
+- OD280/OD315 of diluted wines
+- Proline
+categorical_features: []
+feature_config:
+  Alcohol:
+    actionable: true
+  Malic acid:
+    actionable: true
+  Ash:
+    actionable: true
+  Alcalinity of ash:
+    actionable: true
+  Magnesium:
+    actionable: true
+  Total phenols:
+    actionable: true
+  Flavanoids:
+    actionable: true
+  Nonflavanoid phenols:
+    actionable: true
+  Proanthocyanins:
+    actionable: true
+  Color intensity:
+    actionable: true
+  Hue:
+    actionable: true
+  OD280/OD315 of diluted wines:
+    actionable: true
+  Proline:
+    actionable: true
+target: Target
