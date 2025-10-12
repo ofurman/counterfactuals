@@ -25,5 +25,4 @@ from counterfactuals.models.pytorch_base import PytorchBase
 # Regression models (sklearn-like API)
 from counterfactuals.models.regression.linear_regression import LinearRegression
 from counterfactuals.models.regression.mlp_regressor import MLPRegressor
-from counterfactuals.models.regression.nn_regression import NNRegression
 from counterfactuals.models.regression_mixin import RegressionPytorchMixin
