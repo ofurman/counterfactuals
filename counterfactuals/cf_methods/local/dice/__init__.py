@@ -1,1 +1,1 @@
-from .dice import DiceExplainerWrapper  # noqa: F401
+from .dice import DICE
