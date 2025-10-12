@@ -2,16 +2,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from omegaconf import OmegaConf
 
 from counterfactuals.datasets.base import DatasetBase
 
 
 class AdultDataset(DatasetBase):
-    """Adult Census dataset loader compatible with DatasetBase."""
+    """Adult dataset loader compatible with DatasetBase."""
 
-    # Path relative to this file: counterfactuals/datasets/adult.py
-    # Go up 3 levels to project root, then to config
     CONFIG_PATH = (
         Path(__file__).resolve().parent.parent.parent
         / "config"
@@ -19,18 +16,18 @@ class AdultDataset(DatasetBase):
         / "adult.yaml"
     )
 
-    def __init__(self, config_path: Path = CONFIG_PATH):
-        """Initialize the Adult dataset with OmegaConf config.
-
+    def __init__(self, config_path: Path = CONFIG_PATH, transform: bool = True):
+        """Initializes the Adult dataset with OmegaConf config.
         Args:
             config_path: Path to the dataset configuration file.
+            transform: Whether to apply transformation.
         """
-        conf = OmegaConf.load(str(config_path))
-        super().__init__(config=conf)
-        self.raw_data = self._load_csv(conf.raw_data_path)
+        super().__init__(config_path=config_path)
+        self.transform_data = transform
+
+        self.raw_data = self._load_csv(self.config.raw_data_path)
         self.X, self.y = self.preprocess(self.raw_data)
 
-        # Train/test split
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_data(
             self.X, self.y
         )
@@ -54,26 +51,12 @@ class AdultDataset(DatasetBase):
         return pd.read_csv(path, index_col=False)
 
     def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-        """Preprocess raw data into feature and target arrays.
-
+        """Preprocesses raw data into feature and target arrays.
         Args:
             raw_data: Raw dataset as a pandas DataFrame.
-
         Returns:
             Tuple (X, y) as numpy arrays.
         """
-        # Drop rows with missing values in feature columns
-        raw_data = raw_data.dropna(subset=self.config.features).copy()
+        raw_data = raw_data.dropna()
 
-        # Process categorical features using label encoding for simplicity
-        processed_data = raw_data.copy()
-        for feature in self.config.categorical_features:
-            if feature in processed_data.columns:
-                # Convert categorical to numeric codes
-                processed_data[feature] = pd.Categorical(processed_data[feature]).codes
-
-        # Extract features and target
-        X = processed_data[self.config.features].to_numpy().astype(np.float32)
-        y = processed_data[self.config.target].to_numpy().astype(np.int64)
-
-        return X, y
+        return raw_data[self.config.features].to_numpy(), raw_data[self.config.target].to_numpy()
