@@ -1,0 +1,26 @@
+raw_data_path: data/law.csv
+features:
+- lsat
+- gpa
+- zfygpa
+- sex
+- race
+continuous_features:
+- lsat
+- gpa
+- zfygpa
+categorical_features:
+- sex
+- race
+feature_config:
+  lsat:
+    actionable: true
+  gpa:
+    actionable: true
+  zfygpa:
+    actionable: true
+  sex:
+    actionable: false
+  race:
+    actionable: false
+target: pass_bar

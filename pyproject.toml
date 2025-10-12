@@ -48,3 +48,10 @@ where = ["."]
 "counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
 "counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
 "counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.3",
+]

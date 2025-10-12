@@ -6,34 +6,29 @@ import pandas as pd
 from counterfactuals.datasets.base import DatasetBase
 
 
-class AdultDataset(DatasetBase):
-    """Adult dataset loader compatible with DatasetBase."""
+class RegressionFileDataset(DatasetBase):
+    """Regression File dataset loader compatible with DatasetBase."""
 
-    CONFIG_PATH = (
-        Path(__file__).resolve().parent.parent.parent
-        / "config"
-        / "datasets"
-        / "adult.yaml"
-    )
-
-    def __init__(self, config_path: Path = CONFIG_PATH, transform: bool = True):
-        """Initializes the Adult dataset with OmegaConf config.
+    def __init__(
+        self,
+        config_path: Path,
+    ):
+        """Initializes the Regression File dataset with OmegaConf config.
         Args:
             config_path: Path to the dataset configuration file.
-            transform: Whether to apply transformation.
         """
         super().__init__(config_path=config_path)
-        self.transform_data = transform
+        self.samples_keep = self.config.samples_keep
 
         self.raw_data = self._load_csv(self.config.raw_data_path)
         self.X, self.y = self.preprocess(self.raw_data)
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.split_data(
-            self.X, self.y
+            self.X, self.y, stratify=False
         )
 
     def _load_csv(self, file_path: str) -> pd.DataFrame:
-        """Load dataset from CSV file.
+        """Load Regression dataset from CSV file.
 
         Args:
             file_path: Path to the CSV file (relative to project root).
@@ -51,12 +46,15 @@ class AdultDataset(DatasetBase):
         return pd.read_csv(path, index_col=False)
 
     def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-        """Preprocesses raw data into feature and target arrays.
+        """Preprocesses Regression raw data into feature and target arrays.
         Args:
             raw_data: Raw dataset as a pandas DataFrame.
         Returns:
             Tuple (X, y) as numpy arrays.
         """
-        raw_data = raw_data.dropna()
-
+        raw_data = raw_data.dropna(subset=self.config.features)
+        raw_data = raw_data.head(self.samples_keep)
+        raw_data[self.config.target] = raw_data[self.config.target].replace(
+            self.config.target_mapping
+        )
         return raw_data[self.config.features].to_numpy(), raw_data[self.config.target].to_numpy()

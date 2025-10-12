@@ -1,8 +1,7 @@
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -57,8 +56,9 @@ class DatasetParameters:
     continuous_features: List[Union[str, int]]
     categorical_features: List[Union[str, int]]
     feature_config: Dict[Union[str, int], FeatureParameters]
-    target: str = "y"
-
+    target: str
+    target_mapping: Dict[str, int]
+    samples_keep: int = -1
 
 class DatasetBase:
     """Base class for datasets.
@@ -200,4 +200,6 @@ class DatasetBase:
             categorical_features=cfg.get("categorical_features", []),
             feature_config=feature_config,
             target=cfg.get("target", "y"),
+            target_mapping=cfg.get("target_mapping", {}),
+            samples_keep=cfg.get("samples_keep", 1000),
         )

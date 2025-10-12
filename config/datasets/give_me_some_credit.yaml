@@ -1,0 +1,46 @@
+raw_data_path: data/give_me_some_credit.csv
+features:
+- RevolvingUtilizationOfUnsecuredLines
+- age
+- NumberOfTime30-59DaysPastDueNotWorse
+- DebtRatio
+- MonthlyIncome
+- NumberOfOpenCreditLinesAndLoans
+- NumberOfTimes90DaysLate
+- NumberRealEstateLoansOrLines
+- NumberOfTime60-89DaysPastDueNotWorse
+- NumberOfDependents
+continuous_features:
+- RevolvingUtilizationOfUnsecuredLines
+- age
+- DebtRatio
+- MonthlyIncome
+- NumberOfOpenCreditLinesAndLoans
+- NumberOfTimes90DaysLate
+- NumberRealEstateLoansOrLines
+categorical_features:
+- NumberOfTime30-59DaysPastDueNotWorse
+- NumberOfTime60-89DaysPastDueNotWorse
+- NumberOfDependents
+feature_config:
+  RevolvingUtilizationOfUnsecuredLines:
+    actionable: true
+  age:
+    actionable: true
+  NumberOfTime30-59DaysPastDueNotWorse:
+    actionable: true
+  DebtRatio:
+    actionable: true
+  MonthlyIncome:
+    actionable: true
+  NumberOfOpenCreditLinesAndLoans:
+    actionable: true
+  NumberOfTimes90DaysLate:
+    actionable: true
+  NumberRealEstateLoansOrLines:
+    actionable: true
+  NumberOfTime60-89DaysPastDueNotWorse:
+    actionable: true
+  NumberOfDependents:
+    actionable: true
+target: SeriousDlqin2yrs
