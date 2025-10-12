@@ -3,16 +3,16 @@ import time
 
 import numpy as np
 
-from counterfactuals.cf_methods.local.cet.ce import ActionExtractor
-from counterfactuals.cf_methods.local.cet.utils import Cost, LimeEstimator, flatten
-from counterfactuals.cf_methods.local.counterfactual_base import (
+from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
-from counterfactuals.cf_methods.local.local.cet.rule_miner import (
+from counterfactuals.cf_methods.local.cet.ce import ActionExtractor
+from counterfactuals.cf_methods.local.cet.rule_miner import (
     FeatureDiscretizer,
     FrequentRuleMiner,
 )
+from counterfactuals.cf_methods.local.cet.utils import Cost, LimeEstimator, flatten
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )

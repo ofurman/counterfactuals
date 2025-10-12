@@ -10,9 +10,9 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.c_chvae import CCHVAE
-from counterfactuals.cf_methods.c_chvae.data import CustomData
-from counterfactuals.cf_methods.c_chvae.mlmodel import CustomMLModel
+from counterfactuals.cf_methods.local.c_chvae import CCHVAE
+from counterfactuals.cf_methods.local.c_chvae.data import CustomData
+from counterfactuals.cf_methods.local.c_chvae.mlmodel import CustomMLModel
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
