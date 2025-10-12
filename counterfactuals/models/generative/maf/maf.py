@@ -7,7 +7,7 @@ from tqdm import tqdm
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 
 
-class MaskedAutoregressiveFlow(GenerativePytorchMixin):
+class MaskedAutoregressiveFlow(GenerativePytorchMixin, torch.nn.Module):
     def __init__(
         self,
         features,
@@ -103,7 +103,7 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
                 break
         self.load(checkpoint_path)
 
-    def predict_log_prob(self, dataloader) -> torch.Tensor:
+    def predict_log_proba(self, dataloader) -> torch.Tensor:
         """
         Predict log probabilities for the given dataset using the context included in the dataset.
         """
@@ -120,7 +120,7 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
         assert len(dataloader.dataset) == len(results)
         return results
 
-    def sample_and_log_prob(self, num_samples, context=None):
+    def sample_and_log_proba(self, num_samples, context=None):
         if context is not None:
             context = context.view(-1, self.context_features)
         return self.model.sample_and_log_prob(num_samples=num_samples, context=context)

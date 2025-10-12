@@ -1,7 +1,6 @@
 from time import perf_counter
 
 import numpy as np
-import onnx
 import pyomo.environ as pyo
 from omlt import OmltBlock
 from omlt.io import load_onnx_neural_network
@@ -37,6 +36,9 @@ class LiCE:
         leaf_encoding: float = "histogram",
         spn_variant: str = "lower",
     ) -> pyo.Model:
+        # Lazy import to avoid dependency issues when LiCE is not used
+        import onnx
+
         model = pyo.ConcreteModel()
 
         model.input_encoding = pyo.Block()

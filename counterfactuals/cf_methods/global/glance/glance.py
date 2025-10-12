@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.dice import DiceExplainerWrapper
+from counterfactuals.cf_methods.local.dice import DiceExplainerWrapper
 
 logger = logging.getLogger(__name__)
 

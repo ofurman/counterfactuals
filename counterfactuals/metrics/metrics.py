@@ -11,6 +11,7 @@ from counterfactuals.metrics.distances import (
     continuous_distance,
     distance_combined,
 )
+from counterfactuals.metrics.orchestrator import MetricsOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ class CFMetrics:
         Returns:
             float: Validity metric value.
         """
-        y_cf = self.disc_model.predict(self.X_cf).numpy()
+        y_cf = self.disc_model.predict(self.X_cf)
         return (y_cf != self.y_test.squeeze()).mean()
 
     def actionability(self) -> float:
@@ -377,7 +378,7 @@ def evaluate_cf(
     y_target = torch.abs(1 - torch.from_numpy(y_test)) if y_target is None else y_target
     y_target = y_target.numpy() if isinstance(y_target, torch.Tensor) else y_target
 
-    metrics_cf = CFMetrics(
+    metrics_cf = MetricsOrchestrator(
         disc_model=disc_model,
         gen_model=gen_model,
         X_cf=X_cf,
@@ -391,7 +392,7 @@ def evaluate_cf(
         ratio_cont=None,
         prob_plausibility_threshold=median_log_prob,
     )
-    metrics = metrics_cf.calc_all_metrics()
+    metrics = metrics_cf.calculate_all_metrics()
     return metrics
 
 

@@ -3,13 +3,18 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual
-from counterfactuals.cf_methods.group_ppcef.deltas import ARES, GCE, GLOBAL_CE, PPCEF_2
+from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.group.group_ppcef.deltas import (
+    ARES,
+    GCE,
+    GLOBAL_CE,
+    PPCEF_2,
+)
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class RPPCEF(BaseCounterfactual):
+class RPPCEF(BaseCounterfactualMethod):
     def __init__(
         self,
         cf_method_type: str,

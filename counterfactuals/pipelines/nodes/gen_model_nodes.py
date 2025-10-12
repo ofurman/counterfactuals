@@ -103,8 +103,8 @@ def evaluate_gen_model(
     )
     gen_model.eval()
     logger.info("Evaluating generative model")
-    train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()
-    test_ll = gen_model.predict_log_prob(test_dataloader).mean().item()
+    train_ll = gen_model.predict_log_proba(train_dataloader).mean().item()
+    test_ll = gen_model.predict_log_proba(test_dataloader).mean().item()
     logger.info(
         f"Generative model evaluation results:\n train_ll: {train_ll:.4f}, test_ll: {test_ll:.4f}"
     )

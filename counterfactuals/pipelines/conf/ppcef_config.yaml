@@ -15,14 +15,14 @@ dataset:
   _target_: counterfactuals.datasets.LawDataset
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: true
+  train_model: false
   batch_size: 1024
   epochs: 2000
   patience: 100
@@ -40,7 +40,7 @@ counterfactuals_params:
 
   log_prob_quantile: 0.25
   target_class: 0
-  epochs: 20000
+  epochs: 1000
   # epochs: 10000
   batch_size: 4096
   lr: 0.001

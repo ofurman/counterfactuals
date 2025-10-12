@@ -59,7 +59,9 @@ class Validity(Metric):
         disc_model = inputs["disc_model"]
         y_test = inputs["y_test"]
         X_cf = inputs["X_cf"]
-        y_cf_pred = disc_model.predict(X_cf).numpy()
+        y_cf_pred = disc_model.predict(X_cf)
+        if not isinstance(y_cf_pred, np.ndarray):
+            y_cf_pred = y_cf_pred.numpy()
         return (y_cf_pred != y_test.squeeze()).mean()
 
 
