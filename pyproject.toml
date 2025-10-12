@@ -38,8 +38,7 @@ dependencies = [
   "ml-dtypes<0.5.0",
   "pyomo",
   "omlt",
-  "tensorflow-intel>=2.16.0,<2.17.0",
-  "tensorflow-io-gcs-filesystem==0.31.0",
+  "tensorflow>=2.18.1",
   "alibi>=0.9.6",
 ]
 
