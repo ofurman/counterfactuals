@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import torch
@@ -14,8 +14,6 @@ from counterfactuals.models.pytorch_base import PytorchBase
 class RealNVP(PytorchBase, GenerativePytorchMixin):
     def __init__(
         self,
-        num_inputs: int,
-        num_targets: int,
         features: int,
         hidden_features: int,
         context_features: Optional[int] = None,
@@ -30,7 +28,7 @@ class RealNVP(PytorchBase, GenerativePytorchMixin):
         batch_norm_between_layers: bool = False,
         device: str = "cpu",
     ):
-        super(RealNVP, self).__init__(num_inputs, num_targets)
+        super(RealNVP, self).__init__(features, context_features)
         self.features = features
         self.hidden_features = hidden_features
         self.context_features = context_features
@@ -66,22 +64,23 @@ class RealNVP(PytorchBase, GenerativePytorchMixin):
         self,
         train_loader: torch.utils.data.DataLoader,
         test_loader: torch.utils.data.DataLoader,
-        num_epochs: int = 100,
-        learning_rate: float = 1e-3,
+        epochs: int = 100,
+        lr: float = 1e-3,
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
     ):
-        optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        optimizer = optim.Adam(self.parameters(), lr=lr)
         patience_counter = 0
         min_test_loss = float("inf")
 
-        for epoch in (pbar := tqdm(range(num_epochs))):
+        for epoch in (pbar := tqdm(range(epochs))):
             self.train()
             train_loss = 0.0
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.type(torch.float32)
+                labels = None if self.context_features is None else labels
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
                 loss = -log_likelihood.mean()
@@ -96,6 +95,7 @@ class RealNVP(PytorchBase, GenerativePytorchMixin):
             with torch.no_grad():
                 for inputs, labels in test_loader:
                     labels = labels.type(torch.float32)
+                    labels = None if self.context_features is None else labels
                     log_likelihood = self(inputs, labels)
                     loss = -log_likelihood.mean().item()
                     test_loss += loss
@@ -125,33 +125,34 @@ class RealNVP(PytorchBase, GenerativePytorchMixin):
 
         return torch.hstack(log_probs)
 
-    def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
-        """Predict log probabilities for input data."""
+    def sample_and_log_proba(
+        self, n_samples: int, context: Optional[np.ndarray] = None
+    ):
+        """Sample from the model and return (samples, log_probs) as numpy arrays."""
+        if context is not None and self.context_features is not None:
+            if isinstance(context, np.ndarray):
+                context = torch.from_numpy(context).float()
+            context = context.view(-1, self.context_features)
+        self.eval()
+        with torch.no_grad():
+            samples, log_probs = self.model.sample_and_log_prob(
+                num_samples=n_samples, context=context
+            )
+            return samples.cpu().numpy(), log_probs.cpu().numpy()
+
+    def predict_log_proba(
+        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Predict log probabilities for input data (numpy array) and return numpy array."""
         if isinstance(X_test, np.ndarray):
             X_test = torch.from_numpy(X_test).float()
+            if context is not None:
+                context = torch.from_numpy(context).float()
 
         self.eval()
         with torch.no_grad():
-            log_probs = self.model.log_prob(X_test)
+            log_probs = self(X_test, context=context)
             return log_probs.cpu().numpy()
-
-    def sample_and_log_proba(
-        self, n_samples: int, context: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """Sample from RealNVP and return log probabilities."""
-        if isinstance(context, np.ndarray):
-            context_tensor = torch.from_numpy(context).float()
-        else:
-            context_tensor = context
-
-        self.eval()
-        with torch.no_grad():
-            # Sample from the model
-            samples = self.model.sample(n_samples, context=context_tensor)
-            # Get log probabilities for samples
-            log_probs = self.model.log_prob(samples, context=context_tensor)
-
-            return samples.cpu().numpy(), log_probs.cpu().numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)

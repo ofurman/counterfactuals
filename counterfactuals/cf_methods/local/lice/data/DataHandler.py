@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from counterfactuals.cf_methods.lice.data.Features import (
+from counterfactuals.cf_methods.local.lice.data.Features import (
     Binary,
     Categorical,
     Contiguous,
@@ -13,7 +13,7 @@ from counterfactuals.cf_methods.lice.data.Features import (
     Mixed,
     Monotonicity,
 )
-from counterfactuals.cf_methods.lice.data.Types import (
+from counterfactuals.cf_methods.local.lice.data.Types import (
     CategValue,
     DataLike,
     FeatureID,

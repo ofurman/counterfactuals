@@ -2,15 +2,21 @@ import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
-from counterfactuals.cf_methods.sace.blackbox import BlackBox
-from counterfactuals.cf_methods.sace.casebased_sace import (
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.local.sace.blackbox import BlackBox
+from counterfactuals.cf_methods.local.sace.casebased_sace import (
     CaseBasedSACE as OrigCaseBasedSACE,
+)
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
 )
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class CaseBasedSACE(BaseCounterfactual):
+class CaseBasedSACE(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         disc_model: PytorchBase,
@@ -26,6 +32,8 @@ class CaseBasedSACE(BaseCounterfactual):
         tolerance=0.001,
         **kwargs,
     ) -> None:
+        super().__init__(disc_model=disc_model)
+
         self.disc_model = disc_model
         self.variable_features = variable_features
         self.weights = weights

@@ -79,7 +79,13 @@ class DatasetBase:
         self.y: Optional[np.ndarray] = None
         self.features: List[Any] = self.config.features
         self.numerical_features: List[Any] = self.config.continuous_features
+        self.numerical_features_indices: List[int] = [
+            self.features.index(f) for f in self.numerical_features
+        ]
         self.categorical_features: List[Any] = self.config.categorical_features
+        self.categorical_features_indices: List[int] = [
+            self.features.index(f) for f in self.categorical_features
+        ]
         self.actionable_features: List[Any] = [
             k for k, v in self.config.feature_config.items() if v.actionable
         ]

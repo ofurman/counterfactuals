@@ -1,3 +1,6 @@
+from typing import Optional
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -5,13 +8,14 @@ from nflows.flows import MaskedAutoregressiveFlow as _MaskedAutoregressiveFlow
 from tqdm import tqdm
 
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
+from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class MaskedAutoregressiveFlow(GenerativePytorchMixin):
+class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
     def __init__(
         self,
-        features,
-        hidden_features,
+        features: int,
+        hidden_features: int,
         context_features=None,
         num_layers=5,
         num_blocks_per_layer=2,
@@ -24,9 +28,20 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
         batch_norm_between_layers=False,
         device="cpu",
     ):
-        super(MaskedAutoregressiveFlow, self).__init__()
+        super(MaskedAutoregressiveFlow, self).__init__(features, context_features)
+        self.features = features
+        self.hidden_features = hidden_features
         self.device = device
         self.context_features = context_features
+        self.num_layers = num_layers
+        self.num_blocks_per_layer = num_blocks_per_layer
+        self.use_residual_blocks = use_residual_blocks
+        self.use_random_masks = use_random_masks
+        self.use_random_permutations = use_random_permutations
+        self.activation = activation
+        self.dropout_probability = dropout_probability
+        self.batch_norm_within_layers = batch_norm_within_layers
+        self.batch_norm_between_layers = batch_norm_between_layers
         self.model = _MaskedAutoregressiveFlow(
             features=features,
             hidden_features=hidden_features,
@@ -43,26 +58,28 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
         )
 
     def forward(self, x, context=None):
-        if context is not None:
+        if context is not None and self.context_features is not None:
             context = context.view(-1, self.context_features)
+        else:
+            context = None
         return self.model.log_prob(inputs=x, context=context)
 
     def fit(
         self,
         train_loader: torch.utils.data.DataLoader,
         test_loader: torch.utils.data.DataLoader,
-        num_epochs: int = 100,
-        learning_rate: float = 1e-3,
+        epochs: int = 100,
+        lr: float = 1e-3,
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "best_model.pth",
         dequantizer=None,
     ):
-        optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        optimizer = optim.Adam(self.parameters(), lr=lr)
         patience_counter = 0
         min_test_loss = float("inf")
 
-        for epoch in (pbar := tqdm(range(num_epochs))):
+        for epoch in (pbar := tqdm(range(epochs))):
             self.train()
             train_loss = 0.0
             for inputs, labels in train_loader:
@@ -106,6 +123,7 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
     def predict_log_prob(self, dataloader) -> torch.Tensor:
         """
         Predict log probabilities for the given dataset using the context included in the dataset.
+        Returns a torch tensor stacked across batches.
         """
         self.eval()
         log_probs = []
@@ -115,35 +133,39 @@ class MaskedAutoregressiveFlow(GenerativePytorchMixin):
                 labels = labels.type(torch.float32)
                 outputs = self(inputs, labels)
                 log_probs.append(outputs)
-        results = torch.concat(log_probs)
+        results = torch.hstack(log_probs)
 
         assert len(dataloader.dataset) == len(results)
         return results
 
-    def sample_and_log_prob(self, num_samples, context=None):
-        if context is not None:
+    def sample_and_log_proba(
+        self, n_samples: int, context: Optional[np.ndarray] = None
+    ):
+        """Sample from the model and return (samples, log_probs) as numpy arrays."""
+        if context is not None and self.context_features is not None:
+            if isinstance(context, np.ndarray):
+                context = torch.from_numpy(context).float()
             context = context.view(-1, self.context_features)
-        return self.model.sample_and_log_prob(num_samples=num_samples, context=context)
+        self.eval()
+        with torch.no_grad():
+            samples, log_probs = self.model.sample_and_log_prob(
+                num_samples=n_samples, context=context
+            )
+            return samples.cpu().numpy(), log_probs.cpu().numpy()
 
-    # Deprecated due tu multiclass support, use self.forward instead
-    # def predict_log_probs(self, X: Union[np.ndarray, torch.Tensor]):
-    #     """
-    #     Predict log probabilities of the input dataset for both context equal 0 and 1.
-    #     Results format is of the shape: [2, N]. N is number of samples, i.e., X.shape[0].
-    #     """
-    #     self.eval()
-    #     if isinstance(X, np.ndarray):
-    #         X = torch.from_numpy(X)
-    #     with torch.no_grad():
-    #         y_zero = torch.zeros((X.shape[0], 1), dtype=X.dtype).to(self.device)
-    #         y_one = torch.ones((X.shape[0], 1), dtype=X.dtype).to(self.device)
-    #         log_p_zero = self(X, y_zero)
-    #         log_p_one = self(X, y_one)
-    #     result = torch.vstack([log_p_zero, log_p_one])
+    def predict_log_proba(
+        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Predict log probabilities for input data (numpy array) and return numpy array."""
+        if isinstance(X_test, np.ndarray):
+            X_test = torch.from_numpy(X_test).float()
+            if context is not None:
+                context = torch.from_numpy(context).float()
 
-    #     assert result.T.shape[0] == X.shape[0], f"Shape of results don't match. " \
-    #                                             f"Shape of result: {result.shape}, shape of input: {X.shape}"
-    #     return result
+        self.eval()
+        with torch.no_grad():
+            log_probs = self(X_test, context=context)
+            return log_probs.cpu().numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)

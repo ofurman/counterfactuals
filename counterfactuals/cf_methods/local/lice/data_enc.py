@@ -1,8 +1,8 @@
 import numpy as np
 import pyomo.environ as pyo
 
-from counterfactuals.cf_methods.lice.data.DataHandler import DataHandler
-from counterfactuals.cf_methods.lice.data.Features import (
+from counterfactuals.cf_methods.local.lice.data.DataHandler import DataHandler
+from counterfactuals.cf_methods.local.lice.data.Features import (
     Binary,
     Categorical,
     Contiguous,
@@ -10,8 +10,8 @@ from counterfactuals.cf_methods.lice.data.Features import (
     Mixed,
     Monotonicity,
 )
-from counterfactuals.cf_methods.lice.data.Types import DataLike
-from counterfactuals.cf_methods.lice.SPN import SPN
+from counterfactuals.cf_methods.local.lice.data.Types import DataLike
+from counterfactuals.cf_methods.local.lice.SPN import SPN
 
 
 def encode_contiguous(

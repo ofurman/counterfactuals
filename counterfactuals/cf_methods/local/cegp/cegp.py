@@ -4,11 +4,17 @@ from alibi.explainers import CounterFactualProto
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.base import BaseCounterfactual, ExplanationResult
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class CEGP(BaseCounterfactual):
+class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         disc_model: PytorchBase,
@@ -16,6 +22,7 @@ class CEGP(BaseCounterfactual):
         c_init: float = 1.0,
         c_steps: int = 5,
         max_iterations: int = 500,
+        device: str | None = None,
         **kwargs,  # ignore other arguments
     ) -> None:
         """Initialize CEGP counterfactual method.
@@ -27,6 +34,9 @@ class CEGP(BaseCounterfactual):
             c_steps: Number of steps to adjust c
             max_iterations: Maximum number of iterations to run optimization
         """
+        # Initialize base/mixin (moves model to device if applicable)
+        super().__init__(disc_model=disc_model, device=device)
+
         tf.compat.v1.disable_eager_execution()
         predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731
         num_features = disc_model.input_size
@@ -44,9 +54,10 @@ class CEGP(BaseCounterfactual):
             c_init=c_init,
             c_steps=c_steps,
         )
+
         self.is_fitted = False
 
-    def fit(self, X_train: np.ndarray):
+    def fit(self, X_train: np.ndarray) -> None:
         """Fit the CEGP model on training data.
 
         Args:
@@ -60,8 +71,8 @@ class CEGP(BaseCounterfactual):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for given samples.
@@ -73,19 +84,28 @@ class CEGP(BaseCounterfactual):
             X_train: Training data (used for fitting if not already fitted)
             y_train: Training labels
         """
-        if not self.is_fitted:
+        if X_train is not None and not self.is_fitted:
             self.fit(X_train)
 
         try:
-            X = X.reshape((1,) + X.shape)
-            explanation = self.cf.explain(X).cf
+            X_in = X.copy()
+            X_proc = X.reshape((1,) + X.shape)
+            explanation = self.cf.explain(X_proc).cf
             if explanation is None:
                 raise ValueError("No counterfactual found")
+            x_cfs = np.array(explanation.get("X"))
         except Exception as e:
-            explanation = None
             print(f"Error in CEGP explanation: {e}")
+            x_cfs = np.full_like(X.reshape(1, -1), np.nan).squeeze()
 
-        return explanation, X, y_origin, y_target
+        # Wrap results in ExplanationResult
+        return ExplanationResult(
+            x_cfs=np.array(x_cfs),
+            y_cf_targets=np.array(y_target),
+            x_origs=np.array(X_in),
+            y_origs=np.array(y_origin),
+            logs=None,
+        )
 
     def explain_dataloader(
         self, dataloader: DataLoader, target_class: int, *args, **kwargs
@@ -126,4 +146,11 @@ class CEGP(BaseCounterfactual):
         Xs = np.array(Xs)
         ys = np.array(ys)
         ys_target = np.array(ys_target)
-        return Xs_cfs, Xs, ys, ys_target, model_returned
+
+        return ExplanationResult(
+            x_cfs=Xs_cfs,
+            y_cf_targets=ys_target,
+            x_origs=Xs,
+            y_origs=ys,
+            logs={"model_returned": model_returned},
+        )
