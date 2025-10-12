@@ -195,8 +195,6 @@ class Artelt(BaseCounterfactualMethod, LocalCounterfactualMixin):
         Xs_cfs = np.array(Xs_cfs).squeeze()
         ys_target = np.array(ys_target)
 
-        return Xs_cfs, Xs, ys, ys_target, model_returned
-
-        # return ExplanationResult(
-        #     x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs.numpy(), y_origs=ys.numpy()
-        # )
+        return ExplanationResult(
+            x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs.numpy(), y_origs=ys.numpy()
+        )

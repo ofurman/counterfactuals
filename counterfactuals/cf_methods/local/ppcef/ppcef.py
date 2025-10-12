@@ -4,41 +4,15 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 from counterfactuals.models.pytorch_base import PytorchBase
-
-# Experimenting with custom autograd function
-# TODO: Move to separate file
-# class OneHotSoftmax(torch.autograd.Function):
-#     @staticmethod
-#     def forward(ctx, input, temp=0.03):
-#         # Store input and temperature for use in backward
-#         ctx.save_for_backward(input)
-#         ctx.temp = temp
-
-#         # Compute argmax and one-hot encode it
-#         indices = input.argmax(dim=1)
-#         one_hot = torch.nn.functional.one_hot(
-#             indices, num_classes=input.size(1)
-#         ).float()
-
-#         return one_hot
-
-#     @staticmethod
-#     def backward(ctx, grad_output):
-#         # Retrieve saved input and temperature
-#         (input,) = ctx.saved_tensors
-#         temp = ctx.temp
-
-#         # Compute gradients of softmax with respect to input
-#         softmax = torch.nn.functional.softmax(input / temp, dim=1)
-#         grad_input = grad_output * (softmax * (1 - softmax) / temp)
-
-#         return grad_input, None  # None corresponds to no gradient for temp
 
 ALPHA = 1e-6
 
@@ -104,9 +78,7 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             x_origin + delta, context=context_target.type(torch.float32)
         )
 
-        max_inner = torch.nn.functional.relu(
-            log_prob_threshold * 0.5 - p_x_param_c_target
-        )
+        max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
 
         # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)
 
@@ -213,10 +185,10 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
             target_class.append(contexts_target.detach().cpu().numpy())
-        return (
-            np.concatenate(deltas, axis=0),
-            np.concatenate(original, axis=0),
-            np.concatenate(original_class, axis=0),
-            np.concatenate(target_class, axis=0),
-            loss_components_logging,
+        return ExplanationResult(
+            x_cfs=np.concatenate(deltas, axis=0),
+            y_cf_targets=np.concatenate(target_class, axis=0),
+            x_origs=np.concatenate(original, axis=0),
+            y_origs=np.concatenate(original_class, axis=0),
+            logs=loss_components_logging,
         )

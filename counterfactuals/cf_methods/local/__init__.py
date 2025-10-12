@@ -6,7 +6,9 @@ from .casebased_sace.casebased_sace import CaseBasedSACE
 from .cegp.cegp import CEGP
 from .cem.cem import CEM_CF
 from .cet.cet import CounterfactualExplanationTree as CET
-from .dice.dice import DiceExplainerWrapper
+from .dice.dice import DICE
+
+# from .lice.lice import LiCE
 from .ppcef.ppcef import PPCEF
 from .regression_ppcef.ppcefr import PPCEFR
 from .sace.sace import SACE
@@ -28,7 +30,7 @@ __all__ = [
     "WACH_OURS",
     "Artelt",
     "PPCEFR",
-    "DiceExplainerWrapper",
+    "DICE",
     "CEM_CF",
     "SACE",
     # "LiCE",

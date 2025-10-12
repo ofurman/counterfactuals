@@ -136,7 +136,7 @@ class CFMetrics:
         Returns:
             float: Validity metric value.
         """
-        y_cf = self.disc_model.predict(self.X_cf)
+        y_cf = self._convert_to_numpy(self.disc_model.predict(self.X_cf))
         return (y_cf != self.y_test.squeeze()).mean()
 
     def actionability(self) -> float:

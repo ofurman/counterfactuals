@@ -8,13 +8,8 @@ from .group import RPPCEF
 from .group_counterfactual_mixin import GroupCounterfactualMixin
 
 # Import from subpackages
-from .local import PPCEF, PPCEFR, WACH, WACH_OURS, Artelt
+from .local import DICE, PPCEF, PPCEFR, WACH, WACH_OURS, Artelt
 from .local_counterfactual_mixin import LocalCounterfactualMixin
-
-global_module = importlib.import_module(".global", package=__package__)
-CCHVAE = global_module.CCHVAE
-GlobalGLANCE = global_module.GlobalGLANCE
-GLOBE_CE = global_module.GLOBE_CE
 
 __all__ = [
     # Base classes
@@ -25,6 +20,7 @@ __all__ = [
     "GroupCounterfactualMixin",
     # Local methods
     "PPCEF",
+    "DICE",
     "WACH",
     "WACH_OURS",
     "Artelt",

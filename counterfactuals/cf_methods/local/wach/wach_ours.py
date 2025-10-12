@@ -4,27 +4,26 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
-from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
 class WACH_OURS(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
-        gen_model: GenerativePytorchMixin,
         disc_model: PytorchBase,
         disc_model_criterion,
         device=None,
     ):
         self.disc_model_criterion = disc_model_criterion
-        self.gen_model = gen_model
         self.disc_model = disc_model
         self.device = device if device is not None else "cpu"
-        self.gen_model.to(self.device)
         self.disc_model.to(self.device)
 
     def _search_step(
@@ -85,10 +84,6 @@ class WACH_OURS(BaseCounterfactualMethod, LocalCounterfactualMixin):
         """
         Search counterfactual explanations for the given dataloader.
         """
-        self.gen_model.eval()
-        for param in self.gen_model.parameters():
-            param.requires_grad = False
-
         if self.disc_model:
             self.disc_model.eval()
             for param in self.disc_model.parameters():
@@ -139,10 +134,17 @@ class WACH_OURS(BaseCounterfactualMethod, LocalCounterfactualMixin):
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
             target_class.append(contexts_target.detach().cpu().numpy())
-        return (
-            np.concatenate(deltas, axis=0),
-            np.concatenate(original, axis=0),
-            np.concatenate(original_class, axis=0),
-            np.concatenate(target_class, axis=0),
-            loss_components_logging,
+
+            deltas = np.concatenate(deltas, axis=0)
+            original = np.concatenate(original, axis=0)
+            original_class = np.concatenate(original_class, axis=0)
+            target_class = np.concatenate(target_class, axis=0)
+            x_cfs = deltas + original
+
+        return ExplanationResult(
+            x_cfs=x_cfs,
+            y_cf_targets=target_class,
+            x_origs=original,
+            y_origs=original_class,
+            logs=loss_components_logging,
         )
