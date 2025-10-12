@@ -4,11 +4,18 @@ import time
 import numpy as np
 
 from counterfactuals.cf_methods.local.cet.ce import ActionExtractor
-from counterfactuals.cf_methods.local.cet.rule_miner import (
+from counterfactuals.cf_methods.local.cet.utils import Cost, LimeEstimator, flatten
+from counterfactuals.cf_methods.local.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.local.local.cet.rule_miner import (
     FeatureDiscretizer,
     FrequentRuleMiner,
 )
-from counterfactuals.cf_methods.local.cet.utils import Cost, LimeEstimator, flatten
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -128,7 +135,7 @@ class DummyNode:
         return self.left.apply(x)
 
 
-class CounterfactualExplanationTree:
+class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         mdl,
@@ -152,7 +159,11 @@ class CounterfactualExplanationTree:
         feature_constraints=[],
         target_name="Output",
         target_labels=["Good", "Bad"],
+        device: str | None = None,
+        **kwargs,
     ):
+        # Initialize base/mixin behavior
+        super().__init__(disc_model=mdl, device=device)
         self.mdl_ = mdl
         self.extractor_ = ActionExtractor(
             mdl,
@@ -248,6 +259,43 @@ class CounterfactualExplanationTree:
             self.R_ = len(self.rule_names_)
             self.rule_length_ = np.ones(self.R_)
         self.rule_probability_ = (1 / self.rule_length_) / (1 / self.rule_length_).sum()
+
+    def explain(
+        self,
+        X: np.ndarray,
+        y_origin: np.ndarray | None = None,
+        y_target: np.ndarray | None = None,
+        X_train: np.ndarray | None = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Wrapper to produce ExplanationResult for compatibility.
+
+        This uses the existing get_counterfactuals method and returns an
+        ExplanationResult dataclass.
+        """
+        # If training data provided, fit (keeps backward compatibility)
+        if X_train is not None:
+            self.fit(X_train)
+
+        x_cfs = self.get_counterfactuals(X)
+        y_target_arr = (
+            np.array(y_target)
+            if y_target is not None
+            else np.zeros((X.shape[0],), dtype=int)
+        )
+        y_origin_arr = (
+            np.array(y_origin)
+            if y_origin is not None
+            else np.zeros((X.shape[0],), dtype=int)
+        )
+
+        return ExplanationResult(
+            x_cfs=np.array(x_cfs),
+            y_cf_targets=y_target_arr,
+            x_origs=np.array(X),
+            y_origs=y_origin_arr,
+            logs=None,
+        )
 
     def generateTree(self):
         root = Node(self.dummy_, branch="left")

@@ -61,3 +61,9 @@ feature_config:
   "native-country":
     actionable: false  # Protected attribute (birthplace)
 target: "class"
+target_mapping:
+  "<=50K": 0
+  ">50K": 1
+  " <=50K": 0
+  " >50K": 1
+samples_keep: 30000

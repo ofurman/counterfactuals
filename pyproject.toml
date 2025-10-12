@@ -7,7 +7,6 @@ requires-python = ">=3.10"
 
 dependencies = [
   "torchdiffeq",
-  "alibi[tensorflow]; sys_platform != 'win32'",
   "numpy",
   "scipy",
   "cvxpy",
@@ -24,6 +23,23 @@ dependencies = [
   "plotly",
   "ipykernel",
   "dice-ml>=0.12",
+  "mlxtend>=0.23.4",
+  "pulp>=3.3.0",
+  "lingam>=1.11.0",
+  "networkx>=2.8,<3.0",
+  "pytorch-tabnet",
+  "pyfpgrowth",
+  "scikit-image",
+  "requests",
+  "attrs",
+  "dill",
+  "transformers>=4.7.0,<5.0.0",
+  "onnx<1.16.0",
+  "ml-dtypes<0.5.0",
+  "pyomo",
+  "omlt",
+  "tensorflow>=2.18.1",
+  "alibi>=0.9.6",
 ]
 
 # Tooling and test libs should be installed as an extra (dev) instead of runtime deps
@@ -35,11 +51,18 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools >= 77.0.3"]
+requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["."]
+[tool.uv]
+dev-dependencies = [
+  "ruff",
+  "pre-commit",
+  "pytest",
+]
+
+[tool.setuptools]
+packages = ["counterfactuals"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -48,3 +71,10 @@ where = ["."]
 "counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
 "counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
 "counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.3",
+]

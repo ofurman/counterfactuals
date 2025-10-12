@@ -1,6 +1,7 @@
 """Implementations of various mixture models."""
 
 import abc
+from typing import Optional
 
 import numpy as np
 import torch
@@ -169,10 +170,8 @@ class KernelDensityEstimator(GenerativeModel):
 
 
 class KDE(PytorchBase, GenerativePytorchMixin):
-    def __init__(
-        self, num_inputs: int, num_targets: int, bandwidth: float = 0.1, **kwargs
-    ):
-        super(KDE, self).__init__(num_inputs, num_targets)
+    def __init__(self, bandwidth: float = 0.1, **kwargs):
+        super(KDE, self).__init__(None, None)
         self.bandwidth = bandwidth
         self.models = nn.ModuleDict()
 
@@ -201,7 +200,9 @@ class KDE(PytorchBase, GenerativePytorchMixin):
     def fit(
         self,
         train_loader: torch.utils.data.DataLoader,
-        test_loader: torch.utils.data.DataLoader,
+        test_loader: torch.utils.data.DataLoader = None,
+        epochs: int = 200,
+        lr: float = 0.003,
         checkpoint_path: str = "best_model.pth",
         **kwargs,
     ):
@@ -218,13 +219,24 @@ class KDE(PytorchBase, GenerativePytorchMixin):
             )
         self.save(checkpoint_path)
 
-        train_log_probs = self.predict_log_prob(train_loader)
-        test_log_probs = self.predict_log_prob(test_loader)
-        print(f"Train log-likelihood: {train_log_probs.float().mean()}")
-        print(f"Test log-likelihood: {test_log_probs.float().mean()}")
+        if test_loader:
+            train_log_probs = self.predict_log_prob(train_loader)
+            test_log_probs = self.predict_log_prob(test_loader)
+            print(f"Train log-likelihood: {train_log_probs.float().mean()}")
+            print(f"Test log-likelihood: {test_log_probs.float().mean()}")
 
-    def forward(self, x: torch.Tensor, context: torch.Tensor):
-        preds = torch.zeros_like(context)
+    def forward(self, x: torch.Tensor, context: torch.Tensor = None):
+        """Forward pass with optional context for compatibility."""
+        if context is None:
+            # If no context provided, try to use all available models
+            # This is a fallback for PytorchBase compatibility
+            if len(self.models) == 1:
+                model = next(iter(self.models.values()))
+                return model(x).view(-1)
+            else:
+                raise ValueError("Context must be provided when multiple models exist")
+
+        preds = torch.zeros_like(context, dtype=torch.float32)
         for i in range(x.shape[0]):
             model = self._get_model_for_context(context[i].item())
             preds[i] = model(x[i].unsqueeze(0))
@@ -239,30 +251,25 @@ class KDE(PytorchBase, GenerativePytorchMixin):
             preds[i] = model(inputs[i].unsqueeze(0))
         return preds
 
-    def predict_log_proba(self, X_test: np.ndarray) -> np.ndarray:
+    def predict_log_proba(
+        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """Predict log probabilities for input data."""
         # Convert to torch tensor if needed
-        if isinstance(X_test, np.ndarray):
-            X_test = torch.from_numpy(X_test).float()
+        assert context is not None, "Context must be provided for KDE"
+        X_test = torch.from_numpy(X_test).float()
+        context = torch.from_numpy(context).float()
+        preds = torch.zeros_like(context, dtype=torch.float32)
+        for i in range(X_test.shape[0]):
+            model = self._get_model_for_context(context[i].item())
+            preds[i] = model(X_test[i].unsqueeze(0))
+        return preds.cpu().numpy()
 
-        # Get log probabilities from KDE
-        with torch.no_grad():
-            log_probs = self.forward(X_test)
-            return log_probs.cpu().numpy()
-
-    def sample_and_log_proba(self, n_samples: int, context: np.ndarray) -> tuple:
+    def sample_and_log_proba(
+        self, n_samples: int, context: Optional[np.ndarray] = None
+    ) -> tuple:
         """Sample from KDE and return log probabilities."""
-        # Get model for context
-        context_key = self._context_to_key(context[0])  # Assuming single context
-        model = self._get_model_for_context(context[0])
-
-        # Sample from the model
-        samples = model.sample(n_samples)
-
-        # Get log probabilities for samples
-        log_probs = model.forward(samples)
-
-        return samples.cpu().numpy(), log_probs.cpu().numpy()
+        raise NotImplementedError("Sampling from KDE is not implemented")
 
     def save(self, path):
         torch.save(self.state_dict(), path)

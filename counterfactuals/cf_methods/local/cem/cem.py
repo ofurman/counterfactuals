@@ -8,10 +8,13 @@ from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class CEM_CF(BaseCounterfactualMethod):
+class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         disc_model: PytorchBase,
@@ -22,8 +25,12 @@ class CEM_CF(BaseCounterfactualMethod):
         c_steps: int = 5,
         max_iterations: int = 200,
         learning_rate_init: float = 1e-2,
+        device: str | None = None,
         **kwargs,  # ignore other arguments
     ) -> None:
+        # Initialize base/mixin (moves model to device if applicable)
+        super().__init__(disc_model=disc_model, device=device)
+
         tf.compat.v1.disable_eager_execution()
         predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731
         num_features = disc_model.input_size
@@ -49,7 +56,7 @@ class CEM_CF(BaseCounterfactualMethod):
             clip=clip,
         )
 
-    def fit(self, X_train: np.ndarray):
+    def fit(self, X_train: np.ndarray) -> None:
         """Fit the CEM model on training data"""
         self.cf.fit(X_train, no_info_type="median")
 
@@ -58,22 +65,31 @@ class CEM_CF(BaseCounterfactualMethod):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
-        if not hasattr(self.cf, "X_train"):
+        if X_train is not None and not hasattr(self.cf, "X_train"):
             self.fit(X_train)
 
         try:
-            X = X.reshape((1,) + X.shape)
-            explanation = self.cf.explain(X, verbose=False)
-            if explanation.PN is None:
+            X_in = X.copy()
+            X_proc = X.reshape((1,) + X.shape)
+            explanation = self.cf.explain(X_proc, verbose=False)
+            if explanation is None or getattr(explanation, "PN", None) is None:
                 raise ValueError("No counterfactual found")
+            x_cfs = np.array(explanation.PN)
         except Exception as e:
-            explanation = None
             print(e)
-        return explanation.PN if explanation else None, X, y_origin, y_target
+            x_cfs = np.full_like(X.reshape(1, -1), np.nan).squeeze()
+
+        return ExplanationResult(
+            x_cfs=np.array(x_cfs),
+            y_cf_targets=np.array(y_target),
+            x_origs=np.array(X_in),
+            y_origs=np.array(y_origin),
+            logs=None,
+        )
 
     def explain_dataloader(
         self, dataloader: DataLoader, target_class: int, *args, **kwargs
@@ -109,4 +125,11 @@ class CEM_CF(BaseCounterfactualMethod):
         Xs = np.array(Xs)
         ys = np.array(ys)
         ys_target = np.array(ys_target)
-        return Xs_cfs, Xs, ys, ys_target, model_returned
+
+        return ExplanationResult(
+            x_cfs=Xs_cfs,
+            y_cf_targets=ys_target,
+            x_origs=Xs,
+            y_origs=ys,
+            logs={"model_returned": model_returned},
+        )

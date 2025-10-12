@@ -22,7 +22,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
         self,
         num_inputs: int,
         num_targets: int,
-        hidden_layer_sizes: List[int],
+        hidden_layer_sizes: List[int] = [128, 128],
         dropout: float = 0.2,
     ):
         """

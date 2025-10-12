@@ -10,11 +10,14 @@ from counterfactuals.cf_methods.group.group_ppcef.deltas import (
     GLOBAL_CE,
     PPCEF_2,
 )
+from counterfactuals.cf_methods.group_counterfactual_mixin import (
+    GroupCounterfactualMixin,
+)
 from counterfactuals.models.generative_mixin import GenerativePytorchMixin
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
-class RPPCEF(BaseCounterfactualMethod):
+class RPPCEF(BaseCounterfactualMethod, GroupCounterfactualMixin):
     def __init__(
         self,
         cf_method_type: str,
@@ -27,15 +30,22 @@ class RPPCEF(BaseCounterfactualMethod):
         device: str = None,
         # TODO: poprawa nazewnictwa
         actionable_features: list = None,
+        **kwargs,
     ):
+        # Initialize mixins / base to set up models and device
+        super().__init__(
+            gen_model=gen_model,
+            disc_model=disc_model,
+            disc_model_criterion=disc_model_criterion,
+            device=device,
+            **kwargs,
+        )
+
         self.actionable_features = actionable_features
+        # initialize delta after we know device/other attributes
         self.delta = self._init_cf_method(
             cf_method_type, K, init_cf_method_from_kmeans, X
         )
-        self.disc_model_criterion = disc_model_criterion
-        self.gen_model = gen_model
-        self.disc_model = disc_model
-        self.device = device if device else "cpu"
         self.loss_components_logs = {}
 
     def _init_cf_method(

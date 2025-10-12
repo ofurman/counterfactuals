@@ -1,0 +1,96 @@
+raw_data_path: data/audit.csv
+features:
+- PARA_A
+- Score_A
+- Risk_A
+- PARA_B
+- Score_B
+- Risk_B
+- TOTAL
+- numbers
+- Score_B
+- Risk_C
+- Money_Value
+- Score_MV
+- Risk_D
+- District_Loss
+- PROB
+- RiSk_E
+- History
+- Prob
+- Risk_F
+- Score
+- Inherent_Risk
+- CONTROL_RISK
+- Audit_Risk
+continuous_features:
+- PARA_A
+- Score_A
+- Risk_A
+- PARA_B
+- Score_B
+- Risk_B
+- TOTAL
+- numbers
+- Score_B
+- Risk_C
+- Money_Value
+- Score_MV
+- Risk_D
+- District_Loss
+- PROB
+- RiSk_E
+- History
+- Prob
+- Risk_F
+- Score
+- Inherent_Risk
+- CONTROL_RISK
+- Audit_Risk
+categorical_features: []
+feature_config:
+  PARA_A:
+    actionable: true
+  Score_A:
+    actionable: true
+  Risk_A:
+    actionable: true
+  PARA_B:
+    actionable: true
+  Score_B:
+    actionable: true
+  Risk_B:
+    actionable: true
+  TOTAL:
+    actionable: true
+  numbers:
+    actionable: true
+  Risk_C:
+    actionable: true
+  Money_Value:
+    actionable: true
+  Score_MV:
+    actionable: true
+  Risk_D:
+    actionable: true
+  District_Loss:
+    actionable: true
+  PROB:
+    actionable: true
+  RiSk_E:
+    actionable: true
+  History:
+    actionable: true
+  Prob:
+    actionable: true
+  Risk_F:
+    actionable: true
+  Score:
+    actionable: true
+  Inherent_Risk:
+    actionable: true
+  CONTROL_RISK:
+    actionable: true
+  Audit_Risk:
+    actionable: true
+target: Risk
