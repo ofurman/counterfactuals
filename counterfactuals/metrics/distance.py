@@ -54,8 +54,6 @@ def _mad_cityblock(u: np.ndarray, v: np.ndarray, mad: np.ndarray) -> float:
 class BaseDistanceMetric(Metric):
     """Base class for distance metrics."""
 
-    name: str
-
     def required_inputs(self) -> set[str]:
         """Return the set of required input keys."""
         return {
@@ -139,6 +137,9 @@ class CombinedDistanceMetric(BaseDistanceMetric):
             metric=categorical_metric,
         ).diagonal()
 
+        if categorical_metric == "hamming":
+            dist_cate = np.nan_to_num(dist_cate, nan=0.0)
+
         # Calculate ratios
         n_features = X_test_valid.shape[1]
         if ratio_cont is None:
@@ -166,7 +167,6 @@ class EuclideanHammingCombinedDistance(CombinedDistanceMetric):
     as default, resulting in a combined distance calculation.
     """
 
-    name = "proximity_categorical_hamming"
     continuous_metric = "euclidean"
     categorical_metric = "hamming"
 
@@ -203,7 +203,6 @@ class EuclideanJaccardCombinedDistance(CombinedDistanceMetric):
     as default, resulting in a combined distance calculation.
     """
 
-    name = "proximity_categorical_jaccard"
     continuous_metric = "euclidean"
     categorical_metric = "jaccard"
 
@@ -240,7 +239,6 @@ class ManhattanJaccardCombinedDistance(CombinedDistanceMetric):
     as default, resulting in a combined distance calculation.
     """
 
-    name = "proximity_continuous_manhattan"
     continuous_metric = "cityblock"
     categorical_metric = "jaccard"
 
@@ -278,7 +276,6 @@ class EuclideanJaccardCombinedDistanceAlt(CombinedDistanceMetric):
     This is actually the same as proximity_l2_jaccard but registered under a different name.
     """
 
-    name = "proximity_continuous_euclidean"
     continuous_metric = "euclidean"
     categorical_metric = "jaccard"
 
@@ -315,7 +312,6 @@ class MADJaccardCombinedDistance(CombinedDistanceMetric):
     as default, resulting in a combined distance calculation.
     """
 
-    name = "proximity_continuous_mad"
     categorical_metric = "jaccard"
     requires_X_train = True
 
@@ -360,7 +356,6 @@ class L2JaccardCombinedDistance(CombinedDistanceMetric):
     Note: This is an intentionally combined metric (not a legacy bug).
     """
 
-    name = "proximity_l2_jaccard"
     continuous_metric = "euclidean"
     categorical_metric = "jaccard"
 
@@ -395,7 +390,6 @@ class MADHammingCombinedDistance(CombinedDistanceMetric):
     Note: This is an intentionally combined metric (not a legacy bug).
     """
 
-    name = "proximity_mad_hamming"
     categorical_metric = "hamming"
     requires_X_train = True
 
@@ -433,8 +427,6 @@ class MADHammingCombinedDistance(CombinedDistanceMetric):
 @register_metric("target_distance")
 class TargetDistance(Metric):
     """Distance between predicted and target values (for regression)."""
-
-    name = "target_distance"
 
     def required_inputs(self) -> set[str]:
         """Return the set of required input keys."""
