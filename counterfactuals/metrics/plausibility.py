@@ -38,7 +38,7 @@ class ProbabilisticPlausibility(Metric):
         """
         X_cf = torch.from_numpy(inputs["X_cf"]).float()
         y_target = torch.from_numpy(inputs["y_target"]).float()
-        gen_model = inputs["gen_model"].eval()
+        gen_model = inputs["gen_model"]
 
         with torch.no_grad():
             gen_log_probs = gen_model(X_cf, y_target).detach().numpy()
@@ -68,7 +68,7 @@ class LogDensityCF(Metric):
         """
         X_cf = torch.from_numpy(inputs["X_cf"]).float()
         y_target = torch.from_numpy(inputs["y_target"]).float()
-        gen_model = inputs["gen_model"].eval()
+        gen_model = inputs["gen_model"]
 
         with torch.no_grad():
             gen_log_probs = gen_model(X_cf, y_target).detach().numpy()
@@ -97,7 +97,7 @@ class LogDensityTest(Metric):
         """
         X_test = torch.from_numpy(inputs["X_test"]).float()
         y_test = torch.from_numpy(inputs["y_test"]).float()
-        gen_model = inputs["gen_model"].eval()
+        gen_model = inputs["gen_model"]
 
         with torch.no_grad():
             gen_log_probs = gen_model(X_test, y_test).detach().numpy()

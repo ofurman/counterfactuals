@@ -34,7 +34,6 @@ dependencies = [
   "attrs",
   "dill",
   "transformers>=4.7.0,<5.0.0",
-  "onnx<1.16.0",
   "ml-dtypes<0.5.0",
   "pyomo",
   "omlt",

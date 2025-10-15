@@ -40,11 +40,11 @@ class MetricsOrchestrator:
         y_train: Union[np.ndarray, torch.Tensor],
         X_test: Union[np.ndarray, torch.Tensor],
         y_test: Union[np.ndarray, torch.Tensor],
-        gen_model: torch.nn.Module,
         disc_model: torch.nn.Module,
         continuous_features: list[int],
         categorical_features: list[int],
         ratio_cont: Optional[float] = None,
+        gen_model: Optional[torch.nn.Module] = None,
         prob_plausibility_threshold: Optional[float] = None,
         metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
     ) -> None:
@@ -72,8 +72,8 @@ class MetricsOrchestrator:
         )
 
         # Store models and set to evaluation mode
-        self.gen_model = gen_model.eval()
         self.disc_model = disc_model.eval()
+        self.gen_model = gen_model
 
         # Store threshold
         self.prob_plausibility_threshold = (
