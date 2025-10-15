@@ -81,7 +81,7 @@ class CCHVAE:
         "n_search_samples": 300,
         "p_norm": 1,
         "step": 0.1,
-        "max_iter": 1000,
+        "max_iter": 2000,
         "clamp": True,
         "binary_cat_features": True,
         "vae_params": {
@@ -179,7 +179,7 @@ class CCHVAE:
 
         # get predicted label of instance
         instance_label = np.argmax(
-            self._mlmodel.predict_proba(torch_fact.float()).cpu().detach().numpy(),
+            self._mlmodel.predict_proba(torch_fact.float()),
             axis=1,
         )
 
@@ -235,11 +235,7 @@ class CCHVAE:
 
             # counterfactual labels
             y_candidate = np.argmax(
-                self._mlmodel.predict_proba(torch.from_numpy(x_ce).float())
-                .cpu()
-                .detach()
-                .numpy(),
-                axis=1,
+                self._mlmodel.predict_proba(torch.from_numpy(x_ce).float()), axis=1
             )
             indices = np.where(y_candidate != instance_label)
             candidate_counterfactuals = x_ce[indices]

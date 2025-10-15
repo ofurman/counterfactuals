@@ -278,7 +278,6 @@ def main(cfg: DictConfig):
             median_log_prob=log_prob_threshold,
         )
         logger.info(f"Metrics for fold {fold_n}: {metrics}")
-        return
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]

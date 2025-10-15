@@ -374,6 +374,7 @@ def evaluate_cf(
     y_test: np.ndarray,
     median_log_prob: np.ndarray,
     y_target: np.ndarray = None,
+    metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
 ):
     y_target = torch.abs(1 - torch.from_numpy(y_test)) if y_target is None else y_target
     y_target = y_target.numpy() if isinstance(y_target, torch.Tensor) else y_target
@@ -391,6 +392,7 @@ def evaluate_cf(
         categorical_features=categorical_features,
         ratio_cont=None,
         prob_plausibility_threshold=median_log_prob,
+        metrics_conf_path=metrics_conf_path,
     )
     metrics = metrics_cf.calculate_all_metrics()
     return metrics
