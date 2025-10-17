@@ -144,9 +144,11 @@ class AReS:
         self.X, self.binned_features, self.binned_features_continuous = (
             self.bin_continuous_features(self.X)
         )
+        self.feature_values = self._build_feature_values()
         self.continuous_features = []  # list of continuous features
-        self.feature_costs_vector = np.zeros(len(self.features) - 1)
-        self.non_ordinal_categories_idx = np.ones(len(self.features) - 1, dtype=bool)
+        n_feature_values = len(self.feature_values)
+        self.feature_costs_vector = np.zeros(n_feature_values)
+        self.non_ordinal_categories_idx = np.ones(n_feature_values, dtype=bool)
         i = 0
         for feature in self.features_tree:
             if feature not in self.categorical_features:
@@ -202,6 +204,16 @@ class AReS:
         self.feature_values_tree = create_feature_values_tree(
             self.features_tree, use_values=False
         )
+
+    def _build_feature_values(self) -> list[str]:
+        """Return flattened list of feature values matching the encoded feature order."""
+        feature_values: list[str] = []
+        for feature, values in self.features_tree.items():
+            if values:
+                feature_values.extend(values)
+            else:
+                feature_values.append(feature)
+        return feature_values
 
         # The following are updated using
         # self.compute_SD_RL and self.compute_V

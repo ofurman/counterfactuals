@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 
 class Data(ABC):
@@ -140,11 +142,17 @@ class CustomData(Data):
     Custom implementation of Data class for use with CCHVAE
     """
 
-    def __init__(self, dataset, target_column="target"):
+    def __init__(self, dataset, target_column: str = "target") -> None:
         """
         Initialize with a dataset that has transformer and feature information
         """
         self._dataset = dataset
+        self._categorical_columns = [str(i) for i in dataset.categorical_features]
+        self._continuous_columns = [
+            str(i)
+            for i in range(dataset.X_train.shape[1])
+            if i not in dataset.categorical_features
+        ]
         self._df = pd.DataFrame(
             data=dataset.X_train,
             columns=[str(i) for i in range(dataset.X_train.shape[1])],
@@ -161,6 +169,12 @@ class CustomData(Data):
         self._df_train[self._target_column] = dataset.y_train
         self._df_test[self._target_column] = dataset.y_test
 
+        self._scaler: Optional[MinMaxScaler] = None
+        if self._continuous_columns:
+            self._scaler = MinMaxScaler()
+            self._scaler.fit(self._df_train[self._continuous_columns])
+            self._apply_scaling()
+
         class Encoder:
             def get_feature_names(self, categorical):
                 return [str(i) for i in dataset.categorical_features]
@@ -170,16 +184,12 @@ class CustomData(Data):
     @property
     def categorical(self):
         """Column names of categorical features"""
-        return [str(i) for i in self._dataset.categorical_features]
+        return self._categorical_columns
 
     @property
     def continuous(self):
         """Column names of continuous features"""
-        numerical_features = list(
-            set(range(self._dataset.X_train.shape[1]))
-            - set(self._dataset.categorical_features)
-        )
-        return [str(i) for i in numerical_features]
+        return self._continuous_columns
 
     @property
     def immutables(self):
@@ -207,12 +217,27 @@ class CustomData(Data):
         """Testing dataframe"""
         return self._df_test
 
-    def transform(self, df):
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transform data (apply scaling/encoding)"""
-        # Here we assume data is already transformed
-        return df
+        transformed = df.copy()
+        if self._scaler and set(self._continuous_columns).issubset(transformed.columns):
+            transformed.loc[:, self._continuous_columns] = self._scaler.transform(
+                transformed[self._continuous_columns]
+            )
+        return transformed
 
-    def inverse_transform(self, df):
+    def inverse_transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Inverse transform (undo scaling/encoding)"""
-        # Here we assume simple implementation for demonstration
-        return df
+        inversed = df.copy()
+        if self._scaler and set(self._continuous_columns).issubset(inversed.columns):
+            inversed.loc[:, self._continuous_columns] = self._scaler.inverse_transform(
+                inversed[self._continuous_columns]
+            )
+        return inversed
+
+    def _apply_scaling(self) -> None:
+        """Apply min-max scaling to stored dataframes."""
+        for df in (self._df, self._df_train, self._df_test):
+            df.loc[:, self._continuous_columns] = self._scaler.transform(
+                df[self._continuous_columns]
+            )

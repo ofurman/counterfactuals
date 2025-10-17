@@ -1,4 +1,6 @@
 import copy
+import importlib
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,6 +9,176 @@ from tqdm import tqdm
 
 
 class GLOBE_CE:
+    """Wrapper for GLOBE-CE counterfactual explanation method.
+
+    This class handles the initialization and orchestration of GLOBE-CE,
+    including the computation of bin widths using AReS internally.
+
+    Args:
+        discriminative_model: The predictive model to explain
+        dataset: Dataset wrapper containing features and transformation info
+        hyperparams: Optional hyperparameters for GLOBE-CE configuration
+    """
+
+    def __init__(
+        self,
+        discriminative_model: Any,
+        dataset: Any,
+        X: pd.DataFrame,
+        hyperparams: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize GLOBE_CE with model and dataset.
+
+        Args:
+            discriminative_model: The predictive model to explain
+            dataset: Dataset wrapper with features and transformation info
+            hyperparams: Optional dict with keys:
+                - n_bins: Number of bins for AReS (default: 10)
+                - dropped_features: Features to exclude (default: [])
+                - ordinal_features: Ordinal feature names (default: [])
+        """
+        self.discriminative_model = discriminative_model
+        self.dataset = dataset
+        self.hyperparams = hyperparams or {}
+        self.X = X
+
+        # Extract hyperparameters with defaults
+        n_bins = self.hyperparams.get("n_bins", 10)
+        dropped_features = self.hyperparams.get("dropped_features", [])
+        ordinal_features = self.hyperparams.get("ordinal_features", [])
+
+        # Compute bin widths using AReS internally
+        bin_widths = self._compute_bin_widths(
+            dataset=dataset,
+            n_bins=n_bins,
+            dropped_features=dropped_features,
+            ordinal_features=ordinal_features,
+        )
+
+        # Create a wrapper function that handles DataFrame/numpy array inputs
+        def predict_fn_wrapper(X: pd.DataFrame | np.ndarray) -> np.ndarray:
+            if isinstance(X, pd.DataFrame):
+                X = X.values
+            return discriminative_model.predict(X)
+
+        # Initialize internal GLOBE-CE implementation
+
+        X_df = pd.DataFrame(self.X, columns=dataset.config.features)
+
+        self._globe_ce = _GLOBE_CE(
+            predict_fn=predict_fn_wrapper,
+            dataset=dataset,
+            X=X_df,
+            bin_widths=bin_widths,
+            dropped_features=dropped_features,
+            ordinal_features=ordinal_features,
+        )
+
+    def _compute_bin_widths(
+        self,
+        dataset: Any,
+        n_bins: int,
+        dropped_features: list[str],
+        ordinal_features: list[str],
+    ) -> dict[str, float]:
+        """Compute bin widths using AReS helper.
+
+        Args:
+            dataset: Dataset wrapper
+            n_bins: Number of bins for discretization
+            dropped_features: Features to exclude
+            ordinal_features: Ordinal feature names
+
+        Returns:
+            Dictionary mapping feature names to bin widths
+        """
+        # Import AReS dynamically to avoid circular dependencies
+        AReS = getattr(
+            importlib.import_module("counterfactuals.cf_methods.global.ares.ares"),
+            "AReS",
+        )
+
+        raw_train = dataset.X_train
+        raw_test = dataset.X_test
+        combined_df = pd.DataFrame(
+            np.vstack([raw_train, raw_test]),
+            columns=dataset.config.features,
+        )
+
+        # Create a wrapper function that handles DataFrame/numpy array inputs
+        def predict_fn_wrapper(X: pd.DataFrame | np.ndarray) -> np.ndarray:
+            if isinstance(X, pd.DataFrame):
+                X = X.values
+            return self.discriminative_model.predict(X)
+
+        # Initialize AReS to compute bin widths
+        ares_helper = AReS(
+            predict_fn=predict_fn_wrapper,
+            dataset=dataset,
+            X=combined_df,
+            dropped_features=dropped_features,
+            n_bins=n_bins,
+            ordinal_features=ordinal_features,
+            normalise=False,
+        )
+
+        return ares_helper.bin_widths
+
+    def _get_training_data(self, dataset: Any) -> pd.DataFrame:
+        """Extract training data from dataset.
+
+        Args:
+            dataset: Dataset wrapper
+
+        Returns:
+            DataFrame with training data
+        """
+        # Handle different dataset structures
+        if hasattr(dataset, "X_train"):
+            X_train = dataset.X_train
+        elif hasattr(dataset, "data"):
+            X_train = dataset.data
+        else:
+            raise ValueError("Dataset must have 'X_train' or 'data' attribute")
+
+        # Convert to DataFrame if needed
+        if isinstance(X_train, pd.DataFrame):
+            return X_train
+        else:
+            features = dataset.config.features if hasattr(dataset, "config") else None
+            return pd.DataFrame(X_train, columns=features)
+
+    def get_counterfactuals(self) -> np.ndarray:
+        """Generate counterfactual explanations for given instances.
+
+        Args:
+            X_original: Original instances to explain (scaled/preprocessed)
+
+        Returns:
+            Counterfactual instances
+        """
+        # Convert to DataFrame for internal processing
+        # features = (
+        #     self.dataset.config.features
+        #     if hasattr(self.dataset, "config")
+        #     else self.dataset.features
+        # )
+        # X_df = pd.DataFrame(X_original, columns=features)
+
+        # # Store original data temporarily
+        # original_x_aff = self._globe_ce.x_aff.copy()
+        # self._globe_ce.x_aff = X_df.values
+
+        # Generate counterfactuals
+        counterfactuals = self._globe_ce.explain()
+
+        # Restore original data
+        # self._globe_ce.x_aff = original_x_aff
+
+        return counterfactuals
+
+
+class _GLOBE_CE:
     def __init__(
         self,
         predict_fn,
@@ -48,7 +220,7 @@ class GLOBE_CE:
         self.monotonicity = np.array(monotonicity) if monotonicity is not None else None
         self.features = np.array(list(self.dataset.features_tree))
         self.n_f = len(self.features)
-        self.feature_values = self.dataset.features[:-1]
+        self.feature_values = self._build_feature_values()
 
         # Refer normalisation to model?
         self.normalise = None
@@ -168,6 +340,16 @@ class GLOBE_CE:
         self.correct_vector, self.cost_vector = None, None
         self.correct_max, self.cost_max = None, None
         self.scalars = None
+
+    def _build_feature_values(self) -> list[str]:
+        """Flatten dataset feature metadata into feature values used internally."""
+        feature_values: list[str] = []
+        for feature, values in self.dataset.features_tree.items():
+            if values:
+                feature_values.extend(values)
+            else:
+                feature_values.append(feature)
+        return feature_values
 
     def round_categorical(self, cf):
         """

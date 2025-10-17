@@ -77,7 +77,8 @@ class DatasetBase:
         self.config = self._load_config(config_path)
         self.X: Optional[np.ndarray] = None
         self.y: Optional[np.ndarray] = None
-        self.features: List[Any] = self.config.features
+        # Note: AReS/GLOBE_CE expect features to include target at the end
+        self.features: List[Any] = self.config.features + [self.config.target]
         self.numerical_features: List[Any] = self.config.continuous_features
         self.numerical_features_indices: List[int] = [
             self.features.index(f) for f in self.numerical_features
@@ -90,6 +91,43 @@ class DatasetBase:
             k for k, v in self.config.feature_config.items() if v.actionable
         ]
         self.task_type: str = "classification"
+
+        # Aliases for backward compatibility with AReS/GLOBE_CE
+        self.numerical_columns: List[int] = self.numerical_features_indices
+        self.categorical_columns: List[int] = self.categorical_features_indices
+
+    @property
+    def features_tree(self) -> Dict[Any, List[str]]:
+        """Generate features_tree for compatibility with AReS/GLOBE_CE.
+
+        For datasets without one-hot encoding, this returns a dictionary
+        mapping each feature to an empty list (for continuous features)
+        or to their categorical values (for categorical features).
+
+        Returns:
+            Dictionary mapping feature names to their one-hot encoded column names
+            (empty list for continuous features).
+        """
+        if not hasattr(self, "_features_tree"):
+            self._features_tree = {}
+            # Only iterate over actual features, not the target
+            for feature in self.config.features:
+                # For now, assume no one-hot encoding in base datasets
+                # Continuous features map to empty list
+                # Categorical features would need one-hot encoding handled separately
+                if feature in self.categorical_features:
+                    # For categorical features without explicit one-hot encoding,
+                    # return empty list (will be handled by preprocessing if needed)
+                    self._features_tree[feature] = []
+                else:
+                    # Continuous features
+                    self._features_tree[feature] = []
+        return self._features_tree
+
+    @features_tree.setter
+    def features_tree(self, value: Dict[Any, List[str]]) -> None:
+        """Allow setting features_tree explicitly (e.g., from pipelines)."""
+        self._features_tree = value
 
     def preprocess(self, raw_data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         """Extracts input features and target from raw data.

@@ -20,7 +20,15 @@ GROUP_COLORS = [
 ]
 
 
-def plot_counterfactuals(Xs, Xs_cfs, log_prob_threshold, disc_model, gen_model=None):
+def plot_counterfactuals(
+    Xs,
+    Xs_cfs,
+    log_prob_threshold,
+    disc_model,
+    gen_model=None,
+    region_area_x=[0, 1],
+    region_area_y=[0, 1],
+):
     fig, ax = plt.subplots(1, 1)
 
     ax.scatter(
@@ -54,7 +62,9 @@ def plot_counterfactuals(Xs, Xs_cfs, log_prob_threshold, disc_model, gen_model=N
 
     if gen_model is not None:
         plot_generative_model_distribution(ax, gen_model, log_prob_threshold, 2)
-    plot_classifier_decision_region(ax, disc_model)
+    plot_classifier_decision_region(
+        ax, disc_model, region_area_x=region_area_x, region_area_y=region_area_y
+    )
 
     plt.grid(True, alpha=0.3)
     plt.xlabel("Feature 1")

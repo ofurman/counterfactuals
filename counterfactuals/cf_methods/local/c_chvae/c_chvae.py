@@ -6,6 +6,9 @@ import pandas as pd
 import torch
 from numpy import linalg as LA
 
+from counterfactuals.cf_methods.local.c_chvae.data import CustomData
+from counterfactuals.cf_methods.local.c_chvae.mlmodel import CustomMLModel
+
 from .mlmodel import MLModel
 from .utils import (
     check_counterfactuals,
@@ -21,6 +24,22 @@ logging.basicConfig(
 
 
 class CCHVAE:
+    def __init__(
+        self, discriminative_model: MLModel, dataset, hyperparams: Dict = None
+    ) -> None:
+        custom_dataset = CustomData(dataset)
+        self.wrapped_model = CustomMLModel(discriminative_model, custom_dataset)
+        self._cchvae = _CCHVAE(self.wrapped_model, hyperparams)
+
+    def get_counterfactuals(self, X_original: np.ndarray) -> pd.DataFrame:
+        factuals = pd.DataFrame(
+            X_original, columns=self.wrapped_model.feature_input_order
+        )
+
+        return self._cchvae.get_counterfactuals_without_check(factuals)
+
+
+class _CCHVAE:
     """
     Implementation of CCHVAE [1]_
 
@@ -252,15 +271,17 @@ class CCHVAE:
 
     def get_counterfactuals(self, factuals: pd.DataFrame) -> pd.DataFrame:
         factuals = self._mlmodel.get_ordered_features(factuals)
+        scaled_factuals = self._mlmodel.data.transform(factuals.copy())
 
         encoded_feature_names = self._mlmodel.data.encoder.get_feature_names(
             self._mlmodel.data.categorical
         )
         cat_features_indices = [
-            factuals.columns.get_loc(feature) for feature in encoded_feature_names
+            scaled_factuals.columns.get_loc(feature)
+            for feature in encoded_feature_names
         ]
 
-        df_cfs = factuals.apply(
+        df_cfs = scaled_factuals.apply(
             lambda x: self._counterfactual_search(
                 self._step, x.reshape((1, -1)), cat_features_indices
             ),
@@ -270,19 +291,22 @@ class CCHVAE:
 
         df_cfs = check_counterfactuals(self._mlmodel, df_cfs, factuals.index)
         df_cfs = self._mlmodel.get_ordered_features(df_cfs)
+        df_cfs = self._mlmodel.data.inverse_transform(df_cfs)
         return df_cfs
 
     def get_counterfactuals_without_check(self, factuals: pd.DataFrame) -> pd.DataFrame:
         factuals = self._mlmodel.get_ordered_features(factuals)
+        scaled_factuals = self._mlmodel.data.transform(factuals.copy())
 
         encoded_feature_names = self._mlmodel.data.encoder.get_feature_names(
             self._mlmodel.data.categorical
         )
         cat_features_indices = [
-            factuals.columns.get_loc(feature) for feature in encoded_feature_names
+            scaled_factuals.columns.get_loc(feature)
+            for feature in encoded_feature_names
         ]
 
-        df_cfs = factuals.apply(
+        df_cfs = scaled_factuals.apply(
             lambda x: self._counterfactual_search(
                 self._step, x.reshape((1, -1)), cat_features_indices
             ),
@@ -291,4 +315,5 @@ class CCHVAE:
         )
 
         df_cfs = self._mlmodel.get_ordered_features(df_cfs)
+        df_cfs = self._mlmodel.data.inverse_transform(df_cfs)
         return df_cfs

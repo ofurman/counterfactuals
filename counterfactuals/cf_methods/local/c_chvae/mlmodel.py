@@ -208,6 +208,7 @@ class CustomMLModel(MLModel):
         self._feature_input_order = [
             str(i) for i in range(len(data.categorical) + len(data.continuous))
         ]
+        self._model_device = self._infer_model_device()
 
     @property
     def feature_input_order(self):
@@ -227,21 +228,49 @@ class CustomMLModel(MLModel):
     def predict(self, x: Union[np.ndarray, pd.DataFrame, torch.Tensor]):
         """One-dimensional prediction"""
         with torch.no_grad():
-            if isinstance(x, pd.DataFrame):
-                x = x[self.feature_input_order].values
-
-            if isinstance(x, np.ndarray):
-                x = torch.tensor(x, dtype=torch.float32)
-
-            return self._model.predict(x)
+            model_input = self._prepare_model_input(x)
+            return self._model.predict(model_input)
 
     def predict_proba(self, x: Union[np.ndarray, pd.DataFrame, torch.Tensor]):
         """Two-dimensional probability prediction"""
         with torch.no_grad():
-            if isinstance(x, pd.DataFrame):
-                x = x[self.feature_input_order].values
+            model_input = self._prepare_model_input(x)
+            return self._model.predict_proba(model_input)
 
-            if isinstance(x, np.ndarray):
-                x = torch.tensor(x, dtype=torch.float32)
+    def _prepare_model_input(
+        self, x: Union[np.ndarray, pd.DataFrame, torch.Tensor]
+    ) -> torch.Tensor:
+        """
+        Convert scaled inputs into the original feature space and prepare a tensor for the model.
+        """
+        ordered_df = self._ensure_ordered_dataframe(x)
+        original_scale_df = self.data.inverse_transform(ordered_df)
+        tensor_input = torch.tensor(
+            original_scale_df[self.feature_input_order].to_numpy(dtype=np.float32)
+        )
+        return tensor_input.to(self._model_device)
 
-            return self._model.predict_proba(x)
+    def _ensure_ordered_dataframe(
+        self, x: Union[np.ndarray, pd.DataFrame, torch.Tensor]
+    ) -> pd.DataFrame:
+        """
+        Ensure that the data is represented as a DataFrame with features in the correct order.
+        """
+        if isinstance(x, pd.DataFrame):
+            return self.get_ordered_features(x)
+
+        if isinstance(x, torch.Tensor):
+            array = x.detach().cpu().numpy()
+        else:
+            array = np.asarray(x)
+
+        return pd.DataFrame(array, columns=self.feature_input_order)
+
+    def _infer_model_device(self) -> torch.device:
+        """Infer the device the wrapped model currently resides on."""
+        if hasattr(self._model, "parameters"):
+            try:
+                return next(self._model.parameters()).device
+            except StopIteration:
+                return torch.device("cpu")
+        return torch.device("cpu")

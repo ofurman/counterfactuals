@@ -43,16 +43,16 @@ def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
     return ax
 
 
-def plot_classifier_decision_region(ax, model):
-    xline = torch.linspace(-0, 1, 400)
-    yline = torch.linspace(-0, 1, 400)
+def plot_classifier_decision_region(
+    ax, model, region_area_x=[0, 1], region_area_y=[0, 1]
+):
+    xline = torch.linspace(region_area_x[0], region_area_x[1], 400)
+    yline = torch.linspace(region_area_y[0], region_area_y[1], 400)
     xgrid, ygrid = torch.meshgrid(xline, yline)
     xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
 
     y_hat = model.predict(xyinput)
     y_hat = y_hat.reshape(400, 400)
-
-    # ax.contour(xgrid.numpy(), ygrid.numpy(), y_hat.numpy(), alpha=0.1, cmap="tab10", levels=1)
 
     display = DecisionBoundaryDisplay(xx0=xgrid, xx1=ygrid, response=y_hat)
     ax = display.plot(plot_method="contour", ax=ax, alpha=0.3).ax_
