@@ -2,7 +2,6 @@
 
 from .c_chvae.c_chvae import CCHVAE
 from .casebased_sace.casebased_sace import CaseBasedSACE
-from .cem.cem import CEM_CF
 from .dice.dice import DICE
 
 # from .lice.lice import LiCE
