@@ -7,7 +7,7 @@ from .global_counterfactual_mixin import GlobalCounterfactualMixin
 from .group_counterfactual_mixin import GroupCounterfactualMixin
 
 # Import from subpackages
-from .local import CCHVAE, DICE, PPCEF, PPCEFR, WACH, WACH_OURS, Artelt
+from .local import CCHVAE, DICE, PPCEF, PPCEFR, WACH, WACH_OURS
 from .local_counterfactual_mixin import LocalCounterfactualMixin
 
 __all__ = [
