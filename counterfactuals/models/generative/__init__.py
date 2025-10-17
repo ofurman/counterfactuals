@@ -1,6 +1,5 @@
 """Generative models package."""
 
-from .cnf.cnf import ContinuousNormalizingFlowRegressor
 from .kde import KDE
 from .maf.maf import MaskedAutoregressiveFlow
 from .nice import NICE
@@ -11,5 +10,4 @@ __all__ = [
     "NICE",
     "KDE",
     "MaskedAutoregressiveFlow",
-    "ContinuousNormalizingFlowRegressor",
 ]
