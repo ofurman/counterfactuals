@@ -37,13 +37,13 @@ class FileDataset(DatasetBase):
             Loaded dataset as a pandas DataFrame.
         """
         # Resolve path relative to project root
-        project_root = Path(__file__).resolve().parent.parent.parent
-        path = project_root / file_path
+        # project_root = Path(__file__).resolve().parent.parent.parent
+        # path = project_root / file_path
 
-        if not path.exists():
-            raise FileNotFoundError(f"Dataset file not found: {path}")
+        # if not path.exists():
+        #     raise FileNotFoundError(f"Dataset file not found: {path}")
 
-        return pd.read_csv(path, index_col=False)
+        return pd.read_csv(file_path, index_col=False)
 
     def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """Preprocesses raw data into feature and target arrays.
