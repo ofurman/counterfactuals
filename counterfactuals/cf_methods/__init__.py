@@ -4,7 +4,6 @@ import importlib
 
 from .counterfactual_base import BaseCounterfactualMethod, ExplanationResult
 from .global_counterfactual_mixin import GlobalCounterfactualMixin
-from .group import RPPCEF
 from .group_counterfactual_mixin import GroupCounterfactualMixin
 
 # Import from subpackages
@@ -29,6 +28,4 @@ __all__ = [
     "CCHVAE",
     "GlobalGLANCE",
     "GLOBE_CE",
-    # Group methods
-    "RPPCEF",
 ]

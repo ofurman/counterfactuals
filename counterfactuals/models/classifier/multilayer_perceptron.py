@@ -86,10 +86,13 @@ class MLPClassifier(PytorchBase, ClassifierPytorchMixin):
                     patience_counter += 1
                 if patience_counter > patience:
                     break
-                self.load(checkpoint_path)
             pbar.set_description(
                 f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
+        # Load best model after training
+        if test_loader:
+            self.load(checkpoint_path)
+        self.eval()
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         if isinstance(X_test, np.ndarray):

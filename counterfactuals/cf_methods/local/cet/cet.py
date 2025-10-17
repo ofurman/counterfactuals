@@ -1,7 +1,11 @@
 import logging
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from torch.utils.data import DataLoader
 
 from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
@@ -260,40 +264,51 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
             self.rule_length_ = np.ones(self.R_)
         self.rule_probability_ = (1 / self.rule_length_) / (1 / self.rule_length_).sum()
 
-    def explain(
+    def explain_dataloader(
         self,
-        X: np.ndarray,
-        y_origin: np.ndarray | None = None,
-        y_target: np.ndarray | None = None,
-        X_train: np.ndarray | None = None,
-        **kwargs,
+        dataloader: "DataLoader",
+        epochs: int = 1000,
+        lr: float = 0.0005,
+        patience_eps: float | int = 1e-5,
+        **search_step_kwargs,
     ) -> ExplanationResult:
-        """Wrapper to produce ExplanationResult for compatibility.
+        """Generate counterfactual explanations for data provided via DataLoader.
 
-        This uses the existing get_counterfactuals method and returns an
-        ExplanationResult dataclass.
+        This method matches the BaseCounterfactualMethod interface. For CET,
+        the epochs, lr, and patience_eps parameters are not used since CET
+        uses a tree-based approach rather than gradient-based optimization.
+
+        Args:
+            dataloader: PyTorch DataLoader containing (X, y) pairs.
+            epochs: Not used for CET (kept for interface compatibility).
+            lr: Not used for CET (kept for interface compatibility).
+            patience_eps: Not used for CET (kept for interface compatibility).
+            **search_step_kwargs: Additional parameters (not used for CET).
+
+        Returns:
+            ExplanationResult: Object containing all generated counterfactuals.
         """
-        # If training data provided, fit (keeps backward compatibility)
-        if X_train is not None:
-            self.fit(X_train)
+        # Extract data from dataloader
+        X_list = []
+        y_list = []
+        for batch_X, batch_y in dataloader:
+            X_list.append(batch_X.cpu().numpy())
+            y_list.append(batch_y.cpu().numpy())
 
+        X = np.vstack(X_list)
+        y_origin = np.concatenate(y_list)
+
+        # Generate counterfactuals using CET's tree-based method
         x_cfs = self.get_counterfactuals(X)
-        y_target_arr = (
-            np.array(y_target)
-            if y_target is not None
-            else np.zeros((X.shape[0],), dtype=int)
-        )
-        y_origin_arr = (
-            np.array(y_origin)
-            if y_origin is not None
-            else np.zeros((X.shape[0],), dtype=int)
-        )
+
+        # Target labels are opposite of origin for binary classification
+        y_target = 1 - y_origin.astype(int)
 
         return ExplanationResult(
             x_cfs=np.array(x_cfs),
-            y_cf_targets=y_target_arr,
-            x_origs=np.array(X),
-            y_origs=y_origin_arr,
+            y_cf_targets=y_target,
+            x_origs=X,
+            y_origs=y_origin.astype(int),
             logs=None,
         )
 
@@ -728,6 +743,45 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
         X_rule = self.discretizer_.transform(X)
         A = [self.root_.predict(x) for x in X_rule]
         return np.array([self.feasify(a, x) for a, x in zip(A, X)])
+
+    def explain(
+        self,
+        X: np.ndarray,
+        y_origin: np.ndarray,
+        y_target: np.ndarray,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """
+        Generate counterfactual explanations for given instances.
+
+        Args:
+            X: Input instances to explain with shape (n_instances, n_features).
+            y_origin: Original predictions/labels for X with shape (n_instances,).
+            y_target: Desired target predictions/labels with shape (n_instances,).
+            X_train: Training data (not used by CET).
+            y_train: Training labels (not used by CET).
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing counterfactuals, targets, originals,
+                and any additional logging information.
+        """
+        # Get actions (deltas) from the trained tree
+        actions = self.predict(X)
+
+        # Generate counterfactuals by applying actions
+        x_cfs = X + actions
+
+        # Return explanation result
+        return ExplanationResult(
+            x_cfs=x_cfs,
+            y_cf_targets=y_target,
+            x_origs=X,
+            y_origs=y_origin,
+            logs={"actions": actions},
+        )
 
     def cost(self, X, cost_type="TLPS"):
         A = self.predict(X)

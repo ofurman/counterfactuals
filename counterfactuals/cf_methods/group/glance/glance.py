@@ -61,12 +61,14 @@ class GlobalGLANCE:
         actions = defaultdict(set)  # Tuple -> Set of actions
         merge_history = []
         action_full_history = []
+        print("Generating counterfactuals for cluster centers")
         # First generate counterfactuals m for each cluster center
         for c, c_lab in tqdm(cent_lab):
             assert isinstance(c, np.ndarray), "Centroid must be a numpy array"
 
             for _m in range(self.m):
                 query_instance = self.__np_to_pd(c)
+                print("Explaining cluster center: ")
                 counterfactual = self.explainer.generate(query_instance)
                 if counterfactual is not None:
                     vec = counterfactual - c
