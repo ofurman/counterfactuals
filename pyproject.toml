@@ -44,8 +44,8 @@ dev-dependencies = [
   "pytest",
 ]
 
-[tool.setuptools]
-packages = ["counterfactuals"]
+[tool.setuptools.packages.find]
+where = ["."]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
