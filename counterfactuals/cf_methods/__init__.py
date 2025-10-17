@@ -20,9 +20,7 @@ __all__ = [
     # Local methods
     "PPCEF",
     "DICE",
-    "WACH",
     "WACH_OURS",
-    "Artelt",
     "PPCEFR",
     # Global methods
     "CCHVAE",
