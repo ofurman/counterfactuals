@@ -165,7 +165,7 @@ class MetricsOrchestrator:
 
             try:
                 value = metric(**kwargs)
-                results[metric_name] = value
+                results[metric_name] = value.item()
             except Exception as e:
                 logger.error(f"Error computing metric '{metric_name}': {e}")
                 continue
