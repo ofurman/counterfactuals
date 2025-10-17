@@ -8,12 +8,10 @@ from .dice.dice import DICE
 from .ppcef.ppcef import PPCEF
 from .regression_ppcef.ppcefr import PPCEFR
 from .sace.sace import SACE
-from .wach.wach import WACH
 from .wach.wach_ours import WACH_OURS
 
 __all__ = [
     "PPCEF",
-    "WACH",
     "WACH_OURS",
     "Artelt",
     "PPCEFR",
