@@ -161,12 +161,6 @@ class CustomData(Data):
         self._df_train[self._target_column] = dataset.y_train
         self._df_test[self._target_column] = dataset.y_test
 
-        class Encoder:
-            def get_feature_names(self, categorical):
-                return [str(i) for i in dataset.categorical_features_indices]
-
-        self.encoder = Encoder()
-
     @property
     def categorical(self):
         """Column names of categorical features"""

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from counterfactuals.cf_methods.local.c_chvae import CCHVAE
 from counterfactuals.cf_methods.local.c_chvae.data import CustomData
@@ -31,28 +31,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
-
-def get_hyperparams(input_size):
-    hyperparams = {
-        "data_name": "law",
-        "n_search_samples": 300,
-        "p_norm": 1,
-        "step": 0.1,
-        "max_iter": 2000,
-        "clamp": True,
-        "binary_cat_features": True,
-        "vae_params": {
-            "layers": [input_size, 64, 32, 16],
-            "train": True,
-            "kl_weight": 0.3,
-            "lambda_reg": 1e-6,
-            "epochs": 10,
-            "lr": 1e-3,
-            "batch_size": 32,
-        },
-    }
-    return hyperparams
 
 
 def search_counterfactuals(
@@ -99,7 +77,16 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
 
     wrapped_model = CustomMLModel(disc_model, custom_dataset)
-    hyperparams = get_hyperparams(dataset.X_train.shape[1])
+
+    hyperparams = OmegaConf.to_container(
+        cfg.counterfactuals_params.hyperparams, resolve=True
+    )
+
+    input_size = dataset.X_train.shape[1]
+    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"][
+        "layers"
+    ]
+
     exp = CCHVAE(wrapped_model, hyperparams)
 
     logger.info("Handling counterfactual generation")
