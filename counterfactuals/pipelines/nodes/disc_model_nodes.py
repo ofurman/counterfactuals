@@ -149,7 +149,6 @@ def create_disc_model(
     """
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model = isntantiate_disc_model(cfg, dataset)
-    print(disc_model_path)
 
     if cfg.disc_model.train_model:
         disc_model = train_disc_model(disc_model, dataset, disc_model_path, cfg)
