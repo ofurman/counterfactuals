@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlr
+  - disc_model: mlp
 
 hydra:
   sweeper:
@@ -12,7 +12,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.GermanCreditDataset
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/law.yaml
 
 disc_model:
   train_model: false

@@ -13,12 +13,19 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.local.c_chvae import CCHVAE
 from counterfactuals.cf_methods.local.c_chvae.data import CustomData
 from counterfactuals.cf_methods.local.c_chvae.mlmodel import CustomMLModel
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    OneHotEncodingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -196,15 +203,23 @@ def main(cfg: DictConfig) -> None:
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("onehot", OneHotEncodingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
         dequantizer.fit(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
@@ -229,8 +244,8 @@ def main(cfg: DictConfig) -> None:
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
