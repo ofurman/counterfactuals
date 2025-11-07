@@ -187,10 +187,17 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             original.append(xs_origin.detach().cpu().numpy())
             original_class.append(contexts_origin.detach().cpu().numpy())
             target_class.append(contexts_target.detach().cpu().numpy())
+
+        deltas = np.concatenate(deltas, axis=0)
+        originals = np.concatenate(original, axis=0)
+        original_classes = np.concatenate(original_class, axis=0)
+        target_classes = np.concatenate(target_class, axis=0)
+        x_cfs = originals + deltas
+
         return ExplanationResult(
-            x_cfs=np.concatenate(deltas, axis=0),
-            y_cf_targets=np.concatenate(target_class, axis=0),
-            x_origs=np.concatenate(original, axis=0),
-            y_origs=np.concatenate(original_class, axis=0),
+            x_cfs=x_cfs,
+            y_cf_targets=target_classes,
+            x_origs=originals,
+            y_origs=original_classes,
             logs=loss_components_logging,
         )
