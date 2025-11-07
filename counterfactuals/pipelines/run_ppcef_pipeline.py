@@ -118,8 +118,8 @@ def search_counterfactuals(
             dataset.categorical_features_lists,
         ),
     )
-    delta = explanation_result.x_cfs - explanation_result.x_origs
-    Xs = explanation_result.x_cfs
+    Xs = explanation_result.x_origs
+    Xs_cfs = explanation_result.x_cfs
     ys_orig = explanation_result.y_origs
     ys_target = explanation_result.y_cf_targets
 
@@ -128,8 +128,6 @@ def search_counterfactuals(
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
-
-    Xs_cfs = Xs + delta
 
     if cfg.counterfactuals_params.use_categorical:
         Xs_cfs = apply_categorical_discretization(
