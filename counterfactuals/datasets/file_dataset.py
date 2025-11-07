@@ -54,6 +54,29 @@ class FileDataset(DatasetBase):
             Tuple (X, y) as numpy arrays.
         """
         raw_data = raw_data.dropna(subset=self.config.features)
+        raw_data = raw_data[
+            self.config.continuous_features
+            + self.config.categorical_features
+            + [self.config.target]
+        ]
+        self.features = (
+            self.config.continuous_features
+            + self.config.categorical_features
+            + [self.config.target]
+        )
+        self.numerical_features_indices = list(
+            range(len(self.config.continuous_features))
+        )
+        self.categorical_features_indices = list(
+            range(
+                len(self.config.continuous_features),
+                len(self.config.continuous_features)
+                + len(self.config.categorical_features),
+            )
+        )
+        self.target_index = len(self.config.continuous_features) + len(
+            self.config.categorical_features
+        )
 
         # Balance classes by downsampling majority class to match minority class
         target_col = self.config.target
