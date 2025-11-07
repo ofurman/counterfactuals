@@ -204,25 +204,10 @@ class MethodDataset:
             AttributeError: If onehot encoder has not been fitted yet.
         """
         if self.preprocessing_pipeline is None:
-            raise ValueError(
-                "Cannot compute categorical_features_lists: preprocessing_pipeline is None"
-            )
-
+            return []
         onehot_step = self.preprocessing_pipeline.get_step("onehot")
         if onehot_step is None:
-            raise ValueError(
-                "Cannot compute categorical_features_lists: 'onehot' step not found in preprocessing pipeline"
-            )
-
-        if onehot_step.encoder is None:
-            raise AttributeError(
-                "Cannot compute categorical_features_lists: onehot encoder has not been fitted yet"
-            )
-
-        if not hasattr(onehot_step.encoder, "categories_"):
-            raise AttributeError(
-                "Cannot compute categorical_features_lists: onehot encoder.categories_ not available"
-            )
+            return []
 
         categorical_features_lists = []
         # Start after all numerical features
