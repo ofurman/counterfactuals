@@ -20,7 +20,7 @@ feature_config:
   zfygpa:
     actionable: true
   sex:
-    actionable: false
+    actionable: true
   race:
-    actionable: false
+    actionable: true
 target: pass_bar

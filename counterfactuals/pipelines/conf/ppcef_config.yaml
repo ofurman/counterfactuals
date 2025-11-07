@@ -12,17 +12,18 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.LawDataset
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/law.yaml
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 1024
   epochs: 2000
   patience: 100
@@ -40,8 +41,8 @@ counterfactuals_params:
 
   log_prob_quantile: 0.25
   target_class: 0
-  epochs: 1000
-  # epochs: 10000
+  epochs: 5000
+  # epochs: 20000
   batch_size: 4096
   lr: 0.001
   alpha: 1000

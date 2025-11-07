@@ -161,23 +161,17 @@ class CustomData(Data):
         self._df_train[self._target_column] = dataset.y_train
         self._df_test[self._target_column] = dataset.y_test
 
-        class Encoder:
-            def get_feature_names(self, categorical):
-                return [str(i) for i in dataset.categorical_features]
-
-        self.encoder = Encoder()
-
     @property
     def categorical(self):
         """Column names of categorical features"""
-        return [str(i) for i in self._dataset.categorical_features]
+        return [str(i) for i in self._dataset.categorical_features_indices]
 
     @property
     def continuous(self):
         """Column names of continuous features"""
         numerical_features = list(
             set(range(self._dataset.X_train.shape[1]))
-            - set(self._dataset.categorical_features)
+            - set(self._dataset.categorical_features_indices)
         )
         return [str(i) for i in numerical_features]
 

@@ -9,7 +9,6 @@ from numpy import linalg as LA
 from .mlmodel import MLModel
 from .utils import (
     check_counterfactuals,
-    merge_default_parameters,
     reconstruct_encoding_constraints,
 )
 from .vae import VariationalAutoencoder
@@ -21,81 +20,52 @@ logging.basicConfig(
 
 
 class CCHVAE:
+    """Implementation of CCHVAE.
+
+    This class implements the Counterfactuals via Conditional Variational Autoencoders
+    (CCHVAE) method for generating model-agnostic counterfactual explanations for
+    tabular data, following Pawelczyk et al. (2020).
+
+    Args:
+      mlmodel: Black-box model wrapper used for prediction and data access.
+      hyperparams: Dictionary of hyperparameters. See Notes for details.
+
+    Notes:
+      Hyperparameters (`hyperparams`) control initialization and search behavior:
+
+      - `"data_name"` (str): Name of the dataset.
+      - `"n_search_samples"` (int, default: 300): Number of candidate counterfactuals sampled per iteration.
+      - `"p_norm"` (int in {1, 2}): L_p norm used for distance calculation.
+      - `"step"` (float, default: 0.1): Step size for expanding the search radius.
+      - `"max_iter"` (int, default: 2000): Maximum iterations per factual instance.
+      - `"clamp"` (bool, default: True): If True, feature values are clamped to [0, 1].
+      - `"binary_cat_features"` (bool, default: True): If True, categorical encoding uses drop-if-binary.
+      - `"vae_params"` (Dict): Parameters for the VAE:
+        - `"layers"` (List[int]): Number of neurons per layer.
+        - `"train"` (bool, default: True): Whether to train a new VAE.
+        - `"kl_weight"` (float, default: 0.3): KL divergence weight for the VAE loss.
+        - `"lambda_reg"` (float, default: 1e-6): Regularization weight for VAE.
+        - `"epochs"` (int, default: 5): Training epochs for the VAE.
+        - `"lr"` (float, default: 1e-3): Learning rate for the VAE optimizer.
+        - `"batch_size"` (int, default: 32): Batch size for VAE training.
+
+    References:
+      Pawelczyk, M., Broelemann, K., & Kasneci, G. (2020).
+      Learning Model-Agnostic Counterfactual Explanations for Tabular Data.
+      In *Proceedings of The Web Conference 2020*.
     """
-    Implementation of CCHVAE [1]_
-
-    Parameters
-    ----------
-    mlmodel : carla.model.MLModel
-        Black-Box-Model
-    hyperparams : dict
-        Dictionary containing hyperparameters. See Notes below to see its content.
-
-    Methods
-    -------
-    get_counterfactuals:
-        Generate counterfactual examples for given factuals.
-
-    Notes
-    -----
-    - Hyperparams
-        Hyperparameter contains important information for the recourse method to initialize.
-        Please make sure to pass all values as dict with the following keys.
-
-        * "data_name": str
-            name of the dataset
-        * "n_search_samples": int, default: 300
-            Number of generated candidate counterfactuals.
-        * "p_norm": {1, 2}
-            Defines L_p norm for distance calculation.
-        * "step": float, default: 0.1
-            Step size for each generated candidate counterfactual.
-        * "max_iter": int, default: 1000
-            Number of iterations per factual instance.
-        * "clamp": bool, default: True
-            Feature values will be clamped between 0 and 1
-        * "binary_cat_features": bool, default: True
-            If true, the encoding of x is done by drop_if_binary.
-        * "vae_params": Dict
-            With parameter for VAE.
-
-            + "layers": list
-                List with number of neurons per layer.
-            + "train": bool, default: True
-                Decides if a new Autoencoder will be learned.
-            + "lambda_reg": float, default: 1e-6
-                Hyperparameter for variational autoencoder.
-            + "epochs": int, default: 5
-                Number of epochs to train VAE
-            + "lr": float, default: 1e-3
-                Learning rate for VAE training
-            + "batch_size": int, default: 32
-                Batch-size for VAE training
-
-    .. [1] Pawelczyk, Martin, Klaus Broelemann and Gjergji Kasneci. "Learning Model-Agnostic Counterfactual Explanations
-          for Tabular Data." Proceedings of The Web Conference 2020 (2020): n. pag..
-    """
-
-    _DEFAULT_HYPERPARAMS = {
-        "data_name": None,
-        "n_search_samples": 300,
-        "p_norm": 1,
-        "step": 0.1,
-        "max_iter": 2000,
-        "clamp": True,
-        "binary_cat_features": True,
-        "vae_params": {
-            "layers": None,
-            "train": True,
-            "kl_weight": 0.3,
-            "lambda_reg": 1e-6,
-            "epochs": 5,
-            "lr": 1e-3,
-            "batch_size": 32,
-        },
-    }
 
     def __init__(self, mlmodel: MLModel, hyperparams: Dict = None) -> None:
+        """Initializes the CCHVAE method.
+
+        Args:
+          mlmodel: Model wrapper providing prediction and dataset utilities.
+          hyperparams: Hyperparameter dictionary
+
+        Raises:
+          ValueError: If the provided model backend is unsupported.
+          FileNotFoundError: If VAE loading is requested but the model file is missing.
+        """
         supported_backends = ["pytorch"]
         if mlmodel.backend not in supported_backends:
             raise ValueError(
@@ -103,7 +73,7 @@ class CCHVAE:
             )
 
         self._mlmodel = mlmodel
-        self._params = merge_default_parameters(hyperparams, self._DEFAULT_HYPERPARAMS)
+        self._params = hyperparams
 
         self._n_search_samples = self._params["n_search_samples"]
         self._p_norm = self._params["p_norm"]
@@ -119,6 +89,23 @@ class CCHVAE:
     def _load_vae(
         self, data: pd.DataFrame, vae_params: Dict, mlmodel: MLModel, data_name: str
     ) -> VariationalAutoencoder:
+        """Creates or loads the Variational Autoencoder used by CCHVAE.
+
+        If `vae_params["train"]` is True, a new VAE is trained on the provided data.
+        Otherwise, an existing VAE is loaded from disk.
+
+        Args:
+          data: Full dataset as a DataFrame.
+          vae_params: VAE configuration dictionary (see class Notes).
+          mlmodel: Model wrapper, used to obtain the mutable feature mask and input order.
+          data_name: Name of the dataset for saving/loading the VAE.
+
+        Returns:
+          The initialized (and optionally trained/loaded) `VariationalAutoencoder`.
+
+        Raises:
+          FileNotFoundError: If loading is requested but the VAE file is not found.
+        """
         generative_model = VariationalAutoencoder(
             data_name, vae_params["layers"], mlmodel.get_mutable_mask()
         )
@@ -145,13 +132,24 @@ class CCHVAE:
     def _hyper_sphere_coordindates(
         self, instance, high: int, low: int
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        :param n_search_samples: int > 0
-        :param instance: numpy input point array
-        :param high: float>= 0, h>l; upper bound
-        :param low: float>= 0, l<h; lower bound
-        :param p: float>= 1; norm
-        :return: candidate counterfactuals & distances
+        """Samples points on a p-norm hypersphere shell around an instance.
+
+        The method draws random directions, scales them to lie within the shell
+        defined by radii `[low, high)`, and returns the perturbed candidates and
+        their sampled distances.
+
+        Args:
+          instance: Input point array of shape `(1, d)` or broadcastable to `(n, d)`.
+          high: Upper bound (exclusive) of the radius; must be `>= 0` and `high > low`.
+          low: Lower bound (inclusive) of the radius; must be `>= 0` and `low < high`.
+
+        Returns:
+          Tuple[np.ndarray, np.ndarray]:
+            - Candidate counterfactuals as an array of shape `(n_search_samples, d)`.
+            - Corresponding distances (radii) as an array of shape `(n_search_samples,)`.
+
+        Raises:
+          ValueError: If the configured `p_norm` is not 1 or 2.
         """
         delta_instance = np.random.randn(self._n_search_samples, instance.shape[1])
         dist = (
@@ -166,6 +164,24 @@ class CCHVAE:
     def _counterfactual_search(
         self, step: int, factual: torch.Tensor, cat_features_indices: List
     ) -> pd.DataFrame:
+        """Searches for a counterfactual by expanding a hypersphere in latent space.
+
+        Starting from the encoded factual, this method repeatedly samples candidates
+        on a growing hypersphere in latent space, decodes them, enforces encoding
+        constraints, and checks for label change while minimizing distance under the
+        configured p-norm.
+
+        Args:
+          step: Increment used to expand the search radius after unsuccessful attempts.
+          factual: Single factual instance as a tensor of shape `(1, d)`.
+          cat_features_indices: Column indices for encoded categorical features.
+
+        Returns:
+          A single counterfactual instance as a 1D NumPy array of shape `(d,)`.
+
+        Raises:
+          ValueError: If `p_norm` is not in {1, 2}.
+        """
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # init step size for growing the sphere
@@ -251,11 +267,21 @@ class CCHVAE:
                 return candidate_counterfactuals[min_index]
 
     def get_counterfactuals(self, factuals: pd.DataFrame) -> pd.DataFrame:
+        """Generates counterfactuals for the given factual instances with validation.
+
+        This method applies the internal search for each factual row, checks the
+        validity of found counterfactuals, and returns them in the original feature
+        order of the model.
+
+        Args:
+          factuals: DataFrame of factual instances.
+
+        Returns:
+          DataFrame containing validated counterfactual instances aligned to `factuals`.
+        """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
-        encoded_feature_names = self._mlmodel.data.encoder.get_feature_names(
-            self._mlmodel.data.categorical
-        )
+        encoded_feature_names = self._mlmodel.data.categorical
         cat_features_indices = [
             factuals.columns.get_loc(feature) for feature in encoded_feature_names
         ]
@@ -273,11 +299,21 @@ class CCHVAE:
         return df_cfs
 
     def get_counterfactuals_without_check(self, factuals: pd.DataFrame) -> pd.DataFrame:
+        """Generates counterfactuals without running the post-hoc validity checks.
+
+        This is similar to `get_counterfactuals` but skips `check_counterfactuals`,
+        returning the raw counterfactual outputs projected back to the model's
+        original feature order.
+
+        Args:
+          factuals: DataFrame of factual instances.
+
+        Returns:
+          DataFrame containing counterfactual instances aligned to `factuals`.
+        """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
-        encoded_feature_names = self._mlmodel.data.encoder.get_feature_names(
-            self._mlmodel.data.categorical
-        )
+        encoded_feature_names = self._mlmodel.data.categorical
         cat_features_indices = [
             factuals.columns.get_loc(feature) for feature in encoded_feature_names
         ]

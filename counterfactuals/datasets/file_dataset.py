@@ -16,6 +16,7 @@ class FileDataset(DatasetBase):
         """Initializes the File dataset with OmegaConf config.
         Args:
             config_path: Path to the dataset configuration file.
+            dataset_name: Optional name for the dataset (used for model paths).
         """
         super().__init__(config_path=config_path)
         self.samples_keep = self.config.samples_keep
@@ -53,9 +54,27 @@ class FileDataset(DatasetBase):
             Tuple (X, y) as numpy arrays.
         """
         raw_data = raw_data.dropna(subset=self.config.features)
-        raw_data = raw_data.sample(
-            min(self.samples_keep, len(raw_data)), random_state=42
-        )
+
+        # Balance classes by downsampling majority class to match minority class
+        target_col = self.config.target
+        class_counts = raw_data[target_col].value_counts()
+        min_class_count = class_counts.min()
+
+        # Downsample each class to the minority class size
+        balanced_dfs = []
+        for class_value in class_counts.index:
+            class_df = raw_data[raw_data[target_col] == class_value]
+            if len(class_df) > min_class_count:
+                class_df = class_df.sample(min_class_count, random_state=42)
+            balanced_dfs.append(class_df)
+
+        raw_data = pd.concat(balanced_dfs, ignore_index=True)
+
+        if self.samples_keep > 0:
+            raw_data = raw_data.sample(
+                min(self.samples_keep, len(raw_data)), random_state=42
+            )
+
         raw_data[self.config.target] = raw_data[self.config.target].replace(
             self.config.target_mapping
         )
