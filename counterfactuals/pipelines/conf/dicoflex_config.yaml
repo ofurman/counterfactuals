@@ -1,0 +1,49 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+  seed: 42
+  cv_folds: 0
+  use_gpu: false
+
+dataset:
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/moons.yaml
+
+disc_model:
+  train_model: true
+  epochs: 2000
+  batch_size: 128
+  patience: 200
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  epochs: 800
+  patience: 100
+  lr: 0.001
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.DiCoFlex
+  target_class: 1
+  p_values: [2.0]
+  inference_p_value: 2.0
+  n_neighbors: 10
+  noise_level: 0.02
+  train_batch_size: 512
+  val_ratio: 0.2
+  num_counterfactuals: 25
+  sampling_batch_size: 256
+  inference_mask_index: 0
+  use_actionability_mask: true
+  custom_masks: []
+  log_prob_quantile: 0.25
