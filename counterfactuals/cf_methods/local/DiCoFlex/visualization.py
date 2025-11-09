@@ -127,6 +127,7 @@ def visualize_flow_contours(
             .numpy()
             .reshape(grid_size, grid_size)
         )
+    scores = np.clip(scores, a_min=-10.0, a_max=None)
 
     plt.figure(figsize=(6, 5))
     contour = plt.contour(

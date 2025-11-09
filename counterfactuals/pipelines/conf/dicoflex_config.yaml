@@ -27,7 +27,7 @@ disc_model:
 
 gen_model:
   train_model: true
-  epochs: 800
+  epochs: 200
   patience: 100
   lr: 0.001
 
@@ -37,9 +37,9 @@ counterfactuals_params:
   target_class: 1
   p_values: [2.0]
   inference_p_value: 2.0
-  n_neighbors: 32
+  n_neighbors: 16
   noise_level: 0.02
-  train_batch_factuals: 2
+  train_batch_factuals: 4
   val_ratio: 0.2
   num_counterfactuals: 25
   sampling_batch_size: 256
