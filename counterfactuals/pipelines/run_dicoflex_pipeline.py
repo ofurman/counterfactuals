@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 from time import time
 from typing import List
 
@@ -20,6 +21,11 @@ from counterfactuals.cf_methods.local.dicoflex.context_utils import (
 from counterfactuals.cf_methods.local.dicoflex.data import (
     build_actionability_mask,
     create_dicoflex_dataloaders,
+)
+from counterfactuals.cf_methods.local.dicoflex.visualization import (
+    visualize_counterfactual_samples,
+    visualize_flow_contours,
+    visualize_training_batch,
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
@@ -82,10 +88,14 @@ def train_dicoflex_generator(
         model.train()
         train_loss = 0.0
         for batch_cf, batch_context in train_loader:
+            batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
+                device
+            )
             optimizer.zero_grad()
             log_prob = model(
-                batch_cf.to(device),
-                context=batch_context.to(device),
+                batch_cf,
+                context=batch_context,
             )
             loss = -log_prob.mean()
             loss.backward()
@@ -97,9 +107,13 @@ def train_dicoflex_generator(
         val_loss = 0.0
         with torch.no_grad():
             for batch_cf, batch_context in val_loader:
+                batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
+                batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
+                    device
+                )
                 log_prob = model(
-                    batch_cf.to(device),
-                    context=batch_context.to(device),
+                    batch_cf,
+                    context=batch_context,
                 )
                 val_loss += (-log_prob.mean()).item()
         val_loss /= max(1, len(val_loader))
@@ -134,9 +148,13 @@ def compute_log_prob_threshold(
     model.eval()
     with torch.no_grad():
         for batch_cf, batch_context in dataloader:
+            batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
+                device
+            )
             batch_scores = model(
-                batch_cf.to(device),
-                context=batch_context.to(device),
+                batch_cf,
+                context=batch_context,
             )
             log_probs.append(batch_scores.cpu())
     concat = torch.cat(log_probs)
@@ -157,6 +175,23 @@ def get_full_training_loader(
         batch_size=batch_size,
         shuffle=False,
     )
+
+
+def compute_feature_bounds(
+    data: np.ndarray, padding: float = 0.05
+) -> List[tuple[float, float]]:
+    """Return padded min/max bounds for the first two features."""
+    if data.shape[1] < 2:
+        raise ValueError("At least two features are required for contour plots.")
+    subset = data[:, :2]
+    mins = subset.min(axis=0)
+    maxs = subset.max(axis=0)
+    ranges = np.maximum(maxs - mins, 1e-6)
+    bounds: List[tuple[float, float]] = []
+    for mn, mx, rng in zip(mins, maxs, ranges):
+        pad = rng * padding
+        bounds.append((mn - pad, mx + pad))
+    return bounds
 
 
 @hydra.main(config_path="./conf", config_name="dicoflex_config", version_base="1.2")
@@ -206,12 +241,29 @@ def main(cfg: DictConfig):
             p_values=list(cfg.counterfactuals_params.p_values),
             n_neighbors=cfg.counterfactuals_params.n_neighbors,
             noise_level=cfg.counterfactuals_params.noise_level,
-            batch_size=cfg.counterfactuals_params.train_batch_size,
+            factual_batch_size=cfg.counterfactuals_params.train_batch_factuals,
             val_ratio=cfg.counterfactuals_params.val_ratio,
             seed=cfg.experiment.seed,
             numerical_indices=dataset.numerical_features_indices,
             categorical_indices=dataset.categorical_features_indices,
         )
+        vis_cfg = cfg.get("visualization")
+        if vis_cfg and vis_cfg.get("enable_training_batch", False):
+            try:
+                batch_cf, batch_context = next(iter(train_loader))
+            except StopIteration:
+                logger.warning("No batches available for visualization.")
+            else:
+                flat_cf = batch_cf.reshape(-1, batch_cf.shape[-1])
+                flat_context = batch_context.reshape(-1, batch_context.shape[-1])
+                visualize_training_batch(
+                    batch_cf=flat_cf.cpu(),
+                    batch_context=flat_context.cpu(),
+                    feature_names=dataset.features,
+                    save_path=Path(save_folder) / "training_batch_neighbors.png",
+                    max_points=vis_cfg.get("training_batch_max_points", 200),
+                    dataset_points=dataset.X_train[:, :2],
+                )
         gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
         if cfg.gen_model.train_model:
             train_dicoflex_generator(
@@ -226,7 +278,7 @@ def main(cfg: DictConfig):
             gen_model.load(gen_model_path)
 
         full_loader = get_full_training_loader(
-            train_loader, cfg.counterfactuals_params.train_batch_size
+            train_loader, cfg.counterfactuals_params.train_batch_factuals
         )
         log_prob_threshold = compute_log_prob_threshold(
             gen_model,
@@ -242,6 +294,7 @@ def main(cfg: DictConfig):
             target_class=cfg.counterfactuals_params.target_class,
             sampling_batch_size=cfg.counterfactuals_params.sampling_batch_size,
         )
+        mask_vector = mask_vectors[params.mask_index]
         cf_method = DiCoFlex(
             gen_model=gen_model,
             disc_model=disc_model,
@@ -256,11 +309,12 @@ def main(cfg: DictConfig):
         if not np.any(test_mask):
             logger.warning("All test samples already belong to the target class.")
             continue
-
+        filtered_X_test = dataset.X_test[test_mask]
+        filtered_y_test = dataset.y_test[test_mask]
         cf_loader = torch.utils.data.DataLoader(
             torch.utils.data.TensorDataset(
-                torch.from_numpy(dataset.X_test[test_mask]).float(),
-                torch.from_numpy(dataset.y_test[test_mask]).float(),
+                torch.from_numpy(filtered_X_test).float(),
+                torch.from_numpy(filtered_y_test).float(),
             ),
             batch_size=cfg.counterfactuals_params.sampling_batch_size,
             shuffle=False,
@@ -307,6 +361,44 @@ def main(cfg: DictConfig):
             base_model=gen_model,
             context_lookup=context_lookup,
         )
+        if vis_cfg and vis_cfg.get("enable_cf_scatter", False):
+            try:
+                visualize_counterfactual_samples(
+                    factual_points=explanation_result.x_origs[:, :2],
+                    counterfactual_points=explanation_result.x_cfs[:, :2],
+                    feature_names=dataset.features,
+                    save_path=Path(save_folder) / "counterfactuals_scatter.png",
+                    dataset_points=dataset.X_train[:, :2],
+                    max_points=vis_cfg.get("cf_scatter_max_points", 200),
+                )
+            except ValueError as exc:
+                logger.info("Skipping counterfactual scatter plot: %s", exc)
+        if vis_cfg and vis_cfg.get("enable_flow_contour", False):
+            try:
+                bounds = compute_feature_bounds(
+                    dataset.X_train, vis_cfg.get("contour_padding", 0.05)
+                )
+                factual_idx = min(
+                    vis_cfg.get("contour_factual_index", 0),
+                    filtered_X_test.shape[0] - 1,
+                )
+                factual_point = filtered_X_test[factual_idx]
+                visualize_flow_contours(
+                    gen_model=gen_model,
+                    factual_point=factual_point,
+                    target_label=target_class,
+                    mask_vector=mask_vector,
+                    p_value=params.p_value,
+                    class_to_index=class_to_index,
+                    feature_bounds=bounds,
+                    save_path=Path(save_folder) / "flow_logprob_contour.png",
+                    feature_names=dataset.features,
+                    grid_size=vis_cfg.get("contour_grid_size", 200),
+                    device=device,
+                    dataset_points=dataset.X_train[:, :2],
+                )
+            except ValueError as exc:
+                logger.info("Skipping flow contour plot: %s", exc)
 
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         cf_path = os.path.join(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Sequence, Tuple
 
@@ -107,9 +108,12 @@ class DiCoFlexTrainingDataset(Dataset):
         self.class_to_index: Dict[int, int] = {
             cls: idx for idx, cls in enumerate(self.classes)
         }
+        self.total_candidates = max(
+            self.n_neighbors * max(len(self.classes) - 1, 1), self.n_neighbors
+        )
         self._neighbor_map = self._precompute_neighbors()
-        self._entries = self._build_entries()
-        if not self._entries:
+        self._factual_entries = self._build_factual_entries()
+        if not self._factual_entries:
             raise ValueError(
                 "Failed to build DiCoFlex training pairs. "
                 "Please check the masks, p-values, or n_neighbors configuration."
@@ -126,24 +130,34 @@ class DiCoFlexTrainingDataset(Dataset):
         return self.masks
 
     def __len__(self) -> int:
-        return len(self._entries)
+        return len(self._factual_entries)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        factual_idx, cf_idx, class_idx, mask_idx, p_value = self._entries[idx]
+        mask_idx, p_value, factual_idx, neighbor_records = self._factual_entries[idx]
         factual = self.X[factual_idx]
-        counterfactual = self._apply_noise(self.X[cf_idx].copy())
-        class_one_hot = np.zeros(len(self.classes), dtype=np.float32)
-        class_one_hot[class_idx] = 1.0
-        context = np.concatenate(
-            [
-                factual,
-                class_one_hot,
-                self.masks[mask_idx],
-                np.array([p_value], dtype=np.float32),
-            ],
-            axis=0,
+        cf_samples: List[np.ndarray] = []
+        contexts: List[np.ndarray] = []
+        for cf_idx, target_class in neighbor_records:
+            counterfactual = self._apply_noise(self.X[cf_idx].copy())
+            cf_samples.append(counterfactual.astype(np.float32))
+
+            class_one_hot = np.zeros(len(self.classes), dtype=np.float32)
+            class_idx = self.class_to_index[target_class]
+            class_one_hot[class_idx] = 1.0
+            context_vec = np.concatenate(
+                [
+                    factual,
+                    class_one_hot,
+                    self.masks[mask_idx],
+                    np.array([p_value], dtype=np.float32),
+                ],
+                axis=0,
+            ).astype(np.float32)
+            contexts.append(context_vec)
+
+        return torch.from_numpy(np.stack(cf_samples)), torch.from_numpy(
+            np.stack(contexts)
         )
-        return torch.from_numpy(counterfactual), torch.from_numpy(context)
 
     def _prepare_mask(self, mask: np.ndarray) -> np.ndarray:
         vector = np.asarray(mask, dtype=np.float32).reshape(-1)
@@ -167,18 +181,21 @@ class DiCoFlexTrainingDataset(Dataset):
                     diff = np.abs(self.X[:, None, :] - targets[None, :, :]) ** p_value
                     diff *= mask_weight
                     distances = np.sum(diff, axis=2) ** (1.0 / p_value)
-                    max_neighbors = min(self.n_neighbors, target_indices.size)
+                    max_neighbors = min(self.total_candidates, target_indices.size)
                     neighbor_ids = np.argsort(distances, axis=1)[:, :max_neighbors]
                     neighbor_map[(mask_idx, p_value, target_class)] = target_indices[
                         neighbor_ids
                     ]
         return neighbor_map
 
-    def _build_entries(self) -> List[Tuple[int, int, int, int, float]]:
-        entries: List[Tuple[int, int, int, int, float]] = []
+    def _build_factual_entries(
+        self,
+    ) -> List[Tuple[int, float, int, List[Tuple[int, int]]]]:
+        entries: List[Tuple[int, float, int, List[Tuple[int, int]]]] = []
         for factual_idx, factual_class in enumerate(self.y):
             for mask_idx, _ in enumerate(self.masks):
                 for p_value in self.p_values:
+                    neighbor_records: List[Tuple[int, int]] = []
                     for target_class in self.classes:
                         if target_class == factual_class:
                             continue
@@ -186,13 +203,19 @@ class DiCoFlexTrainingDataset(Dataset):
                         if key not in self._neighbor_map:
                             continue
                         neighbor_indices = self._neighbor_map[key][factual_idx]
-                        if neighbor_indices.size == 0:
-                            continue
-                        class_idx = self.class_to_index[target_class]
-                        for cf_idx in neighbor_indices:
-                            entries.append(
-                                (factual_idx, cf_idx, class_idx, mask_idx, p_value)
-                            )
+                        neighbor_records.extend(
+                            [(cf_idx, target_class) for cf_idx in neighbor_indices]
+                        )
+                    if not neighbor_records:
+                        continue
+                    if len(neighbor_records) < self.n_neighbors:
+                        repeats = math.ceil(self.n_neighbors / len(neighbor_records))
+                        neighbor_records = (neighbor_records * repeats)[
+                            : self.n_neighbors
+                        ]
+                    else:
+                        neighbor_records = neighbor_records[: self.n_neighbors]
+                    entries.append((mask_idx, p_value, factual_idx, neighbor_records))
         return entries
 
     def _apply_noise(self, sample: np.ndarray) -> np.ndarray:
@@ -218,7 +241,7 @@ def create_dicoflex_dataloaders(
     p_values: List[float],
     n_neighbors: int,
     noise_level: float,
-    batch_size: int,
+    factual_batch_size: int,
     val_ratio: float,
     seed: int,
     numerical_indices: Sequence[int],
@@ -255,13 +278,13 @@ def create_dicoflex_dataloaders(
     )
     train_loader = DataLoader(
         train_subset,
-        batch_size=batch_size,
+        batch_size=factual_batch_size,
         shuffle=True,
         drop_last=False,
     )
     val_loader = DataLoader(
         val_subset,
-        batch_size=batch_size,
+        batch_size=factual_batch_size,
         shuffle=False,
         drop_last=False,
     )

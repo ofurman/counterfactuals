@@ -37,9 +37,9 @@ counterfactuals_params:
   target_class: 1
   p_values: [2.0]
   inference_p_value: 2.0
-  n_neighbors: 10
+  n_neighbors: 32
   noise_level: 0.02
-  train_batch_size: 512
+  train_batch_factuals: 2
   val_ratio: 0.2
   num_counterfactuals: 25
   sampling_batch_size: 256
@@ -47,3 +47,13 @@ counterfactuals_params:
   use_actionability_mask: true
   custom_masks: []
   log_prob_quantile: 0.25
+
+visualization:
+  enable_training_batch: true
+  training_batch_max_points: 200
+  enable_flow_contour: true
+  contour_grid_size: 200
+  contour_padding: 0.05
+  contour_factual_index: 0
+  enable_cf_scatter: true
+  cf_scatter_max_points: 200
