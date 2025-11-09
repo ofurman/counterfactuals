@@ -12,6 +12,11 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.local.dicoflex import DiCoFlex, DiCoFlexParams
+from counterfactuals.cf_methods.local.dicoflex.context_utils import (
+    DiCoFlexGeneratorMetricsAdapter,
+    build_context_matrix,
+    get_numpy_pointer,
+)
 from counterfactuals.cf_methods.local.dicoflex.data import (
     build_actionability_mask,
     create_dicoflex_dataloaders,
@@ -267,23 +272,53 @@ def main(cfg: DictConfig):
             lr=0.0,
         )
         cf_time = time() - start_time
+        explanation_result.x_cfs = np.ascontiguousarray(
+            explanation_result.x_cfs.astype(np.float32, copy=False)
+        )
+        explanation_result.x_origs = np.ascontiguousarray(
+            explanation_result.x_origs.astype(np.float32, copy=False)
+        )
         model_returned_mask = np.array(
             explanation_result.logs.get("model_returned_mask", []), dtype=bool
         )
         if model_returned_mask.size == 0:
             model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
 
+        mask_vector = mask_vectors[params.mask_index]
+        cf_contexts = build_context_matrix(
+            factual_points=explanation_result.x_origs,
+            labels=explanation_result.y_cf_targets,
+            mask_vector=mask_vector,
+            p_value=params.p_value,
+            class_to_index=class_to_index,
+        )
+        test_contexts = build_context_matrix(
+            factual_points=explanation_result.x_origs,
+            labels=explanation_result.y_origs,
+            mask_vector=mask_vector,
+            p_value=params.p_value,
+            class_to_index=class_to_index,
+        )
+        context_lookup = {
+            get_numpy_pointer(explanation_result.x_cfs): cf_contexts,
+            get_numpy_pointer(explanation_result.x_origs): test_contexts,
+        }
+        metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
+            base_model=gen_model,
+            context_lookup=context_lookup,
+        )
+
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         cf_path = os.path.join(
             save_folder,
             f"counterfactuals_DiCoFlex_{disc_model_name}.csv",
         )
-        cf_original_space = dataset.inverse_transform(explanation_result.x_cfs)
+        cf_original_space = dataset.inverse_transform(explanation_result.x_cfs.copy())
         pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
         logger.info("Saved counterfactuals to %s", cf_path)
 
         metrics = evaluate_cf(
-            gen_model=gen_model,
+            gen_model=metrics_gen_model,
             disc_model=disc_model,
             X_cf=explanation_result.x_cfs,
             model_returned=model_returned_mask,
