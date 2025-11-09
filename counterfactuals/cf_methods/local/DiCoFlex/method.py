@@ -27,6 +27,7 @@ class DiCoFlexParams:
     num_counterfactuals: int
     target_class: int
     sampling_batch_size: int
+    cf_samples_per_factual: int = 1
 
 
 class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
@@ -74,21 +75,30 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         x_np = np.asarray(X, dtype=np.float32)
         y_origin_vec = np.asarray(y_origin).reshape(-1, 1)
         y_target_vec = np.asarray(y_target).reshape(-1, 1)
-        cf_batch, target_probs, valid_mask, log_probs = self._sample_counterfactuals(
-            x_np, y_target_vec
-        )
+        (
+            cf_batch,
+            y_target_flat,
+            x_orig_flat,
+            y_origin_flat,
+            target_probs,
+            valid_mask,
+            log_probs,
+            group_ids,
+        ) = self._sample_counterfactuals(x_np, y_origin_vec, y_target_vec)
         logs = {
             "sampling/mean_target_probability": float(target_probs.mean()),
             "sampling/valid_ratio": float(valid_mask.mean()),
             "sampling/log_prob_mean": float(log_probs.mean()),
             "model_returned_mask": valid_mask.tolist(),
+            "cf_group_ids": group_ids.tolist(),
         }
         return ExplanationResult(
             x_cfs=cf_batch,
-            y_cf_targets=y_target_vec,
-            x_origs=x_np,
-            y_origs=y_origin_vec,
+            y_cf_targets=y_target_flat,
+            x_origs=x_orig_flat,
+            y_origs=y_origin_flat,
             logs=logs,
+            cf_group_ids=group_ids,
         )
 
     def explain_dataloader(
@@ -114,44 +124,77 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         )
 
     def _sample_counterfactuals(
-        self, X: np.ndarray, y_target: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Sample candidate counterfactuals and pick the best per instance."""
+        self, X: np.ndarray, y_origin: np.ndarray, y_target: np.ndarray
+    ) -> tuple[
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+    ]:
+        """Sample candidate counterfactuals and keep top-k per factual."""
         batch_size = self.params.sampling_batch_size
-        selected_cf = []
-        selected_probs = []
-        selected_valid = []
-        selected_log_probs = []
+        k = max(1, self.params.cf_samples_per_factual)
+
+        flat_cf: list[np.ndarray] = []
+        flat_y_target: list[np.ndarray] = []
+        flat_x_orig: list[np.ndarray] = []
+        flat_y_origin: list[np.ndarray] = []
+        flat_probs: list[np.ndarray] = []
+        flat_valid: list[np.ndarray] = []
+        flat_log_probs: list[np.ndarray] = []
+        group_ids: list[int] = []
+        global_idx = 0
 
         for start in range(0, len(X), batch_size):
             end = start + batch_size
             X_batch = X[start:end]
             y_target_batch = y_target[start:end]
+            y_origin_batch = y_origin[start:end]
+            if X_batch.size == 0:
+                continue
             context = self._build_context(X_batch, y_target_batch)
             samples, log_probs = self.gen_model.sample_and_log_proba(
                 n_samples=self.params.num_counterfactuals, context=context
             )
-            # Flow returns samples with shape (batch, n_samples, features).
-            cf_candidates = samples
-            candidate_log_probs = log_probs
+
             (
-                batch_cf,
-                batch_probs,
-                batch_valid,
-                best_indices,
-            ) = self._select_best_candidates(X_batch, y_target_batch, cf_candidates)
-            selected_cf.append(batch_cf)
-            selected_probs.append(batch_probs)
-            selected_valid.append(batch_valid)
-            selected_log_probs.append(
-                candidate_log_probs[np.arange(len(X_batch)), best_indices]
+                batch_selected_cf,
+                batch_selected_probs,
+                batch_selected_valid,
+                batch_selected_logs,
+            ) = self._select_topk_candidates(
+                y_target_batch=y_target_batch,
+                candidates=samples,
+                candidate_log_probs=log_probs,
+                top_k=k,
             )
 
+            batch_size_current = X_batch.shape[0]
+            flat_cf.append(batch_selected_cf.reshape(-1, samples.shape[-1]))
+            flat_probs.append(batch_selected_probs.reshape(-1))
+            flat_valid.append(batch_selected_valid.reshape(-1))
+            flat_log_probs.append(batch_selected_logs.reshape(-1))
+            flat_x_orig.append(np.repeat(X_batch, k, axis=0))
+            flat_y_target.append(np.repeat(y_target_batch, k, axis=0))
+            flat_y_origin.append(np.repeat(y_origin_batch, k, axis=0))
+            group_ids.extend(
+                np.repeat(np.arange(global_idx, global_idx + batch_size_current), k)
+            )
+            global_idx += batch_size_current
+
         return (
-            np.vstack(selected_cf),
-            np.concatenate(selected_probs),
-            np.concatenate(selected_valid),
-            np.concatenate(selected_log_probs),
+            np.vstack(flat_cf),
+            np.vstack(flat_y_target),
+            np.vstack(flat_x_orig),
+            np.vstack(flat_y_origin),
+            np.concatenate(flat_probs),
+            np.concatenate(flat_valid),
+            np.concatenate(flat_log_probs),
+            np.array(group_ids, dtype=int),
         )
 
     def _build_context(self, X: np.ndarray, y_target: np.ndarray) -> np.ndarray:
@@ -169,12 +212,13 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             [X, class_one_hot, mask_matrix, p_value_column], axis=1
         ).astype(np.float32)
 
-    def _select_best_candidates(
+    def _select_topk_candidates(
         self,
-        factual_batch: np.ndarray,
         y_target_batch: np.ndarray,
         candidates: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        candidate_log_probs: np.ndarray,
+        top_k: int,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         batch_size, num_samples, _ = candidates.shape
         flat_candidates = candidates.reshape(batch_size * num_samples, -1)
         probs = self.disc_model.predict_proba(flat_candidates).reshape(
@@ -193,18 +237,31 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         predicted_class = np.argmax(probs, axis=2)
         valid_mask_matrix = predicted_class == target_indices[:, None]
 
-        best_indices = np.zeros(batch_size, dtype=int)
-        valid_rows = np.any(valid_mask_matrix, axis=1)
-        if np.any(valid_rows):
-            filtered = np.where(
-                valid_mask_matrix[valid_rows], target_probs[valid_rows], -np.inf
-            )
-            best_indices[valid_rows] = np.argmax(filtered, axis=1)
-        if np.any(~valid_rows):
-            best_indices[~valid_rows] = np.argmax(target_probs[~valid_rows], axis=1)
+        sorted_indices = np.argsort(-target_probs, axis=1)
+        top_indices = np.zeros((batch_size, top_k), dtype=int)
+        for i in range(batch_size):
+            chosen: list[int] = []
+            for idx in sorted_indices[i]:
+                if valid_mask_matrix[i, idx]:
+                    chosen.append(idx)
+                if len(chosen) == top_k:
+                    break
+            if len(chosen) < top_k:
+                for idx in sorted_indices[i]:
+                    if idx not in chosen:
+                        chosen.append(idx)
+                    if len(chosen) == top_k:
+                        break
+            if not chosen:
+                fallback = sorted_indices[i][0] if sorted_indices[i].size else 0
+                chosen = [int(fallback)]
+            if len(chosen) < top_k:
+                chosen.extend([chosen[-1]] * (top_k - len(chosen)))
+            top_indices[i] = np.array(chosen[:top_k])
 
-        row_selector = np.arange(batch_size)
-        selected_cf = candidates[row_selector, best_indices]
-        selected_probs = target_probs[row_selector, best_indices]
-        selected_valid = valid_mask_matrix[row_selector, best_indices]
-        return selected_cf, selected_probs, selected_valid, best_indices
+        row_selector = np.arange(batch_size)[:, None]
+        selected_cf = candidates[row_selector, top_indices]
+        selected_probs = target_probs[row_selector, top_indices]
+        selected_valid = valid_mask_matrix[row_selector, top_indices]
+        selected_logs = candidate_log_probs[row_selector, top_indices]
+        return selected_cf, selected_probs, selected_valid, selected_logs

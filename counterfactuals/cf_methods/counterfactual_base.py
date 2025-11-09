@@ -31,6 +31,7 @@ class ExplanationResult:
     x_origs: np.ndarray
     y_origs: np.ndarray
     logs: Optional[Dict[str, Any]] = None
+    cf_group_ids: Optional[np.ndarray] = None
 
 
 class BaseCounterfactualMethod(ABC):

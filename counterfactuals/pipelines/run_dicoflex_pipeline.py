@@ -293,6 +293,7 @@ def main(cfg: DictConfig):
             num_counterfactuals=cfg.counterfactuals_params.num_counterfactuals,
             target_class=cfg.counterfactuals_params.target_class,
             sampling_batch_size=cfg.counterfactuals_params.sampling_batch_size,
+            cf_samples_per_factual=cfg.counterfactuals_params.cf_samples_per_factual,
         )
         mask_vector = mask_vectors[params.mask_index]
         cf_method = DiCoFlex(
@@ -331,6 +332,11 @@ def main(cfg: DictConfig):
         )
         explanation_result.x_origs = np.ascontiguousarray(
             explanation_result.x_origs.astype(np.float32, copy=False)
+        )
+        cf_group_ids = (
+            None
+            if explanation_result.cf_group_ids is None
+            else np.asarray(explanation_result.cf_group_ids, dtype=int)
         )
         model_returned_mask = np.array(
             explanation_result.logs.get("model_returned_mask", []), dtype=bool
@@ -422,6 +428,8 @@ def main(cfg: DictConfig):
             y_test=explanation_result.y_origs,
             median_log_prob=log_prob_threshold,
             y_target=explanation_result.y_cf_targets,
+            cf_group_ids=cf_group_ids,
+            metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
         )
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_time

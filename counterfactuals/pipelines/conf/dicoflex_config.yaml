@@ -41,12 +41,14 @@ counterfactuals_params:
   noise_level: 0.02
   train_batch_factuals: 4
   val_ratio: 0.2
-  num_counterfactuals: 25
+  num_counterfactuals: 32
+  cf_samples_per_factual: 32
   sampling_batch_size: 256
   inference_mask_index: 0
   use_actionability_mask: true
   custom_masks: []
   log_prob_quantile: 0.25
+  metrics_conf_path: counterfactuals/pipelines/conf/metrics/dicoflex.yaml
 
 visualization:
   enable_training_batch: true
