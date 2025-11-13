@@ -8,7 +8,7 @@ from .group import RPPCEF
 from .group_counterfactual_mixin import GroupCounterfactualMixin
 
 # Import from subpackages
-from .local import CCHVAE, DICE, PPCEF, PPCEFR, WACH, WACH_OURS, Artelt
+from .local import CCHVAE, DICE, PPCEF, PPCEFR, WACH, WACH_OURS, Artelt, DiCoFlex
 from .local_counterfactual_mixin import LocalCounterfactualMixin
 
 __all__ = [
@@ -20,6 +20,7 @@ __all__ = [
     "GroupCounterfactualMixin",
     # Local methods
     "PPCEF",
+    "DiCoFlex",
     "DICE",
     "WACH",
     "WACH_OURS",

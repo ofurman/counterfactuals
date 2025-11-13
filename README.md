@@ -19,6 +19,9 @@ We present **PPCEF**, a novel method specifically tailored for generating probab
 - [Code Structure](#code-structure)
 - [Data](#data)
 - [Experiments](#experiments)
+- [Pipeline Guide](#pipeline-guide)
+- [Library Guide](#library-guide)
+- [Contributing](#contributing)
 - [Citation](#citation)
 - [Contact](#contact)
 
@@ -136,8 +139,40 @@ To run experiments, prepare the configuration files located in the `counterfactu
 Execute the following scripts to train models and run experiments:
 
 ```shell
-python3 counterfactuals/pipelines/run_ppcef_pipeline.py
+uv run python counterfactuals/pipelines/run_ppcef_pipeline.py
 ```
+
+## Library Guide
+
+Need a broader tour of everything inside `counterfactuals/`? Check `docs/library_overview.md` for:
+
+- high-level descriptions of each subpackage (datasets, preprocessing, models, cf methods, metrics, pipelines),
+- explanations of how Hydra configs map to implementations,
+- extension playbooks for adding datasets, models, metrics, or new pipelines, and
+- reminders about the development conventions enforced in `AGENTS.md`.
+
+## Pipeline Guide
+
+Looking for a deeper explanation of how `run_ppcef_pipeline.py` wires datasets, models, and
+counterfactual search together? See `docs/ppcef_pipeline.md` for:
+
+- a fold-by-fold walkthrough of the orchestration logic,
+- a reference for the Hydra configuration tree and common overrides,
+- practical tips for running or extending the PPCEF pipeline, and
+- contribution rules for future development.
+
+## Contributing
+
+Contributions are welcome! Before opening a PR:
+
+- Read `AGENTS.md` and `docs/ppcef_pipeline.md` to understand the workflow, required typing,
+  docstrings, and logging conventions.
+- Use `uv` for everything (`uv sync`, `uv run ruff check --fix`, `uv run pytest`).
+- Keep patches small, fully type-hinted, and Ruff-clean (line length 100, Google docstrings).
+- Update or add documentation/tests whenever behavior or configuration changes.
+
+If you introduce new dependencies, apply them via `uv add` so `pyproject.toml` and `uv.lock`
+stay consistent.
 
 ## Citation
 ```
