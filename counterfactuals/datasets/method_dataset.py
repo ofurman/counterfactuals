@@ -220,34 +220,38 @@ class MethodDataset:
         """
         if self.preprocessing_pipeline is not None:
             onehot_step = self.preprocessing_pipeline.get_step("onehot")
-            if onehot_step is None:
-                return []
+            if onehot_step is not None and onehot_step.encoder is not None:
+                categorical_features_lists = []
+                current_idx = len(self.numerical_features_indices)
 
-            categorical_features_lists = []
-            current_idx = len(self.numerical_features_indices)
+                for categories in onehot_step.encoder.categories_:
+                    n_categories = len(categories)
+                    categorical_features_lists.append(
+                        list(range(current_idx, current_idx + n_categories))
+                    )
+                    current_idx += n_categories
 
-            for categories in onehot_step.encoder.categories_:
-                n_categories = len(categories)
-                categorical_features_lists.append(
-                    list(range(current_idx, current_idx + n_categories))
-                )
-                current_idx += n_categories
+                return categorical_features_lists
 
-            return categorical_features_lists
+        return self._categorical_lists_from_initial_encoding()
 
-        if getattr(self.file_dataset, "one_hot_feature_groups", None):
-            feature_lists = []
-            for columns in self.file_dataset.one_hot_feature_groups.values():
-                indices = [
-                    self.features.index(column)
-                    for column in columns
-                    if column in self.features
-                ]
-                if indices:
-                    feature_lists.append(indices)
-            return feature_lists
+    def _categorical_lists_from_initial_encoding(self) -> list[list[int]]:
+        """Return categorical groupings derived from initial one-hot transforms."""
+        groups = getattr(self.file_dataset, "one_hot_feature_groups", None)
+        if not groups:
+            return []
 
-        return []
+        feature_indices = {name: idx for idx, name in enumerate(self.features)}
+        categorical_lists: list[list[int]] = []
+        for columns in groups.values():
+            indices = [
+                feature_indices[column]
+                for column in columns
+                if column in feature_indices
+            ]
+            if indices:
+                categorical_lists.append(indices)
+        return categorical_lists
 
     def get_cv_splits(
         self, n_splits: int = 5, shuffle: bool = True

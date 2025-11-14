@@ -21,7 +21,6 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
-    OneHotEncodingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
@@ -293,7 +292,6 @@ def main(cfg: DictConfig) -> None:
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
-            ("onehot", OneHotEncodingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )

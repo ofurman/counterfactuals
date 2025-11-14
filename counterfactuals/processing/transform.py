@@ -38,10 +38,6 @@ class GroupTransformer(BaseEstimator, TransformerMixin):
         Raises:
             ValueError: If `groups` is empty or contains an empty group.
         """
-        if not groups:
-            raise ValueError("`groups` must be a non-empty list of column index lists.")
-        if any(len(g) == 0 for g in groups):
-            raise ValueError("Each group in `groups` must contain at least one index.")
         self.groups = groups
         self.transformer_factory = transformer_factory
 
