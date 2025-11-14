@@ -12,15 +12,18 @@ import torch.nn as nn
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.datasets.utils import (
-    DequantizingFlow,
-    dequantize,
-    inverse_dequantize,
-)
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -70,7 +73,6 @@ def search_counterfactuals(
         Tuple containing:
             - Xs_cfs: Generated counterfactual explanations
             - Xs: Original test instances used for CF generation
-            - log_prob_threshold: Computed log-probability threshold
             - ys_orig: Original predicted labels for the test instances
             - ys_target: Target labels corresponding to counterfactuals
             - cf_search_time: Average time taken for counterfactual search
@@ -96,7 +98,7 @@ def search_counterfactuals(
 
     dice = dice_ml.Data(
         dataframe=input_dataframe,
-        continuous_features=list(map(str, dataset.numerical_columns)),
+        continuous_features=list(map(str, dataset.numerical_features_indices)),
         outcome_name=features[-1],
     )
 
@@ -106,16 +108,6 @@ def search_counterfactuals(
 
     model = dice_ml.Model(disc_model_w, backend="PYT")
     exp = dice_ml.Dice(dice, model, method="gradient")
-
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
@@ -152,7 +144,6 @@ def search_counterfactuals(
     return (
         Xs_cfs,
         X_test_origin,
-        log_prob_threshold,
         y_test_origin,
         ys_target,
         cf_search_time,
@@ -194,6 +185,24 @@ def apply_categorical_discretization(
         Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
 
     return Xs_cfs
+
+
+def get_log_prob_threshold(
+    gen_model: torch.nn.Module,
+    dataset: DictConfig,
+    batch_size: int,
+    log_prob_quantile: float,
+) -> float:
+    logger.info("Calculating log_prob_threshold")
+    train_dataloader_for_log_prob = dataset.train_dataloader(
+        batch_size=batch_size, shuffle=False
+    )
+    log_prob_threshold = torch.quantile(
+        gen_model.predict_log_prob(train_dataloader_for_log_prob),
+        log_prob_quantile,
+    )
+    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
+    return log_prob_threshold
 
 
 def calculate_metrics(
@@ -279,7 +288,15 @@ def main(cfg: DictConfig) -> None:
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         logger.info(f"Processing fold {fold_n}")
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
@@ -287,29 +304,36 @@ def main(cfg: DictConfig) -> None:
 
         if cfg.experiment.relabel_with_disc_model:
             logger.info("Relabeling dataset with discriminative model predictions")
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-        dequantizer, _ = dequantize(dataset)
-        dataset = instantiate(cfg.dataset)
+        dequantizer.fit(dataset.X_train)
+        dataset.X_train = dequantizer.transform(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
         # Custom code
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = get_log_prob_threshold(
+            gen_model,
+            dataset,
+            cfg.counterfactuals_params.batch_size,
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+        Xs_cfs, Xs, ys_orig, ys_target, cf_search_time = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
 
-        Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
-        gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
-        dataset = instantiate(cfg.dataset)
+        Xs = dequantizer.inverse_transform(Xs)
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,

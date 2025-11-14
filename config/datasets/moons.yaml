@@ -1,0 +1,11 @@
+raw_data_path: "data/moons.csv"
+features: ["0", "1"]
+continuous_features: ["0", "1"]
+categorical_features: []
+feature_config:
+  "0":
+    actionable: true
+  "1":
+    actionable: true
+target: "2"
+samples_keep: 1000

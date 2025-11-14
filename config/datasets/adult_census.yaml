@@ -1,0 +1,69 @@
+raw_data_path: "data/adult_raw.csv"
+features: [
+  "age",
+  "capital-gain",
+  "capital-loss",
+  "hours-per-week",
+  "workclass",
+  "education",
+  "marital-status",
+  "occupation",
+  "relationship",
+  "race",
+  "sex",
+  "native-country"
+]
+continuous_features: [
+  "age",
+  "capital-gain", 
+  "capital-loss",
+  "hours-per-week"
+]
+categorical_features: [
+  "workclass",
+  "education",
+  "marital-status",
+  "occupation",
+  "relationship",
+  "race",
+  "sex",
+  "native-country"
+]
+feature_config:
+  "age":
+    actionable: true
+    bottom_limit: 18
+    top_limit: 90
+  "capital-gain":
+    actionable: true
+    bottom_limit: 0
+  "capital-loss":
+    actionable: true
+    bottom_limit: 0
+  "hours-per-week":
+    actionable: true
+    bottom_limit: 1
+    top_limit: 99
+  "workclass":
+    actionable: true
+  "education":
+    actionable: true
+  "marital-status":
+    actionable: true
+  "occupation":
+    actionable: true
+  "relationship":
+    actionable: true
+  "race":
+    actionable: false  # Protected attribute
+  "sex":
+    actionable: false  # Protected attribute
+  "native-country":
+    actionable: false  # Protected attribute (birthplace)
+target: "class"
+target_mapping:
+  "<=50K": 0
+  ">50K": 1
+  " <=50K": 0
+  " >50K": 1
+samples_keep: 30000

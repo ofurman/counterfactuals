@@ -1,3 +1,4 @@
 model:
-  _target_: counterfactuals.discriminative_models.MultilayerPerceptron
+  _target_: counterfactuals.models.classifier.multilayer_perceptron.MLPClassifier
   hidden_layer_sizes: [256, 256]
+  dropout: 0.2

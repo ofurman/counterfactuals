@@ -15,16 +15,19 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.datasets.utils import (
-    DequantizingFlow,
-    dequantize,
-    inverse_dequantize,
-)
+from counterfactuals.cf_methods.local_methods.ppcef import PPCEF
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -100,7 +103,7 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
-    delta, Xs, ys_orig, ys_target, logs = cf_method.explain_dataloader(
+    explanation_result = cf_method.explain_dataloader(
         dataloader=cf_dataloader,
         epochs=cfg.counterfactuals_params.epochs,
         lr=cfg.counterfactuals_params.lr,
@@ -114,14 +117,16 @@ def search_counterfactuals(
             dataset.categorical_features_lists,
         ),
     )
+    Xs = explanation_result.x_origs
+    Xs_cfs = explanation_result.x_cfs
+    ys_orig = explanation_result.y_origs
+    ys_target = explanation_result.y_cf_targets
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
-
-    Xs_cfs = Xs + delta
 
     if cfg.counterfactuals_params.use_categorical:
         Xs_cfs = apply_categorical_discretization(
@@ -241,55 +246,45 @@ def main(cfg: DictConfig):
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-        dequantizer, _ = dequantize(dataset)
-        dataset = instantiate(cfg.dataset)
+        dequantizer.fit(dataset.X_train)
         gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
-        # Custom code
+        dataset.X_train = dequantizer.transform(
+            dataset.X_train
+        )  # dequantization for log prob threshold
+        dataset.X_test = dequantizer.transform(dataset.X_test)
+
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
-        if dequantizer is None:
-            raise ValueError(
-                "dequantizer is not initialized. Please check its assignment before inverse_dequantize."
-            )
-
-        logger.info(
-            f"Calling inverse_dequantize with Xs of type: {type(Xs)} and shape: {getattr(Xs, 'shape', None)}"
-        )
-        logger.info(f"dequantizer type: {type(dequantizer)}")
-
-        try:
-            Xs = inverse_dequantize(dataset, dequantizer, data=Xs)
-            logger.info(
-                f"inverse_dequantize successful, Xs shape: {getattr(Xs, 'shape', None)}"
-            )
-        except Exception as e:
-            logger.error(f"Error in inverse_dequantize: {e}")
-            logger.error(f"Xs type: {type(Xs)}, shape: {getattr(Xs, 'shape', None)}")
-            logger.error(f"dequantizer: {dequantizer}")
-            raise
-
-        gen_model = DequantizingFlow(gen_model, dequantizer, dataset)
-        dataset = instantiate(cfg.dataset)
+        Xs = dequantizer.inverse_transform(Xs)
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,

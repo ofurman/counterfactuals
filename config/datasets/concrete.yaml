@@ -1,0 +1,38 @@
+raw_data_path: data/regression/concrete.csv
+features:
+- "0"
+- "1"
+- "2"
+- "3"
+- "4"
+- "5"
+- "6"
+- "7"
+continuous_features:
+- "0"
+- "1"
+- "2"
+- "3"
+- "4"
+- "5"
+- "6"
+- "7"
+categorical_features: []
+feature_config:
+  "0":
+    actionable: true
+  "1":
+    actionable: true
+  "2":
+    actionable: true
+  "3":
+    actionable: true
+  "4":
+    actionable: true
+  "5":
+    actionable: true
+  "6":
+    actionable: true
+  "7":
+    actionable: true
+target: "8"

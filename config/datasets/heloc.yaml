@@ -1,0 +1,100 @@
+raw_data_path: "data/heloc.csv"
+features: [
+  "ExternalRiskEstimate",
+  "MSinceOldestTradeOpen", 
+  "MSinceMostRecentTradeOpen",
+  "AverageMInFile",
+  "NumSatisfactoryTrades",
+  "NumTrades60Ever2DerogPubRec",
+  "NumTrades90Ever2DerogPubRec",
+  "PercentTradesNeverDelq",
+  "MSinceMostRecentDelq",
+  "MaxDelq2PublicRecLast12M",
+  "MaxDelqEver",
+  "NumTotalTrades",
+  "NumTradesOpeninLast12M",
+  "PercentInstallTrades",
+  "MSinceMostRecentInqexcl7days",
+  "NumInqLast6M",
+  "NumInqLast6Mexcl7days",
+  "NetFractionRevolvingBurden",
+  "NetFractionInstallBurden",
+  "NumRevolvingTradesWBalance",
+  "NumInstallTradesWBalance",
+  "NumBank2NatlTradesWHighUtilization",
+  "PercentTradesWBalance"
+]
+continuous_features: [
+  "ExternalRiskEstimate",
+  "MSinceOldestTradeOpen", 
+  "MSinceMostRecentTradeOpen",
+  "AverageMInFile",
+  "NumSatisfactoryTrades",
+  "NumTrades60Ever2DerogPubRec",
+  "NumTrades90Ever2DerogPubRec",
+  "PercentTradesNeverDelq",
+  "MSinceMostRecentDelq",
+  "MaxDelq2PublicRecLast12M",
+  "MaxDelqEver",
+  "NumTotalTrades",
+  "NumTradesOpeninLast12M",
+  "PercentInstallTrades",
+  "MSinceMostRecentInqexcl7days",
+  "NumInqLast6M",
+  "NumInqLast6Mexcl7days",
+  "NetFractionRevolvingBurden",
+  "NetFractionInstallBurden",
+  "NumRevolvingTradesWBalance",
+  "NumInstallTradesWBalance",
+  "NumBank2NatlTradesWHighUtilization",
+  "PercentTradesWBalance"
+]
+categorical_features: []
+feature_config:
+  "ExternalRiskEstimate":
+    actionable: true
+  "MSinceOldestTradeOpen":
+    actionable: true
+  "MSinceMostRecentTradeOpen":
+    actionable: true
+  "AverageMInFile":
+    actionable: true
+  "NumSatisfactoryTrades":
+    actionable: true
+  "NumTrades60Ever2DerogPubRec":
+    actionable: true
+  "NumTrades90Ever2DerogPubRec":
+    actionable: false
+  "PercentTradesNeverDelq":
+    actionable: false
+  "MSinceMostRecentDelq":
+    actionable: false
+  "MaxDelq2PublicRecLast12M":
+    actionable: false
+  "MaxDelqEver":
+    actionable: false
+  "NumTotalTrades":
+    actionable: false
+  "NumTradesOpeninLast12M":
+    actionable: false
+  "PercentInstallTrades":
+    actionable: false
+  "MSinceMostRecentInqexcl7days":
+    actionable: false
+  "NumInqLast6M":
+    actionable: false
+  "NumInqLast6Mexcl7days":
+    actionable: false
+  "NetFractionRevolvingBurden":
+    actionable: false
+  "NetFractionInstallBurden":
+    actionable: false
+  "NumRevolvingTradesWBalance":
+    actionable: false
+  "NumInstallTradesWBalance":
+    actionable: false
+  "NumBank2NatlTradesWHighUtilization":
+    actionable: false
+  "PercentTradesWBalance":
+    actionable: false
+target: "RiskPerformance"

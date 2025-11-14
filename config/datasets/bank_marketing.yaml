@@ -1,0 +1,70 @@
+raw_data_path: data/bank_marketing.csv
+features:
+- age
+- job
+- marital
+- education
+- default
+- balance
+- housing
+- loan
+- contact
+- day
+- month
+- duration
+- campaign
+- previous
+- pdays
+- poutcome
+continuous_features:
+- age
+- balance
+- day
+- duration
+- campaign
+- pdays
+- previous
+categorical_features:
+- job
+- marital
+- education
+- default
+- housing
+- loan
+- contact
+- month
+- poutcome
+feature_config:
+  age:
+    actionable: true
+  job:
+    actionable: true
+  marital:
+    actionable: true
+  education:
+    actionable: true
+  default:
+    actionable: true
+  balance:
+    actionable: true
+  housing:
+    actionable: true
+  loan:
+    actionable: true
+  contact:
+    actionable: true
+  day:
+    actionable: true
+  month:
+    actionable: true
+  duration:
+    actionable: true
+  campaign:
+    actionable: true
+  previous:
+    actionable: true
+  pdays:
+    actionable: true
+  poutcome:
+    actionable: true
+target: y

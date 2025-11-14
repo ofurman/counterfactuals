@@ -50,7 +50,7 @@ def set_model_paths(cfg: DictConfig, fold: str = None):
     """
     # Set paths for saving models
     logger.info("Setting model paths")
-    dataset_name = cfg.dataset._target_.split(".")[-1]
+    dataset_name = cfg.dataset.config_path.split("/")[-1].split(".")[0]
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]

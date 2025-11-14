@@ -46,8 +46,10 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
 
     disc_model = instantiate(
         cfg.disc_model.model,
-        input_size=dataset.X_train.shape[1],
-        target_size=num_classes,
+        num_inputs=dataset.X_train.shape[1],
+        num_targets=num_classes,
+        hidden_layer_sizes=cfg.disc_model.model.hidden_layer_sizes,
+        dropout=cfg.disc_model.model.dropout,
     )
     return disc_model
 
@@ -147,7 +149,6 @@ def create_disc_model(
     """
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model = isntantiate_disc_model(cfg, dataset)
-    print(disc_model_path)
 
     if cfg.disc_model.train_model:
         disc_model = train_disc_model(disc_model, dataset, disc_model_path, cfg)

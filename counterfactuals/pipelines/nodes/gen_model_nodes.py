@@ -64,9 +64,9 @@ def train_gen_model(
     gen_model.fit(
         train_loader=train_dataloader,
         test_loader=test_dataloader,
-        num_epochs=cfg.gen_model.epochs,
+        epochs=cfg.gen_model.epochs,
         patience=cfg.gen_model.patience,
-        learning_rate=cfg.gen_model.lr,
+        lr=cfg.gen_model.lr,
         checkpoint_path=gen_model_path,
         dequantizer=dequantizer,
     )
