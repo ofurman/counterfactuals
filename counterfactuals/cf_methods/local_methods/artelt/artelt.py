@@ -9,12 +9,12 @@ from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
-from counterfactuals.cf_methods.local.artelt.artelth20.plausible_counterfactuals import (
-    HighDensityEllipsoids,
-    PlausibleCounterfactualOfHyperplaneClassifier,
-)
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
+)
+from counterfactuals.cf_methods.local_methods.artelt.artelth20.plausible_counterfactuals import (
+    HighDensityEllipsoids,
+    PlausibleCounterfactualOfHyperplaneClassifier,
 )
 from counterfactuals.models.pytorch_base import PytorchBase
 

@@ -6,12 +6,12 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.local.dice import DiceExplainerWrapper
+from counterfactuals.cf_methods.local_methods.dice import DICE
 
 logger = logging.getLogger(__name__)
 
 
-class GlobalGLANCE:
+class GLANCE:
     def __init__(
         self,
         X_test,
@@ -36,7 +36,7 @@ class GlobalGLANCE:
         self.__cluster()
 
         if method_to_use == "dice":
-            self.explainer = DiceExplainerWrapper(
+            self.explainer = DICE(
                 X_train,
                 y_train,
                 self.features,

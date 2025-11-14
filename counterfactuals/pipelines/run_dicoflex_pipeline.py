@@ -12,17 +12,17 @@ import torch.utils.data
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.local.dicoflex import DiCoFlex, DiCoFlexParams
-from counterfactuals.cf_methods.local.dicoflex.context_utils import (
+from counterfactuals.cf_methods.local_methods.dicoflex import DiCoFlex, DiCoFlexParams
+from counterfactuals.cf_methods.local_methods.dicoflex.context_utils import (
     DiCoFlexGeneratorMetricsAdapter,
     build_context_matrix,
     get_numpy_pointer,
 )
-from counterfactuals.cf_methods.local.dicoflex.data import (
+from counterfactuals.cf_methods.local_methods.dicoflex.data import (
     build_actionability_mask,
     create_dicoflex_dataloaders,
 )
-from counterfactuals.cf_methods.local.dicoflex.visualization import (
+from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
     visualize_counterfactual_samples,
     visualize_flow_contours,
     visualize_training_batch,

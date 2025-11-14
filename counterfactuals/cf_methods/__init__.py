@@ -1,15 +1,24 @@
 # Import base classes and mixins
 # Import global methods using importlib to avoid keyword conflict
-import importlib
-
 from .counterfactual_base import BaseCounterfactualMethod, ExplanationResult
 from .global_counterfactual_mixin import GlobalCounterfactualMixin
-from .group import RPPCEF
+from .global_methods import GLOBE_CE, AReS
 from .group_counterfactual_mixin import GroupCounterfactualMixin
+from .local_counterfactual_mixin import LocalCounterfactualMixin
 
 # Import from subpackages
-from .local import CCHVAE, DICE, PPCEF, PPCEFR, WACH, WACH_OURS, Artelt, DiCoFlex
-from .local_counterfactual_mixin import LocalCounterfactualMixin
+from .local_methods import (
+    CCHVAE,
+    DICE,
+    PPCEF,
+    PPCEFR,
+    WACH,
+    WACH_OURS,
+    Artelt,
+    DiCoFlex,
+)
+
+# Import from subpackages
 
 __all__ = [
     # Base classes
@@ -26,10 +35,11 @@ __all__ = [
     "WACH_OURS",
     "Artelt",
     "PPCEFR",
-    # Global methods
     "CCHVAE",
-    "GlobalGLANCE",
+    # Global methods
+    "AReS",
     "GLOBE_CE",
     # Group methods
     "RPPCEF",
+    "GLANCE",
 ]
