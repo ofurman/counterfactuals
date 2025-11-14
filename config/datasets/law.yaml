@@ -24,3 +24,10 @@ feature_config:
   race:
     actionable: true
 target: pass_bar
+initial_transforms:
+- name: dropna
+- name: reorder_columns
+- name: downsample
+- name: one_hot_encode
+  params:
+    drop_first: false

@@ -1,1 +1,1 @@
-from .glance import GlobalGLANCE  # noqa: F401
+from .glance import GLANCE  # noqa: F401

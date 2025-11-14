@@ -15,7 +15,7 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.local.ppcef import PPCEF
+from counterfactuals.cf_methods.local_methods.ppcef import PPCEF
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
@@ -25,7 +25,6 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
-    OneHotEncodingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
@@ -251,7 +250,6 @@ def main(cfg: DictConfig):
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
-            ("onehot", OneHotEncodingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )

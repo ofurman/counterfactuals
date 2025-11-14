@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Generator, Optional, Tuple
 
 import numpy as np
@@ -6,16 +8,19 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from torch.utils.data import DataLoader, TensorDataset
 
 from counterfactuals.datasets.file_dataset import FileDataset
+from counterfactuals.datasets.initial_transforms import InitialTransformPipeline
 from counterfactuals.preprocessing.base import PreprocessingContext, PreprocessingStep
 
 
 class MethodDataset:
-    """Dataset wrapper combining raw data loading with optional preprocessing.
+    """Dataset wrapper combining raw loading, initial transforms, and preprocessing.
 
-    This class provides a unified interface for loading raw data via FileDataset
-    and applying optional preprocessing transformations suitable for counterfactual methods.
+    This class provides a unified interface for loading raw data via FileDataset,
+    applying the configured initial transforms, performing the train/test split,
+    and running optional preprocessing transformations suitable for counterfactual methods.
 
-    If no preprocessing pipeline is provided, raw data is returned without any transformations.
+    If no preprocessing pipeline is provided, split data is returned without additional
+    transformations beyond the initial dataset-level steps.
 
     Attributes:
         file_dataset: Underlying FileDataset instance.
@@ -40,17 +45,27 @@ class MethodDataset:
             preprocessing_pipeline: Optional preprocessing pipeline. If None, no
                 preprocessing is applied and raw data is returned.
         """
-        # Load raw data using FileDataset
         self.file_dataset = file_dataset
+        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
+            file_dataset.initial_transform_pipeline
+        )
 
-        # Store raw data
-        self.X_train_raw = self.file_dataset.X_train.copy()
-        self.X_test_raw = self.file_dataset.X_test.copy()
-        self.y_train = self.file_dataset.y_train
-        self.y_test = self.file_dataset.y_test
+        # Split raw data into train/test sets
+        (
+            X_train,
+            X_test,
+            y_train,
+            y_test,
+        ) = self.file_dataset.split_data(self.file_dataset.X, self.file_dataset.y)
+        self.X_train_raw = X_train.copy()
+        self.X_test_raw = X_test.copy()
+        self.y_train = y_train.copy()
+        self.y_test = y_test.copy()
 
         # Store preprocessing pipeline (may be None)
         self.preprocessing_pipeline = preprocessing_pipeline
+
+        print(self.X_test_raw.shape)
 
         # Apply preprocessing if pipeline provided
         if self.preprocessing_pipeline is not None:
@@ -203,27 +218,36 @@ class MethodDataset:
             ValueError: If preprocessing pipeline is None or onehot step not found.
             AttributeError: If onehot encoder has not been fitted yet.
         """
-        if self.preprocessing_pipeline is None:
-            return []
-        onehot_step = self.preprocessing_pipeline.get_step("onehot")
-        if onehot_step is None:
-            return []
+        if self.preprocessing_pipeline is not None:
+            onehot_step = self.preprocessing_pipeline.get_step("onehot")
+            if onehot_step is None:
+                return []
 
-        categorical_features_lists = []
-        # Start after all numerical features
-        # Use current numerical_features_indices which reflects the current preprocessed state
-        current_idx = len(self.numerical_features_indices)
+            categorical_features_lists = []
+            current_idx = len(self.numerical_features_indices)
 
-        # Iterate through each original categorical feature's categories
-        # Each categorical feature produces len(categories) one-hot encoded features
-        for categories in onehot_step.encoder.categories_:
-            n_categories = len(categories)
-            categorical_features_lists.append(
-                list(range(current_idx, current_idx + n_categories))
-            )
-            current_idx += n_categories
+            for categories in onehot_step.encoder.categories_:
+                n_categories = len(categories)
+                categorical_features_lists.append(
+                    list(range(current_idx, current_idx + n_categories))
+                )
+                current_idx += n_categories
 
-        return categorical_features_lists
+            return categorical_features_lists
+
+        if getattr(self.file_dataset, "one_hot_feature_groups", None):
+            feature_lists = []
+            for columns in self.file_dataset.one_hot_feature_groups.values():
+                indices = [
+                    self.features.index(column)
+                    for column in columns
+                    if column in self.features
+                ]
+                if indices:
+                    feature_lists.append(indices)
+            return feature_lists
+
+        return []
 
     def get_cv_splits(
         self, n_splits: int = 5, shuffle: bool = True

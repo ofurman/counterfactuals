@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
@@ -7,11 +7,6 @@ import numpy as np
 import pandas as pd
 import yaml
 from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
-
-try:
-    from omegaconf import DictConfig
-except ImportError:  # pragma: no cover - optional dependency during testing
-    DictConfig = None
 
 
 class MonotonicityDirection(Enum):
@@ -59,6 +54,7 @@ class DatasetParameters:
     target: str
     target_mapping: Dict[str, int]
     samples_keep: int = -1
+    initial_transforms: List[Dict[str, Any]] = field(default_factory=list)
 
 
 class DatasetBase:
@@ -209,4 +205,5 @@ class DatasetBase:
             target=cfg.get("target", "y"),
             target_mapping=cfg.get("target_mapping", {}),
             samples_keep=cfg.get("samples_keep", 1000),
+            initial_transforms=cfg.get("initial_transforms", []),
         )
