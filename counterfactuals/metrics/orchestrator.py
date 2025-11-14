@@ -46,6 +46,7 @@ class MetricsOrchestrator:
         categorical_features: list[int],
         ratio_cont: Optional[float] = None,
         prob_plausibility_threshold: Optional[float] = None,
+        cf_group_ids: Optional[Union[np.ndarray, torch.Tensor]] = None,
         metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
     ) -> None:
         """Initialize the metrics orchestrator with data and models."""
@@ -57,6 +58,9 @@ class MetricsOrchestrator:
         self.y_train = convert_to_numpy(y_train)
         self.X_test = convert_to_numpy(X_test)
         self.y_test = convert_to_numpy(y_test)
+        self.cf_group_ids = (
+            None if cf_group_ids is None else convert_to_numpy(cf_group_ids)
+        )
 
         # Validate all inputs once at initialization
         validate_metric_inputs(
@@ -122,6 +126,7 @@ class MetricsOrchestrator:
             "categorical_features": self.categorical_features,
             "ratio_cont": self.ratio_cont,
             "prob_plausibility_threshold": self.prob_plausibility_threshold,
+            "cf_group_ids": self.cf_group_ids,
         }
 
     def calculate_all_metrics(self) -> dict[str, float]:
