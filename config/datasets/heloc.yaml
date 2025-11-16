@@ -64,39 +64,39 @@ feature_config:
   "NumTrades60Ever2DerogPubRec":
     actionable: true
   "NumTrades90Ever2DerogPubRec":
-    actionable: false
+    actionable: true
   "PercentTradesNeverDelq":
-    actionable: false
+    actionable: true
   "MSinceMostRecentDelq":
-    actionable: false
+    actionable: true
   "MaxDelq2PublicRecLast12M":
-    actionable: false
+    actionable: true
   "MaxDelqEver":
-    actionable: false
+    actionable: true
   "NumTotalTrades":
-    actionable: false
+    actionable: true
   "NumTradesOpeninLast12M":
-    actionable: false
+    actionable: true
   "PercentInstallTrades":
-    actionable: false
+    actionable: true
   "MSinceMostRecentInqexcl7days":
-    actionable: false
+    actionable: true
   "NumInqLast6M":
-    actionable: false
+    actionable: true
   "NumInqLast6Mexcl7days":
-    actionable: false
+    actionable: true
   "NetFractionRevolvingBurden":
-    actionable: false
+    actionable: true
   "NetFractionInstallBurden":
-    actionable: false
+    actionable: true
   "NumRevolvingTradesWBalance":
-    actionable: false
+    actionable: true
   "NumInstallTradesWBalance":
-    actionable: false
+    actionable: true
   "NumBank2NatlTradesWHighUtilization":
-    actionable: false
+    actionable: true
   "PercentTradesWBalance":
-    actionable: false
+    actionable: true
 target: "RiskPerformance"
 target_mapping:
   "Bad": 0
