@@ -99,7 +99,7 @@ class Dequantizer(BaseEstimator, TransformerMixin):
         Returns:
             Dequantizer: Returns self.
         """
-        self.dividers = [int(X[:, i].max()) + 1 for i in range(X.shape[1])]
+        self.dividers = [max(int(X[:, i].max()) + 1, 2) for i in range(X.shape[1])]
         return self
 
     def transform(self, X):
