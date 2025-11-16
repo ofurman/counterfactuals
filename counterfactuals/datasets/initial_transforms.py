@@ -90,20 +90,33 @@ class InitialTransformPipeline:
 
 
 class DropNaStep(InitialTransformStep):
-    """Drop rows with missing values."""
+    """Drop rows with missing values in features and target column."""
 
     def __init__(self, subset: Optional[Sequence[str]] = None):
+        """Initialize DropNaStep.
+
+        Args:
+            subset: Optional list of column names to check for NaN values.
+                   If None, will check all feature columns plus the target.
+        """
         self.subset = list(subset) if subset is not None else None
 
     def fit(self, context: InitialTransformContext) -> "DropNaStep":
         return self
 
     def transform(self, context: InitialTransformContext) -> InitialTransformContext:
+        # Determine which columns to check for NaN values
         subset = self.subset or context.features
         missing = [col for col in subset if col not in context.data.columns]
         if missing:
             raise ValueError(f"Columns not found for DropNaStep: {missing}")
-        context.data = context.data.dropna(subset=subset)
+
+        # Include target column in dropna to remove rows where label (y) contains NaN
+        columns_to_check = list(subset)
+        if context.target not in columns_to_check:
+            columns_to_check.append(context.target)
+
+        context.data = context.data.dropna(subset=columns_to_check)
         return context
 
 
@@ -202,9 +215,9 @@ class OneHotEncodingStep(InitialTransformStep):
             dtype=self.dtype,
         )
 
-        context.data = pd.concat(
-            [encoded, context.data[[context.target]].reset_index(drop=True)], axis=1
-        )
+        encoded = encoded.reset_index(drop=True)
+        target_df = context.data[[context.target]].reset_index(drop=True)
+        context.data = pd.concat([encoded, target_df], axis=1)
         context.features = list(encoded.columns)
 
         new_feature_config: Dict[str, FeatureParameters] = {}
