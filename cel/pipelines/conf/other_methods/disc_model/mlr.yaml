@@ -1,2 +1,2 @@
 model:
-  _target_: counterfactuals.discriminative_models.MultinomialLogisticRegression
+  _target_: counterfactuals.models.classifier.logistic_regression.MultinomialLogisticRegression
