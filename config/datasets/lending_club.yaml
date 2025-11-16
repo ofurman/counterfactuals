@@ -69,5 +69,11 @@ target_mapping:
   Late (90+ days): 0
   In Grace Period: 0
   Default: 0
+initial_transforms:
+- name: reorder_columns
+- name: dropna
+- name: one_hot_encode
+  params:
+    drop_first: false
 
 samples_keep: 30000

@@ -95,4 +95,11 @@ feature_config:
     actionable: true
   PAY_AMT6:
     actionable: true
+initial_transforms:
+- name: reorder_columns
+- name: dropna
+- name: one_hot_encode
+  params:
+    drop_first: false
+
 target: default payment next month

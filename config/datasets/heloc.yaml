@@ -98,3 +98,6 @@ feature_config:
   "PercentTradesWBalance":
     actionable: false
 target: "RiskPerformance"
+target_mapping:
+  "Bad": 0
+  "Good": 1
