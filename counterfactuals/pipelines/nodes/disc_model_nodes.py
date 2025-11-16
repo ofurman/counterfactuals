@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from sklearn.metrics import classification_report, r2_score
 
 logger = logging.getLogger(__name__)
@@ -42,12 +42,14 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     num_classes = 1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
+    model_config = OmegaConf.to_container(cfg.disc_model.model)
+    del model_config["_target_"]
+
     disc_model = instantiate(
         cfg.disc_model.model,
         num_inputs=dataset.X_train.shape[1],
         num_targets=num_classes,
-        hidden_layer_sizes=cfg.disc_model.model.hidden_layer_sizes,
-        dropout=cfg.disc_model.model.dropout,
+        **model_config,
     )
     return disc_model
 
