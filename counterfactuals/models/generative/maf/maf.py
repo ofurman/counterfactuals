@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 import numpy as np
@@ -118,7 +119,9 @@ class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
                 patience_counter += 1
             if patience_counter > patience:
                 break
-        self.load(checkpoint_path)
+
+        if os.path.exists(checkpoint_path):
+            self.load(checkpoint_path)
 
     def predict_log_prob(self, dataloader) -> torch.Tensor:
         """
