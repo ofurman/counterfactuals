@@ -65,8 +65,6 @@ class MethodDataset:
         # Store preprocessing pipeline (may be None)
         self.preprocessing_pipeline = preprocessing_pipeline
 
-        print(self.X_test_raw.shape)
-
         # Apply preprocessing if pipeline provided
         if self.preprocessing_pipeline is not None:
             # Create context with raw data and feature indices
