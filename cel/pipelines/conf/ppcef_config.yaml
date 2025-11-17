@@ -41,8 +41,8 @@ counterfactuals_params:
 
   log_prob_quantile: 0.25
   target_class: 0
-  epochs: 5000
-  # epochs: 20000
+  # epochs: 5000
+  epochs: 20000
   batch_size: 4096
   lr: 0.001
   alpha: 1000
