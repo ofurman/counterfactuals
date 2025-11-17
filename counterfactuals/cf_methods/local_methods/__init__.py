@@ -7,7 +7,7 @@ from .cegp.cegp import CEGP
 from .cem.cem import CEM_CF
 from .cet.cet import CounterfactualExplanationTree as CET
 from .dice.dice import DICE
-from .DiCoFlex import DiCoFlex
+from .dicoflex import DiCoFlex
 
 # from .lice.lice import LiCE
 from .ppcef.ppcef import PPCEF

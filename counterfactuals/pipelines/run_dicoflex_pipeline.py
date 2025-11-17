@@ -344,6 +344,16 @@ def main(cfg: DictConfig):
         if model_returned_mask.size == 0:
             model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
 
+        # Replace NaN rows (where counterfactuals couldn't be found) with original factuals
+        x_cfs_cleaned = explanation_result.x_cfs.copy()
+        nan_rows = np.any(np.isnan(x_cfs_cleaned), axis=1)
+        if np.any(nan_rows):
+            logger.info(
+                "Replacing %d rows with NaN (failed counterfactuals) with original factuals",
+                np.sum(nan_rows),
+            )
+            x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
+
         mask_vector = mask_vectors[params.mask_index]
         cf_contexts = build_context_matrix(
             factual_points=explanation_result.x_origs,
@@ -360,7 +370,7 @@ def main(cfg: DictConfig):
             class_to_index=class_to_index,
         )
         context_lookup = {
-            get_numpy_pointer(explanation_result.x_cfs): cf_contexts,
+            get_numpy_pointer(x_cfs_cleaned): cf_contexts,
             get_numpy_pointer(explanation_result.x_origs): test_contexts,
         }
         metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
@@ -371,7 +381,7 @@ def main(cfg: DictConfig):
             try:
                 visualize_counterfactual_samples(
                     factual_points=explanation_result.x_origs[:, :2],
-                    counterfactual_points=explanation_result.x_cfs[:, :2],
+                    counterfactual_points=x_cfs_cleaned[:, :2],
                     feature_names=dataset.features,
                     save_path=Path(save_folder) / "counterfactuals_scatter.png",
                     dataset_points=dataset.X_train[:, :2],
@@ -411,14 +421,15 @@ def main(cfg: DictConfig):
             save_folder,
             f"counterfactuals_DiCoFlex_{disc_model_name}.csv",
         )
-        cf_original_space = dataset.inverse_transform(explanation_result.x_cfs.copy())
+
+        cf_original_space = dataset.inverse_transform(x_cfs_cleaned)
         pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
         logger.info("Saved counterfactuals to %s", cf_path)
 
         metrics = evaluate_cf(
             gen_model=metrics_gen_model,
             disc_model=disc_model,
-            X_cf=explanation_result.x_cfs,
+            X_cf=x_cfs_cleaned,
             model_returned=model_returned_mask,
             categorical_features=dataset.categorical_features_indices,
             continuous_features=dataset.numerical_features_indices,
@@ -431,6 +442,8 @@ def main(cfg: DictConfig):
             cf_group_ids=cf_group_ids,
             metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
         )
+        logger.info(f"Metrics:\n{metrics}")
+
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_time
         metrics_path = os.path.join(save_folder, "cf_metrics_DiCoFlex.csv")
