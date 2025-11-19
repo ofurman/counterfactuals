@@ -10,9 +10,9 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 
-from counterfactuals.cf_methods.local.c_chvae import CCHVAE
-from counterfactuals.cf_methods.local.c_chvae.data import CustomData
-from counterfactuals.cf_methods.local.c_chvae.mlmodel import CustomMLModel
+from counterfactuals.cf_methods.local_methods.c_chvae.c_chvae import CCHVAE
+from counterfactuals.cf_methods.local_methods.c_chvae.data import CustomData
+from counterfactuals.cf_methods.local_methods.c_chvae.mlmodel import CustomMLModel
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
@@ -201,7 +201,7 @@ def main(cfg: DictConfig) -> None:
             dataset.y_test = disc_model.predict(dataset.X_test)
 
         dequantizer.fit(dataset.X_train)
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
         # Custom code
         dataset.X_train = dequantizer.transform(dataset.X_train)
