@@ -111,16 +111,19 @@ def search_counterfactuals(
 
     disc_model_w = DiscWrapper(disc_model)
 
-    model = dice_ml.Model(disc_model_w, backend=cfg.counterfactuals_params.backend)
-    exp = dice_ml.Dice(dice, model, method=cfg.counterfactuals_params.method)
+    model = dice_ml.Model(disc_model_w, backend="PYT")
+    exp = dice_ml.Dice(dice, model, method="random")
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     time_start = time()
-
-    generation_params = OmegaConf.to_container(cfg.counterfactuals_params.generation_params)
-
-    cfs = exp.generate_counterfactuals(query_instance, **generation_params)
+    cfs = exp.generate_counterfactuals(
+        query_instance,
+        total_CFs=1,
+        desired_class="opposite",
+        posthoc_sparsity_param=None,
+        # learning_rate=0.05,
+    )
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
@@ -274,7 +277,57 @@ def main(cfg: DictConfig) -> None:
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
+    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        logger.info(f"Processing fold {fold_n}")
+        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+
+        if cfg.experiment.relabel_with_disc_model:
+            logger.info("Relabeling dataset with discriminative model predictions")
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
+
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+        # Custom code
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = get_log_prob_threshold(
+            gen_model,
+            dataset,
+            cfg.counterfactuals_params.batch_size,
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+        Xs_cfs, Xs, ys_orig, ys_target, cf_search_time = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
+        )
+
+        Xs = dequantizer.inverse_transform(Xs)
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
+
+        metrics = calculate_metrics(
+            gen_model=gen_model,
+            disc_model=disc_model,
+            Xs_cfs=Xs_cfs,
+            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
+            X_train=dataset.X_train,
+            y_train=dataset.y_train.reshape(-1),
+            X_test=Xs,
+            y_test=ys_orig,
+            y_target=ys_target,
+            median_log_prob=log_prob_threshold,
+        )
+        df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
 
 
 if __name__ == "__main__":
