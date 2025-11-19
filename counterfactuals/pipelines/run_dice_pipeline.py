@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -25,6 +26,7 @@ from counterfactuals.preprocessing import (
     TorchDataTypeStep,
 )
 
+warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -83,21 +85,28 @@ def search_counterfactuals(
 
     logger.info("Filtering out target class data for counterfactual generation")
     target_class = cfg.counterfactuals_params.target_class
-    X_test_origin = dataset.X_test[dataset.y_test != target_class]
-    y_test_origin = dataset.y_test[dataset.y_test != target_class]
+    X_test_origin = dataset.X_test[dataset.y_test != target_class].astype(np.float64)
+    y_test_origin = dataset.y_test[dataset.y_test != target_class].astype(np.float64)
 
     logger.info("Creating dataset interface")
     X_train, y_train = dataset.X_train, dataset.y_train
 
     features = list(range(dataset.X_train.shape[1])) + ["label"]
     features = list(map(str, features))
-    input_dataframe = pd.DataFrame(
-        np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1),
+
+    # Combine train and test data for DiCE to establish proper feature ranges
+    # This prevents DiCE from rejecting test instances that are outside training range
+    logger.info("Combining train and test data for DiCE range establishment")
+    X_combined = np.concatenate([X_train, X_test_origin], axis=0)
+    y_combined = np.concatenate([y_train, y_test_origin], axis=0)
+
+    combined_dataframe = pd.DataFrame(
+        np.concatenate((X_combined, y_combined.reshape(-1, 1)), axis=1),
         columns=features,
     )
 
     dice = dice_ml.Data(
-        dataframe=input_dataframe,
+        dataframe=combined_dataframe,
         continuous_features=list(map(str, dataset.numerical_features_indices)),
         outcome_name=features[-1],
     )
@@ -107,18 +116,17 @@ def search_counterfactuals(
     disc_model_w = DiscWrapper(disc_model)
 
     model = dice_ml.Model(disc_model_w, backend="PYT")
-    exp = dice_ml.Dice(dice, model, method="gradient")
+    exp = dice_ml.Dice(dice, model, method="random")
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
-    query_instance = query_instance
     time_start = time()
     cfs = exp.generate_counterfactuals(
         query_instance,
         total_CFs=1,
         desired_class="opposite",
         posthoc_sparsity_param=None,
-        learning_rate=0.05,
+        # learning_rate=0.05,
     )
 
     cf_search_time = np.mean(time() - time_start)
@@ -130,6 +138,9 @@ def search_counterfactuals(
 
     Xs_cfs = []
     for orig, cf in zip(X_test_origin, cfs.cf_examples_list):
+        if cf.final_cfs_df is None:
+            Xs_cfs.append(orig)
+            continue
         out = cf.final_cfs_df.to_numpy()
         if out.shape[0] > 0:
             Xs_cfs.append(out[0][:-1])
@@ -306,8 +317,7 @@ def main(cfg: DictConfig) -> None:
             dataset.y_test = disc_model.predict(dataset.X_test)
 
         dequantizer.fit(dataset.X_train)
-        dataset.X_train = dequantizer.transform(dataset.X_train)
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
         # Custom code
         dataset.X_train = dequantizer.transform(dataset.X_train)
