@@ -81,6 +81,10 @@ def search_counterfactuals(
         cfg.counterfactuals_params.hyperparams, resolve=True
     )
 
+    # Override max_iter with epochs if provided (to support benchmark script)
+    if "epochs" in cfg.counterfactuals_params:
+        hyperparams["max_iter"] = cfg.counterfactuals_params.epochs
+
     input_size = dataset.X_train.shape[1]
     hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"][
         "layers"

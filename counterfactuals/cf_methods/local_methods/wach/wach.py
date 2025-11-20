@@ -29,8 +29,8 @@ class WACH(BaseCounterfactualMethod, LocalCounterfactualMixin):
         lam_init = 1e-1
         max_lam_steps = 10
         learning_rate_init = 0.1
-        predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731
-        num_features = disc_model.input_size
+        predict_proba = lambda x: disc_model.predict_proba(x)  # noqa: E731
+        num_features = disc_model.num_inputs
 
         # TODO: Change in future to allow for different feature ranges
         feature_range = (0, 1)
@@ -82,7 +82,7 @@ class WACH(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 explanation = self.cf.explain(X).cf["X"]
                 model_returned.append(True)
             except Exception as e:
-                explanation = [None, None]
+                explanation = X
                 print(e)
                 model_returned.append(False)
             Xs_cfs.append(explanation)

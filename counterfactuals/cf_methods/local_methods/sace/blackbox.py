@@ -11,7 +11,9 @@ class BlackBox:
         #     self.pred_fn = self.model.predict
 
     def predict(self, X):
-        proba = self.pred_fn(X).numpy()
+        proba = self.pred_fn(X)
+        if hasattr(proba, "numpy"):
+            proba = proba.numpy()
         if proba.shape[1] == 1:
             classes = np.array([1 if y_pred > 0.5 else 0 for y_pred in proba])
         else:
@@ -19,7 +21,9 @@ class BlackBox:
         return classes
 
     def predict_proba(self, X):
-        probs = self.pred_fn(X).numpy()
+        probs = self.pred_fn(X)
+        if hasattr(probs, "numpy"):
+            probs = probs.numpy()
         # check if binary classification
         if probs.shape[1] == 1:
             # first column is probability of class 0 and second is of class 1

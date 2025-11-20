@@ -11,11 +11,14 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.wach.wach_ours import WACH_OURS
+from counterfactuals.cf_methods.local_methods.wach.wach_ours import WACH_OURS
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -25,11 +28,11 @@ logging.basicConfig(
 
 def search_counterfactuals(
     cfg: DictConfig,
-    dataset: DictConfig,
+    dataset: MethodDataset,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """Generate counterfactual deltas using the WACH_OURS method.
 
     This builds the WACH_OURS counterfactual searcher, computes a plausibility
@@ -49,7 +52,6 @@ def search_counterfactuals(
         - Xs: Original inputs corresponding to the deltas
         - ys_orig: Original labels
         - ys_target: Target labels for counterfactuals
-        - log_prob_threshold: Quantile-based log-probability threshold
         - cf_search_time: Average CF search time in seconds
     """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
@@ -67,16 +69,6 @@ def search_counterfactuals(
         disc_model=disc_model,
         disc_model_criterion=disc_model_criterion,
     )
-
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
     cf_dataloader = torch.utils.data.DataLoader(
@@ -103,7 +95,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactual deltas saved to %s", counterfactuals_path)
-    return Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
 
 
 def calculate_metrics(
@@ -174,6 +166,10 @@ def main(cfg: DictConfig) -> None:
 
     logger.info("Loading dataset")
     dataset = instantiate(cfg.dataset)
+    dataset = MethodDataset(dataset)
+    dataset.X_train = dataset.X_train.astype(np.float32)
+    dataset.X_test = dataset.X_test.astype(np.float32)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
@@ -182,27 +178,41 @@ def main(cfg: DictConfig) -> None:
 
         if cfg.experiment.relabel_with_disc_model:
             logger.info("Relabeling dataset with discriminative model predictions")
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+        logger.info("Calculating log_prob_threshold")
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        train_dataloader_for_log_prob = dataset.train_dataloader(
+            batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+        )
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(train_dataloader_for_log_prob),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+        logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
         (
             Xs_cfs,
             Xs,
             ys_orig,
             ys_target,
-            log_prob_threshold,
             cf_search_time,
         ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,

@@ -14,11 +14,19 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.artelt.artelt import Artelt
+from counterfactuals.cf_methods.local_methods.artelt.artelt import Artelt
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -32,7 +40,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Generate counterfactual explanations using the Artelt method.
 
@@ -52,7 +60,6 @@ def search_counterfactuals(
         Tuple containing:
             - Xs_cfs: Generated counterfactual explanations
             - Xs: Original test instances
-            - log_prob_threshold: Computed log probability threshold
             - ys_orig: Original labels for test instances
             - ys_target: Target labels for counterfactuals
             - model_returned: Boolean array indicating successful generation
@@ -68,16 +75,6 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     cf_method: Artelt = Artelt(disc_model=disc_model)
 
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
-
     logger.info("Handling counterfactual generation")
     cf_dataloader = torch.utils.data.DataLoader(
         torch.utils.data.TensorDataset(
@@ -89,9 +86,15 @@ def search_counterfactuals(
     )
     time_start = time()
     cf_method.fit_density_estimators(X_train=dataset.X_train, y_train=dataset.y_train)
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
+    explanation_result = cf_method.explain_dataloader(
         dataloader=cf_dataloader, X_train=dataset.X_train, y_train=dataset.y_train
     )
+    
+    Xs_cfs = explanation_result.x_cfs
+    Xs = explanation_result.x_origs
+    ys_orig = explanation_result.y_origs
+    ys_target = explanation_result.y_cf_targets
+    model_returned = explanation_result.logs["model_returned"]
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
@@ -102,7 +105,7 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned
 
 
 def calculate_metrics(
@@ -187,7 +190,15 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         logger.info(f"Processing fold {fold_n}")
@@ -199,9 +210,21 @@ def main(cfg: DictConfig) -> None:
             dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
             dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
+        # Calculate log_prob_threshold
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        train_dataloader_for_log_prob = dataset.train_dataloader(
+            batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+        )
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(train_dataloader_for_log_prob),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+
+        Xs_cfs, Xs, ys_orig, ys_target, model_returned = (
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
@@ -209,13 +232,15 @@ def main(cfg: DictConfig) -> None:
             logger.info("No counterfactuals found, skipping metrics calculation")
             continue
 
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
+
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,

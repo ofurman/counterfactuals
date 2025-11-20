@@ -10,11 +10,19 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.cet.cet import CounterfactualExplanationTree
+from counterfactuals.cf_methods.local_methods.cet.cet import CounterfactualExplanationTree
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 MAX_ITERATION = 50
 # LAMBDA, GAMMA = 0.01, 0.75
@@ -56,8 +64,8 @@ def search_counterfactuals(
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     X_train, y_train = dataset.X_train, dataset.y_train
     X_test, y_tes = dataset.X_test, dataset.y_test
-    X_train = dataset.feature_transformer.inverse_transform(dataset.X_train)
-    X_test = dataset.feature_transformer.inverse_transform(dataset.X_test)
+    X_train = dataset.inverse_transform(dataset.X_train)
+    X_test = dataset.inverse_transform(dataset.X_test)
 
     logger.info("Filtering out target class data for counterfactual generation")
     target_class = 1
@@ -185,11 +193,11 @@ class DiscModelWrapper:
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         out = self.disc_model.predict(X)
-        return out.detach().numpy()
+        return out
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         out = self.disc_model.predict_proba(X)
-        return out.detach().numpy()
+        return out
 
 
 @hydra.main(config_path="./conf", config_name="cet_config", version_base="1.2")
@@ -198,29 +206,53 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset, shuffle=False)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+        # Custom code
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(
+                dataset.train_dataloader(
+                    batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+                )
+            ),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
 
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
+
+        Xs = dequantizer.inverse_transform(Xs)
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,

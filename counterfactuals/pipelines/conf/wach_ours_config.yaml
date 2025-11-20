@@ -12,7 +12,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.BlobsDataset
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: ${hydra:runtime.cwd}/config/datasets/blobs.yaml
 
 disc_model:
   train_model: false

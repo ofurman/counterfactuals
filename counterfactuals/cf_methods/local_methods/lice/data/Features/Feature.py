@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from counterfactuals.cf_methods.local.lice.data.Types import OneDimData
+from counterfactuals.cf_methods.local_methods.lice.data.Types import OneDimData
 
 
 class Monotonicity(Enum):

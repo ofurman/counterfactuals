@@ -38,8 +38,8 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
         super().__init__(disc_model=disc_model, device=device)
 
         tf.compat.v1.disable_eager_execution()
-        predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731
-        num_features = disc_model.input_size
+        predict_proba = lambda x: disc_model.predict_proba(x)  # noqa: E731
+        num_features = disc_model.num_inputs
         shape = (1, num_features)
 
         # Get feature ranges from training data

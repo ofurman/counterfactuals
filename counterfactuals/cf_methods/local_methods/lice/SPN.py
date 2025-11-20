@@ -8,15 +8,15 @@ from spn.structure.Base import Context, Leaf, Product, Sum, get_topological_orde
 from spn.structure.Base import Node as SPFlow_Node
 from spn.structure.StatisticalTypes import MetaType
 
-from counterfactuals.cf_methods.local.lice.data.DataHandler import DataHandler
-from counterfactuals.cf_methods.local.lice.data.Features import (
+from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
+from counterfactuals.cf_methods.local_methods.lice.data.Features import (
     Binary,
     Categorical,
     Contiguous,
     Feature,
     Mixed,
 )
-from counterfactuals.cf_methods.local.lice.data.Types import DataLike
+from counterfactuals.cf_methods.local_methods.lice.data.Types import DataLike
 
 
 class NodeType(

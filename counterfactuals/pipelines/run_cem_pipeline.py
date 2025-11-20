@@ -6,16 +6,34 @@ from typing import Any, Dict, List, Optional, Tuple
 import hydra
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+import tf_keras
 import torch
 import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.cem.cem import CEM_CF
+from counterfactuals.cf_methods.local_methods.cem.cem import CEM_CF
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
+
+# Patch for Alibi compatibility with newer TF/Keras
+try:
+    import keras
+    if not hasattr(tf.compat.v1.keras.backend, "get_session"):
+        tf.compat.v1.keras.backend.get_session = tf.compat.v1.get_default_session
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -163,29 +181,53 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+        # Custom code
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(
+                dataset.train_dataloader(
+                    batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+                )
+            ),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
 
         Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
+
+        Xs = dequantizer.inverse_transform(Xs)
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
@@ -193,8 +235,8 @@ def main(cfg: DictConfig) -> None:
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
         )
-    df_metrics = pd.DataFrame(metrics, index=[0])
-    df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
+        df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
 
 
 if __name__ == "__main__":

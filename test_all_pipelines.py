@@ -23,7 +23,7 @@ PIPELINES = {
     "CET": "counterfactuals.pipelines.run_cet_pipeline",
     "CEM": "counterfactuals.pipelines.run_cem_pipeline",
     "CEGP": "counterfactuals.pipelines.run_cegp_pipeline",
-    "LiCE": "counterfactuals.pipelines.run_lice_pipeline",
+    # "LiCE": "counterfactuals.pipelines.run_lice_pipeline",  # Requires old SPFlow version
     "CaseBased SACE": "counterfactuals.pipelines.run_casebased_sace_pipeline",
     "WACH OURS": "counterfactuals.pipelines.run_wach_ours_pipeline",
     # Global methods
@@ -110,7 +110,7 @@ def generate_markdown_table(results: Dict[str, Tuple[bool, str]]) -> str:
         "CET",
         "CEM",
         "CEGP",
-        "LiCE",
+        # "LiCE",  # Excluded - requires old SPFlow version
         "CaseBased SACE",
         "WACH OURS",
     ]

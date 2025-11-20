@@ -11,7 +11,7 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.group_ppcef import RPPCEF
+from counterfactuals.cf_methods.group_methods.group_ppcef import RPPCEF
 from counterfactuals.metrics.metrics import evaluate_cf_for_rppcef
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model

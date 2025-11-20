@@ -11,8 +11,8 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
 
-from counterfactuals.cf_methods.ares import AReS
-from counterfactuals.cf_methods.globe_ce import GLOBE_CE
+from counterfactuals.cf_methods.global_methods.ares import AReS
+from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model

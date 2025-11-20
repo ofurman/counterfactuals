@@ -10,7 +10,7 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.lice.lice import LiCE
+from counterfactuals.cf_methods.local_methods.lice.lice import LiCE
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -81,8 +81,8 @@ def search_counterfactuals(
     y_test_df = pd.DataFrame(y_test, columns=[dataset.features[-1]])
 
     # Create data handler and SPN
-    from counterfactuals.cf_methods.lice.data.DataHandler import DataHandler
-    from counterfactuals.cf_methods.lice.SPN import SPN
+    from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
+    from counterfactuals.cf_methods.local_methods.lice.SPN import SPN
 
     dhandler = DataHandler(X_train_df, y_train_df)
     spn = SPN(
