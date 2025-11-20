@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from hydra.utils import instantiate
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
@@ -61,11 +61,13 @@ def search_counterfactuals(
 
     This function constructs a `dice-ml` Data and Model interface around the provided
     dataset and discriminator, computes a plausibility threshold (log-probability)
-    using the generative model, and generates one counterfactual per eligible test
-    instance (those not in the target class).
+    using the generative model, and generates counterfactuals per eligible test
+    instance (those not in the target class). DiCE-specific parameters (backend,
+    method, total_cfs, desired_class, posthoc_sparsity_param, learning_rate) are
+    read from the configuration.
 
     Args:
-        cfg: Hydra configuration containing experiment parameters
+        cfg: Hydra configuration containing experiment and DiCE method parameters
         dataset: Dataset object with training/test splits and metadata
         gen_model: Trained generative model used to compute plausibility threshold
         disc_model: Trained discriminative model used for classification
@@ -115,19 +117,18 @@ def search_counterfactuals(
 
     disc_model_w = DiscWrapper(disc_model)
 
-    model = dice_ml.Model(disc_model_w, backend="PYT")
-    exp = dice_ml.Dice(dice, model, method="random")
+    model = dice_ml.Model(disc_model_w, backend=cfg.counterfactuals_params.backend)
+    exp = dice_ml.Dice(dice, model, method=cfg.counterfactuals_params.method)
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     time_start = time()
-    cfs = exp.generate_counterfactuals(
-        query_instance,
-        total_CFs=1,
-        desired_class="opposite",
-        posthoc_sparsity_param=None,
-        # learning_rate=0.05,
+
+    generation_params = OmegaConf.to_container(
+        cfg.counterfactuals_params.generation_params
     )
+
+    cfs = exp.generate_counterfactuals(query_instance, **generation_params)
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
