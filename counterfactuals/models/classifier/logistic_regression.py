@@ -149,7 +149,7 @@ class MultinomialLogisticRegression(PytorchBase, ClassifierPytorchMixin):
         with torch.no_grad():
             probs = self(X_test)
             predicted = torch.argmax(probs, 1)
-            return predicted.float()
+            return predicted.squeeze().cpu().numpy()
 
     def predict_proba(self, X_test):
         if isinstance(X_test, np.ndarray):
@@ -157,7 +157,7 @@ class MultinomialLogisticRegression(PytorchBase, ClassifierPytorchMixin):
         with torch.no_grad():
             probs = self.forward(X_test)
             probs = torch.nn.functional.softmax(probs, dim=1)
-            return probs.float()
+            return probs.cpu().numpy()
 
     def save(self, path):
         torch.save(self.state_dict(), path)

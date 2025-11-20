@@ -66,4 +66,11 @@ target_mapping:
   ">50K": 1
   " <=50K": 0
   " >50K": 1
+initial_transforms:
+- name: reorder_columns
+- name: dropna
+- name: one_hot_encode
+  params:
+    drop_first: false
+
 samples_keep: 30000

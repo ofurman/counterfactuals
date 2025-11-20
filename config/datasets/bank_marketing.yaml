@@ -67,4 +67,14 @@ feature_config:
     actionable: true
   poutcome:
     actionable: true
+target_mapping:
+  "no": 0
+  "yes": 1
+initial_transforms:
+- name: reorder_columns
+- name: dropna
+- name: one_hot_encode
+  params:
+    drop_first: false
+
 target: y
