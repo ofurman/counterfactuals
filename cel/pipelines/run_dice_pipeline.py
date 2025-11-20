@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 
 from cel.metrics.metrics import evaluate_cf
@@ -111,19 +112,18 @@ def search_counterfactuals(
 
     disc_model_w = DiscWrapper(disc_model)
 
-    model = dice_ml.Model(disc_model_w, backend="PYT")
-    exp = dice_ml.Dice(dice, model, method="random")
+    model = dice_ml.Model(disc_model_w, backend=cfg.counterfactuals_params.backend)
+    exp = dice_ml.Dice(dice, model, method=cfg.counterfactuals_params.method)
 
     logger.info("Handling counterfactual generation")
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     time_start = time()
-    cfs = exp.generate_counterfactuals(
-        query_instance,
-        total_CFs=1,
-        desired_class="opposite",
-        posthoc_sparsity_param=None,
-        # learning_rate=0.05,
+
+    generation_params = OmegaConf.to_container(
+        cfg.counterfactuals_params.generation_params
     )
+
+    cfs = exp.generate_counterfactuals(query_instance, **generation_params)
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
