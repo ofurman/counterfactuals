@@ -48,6 +48,8 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         categorical_intervals = search_step_kwargs.get("categorical_intervals", None)
 
         log_prob_threshold = search_step_kwargs.get("log_prob_threshold", None)
+        plausibility_weight = search_step_kwargs.get("plausibility_weight", 1.0)
+        plausibility_bias = search_step_kwargs.get("plausibility_bias", 0.0)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
         if log_prob_threshold is None:
@@ -78,7 +80,11 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             x_origin + delta, context=context_target.type(torch.float32)
         )
 
-        max_inner = torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
+        max_inner = torch.nn.functional.relu(
+            plausibility_weight * log_prob_threshold
+            + plausibility_bias
+            - p_x_param_c_target
+        )
 
         # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)
 

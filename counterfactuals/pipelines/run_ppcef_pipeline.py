@@ -116,6 +116,8 @@ def search_counterfactuals(
             cfg.counterfactuals_params.use_categorical,
             dataset.categorical_features_lists,
         ),
+        plausibility_weight=cfg.counterfactuals_params.plausibility_weight,
+        plausibility_bias=cfg.counterfactuals_params.plausibility_bias,
     )
     Xs = explanation_result.x_origs
     Xs_cfs = explanation_result.x_cfs

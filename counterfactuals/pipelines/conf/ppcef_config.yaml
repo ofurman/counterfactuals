@@ -51,4 +51,6 @@ counterfactuals_params:
   beta: 0.01
   patience: 1000
   use_categorical: true
+  plausibility_weight: 1.0
+  plausibility_bias: 0.0
     
