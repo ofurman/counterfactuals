@@ -52,3 +52,7 @@ counterfactuals_params:
   alpha_k: 100
   beta: 0.01
   patience: 1000
+  use_categorical: true
+  plausibility_weight: 1.0
+  plausibility_bias: 0.0
+    
