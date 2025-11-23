@@ -48,6 +48,8 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         categorical_intervals = search_step_kwargs.get("categorical_intervals", None)
 
         log_prob_threshold = search_step_kwargs.get("log_prob_threshold", None)
+        plausibility_weight = search_step_kwargs.get("plausibility_weight", 1.0)
+        plausibility_bias = search_step_kwargs.get("plausibility_bias", 0.0)
         if alpha is None:
             raise ValueError("Parameter 'alpha' should be in kwargs")
         if log_prob_threshold is None:
