@@ -11,7 +11,7 @@ import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.local_methods.wach.wach import WACH
+from counterfactuals.cf_methods.local_methods.wach.wach_ours import WACH_OURS
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
@@ -35,36 +35,27 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    float,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    float,
-]:
-    """Generate counterfactuals using the WACH method.
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float]:
+    """Generate counterfactual deltas using the WACH_OURS method.
 
-    Filters test instances to those not in the target class, builds the WACH
-    counterfactual explainer, computes a plausibility threshold from the
-    generative model, and runs CF search in batches.
+    This builds the WACH_OURS counterfactual searcher, computes a plausibility
+    threshold from the generative model, and runs batched CF search over
+    non-target-class test samples.
 
     Args:
-        cfg: Hydra configuration with experiment parameters.
+        cfg: Hydra configuration for experiment and method settings.
         dataset: Dataset object exposing train/test arrays and metadata.
-        gen_model: Trained generative model for plausibility thresholding.
-        disc_model: Trained discriminative model used by WACH.
-        save_folder: Directory for saving generated CFs as CSV.
+        gen_model: Trained generative model used to compute log-probability threshold.
+        disc_model: Trained discriminative model used in the search loss.
+        save_folder: Output directory to persist results (CSVs, timings).
 
     Returns:
-        Tuple containing:
-        - Xs_cfs: Generated counterfactuals
-        - Xs: Original instances
-        - log_prob_threshold: Computed log-prob threshold
+        A tuple:
+        - Xs_cfs: Counterfactual deltas from WACH_OURS (same shape as inputs)
+        - Xs: Original inputs corresponding to the deltas
         - ys_orig: Original labels
-        - ys_target: Target labels for CFs
-        - model_returned: Boolean array indicating successful generation
+        - ys_target: Target labels for counterfactuals
+        - log_prob_threshold: Quantile-based log-probability threshold
         - cf_search_time: Average CF search time in seconds
     """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
@@ -74,10 +65,13 @@ def search_counterfactuals(
     target_class = cfg.counterfactuals_params.target_class
     X_test_origin = dataset.X_test[dataset.y_test != target_class]
     y_test_origin = dataset.y_test[dataset.y_test != target_class]
-    # X_test_target = dataset.X_test[dataset.y_test == target_class]
 
     logger.info("Creating counterfactual model")
-    cf_method: WACH = WACH(disc_model=disc_model)
+    disc_model_criterion = instantiate(cfg.counterfactuals_params.disc_model_criterion)
+    cf_method: WACH_OURS = WACH_OURS(
+        disc_model=disc_model,
+        disc_model_criterion=disc_model_criterion,
+    )
 
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -99,28 +93,26 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
-        dataloader=cf_dataloader, target_class=target_class
+    results = cf_method.explain_dataloader(
+        dataloader=cf_dataloader,
+        epochs=cfg.counterfactuals_params.epochs,
+        lr=cfg.counterfactuals_params.lr,
+        alpha=cfg.counterfactuals_params.alpha,
     )
+    Xs_cfs = results.x_cfs
+    Xs = results.x_origs
+    ys_orig = results.y_origs
+    ys_target = results.y_cf_targets
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
-
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
     )
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    logger.info("Counterfactuals saved to %s", counterfactuals_path)
-    return (
-        Xs_cfs,
-        Xs,
-        log_prob_threshold,
-        ys_orig,
-        ys_target,
-        model_returned,
-        cf_search_time,
-    )
+    logger.info("Counterfactual deltas saved to %s", counterfactuals_path)
+    return Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold, cf_search_time
 
 
 def calculate_metrics(
@@ -137,12 +129,12 @@ def calculate_metrics(
     median_log_prob: float,
     y_target: np.ndarray | None = None,
 ) -> Dict[str, float]:
-    """Compute evaluation metrics for WACH-generated counterfactuals.
+    """Compute evaluation metrics for WACH_OURS-generated counterfactuals.
 
     Args:
         gen_model: Generative model used for plausibility metrics.
         disc_model: Discriminative model used to evaluate outcomes.
-        Xs_cfs: Generated counterfactuals.
+        Xs_cfs: Generated counterfactual deltas.
         model_returned: Boolean mask indicating successful generations.
         categorical_features: Indices or names of categorical features.
         continuous_features: Indices or names of continuous features.
@@ -175,16 +167,16 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="wach_config", version_base="1.2")
+@hydra.main(config_path="./conf", config_name="wach_ours_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
-    """WACH pipeline: generate and evaluate counterfactuals.
+    """WACH_OURS pipeline: generate and evaluate counterfactual deltas.
 
-    Runs 5-fold CV: loads dataset, prepares models, generates WACH CFs for
-    non-target-class samples, evaluates via ``evaluate_cf``, and writes results
-    locally.
+    Runs a 5-fold CV routine: loads dataset, prepares models, performs CF search
+    using WACH_OURS on non-target-class samples, evaluates with ``evaluate_cf``,
+    and saves results locally.
 
     Args:
-        cfg: Hydra configuration including dataset, model, and CF parameters.
+        cfg: Hydra configuration with dataset, model, and method parameters.
     """
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -213,10 +205,9 @@ def main(cfg: DictConfig) -> None:
         (
             Xs_cfs,
             Xs,
-            log_prob_threshold,
             ys_orig,
             ys_target,
-            model_returned,
+            log_prob_threshold,
             cf_search_time,
         ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
 
@@ -224,9 +215,9 @@ def main(cfg: DictConfig) -> None:
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
-            model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
