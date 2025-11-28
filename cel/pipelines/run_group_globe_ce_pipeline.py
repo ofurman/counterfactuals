@@ -12,12 +12,18 @@ from omegaconf import DictConfig
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
-from cel.cf_methods.ares import AReS
-from cel.cf_methods.globe_ce import GLOBE_CE
-from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.nodes.disc_model_nodes import create_disc_model
-from cel.pipelines.nodes.gen_model_nodes import create_gen_model
-from cel.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.cf_methods.global_methods.ares import AReS
+from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -120,25 +126,51 @@ def search_counterfactuals(
             - model_returned: Boolean mask indicating successful generation
             - cf_search_time: Average time taken for counterfactual search
     """
-    cf_method_name = "Group_Globe_CE"
+    cf_method_name = "GLOBE_CE"
     disc_model.eval()
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
-    X_test_unscaled = dataset.feature_transformer.inverse_transform(dataset.X_test)
+    # Get the MinMaxScaler step directly to avoid torch conversion
+    minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
+
+    X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
     data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1])
+        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
     )
 
     def predict_fn(x):
-        x_scaled = dataset.feature_transformer.transform(x)
-        return disc_model.predict(x_scaled).detach().numpy().flatten()
+        # Convert pandas DataFrame to numpy array if needed
+        x_array = x.values if isinstance(x, pd.DataFrame) else x
+        x_scaled = minmax_scaler._transform_array(x_array)
+        return disc_model.predict(x_scaled)
 
     logger.info("Filtering out target class data for counterfactual generation")
-    target_class = 1
+    target_class = cfg.counterfactuals_params.target_class
     ys_pred = predict_fn(X_test_unscaled)
-    Xs = dataset.X_test[ys_pred != target_class]
-    ys_orig = ys_pred[ys_pred != target_class]
+    mask = ys_pred != target_class
+    Xs_unscaled = X_test_unscaled[mask]
+    Xs = dataset.X_test[mask]
+    ys_orig = ys_pred[mask]
 
+    logger.info("Creating counterfactual model")
+    ares_helper = AReS(
+        predict_fn=predict_fn,
+        dataset=dataset,
+        X=pd.DataFrame(X_test_unscaled, columns=dataset.features),
+        dropped_features=[],
+        n_bins=10,
+        ordinal_features=[],
+        normalise=False,
+        constraints=[20, 7, 10],
+    )
+    bin_widths = ares_helper.bin_widths
+
+    cf_method = GLOBE_CE(
+        predict_fn=predict_fn,
+        dataset=dataset,
+        X=pd.DataFrame(Xs_unscaled, columns=dataset.features),
+        bin_widths=bin_widths,
+    )
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
         batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
@@ -155,38 +187,9 @@ def search_counterfactuals(
     logger.info("Handling counterfactual generation")
 
     time_start = time()
-
-    labels = kmeans.labels_
-    Xs_cfs = np.empty_like(Xs)
-
-    X_test_unscaled_reduced = X_test_unscaled[ys_pred != target_class]
-
-    for i in range(kmeans.n_clusters):
-        logger.info("Creating counterfactual model")
-        ares_helper = AReS(
-            predict_fn=predict_fn,
-            dataset=dataset,
-            X=pd.DataFrame(X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]),
-            dropped_features=[],
-            n_bins=10,
-            ordinal_features=[],
-            normalise=False,
-            constraints=[20, 7, 10],
-        )
-        bin_widths = ares_helper.bin_widths
-
-        cf_method = GLOBE_CE(
-            predict_fn=predict_fn,
-            dataset=dataset,
-            X=pd.DataFrame(X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]),
-            bin_widths=bin_widths,
-        )
-
-        Xs_cfs[labels == i] = cf_method.explain()
-
-    Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
-    ys_target = np.abs(ys_orig - 1)
-
+    Xs_cfs = cf_method.explain()
+    Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
+    ys_target = np.full_like(ys_orig, target_class)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
@@ -262,16 +265,22 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset, shuffle=False)
-
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         logger.info(f"Processing fold {fold_n}")
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
@@ -290,8 +299,8 @@ def main(cfg: DictConfig) -> None:
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
