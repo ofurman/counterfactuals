@@ -48,7 +48,12 @@ class GLOBE_CE:
         self.monotonicity = np.array(monotonicity) if monotonicity is not None else None
         self.features = np.array(list(self.dataset.features_tree))
         self.n_f = len(self.features)
-        self.feature_values = self.dataset.features[:-1]
+        if isinstance(self.X, pd.DataFrame):
+            self.feature_values = list(self.X.columns)
+        else:
+            self.feature_values = list(self.dataset.features)
+        if len(self.feature_values) > self.x_dim:
+            self.feature_values = self.feature_values[: self.x_dim]
 
         # Refer normalisation to model?
         self.normalise = None
@@ -95,14 +100,22 @@ class GLOBE_CE:
         self.features_tree = (
             self.dataset.features_tree
         )  # dictionary of form 'feature: [feature values]'
+        categorical_columns = getattr(
+            self.dataset,
+            "categorical_columns",
+            getattr(self.dataset, "categorical_features_indices", []),
+        )
+        numerical_columns = getattr(
+            self.dataset,
+            "numerical_columns",
+            getattr(self.dataset, "numerical_features_indices", []),
+        )
         # list of categorical features (not values)
         self.categorical_features = [
-            self.dataset.features[i] for i in self.dataset.categorical_columns
+            self.dataset.features[i] for i in categorical_columns
         ]
         # list of continuous features
-        self.continuous_features = [
-            self.dataset.features[i] for i in self.dataset.numerical_columns
-        ]
+        self.continuous_features = [self.dataset.features[i] for i in numerical_columns]
         # Number of categorical or continuous features
         self.n_categorical = len(self.categorical_features)
         self.n_continuous = len(self.continuous_features)
