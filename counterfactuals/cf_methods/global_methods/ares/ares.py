@@ -143,30 +143,27 @@ class AReS:
             self.bin_continuous_features(self.X)
         )
         self.continuous_features = []  # list of continuous features
-        self.feature_costs_vector = np.zeros(len(self.features) - 1)
-        self.non_ordinal_categories_idx = np.ones(len(self.features) - 1, dtype=bool)
-        i = 0
+        feature_costs = []
+        non_ordinal_mask = []
         for feature in self.features_tree:
             if feature not in self.categorical_features:
                 self.continuous_features.append(feature)
-                self.feature_costs_vector[i] = (
-                    1 / self.bin_widths[feature]
-                )  # includes dropped features
-                self.non_ordinal_categories_idx[i] = True
-                i += 1
+                feature_costs.append(1 / self.bin_widths[feature])
+                non_ordinal_mask.append(True)
             else:
                 n = len(self.features_tree[feature])
                 if feature in self.ordinal_features:
-                    self.feature_costs_vector[i : i + n] = range(
-                        n
+                    feature_costs.extend(
+                        range(n)
                     )  # if ordinal, default to unit change between bins
-                    self.non_ordinal_categories_idx[i : i + n] = False
+                    non_ordinal_mask.extend([False] * n)
                 else:
-                    self.feature_costs_vector[i : i + n] = (
-                        0.5  # categorical features have cost 1 (2 changes of 0.5)
-                    )
-                    self.non_ordinal_categories_idx[i : i + n] = True
-                i += n
+                    feature_costs.extend(
+                        [0.5] * n
+                    )  # categorical features have cost 1 (2 changes of 0.5)
+                    non_ordinal_mask.extend([True] * n)
+        self.feature_costs_vector = np.asarray(feature_costs)
+        self.non_ordinal_categories_idx = np.asarray(non_ordinal_mask, dtype=bool)
         # either we bin continuous features before model training (ordinal categories),
         # or we don't (non-ordinal categories)
         # non-continuous features are also included in non-ordinal categories
