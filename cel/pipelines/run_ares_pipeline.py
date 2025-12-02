@@ -13,13 +13,13 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
 
-from cel.cf_methods import AReS
-from cel.datasets.method_dataset import MethodDataset
-from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.nodes.disc_model_nodes import create_disc_model
-from cel.pipelines.nodes.gen_model_nodes import create_gen_model
-from cel.pipelines.nodes.helper_nodes import set_model_paths
-from cel.preprocessing import (
+from counterfactuals.cf_methods import AReS
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
@@ -156,20 +156,16 @@ def search_counterfactuals(
         minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
         X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
     else:
-        if hasattr(feature_transformer, "_inverse_transform_array"):
-            X_test_unscaled = feature_transformer._inverse_transform_array(dataset.X_test)
-        else:
-            X_test_unscaled = feature_transformer.inverse_transform(dataset.X_test)
+        X_test_unscaled = feature_transformer.inverse_transform(dataset.X_test)
     feature_columns = _feature_columns(dataset)
-    data_oh, features = one_hot(dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns))
+    data_oh, features = one_hot(
+        dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
+    )
 
-    def predict_fn_raw(x: pd.DataFrame | np.ndarray) -> np.ndarray:
+    def predict_fn(x):
         x_array = x.values if isinstance(x, pd.DataFrame) else x
         if feature_transformer is not None:
-            if hasattr(feature_transformer, "_transform_array"):
-                x_scaled = feature_transformer._transform_array(x_array)
-            else:
-                x_scaled = feature_transformer.transform(x_array)
+            x_scaled = feature_transformer.transform(x_array)
         else:
             x_scaled = minmax_scaler._transform_array(x_array)
         preds = disc_model.predict(x_scaled)
@@ -177,14 +173,11 @@ def search_counterfactuals(
 
     logger.info("Filtering out target class data for counterfactual generation")
     target_class = getattr(cfg.counterfactuals_params, "target_class", 1)
-    ys_pred = predict_fn_raw(X_test_unscaled)
+    ys_pred = predict_fn(X_test_unscaled)
     mask = ys_pred != target_class
     Xs_unscaled = X_test_unscaled[mask]
     Xs = dataset.X_test[mask]
     ys_orig = ys_pred[mask]
-
-    # Align AReS expectation (negative class == 0) with configurable target class
-    predict_fn_for_cf = (lambda x: 1 - predict_fn_raw(x)) if target_class == 0 else predict_fn_raw
 
     logger.info("Creating counterfactual model")
     cf_method = AReS(
@@ -209,20 +202,12 @@ def search_counterfactuals(
 
     logger.info("Handling counterfactual generation")
     time_start = time()
-    ys_target = np.full_like(ys_orig, target_class)
-    explanation_result = cf_method.explain(
-        y_origin=ys_orig,
-        y_target=ys_target,
-    )
-    Xs_cfs = explanation_result.x_cfs
-    if Xs_cfs.shape[0] > 0:
-        if feature_transformer is not None:
-            if hasattr(feature_transformer, "_transform_array"):
-                Xs_cfs = feature_transformer._transform_array(Xs_cfs)
-            else:
-                Xs_cfs = feature_transformer.transform(Xs_cfs)
-        else:
-            Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
+    Xs_cfs = cf_method.explain()
+    if feature_transformer is not None:
+        Xs_cfs = feature_transformer.transform(Xs_cfs)
+    else:
+        Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
+    ys_target = np.abs(ys_orig - 1)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.2f} seconds")
