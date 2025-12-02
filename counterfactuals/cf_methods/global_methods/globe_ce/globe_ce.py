@@ -20,6 +20,7 @@ class GLOBE_CE:
         bin_widths=None,
         monotonicity=None,
         p=1,
+        target_class=1,
     ):
         """GLOBE_CE class. This class is used to generate GCE directions and evaluate scaling.
 
@@ -39,6 +40,7 @@ class GLOBE_CE:
         # Params
         self.x_dim = X.shape[1]  # dimensionality of inputs
         self.p = p
+        self.target_class = target_class
 
         # Model + Dataset + Cuda
         self.predict_fn = predict_fn
@@ -69,7 +71,7 @@ class GLOBE_CE:
 
         # X
         self.x_aff = copy.deepcopy(self.X.values)
-
+        self.x_aff = self.x_aff[self.preds != self.target_class]
         if self.affected_subgroup is not None:
             self.subgroup_idx = self.x_aff[self.affected_subgroup] == 1
             self.x_aff = self.x_aff[self.subgroup_idx]
