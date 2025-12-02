@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
 from time import time
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
 import numpy as np
@@ -12,12 +14,17 @@ from omegaconf import DictConfig
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import LabelEncoder
 
-from cel.cf_methods.ares import AReS
-from cel.cf_methods.globe_ce import GLOBE_CE
-from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.nodes.disc_model_nodes import create_disc_model
-from cel.pipelines.nodes.gen_model_nodes import create_gen_model
-from cel.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.cf_methods import AReS
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -25,25 +32,8 @@ logging.basicConfig(
 )
 
 
-def one_hot(dataset, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """One-hot encode categorical features in ``data`` using dataset metadata.
-
-    Improvised encoder aligning with the dataset's feature list. Categorical
-    columns are label-encoded and expanded via one-hot; continuous columns are
-    passed through unchanged. Also populates a few helper attributes on the
-    ``dataset`` object used by tree-based methods.
-
-    Args:
-        dataset: Dataset object exposing ``categorical_features``, ``features``, and
-            optional binning-related attributes.
-        data: Unscaled feature values as a DataFrame with columns matching
-            ``dataset.features[:-1]``.
-
-    Returns:
-        Tuple of:
-        - data_oh: One-hot encoded DataFrame
-        - features: List of resulting feature names after encoding
-    """
+def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    """One-hot encode categorical features and record metadata on ``dataset``."""
     label_encoder = LabelEncoder()
     data_encode = data.copy()
     dataset.bins = {}
@@ -83,9 +73,54 @@ def one_hot(dataset, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     return data_oh, features
 
 
+def _feature_columns(dataset: Any) -> List[str]:
+    """Return feature columns, excluding target if it is part of the list."""
+    columns: List[str] = list(dataset.features)
+    target: Optional[str] = None
+    if hasattr(dataset, "target"):
+        target = dataset.target
+    elif hasattr(dataset, "config"):
+        target = getattr(dataset.config, "target", None)
+    if target is not None and target in columns:
+        columns = [col for col in columns if col != target]
+    return columns
+
+
+def _get_feature_transformer(dataset: Any):
+    """Retrieve a feature transformer if available (e.g., MinMax scaler)."""
+    transformer = getattr(dataset, "feature_transformer", None)
+    if transformer is not None:
+        return transformer
+    if hasattr(dataset, "preprocessing_pipeline"):
+        return dataset.preprocessing_pipeline.get_step("minmax")
+    return None
+
+
+def _ensure_numpy(array: Any) -> np.ndarray:
+    """Convert model outputs to a 1D numpy array."""
+    if hasattr(array, "detach"):
+        return array.detach().numpy().flatten()
+    return np.asarray(array).flatten()
+
+
+def _build_dataset(cfg: DictConfig) -> Any:
+    """Instantiate the configured dataset and fall back to legacy preprocessing."""
+    dataset = instantiate(cfg.dataset)
+    if hasattr(dataset, "train_dataloader"):
+        return dataset
+
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    return MethodDataset(dataset, preprocessing_pipeline)
+
+
 def search_counterfactuals(
     cfg: DictConfig,
-    dataset: DictConfig,
+    dataset: Any,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
@@ -125,26 +160,39 @@ def search_counterfactuals(
     disc_model.eval()
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
-    X_test_unscaled = dataset.feature_transformer.inverse_transform(dataset.X_test)
+    feature_transformer = _get_feature_transformer(dataset)
+    minmax_scaler = None
+    if feature_transformer is None:
+        minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
+        X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
+    else:
+        X_test_unscaled = feature_transformer.inverse_transform(dataset.X_test)
+    feature_columns = _feature_columns(dataset)
     data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1])
+        dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
     )
 
     def predict_fn(x):
-        x_scaled = dataset.feature_transformer.transform(x)
-        return disc_model.predict(x_scaled).detach().numpy().flatten()
+        x_array = x.values if isinstance(x, pd.DataFrame) else x
+        if feature_transformer is not None:
+            x_scaled = feature_transformer.transform(x_array)
+        else:
+            x_scaled = minmax_scaler._transform_array(x_array)
+        preds = disc_model.predict(x_scaled)
+        return _ensure_numpy(preds)
 
     logger.info("Filtering out target class data for counterfactual generation")
-    target_class = 1
+    target_class = getattr(cfg.counterfactuals_params, "target_class", 1)
     ys_pred = predict_fn(X_test_unscaled)
-    Xs = dataset.X_test[ys_pred != target_class]
-    X_test_unscaled = X_test_unscaled[ys_pred != target_class]
-    ys_orig = ys_pred[ys_pred != target_class]
+    mask = ys_pred != target_class
+    Xs_unscaled = X_test_unscaled[mask]
+    Xs = dataset.X_test[mask]
+    ys_orig = ys_pred[mask]
 
     ares_helper = AReS(
         predict_fn=predict_fn,
         dataset=dataset,
-        X=pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1]),
+        X=pd.DataFrame(Xs_unscaled, columns=feature_columns),
         dropped_features=[],
         n_bins=10,
         ordinal_features=[],
@@ -164,24 +212,11 @@ def search_counterfactuals(
     logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     time_start = time()
-    k_means = KMeans(n_clusters=10)
-    clusters_id = k_means.fit_predict(Xs)
-    Xs_cfs = np.empty_like(Xs)
-    for label in range(10):
-        logger.info("Creating counterfactual model")
-        cf_method = GLOBE_CE(
-            predict_fn=predict_fn,
-            dataset=dataset,
-            X=pd.DataFrame(X_test_unscaled[clusters_id == label], columns=dataset.features[:-1]),
-            bin_widths=bin_widths,
-        )
-
-        logger.info("Handling counterfactual generation")
-        Xs_cfs[clusters_id == label] = cf_method.explain()
-        Xs_cfs[clusters_id == label] = dataset.feature_transformer.transform(
-            Xs_cfs[clusters_id == label]
-        )
-
+    Xs_cfs = cf_method.explain()
+    if feature_transformer is not None:
+        Xs_cfs = feature_transformer.transform(Xs_cfs)
+    else:
+        Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
     ys_target = np.abs(ys_orig - 1)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
@@ -272,18 +307,16 @@ def main(cfg: DictConfig) -> None:
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-    logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset, shuffle=False)
-
+    logger.info("Initializing pipeline")
+    dataset = _build_dataset(cfg)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         logger.info("Processing fold %d", fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            logger.info("Relabeling dataset with discriminative model predictions")
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = _ensure_numpy(disc_model.predict(dataset.X_train))
+            dataset.y_test = _ensure_numpy(disc_model.predict(dataset.X_test))
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 

@@ -1,5 +1,10 @@
 import logging
 import os
+from typing import Any, Dict, List, Optional
+
+import matplotlib
+
+matplotlib.use("Agg")  # Use non-interactive backend
 from time import time
 from typing import Any, Dict, List, Optional
 
@@ -14,7 +19,6 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.local_methods.ppcef import PPCEF
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
-from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -129,7 +133,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
-    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
 
 
 def get_categorical_intervals(
