@@ -161,6 +161,7 @@ def search_counterfactuals(
         dataset=dataset,
         X=pd.DataFrame(Xs_unscaled, columns=dataset.features),
         bin_widths=bin_widths,
+        target_class=target_class,
     )
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -248,8 +249,8 @@ def main(cfg: DictConfig) -> None:
     file_dataset = instantiate(cfg.dataset)
     preprocessing_pipeline = PreprocessingPipeline(
         [
-            ("minmax", MinMaxScalingStep()),
             ("torch_dtype", TorchDataTypeStep()),
+            ("minmax", MinMaxScalingStep()),
         ]
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)

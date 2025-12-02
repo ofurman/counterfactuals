@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import matplotlib
 
@@ -16,13 +16,8 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.local_methods.ppcef import PPCEF
-from counterfactuals.datasets.method_dataset import MethodDataset
-from counterfactuals.dequantization.dequantizer import GroupDequantizer
-from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -41,7 +36,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the PPCEF method.
 
@@ -60,7 +55,6 @@ def search_counterfactuals(
         tuple: A tuple containing:
             - Xs_cfs (np.ndarray): Generated counterfactual examples
             - Xs (np.ndarray): Original examples used for counterfactual generation
-            - log_prob_threshold (float): Calculated log probability threshold
             - ys_orig (np.ndarray): Original labels
             - ys_target (np.ndarray): Target labels for counterfactuals
             - cf_search_time (float): Time taken for counterfactual search in seconds
@@ -137,7 +131,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
 
 
 def get_categorical_intervals(
@@ -240,67 +234,15 @@ def calculate_metrics(
 
 @hydra.main(config_path="./conf", config_name="ppcef_config", version_base="1.2")
 def main(cfg: DictConfig):
-    torch.manual_seed(0)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Initializing pipeline")
-
-    disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
-
-    logger.info("Loading dataset")
-    file_dataset = instantiate(cfg.dataset)
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
-    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
-        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
-
-        if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train)
-            dataset.y_test = disc_model.predict(dataset.X_test)
-
-        dequantizer.fit(dataset.X_train)
-        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
-
-        dataset.X_train = dequantizer.transform(
-            dataset.X_train
-        )  # dequantization for log prob threshold
-        dataset.X_test = dequantizer.transform(dataset.X_test)
-
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
-        )
-
-        Xs = dequantizer.inverse_transform(Xs)
-        gen_model = DequantizationWrapper(gen_model, dequantizer)
-
-        metrics = calculate_metrics(
-            gen_model=gen_model,
-            disc_model=disc_model,
-            Xs_cfs=Xs_cfs,
-            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-            categorical_features=dataset.categorical_features_indices,
-            continuous_features=dataset.numerical_features_indices,
-            X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
-            X_test=Xs,
-            y_test=ys_orig,
-            y_target=ys_target,
-            median_log_prob=log_prob_threshold,
-        )
-        logger.info(f"Metrics for fold {fold_n}: {metrics}")
-        df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics["cf_search_time"] = cf_search_time
-        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-        df_metrics.to_csv(
-            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
-        )
+    full_pipeline(
+        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
+    )
 
 
 if __name__ == "__main__":
