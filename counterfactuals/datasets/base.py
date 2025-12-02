@@ -204,6 +204,6 @@ class DatasetBase:
             feature_config=feature_config,
             target=cfg.get("target", "y"),
             target_mapping=cfg.get("target_mapping", {}),
-            samples_keep=cfg.get("samples_keep", 1000),
+            samples_keep=cfg.get("samples_keep", -1),
             initial_transforms=cfg.get("initial_transforms", []),
         )

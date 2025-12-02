@@ -255,6 +255,37 @@ class OneHotEncodingStep(InitialTransformStep):
         return None
 
 
+class ConvertToNumericStep(InitialTransformStep):
+    """Convert selected columns to numeric dtype."""
+
+    def __init__(self, columns: Optional[Sequence[str]] = None, errors: str = "raise"):
+        """Initialize conversion step.
+
+        Args:
+            columns: Optional list of column names to convert. Defaults to continuous
+                features from the dataset context.
+            errors: How to handle conversion errors ('raise', 'ignore', 'coerce').
+        """
+        self.columns = list(columns) if columns is not None else None
+        self.errors = errors
+
+    def fit(self, context: InitialTransformContext) -> "ConvertToNumericStep":
+        return self
+
+    def transform(self, context: InitialTransformContext) -> InitialTransformContext:
+        # By default, convert only continuous features to avoid altering categoricals.
+        target_cols = self.columns or list(context.continuous_features)
+        if not target_cols:
+            return context
+        missing = [col for col in target_cols if col not in context.data.columns]
+        if missing:
+            raise ValueError(f"Columns not found for ConvertToNumericStep: {missing}")
+
+        for col in target_cols:
+            context.data[col] = pd.to_numeric(context.data[col], errors=self.errors)
+        return context
+
+
 INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
     "dropna": DropNaStep,
     "drop_na": DropNaStep,
@@ -263,6 +294,8 @@ INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
     "downsample": DownsampleStep,
     "one_hot_encode": OneHotEncodingStep,
     "one_hot_encoding": OneHotEncodingStep,
+    "convert_to_numeric": ConvertToNumericStep,
+    "cast_to_numeric": ConvertToNumericStep,
 }
 
 
