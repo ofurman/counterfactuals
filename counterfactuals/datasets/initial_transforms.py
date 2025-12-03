@@ -294,7 +294,9 @@ class ConvertToNumericStep(InitialTransformStep):
             raise ValueError(f"Columns not found for ConvertToNumericStep: {missing}")
 
         for col in target_cols:
-            context.data[col] = pd.to_numeric(context.data[col], errors=self.errors)
+            context.data[col] = pd.to_numeric(
+                context.data[col], errors=self.errors
+            ).astype("float32")
         return context
 
 
