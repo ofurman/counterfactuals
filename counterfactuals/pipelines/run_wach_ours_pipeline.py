@@ -12,11 +12,8 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.local_methods.wach.wach_ours import WACH_OURS
-from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -112,7 +109,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactual deltas saved to %s", counterfactuals_path)
-    return Xs_cfs, Xs, ys_orig, ys_target, log_prob_threshold, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
 
 
 def calculate_metrics(
@@ -169,70 +166,15 @@ def calculate_metrics(
 
 @hydra.main(config_path="./conf", config_name="wach_ours_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
-    """WACH_OURS pipeline: generate and evaluate counterfactual deltas.
-
-    Runs a 5-fold CV routine: loads dataset, prepares models, performs CF search
-    using WACH_OURS on non-target-class samples, evaluates with ``evaluate_cf``,
-    and saves results locally.
-
-    Args:
-        cfg: Hydra configuration with dataset, model, and method parameters.
-    """
-    torch.manual_seed(0)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Loading dataset")
-    file_dataset = instantiate(cfg.dataset)
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
-        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        logger.info("Processing fold %d", fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
-
-        if cfg.experiment.relabel_with_disc_model:
-            logger.info("Relabeling dataset with discriminative model predictions")
-            dataset.y_train = disc_model.predict(dataset.X_train)
-            dataset.y_test = disc_model.predict(dataset.X_test)
-
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
-
-        (
-            Xs_cfs,
-            Xs,
-            ys_orig,
-            ys_target,
-            log_prob_threshold,
-            cf_search_time,
-        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
-
-        metrics = calculate_metrics(
-            gen_model=gen_model,
-            disc_model=disc_model,
-            Xs_cfs=Xs_cfs,
-            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-            categorical_features=dataset.categorical_features_indices,
-            continuous_features=dataset.numerical_features_indices,
-            X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
-            X_test=Xs,
-            y_test=ys_orig,
-            y_target=ys_target,
-            median_log_prob=log_prob_threshold,
-        )
-
-        logger.info("Metrics: %s", metrics)
-        df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics["cf_search_time"] = cf_search_time
-        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-        df_metrics.to_csv(
-            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
-        )
+    full_pipeline(
+        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
+    )
 
 
 if __name__ == "__main__":
