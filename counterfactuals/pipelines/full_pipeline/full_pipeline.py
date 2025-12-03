@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
@@ -43,8 +42,8 @@ def full_pipeline(
             logger,
         )
         dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
-        Xs_cfs, Xs, ys_orig, ys_target, cf_search_time = search_counterfactuals(
-            cfg, dataset, gen_model, disc_model, save_folder
+        Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
+            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 
         gen_model = DequantizationWrapper(gen_model, dequantizer)
@@ -53,7 +52,7 @@ def full_pipeline(
             gen_model=gen_model,
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
-            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
+            model_returned=model_returned,
             categorical_features=dataset.categorical_features_indices,
             continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,

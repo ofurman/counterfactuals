@@ -13,7 +13,7 @@ experiment:
 
 dataset:
   _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/law.yaml
+  config_path: config/datasets/heloc.yaml
 
 disc_model:
   train_model: false

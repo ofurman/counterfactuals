@@ -139,6 +139,8 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         deltas = []
         target_class = []
         original = []
+        x_cfs = []
+        loss_components_logging = {}
         original_class = []
         for xs_origin, contexts_origin in dataloader:
             xs_origin = xs_origin.to(self.device)
