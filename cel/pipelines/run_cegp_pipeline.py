@@ -97,21 +97,17 @@ def search_counterfactuals(
 
     time_start = time()
     explanation_result = cf_method.explain_dataloader(
-        dataloader=cf_dataloader,
-        target_class=target_class,
-        X_train=np.asarray(dataset.X_train),
+        dataloader=cf_dataloader, target_class=target_class
     )
     Xs_cfs = explanation_result.x_cfs
     Xs = explanation_result.x_origs
     ys_orig = explanation_result.y_origs
     ys_target = explanation_result.y_cf_targets
-    logs = explanation_result.logs or {}
-    model_returned = np.asarray(
-        logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool))
-    )
+    model_returned = explanation_result.logs["model_returned"]
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+    logger.info("Generated counterfactuals shape %s", Xs_cfs.shape)
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"

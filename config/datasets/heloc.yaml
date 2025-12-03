@@ -101,3 +101,12 @@ target: "RiskPerformance"
 target_mapping:
   "Bad": 0
   "Good": 1
+initial_transforms:
+  - name: reorder_columns
+  - name: dropna
+  - name: convert_to_numeric
+    params:
+      errors: coerce
+  - name: one_hot_encode
+    params:
+      drop_first: false
