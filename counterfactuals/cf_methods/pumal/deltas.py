@@ -189,31 +189,30 @@ class GCE(torch.nn.Module):
                     
         return modified_grad
 
-    def determinant_diversity_penalty(self, vectors):
-        """
-        Computes the determinant-based diversity penalty for a set of vectors.
-        Args:
-            vectors (torch.Tensor): Tensor of shape [6, 23] where each row is a vector.
+    def determinant_diversity_penalty(self):
+        vectors = self.d  # Shape: [n, d]
+        n = vectors.size(0)
 
-        Returns:
-            torch.Tensor: Penalty term encouraging diversity.
-        """
-        # Compute Gram matrix: G = V @ V.T
-        gram_matrix = torch.mm(vectors, vectors.T)  # Shape: [6, 6]
+        # Normalize vectors to unit length first
+        vectors_normalized = vectors / (vectors.norm(dim=1, keepdim=True) + 1e-8)
 
-        # Add small regularization for numerical stability (ensure positive semi-definite)
+        gram_matrix = torch.mm(vectors_normalized, vectors_normalized.T)
         epsilon = 1e-5
-        gram_matrix_regularized = gram_matrix + epsilon * torch.eye(
-            gram_matrix.size(0)
-        ).to(vectors.device)
+        gram_matrix_regularized = gram_matrix + epsilon * torch.eye(n).to(vectors.device)
 
-        # Compute the log-determinant of the Gram matrix
         log_det = torch.logdet(gram_matrix_regularized)
 
-        # The penalty term: Negative log-determinant (we want to maximize det)
-        penalty = -log_det
+        # For unit vectors: det is in (0, 1], so log_det is in (-inf, 0]
+        # Max diversity (orthogonal): log_det = 0, penalty = 0
+        # Min diversity (identical): log_det → -inf, penalty → inf
 
-        return penalty
+        # Use theoretical min based on epsilon regularization
+        min_log_det = n * torch.log(torch.tensor(epsilon))  # worst case
+
+        # Normalize: 0 = max diversity, 1 = min diversity
+        normalized = torch.clamp(-log_det / (-min_log_det), 0.0, 1.0)
+
+        return normalized
 
     def _init_from_kmeans(self, X, K):
         kmeans = KMeans(n_clusters=K, random_state=42).fit(X)
@@ -227,6 +226,11 @@ class GCE(torch.nn.Module):
     def _entropy_loss(self, prob_dist):
         prob_dist = torch.clamp(prob_dist, min=1e-9)
         row_wise_entropy = -torch.sum(prob_dist * torch.log(prob_dist), dim=1)
+
+        # Normalize to [0, 1]
+        n = prob_dist.shape[1]  # number of classes/dimensions
+        max_entropy = torch.log(torch.tensor(n, dtype=prob_dist.dtype))
+        normalized_entropy = row_wise_entropy / max_entropy
         return row_wise_entropy
 
     def forward(self):
@@ -240,13 +244,18 @@ class GCE(torch.nn.Module):
         s_col_prob = self.sparsemax(self.s).sum(axis=0) / self.sparsemax(self.s).sum()
         s_col_prob = s_col_prob.clamp(min=1e-9)
         col_wise_entropy = -torch.sum(s_col_prob * torch.log(s_col_prob))
-        return col_wise_entropy
+
+        # Normalize
+        n = s_col_prob.shape[0]  # number of columns
+        max_entropy = torch.log(torch.tensor(n, dtype=s_col_prob.dtype, device=s_col_prob.device))
+        normalized_col_wise_entropy = col_wise_entropy / max_entropy
+        return normalized_col_wise_entropy
 
     def loss(self, alpha_s, alpha_k, alpha_d):
         # return alpha_s * self.rows_entropy() + alpha_s * torch.norm(self.d, p=0, dim=1).sum() # + alpha_k * self.cols_entropy()
         return (
             alpha_s * self.rows_entropy()
-            + alpha_d * torch.relu(self.determinant_diversity_penalty(self.d))
+            + alpha_d * self.determinant_diversity_penalty()
             + alpha_k * self.cols_entropy()
         )
 

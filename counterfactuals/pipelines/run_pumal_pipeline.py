@@ -10,6 +10,7 @@ from neptune.utils import stringify_unsupported
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 import torch.utils
+from collections import defaultdict
 
 from counterfactuals.metrics.metrics import evaluate_cf_for_pumal
 from counterfactuals.cf_methods.pumal import PUMAL
@@ -57,7 +58,7 @@ def search_counterfactuals(
         disc_model=disc_model,
         disc_model_criterion=disc_model_criterion,
         not_actionable_features=dataset.not_actionable_features,
-        neptune_run=run,
+        neptune_run=None,
     )
 
     logger.info("Calculating log_prob_threshold")
@@ -106,7 +107,6 @@ def search_counterfactuals(
 
     Xs_cfs = Xs + delta().detach().numpy()
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    run["counterfactuals"].upload(counterfactuals_path)
     return Xs_cfs, Xs, log_prob_threshold, M, S, D, ys_orig, ys_target, cf_search_time
 
 
@@ -116,12 +116,7 @@ def main(cfg: DictConfig):
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Initializing Neptune run")
-    run = neptune.init_run(
-        mode="async" if cfg.neptune.enable else "offline",
-        project=cfg.neptune.project,
-        api_token=cfg.neptune.api_token,
-        tags=list(cfg.neptune.tags) if "tags" in cfg.neptune else None,
-    )
+    run = defaultdict(list)
 
     log_parameters(cfg, run)
 
@@ -166,15 +161,16 @@ def main(cfg: DictConfig):
             D_matrix=D.detach().numpy(),
             X_test_target=Xs,
         )
-        run[f"metrics/cf/fold_{fold_n}"] = stringify_unsupported(metrics)
         logger.info(f"Metrics:\n{stringify_unsupported(metrics)}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics["time"] = cf_search_time
         df_metrics.to_csv(
-            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}_"
+                                      f"p_{cfg.counterfactuals_params.alpha_plaus}_"
+                                      f"k_{cfg.counterfactuals_params.alpha_k}_"
+                                      f"s_{cfg.counterfactuals_params.alpha_s}.csv"), index=False
         )
-    run.stop()
 
 
 if __name__ == "__main__":

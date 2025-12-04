@@ -24,7 +24,7 @@ def supp(a, tol=1e-8):
     return np.where(abs(a) > tol)[0]
 
 
-def greedy_select_protos(K, candidate_indices, m, is_K_sparse=False):
+def greedy_select_protos(K, candidate_indices, m, is_K_sparse_output=False):
     # From https://github.com/BeenKim/MMD-critic/blob/master/mmd.py
     import sys
 

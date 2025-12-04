@@ -13,27 +13,7 @@ logging.basicConfig(
 
 def log_parameters(cfg: DictConfig, run: neptune.Run):
     # Log parameters using Hydra config
-    logger.info("Logging parameters")
-    run["parameters/experiment"] = cfg.experiment
-    run["parameters/dataset"] = cfg.dataset._target_.split(".")[-1]
-
-    if cfg.get("disc_model"):
-        run["parameters/disc_model/model_name"] = cfg.disc_model.model._target_.split(
-            "."
-        )[-1]
-        run["parameters/disc_model"] = stringify_unsupported(cfg.disc_model)
-
-    if cfg.get("gen_model"):
-        run["parameters/gen_model/model_name"] = cfg.gen_model.model._target_.split(
-            "."
-        )[-1]
-        run["parameters/gen_model"] = stringify_unsupported(cfg.gen_model)
-
-    run["parameters/counterfactuals"] = cfg.counterfactuals_params
-    run["parameters/counterfactuals/method_name"] = (
-        cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
-    )
-    run.wait()
+    logger.info("Fake Logging parameters")
 
 
 def set_model_paths(cfg: DictConfig, fold: str = None):

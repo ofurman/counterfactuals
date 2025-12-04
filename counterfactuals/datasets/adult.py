@@ -69,7 +69,7 @@ class AdultDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(sparse=False),
+                    OneHotEncoder(sparse_output=False),
                     self.categorical_columns,
                 ),
             ],

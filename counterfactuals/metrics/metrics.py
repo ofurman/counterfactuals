@@ -226,7 +226,7 @@ class CFMetrics:
             return np.nan
         X = torch.from_numpy(X).float()
         y = torch.from_numpy(y).float()
-        gen_log_probs = self.gen_model(X, y).detach().numpy()
+        gen_log_probs = self.gen_model.get_ll(X, y).detach().numpy()
         return gen_log_probs.mean()
 
     def lof_scores(self, cf: bool = True, n_neighbors: int = 20) -> float:

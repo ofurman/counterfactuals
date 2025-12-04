@@ -20,4 +20,10 @@ class MulticlassDiscLoss(torch.nn.modules.loss._Loss):
         p_target = torch.sum(input * target_mask, dim=1)
         p_max_non_target = torch.max(input * non_target_mask, dim=1).values
         loss = F.relu(p_max_non_target + self.eps - p_target)
+
+        # Normalize to [0, 1]
+        max_loss = 1.0 + self.eps
+        normalized_loss = loss / max_loss
+
+        return normalized_loss
         return loss

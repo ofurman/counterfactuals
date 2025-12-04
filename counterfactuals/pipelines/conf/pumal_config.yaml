@@ -8,7 +8,7 @@ hydra:
     max_batch_size: 1
 
 neptune:
-  enable: ture
+  enable: false
   project: "/GWCE"
   api_token: ${oc.env:NEPTUNE_API_TOKEN}
   tags: ["GCE"]
@@ -41,23 +41,23 @@ counterfactuals_params:
     # specific parameters besides standard ones should be passed here
     _target_: counterfactuals.cf_methods.PUMAL
     cf_method_type: "GCE"
-    K: 15
+    K: null
 
   disc_model_criterion:
     _target_: counterfactuals.losses.MulticlassDiscLoss
     eps: 0.01
     # _target_: counterfactuals.losses.BinaryDiscLoss
 
-  log_prob_quantile: 0.25
+  log_prob_quantile: 0.5
   origin_class: 0
   target_class: 1
-  epochs: 100_000
-  batch_size: 8096
+  epochs: 10000
+  batch_size: 11000
   lr: 0.01
-  patience: 500
+  patience: 100
   decrease_loss_patience: 1_000
   alpha_dist: 0.1
-  alpha_plaus: 10_000
+  alpha_plaus: 100_000
   alpha_class: 100_000
   alpha_s: 10_000
   alpha_k: 1_000

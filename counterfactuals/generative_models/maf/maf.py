@@ -50,7 +50,15 @@ class MaskedAutoregressiveFlow(BaseGenModel):
     def forward(self, x, context=None):
         if context is not None:
             context = context.view(-1, self.context_features)
-        return self.model.log_prob(inputs=x, context=context)
+        log_likelihood = self.model.log_prob(inputs=x, context=context)
+        bpd = log_likelihood * np.log2(np.exp(1)) / np.prod(x.shape[1:])
+        return bpd
+
+    def get_ll(self, x, context=None):
+        if context is not None:
+            context = context.view(-1, self.context_features)
+        log_likelihood = self.model.log_prob(inputs=x, context=context)
+        return log_likelihood
 
     def fit(
         self,
@@ -77,8 +85,8 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                 optimizer.zero_grad()
                 log_likelihood = self(inputs, labels)
                 nll = -log_likelihood
-                bpd = nll * np.log2(np.exp(1)) / np.prod(inputs.shape[1:])
-                loss = bpd.mean()
+                # bpd = nll * np.log2(np.exp(1)) / np.prod(inputs.shape[1:])
+                loss = nll.mean()
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
@@ -92,8 +100,8 @@ class MaskedAutoregressiveFlow(BaseGenModel):
                     labels = labels.type(torch.float32)
                     test_log_likelihood = self(inputs, labels)
                     nll = -test_log_likelihood
-                    bpd = nll * np.log2(np.exp(1)) / np.prod(inputs.shape[1:])
-                    loss = bpd.mean()
+                    # bpd = nll * np.log2(np.exp(1)) / np.prod(inputs.shape[1:])
+                    loss = nll.mean()
                     test_loss += loss.item()
             test_loss /= len(test_loader)
 
@@ -123,8 +131,10 @@ class MaskedAutoregressiveFlow(BaseGenModel):
         with torch.no_grad():
             for inputs, labels in dataloader:
                 labels = labels.type(torch.float32)
-                outputs = self(inputs, labels)
-                log_probs.append(outputs)
+                log_likelihood = self(inputs, labels)
+                # nll = log_likelihood
+                # bpd = nll * np.log2(np.exp(1)) / np.prod(inputs.shape[1:])
+                log_probs.append(log_likelihood)
         results = torch.concat(log_probs)
 
         assert len(dataloader.dataset) == len(results)

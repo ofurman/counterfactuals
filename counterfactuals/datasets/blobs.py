@@ -56,7 +56,7 @@ class BlobsDataset(AbstractDataset):
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 
-        self.y_transformer = OneHotEncoder(sparse=False)
+        self.y_transformer = OneHotEncoder(sparse_output=False)
         y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
         y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
 

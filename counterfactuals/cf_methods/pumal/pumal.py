@@ -175,35 +175,42 @@ class PUMAL(BaseCounterfactual):
         :param log_prob_threshold: threshold for the log probability
         :return: dict with loss and additional components to log.
         """
-        dist = alpha_dist * torch.linalg.vector_norm(delta(), dim=1, ord=1)
+        dist = torch.linalg.vector_norm(delta(), dim=1, ord=1)
 
         disc_logits = self.disc_model(x_origin + delta())
         disc_logits = (
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
-        # context_target = (
-        #     context_target.reshape(-1).float()
-        #     if context_target.shape[0] == 1
-        #     else context_target.long()
-        # )
-        loss_disc = alpha_class * self.disc_model_criterion(disc_logits, context_target)
-
+        validity_loss = self.disc_model_criterion(disc_logits, context_target)
+        max_violation = abs(log_prob_threshold) * 2  # or tune based on your data
         p_x_param_c_target = self.gen_model(
             x_origin + delta(), context=context_target.float()
-        ).clamp(max=10**5)
-        max_inner = alpha_plaus * torch.nn.functional.relu(
+        ).clamp(max=10 ** 5)
+        plausibility_loss = torch.nn.functional.relu(
             log_prob_threshold - p_x_param_c_target
-        )
+        ) / max_violation
+        sparse_loss = delta.rows_entropy()
+        k_loss = delta.cols_entropy()
+        d_loss = delta.determinant_diversity_penalty()
 
-        delta_loss = delta.loss(alpha_s, alpha_k, alpha_d)
-        loss = alpha_dist * dist + loss_disc + max_inner + delta_loss
+        # delta_loss = delta.loss(alpha_s, alpha_k, alpha_d)
+        loss = (
+                alpha_dist * dist
+                + alpha_class * validity_loss
+                + alpha_plaus * plausibility_loss
+                + alpha_s * sparse_loss
+                + alpha_k * k_loss
+                + alpha_d * d_loss
+        )
 
         return {
             "loss": loss,
             "dist": dist,
-            "max_inner": max_inner,
-            "loss_disc": loss_disc,
-            "delta_loss": delta_loss,
+            "p_loss": plausibility_loss,
+            "v_loss": validity_loss,
+            "s_loss": sparse_loss,
+            "k_loss": k_loss,
+            "d_loss": d_loss,
         }
 
     def explain(
@@ -297,7 +304,7 @@ class PUMAL(BaseCounterfactual):
                     alpha_dist=alpha_dist,
                     alpha_plaus=alpha_plaus,
                     alpha_class=alpha_class,
-                    alpha_s=alpha_s,
+                    alpha_s=0 if epoch < 100 else alpha_s,
                     alpha_k=alpha_k,
                     alpha_d=alpha_d,
                     log_prob_threshold=log_prob_threshold,
@@ -320,7 +327,7 @@ class PUMAL(BaseCounterfactual):
                     )
                 )
                 # Early stopping handling
-                if (loss < (min_loss - patience_eps)) or (epoch < 1000):
+                if (loss < (min_loss - patience_eps)) or (epoch < 300):
                     min_loss = loss
                     patience_counter = 0
                 else:
