@@ -4,6 +4,8 @@ from .counterfactual_base import BaseCounterfactualMethod, ExplanationResult
 from .global_counterfactual_mixin import GlobalCounterfactualMixin
 from .global_methods import GLOBE_CE, AReS
 from .group_counterfactual_mixin import GroupCounterfactualMixin
+from .group_methods import GLANCE, RPPCEF
+from .group_methods.tcrex import TCREx
 from .local_counterfactual_mixin import LocalCounterfactualMixin
 
 # Import from subpackages
@@ -42,4 +44,5 @@ __all__ = [
     # Group methods
     "RPPCEF",
     "GLANCE",
+    "TCREx",
 ]

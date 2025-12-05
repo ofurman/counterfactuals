@@ -11,23 +11,8 @@ from counterfactuals.cf_methods.counterfactual_base import (
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
+from counterfactuals.cf_methods.tf_compat import ensure_tf_session
 from counterfactuals.models.pytorch_base import PytorchBase
-
-
-def _ensure_tf_session() -> tf.compat.v1.Session:
-    """Return a TF v1 session and patch keras backend when it lacks get_session (Keras 3+)."""
-    backend = tf.compat.v1.keras.backend
-    get_session = getattr(backend, "get_session", None)
-    if callable(get_session):
-        return get_session()
-
-    session: tf.compat.v1.Session | None = getattr(_ensure_tf_session, "_session", None)
-    if session is None:
-        session = tf.compat.v1.Session()
-        setattr(_ensure_tf_session, "_session", session)
-
-    setattr(backend, "get_session", lambda: session)
-    return session
 
 
 class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
@@ -54,7 +39,7 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
         super().__init__(disc_model=disc_model, device=device)
 
         tf.compat.v1.disable_eager_execution()
-        session = _ensure_tf_session()
+        session = ensure_tf_session()
         predict_proba = lambda x: disc_model.predict_proba(x)  # noqa: E731
         num_features = disc_model.num_inputs
         shape = (1, num_features)

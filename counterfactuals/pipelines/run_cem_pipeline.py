@@ -7,15 +7,17 @@ import hydra
 import numpy as np
 import pandas as pd
 import torch
-import torch.utils
-from hydra.utils import instantiate
 from omegaconf import DictConfig
+from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.cf_methods.cem.cem import CEM_CF
+from counterfactuals.cf_methods.local_methods.cem.cem import CEM_CF
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -29,13 +31,12 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the CEM method.
 
     Filters the test set to exclude the target class, configures the CEM counterfactual
-    generator, computes a log-probability threshold using the generative model, and
-    generates counterfactuals for the selected instances.
+    generator, and produces counterfactuals for the selected instances.
 
     Args:
         cfg: Hydra configuration with experiment parameters
@@ -45,8 +46,15 @@ def search_counterfactuals(
         save_folder: Directory path for saving generated counterfactuals
 
     Returns:
-        Tuple containing (Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned).
+        Tuple containing:
+            - Xs_cfs: Generated counterfactuals.
+            - Xs: Original instances used for counterfactual search.
+            - ys_orig: Original labels for the selected instances.
+            - ys_target: Target labels for the counterfactuals.
+            - model_returned: Boolean mask indicating successful generations.
+            - cf_search_time: Duration of the counterfactual search.
     """
+    _ = gen_model  # Required by pipeline interface, not used directly in CEM search.
     cf_method_name = "CEM"
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -67,19 +75,9 @@ def search_counterfactuals(
         learning_rate_init=cfg.counterfactuals_params.learning_rate_init,
     )
 
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
-
     logger.info("Handling counterfactual generation")
-    cf_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(
+    cf_dataloader = DataLoader(
+        TensorDataset(
             torch.tensor(X_test_origin).float(),
             torch.tensor(y_test_origin).float(),
         ),
@@ -88,12 +86,22 @@ def search_counterfactuals(
     )
 
     time_start = time()
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
-        dataloader=cf_dataloader, target_class=target_class
+    explanation_result = cf_method.explain_dataloader(
+        dataloader=cf_dataloader,
+        target_class=target_class,
     )
 
-    cf_search_time = np.mean(time() - time_start)
+    cf_search_time = time() - time_start
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+
+    Xs_cfs = np.asarray(explanation_result.x_cfs)
+    Xs = np.asarray(explanation_result.x_origs)
+    ys_orig = np.asarray(explanation_result.y_origs)
+    ys_target = np.asarray(explanation_result.y_cf_targets)
+    logs = explanation_result.logs or {}
+    model_returned = np.asarray(
+        logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool))
+    )
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
@@ -101,7 +109,7 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def calculate_metrics(

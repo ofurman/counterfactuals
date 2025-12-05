@@ -1,7 +1,7 @@
 import logging
 import os
 from time import time
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
 import matplotlib
@@ -10,15 +10,17 @@ matplotlib.use("Agg")  # Set non-interactive backend to prevent Qt issues
 import numpy as np
 import pandas as pd
 import torch
-import torch.utils
-from hydra.utils import instantiate
 from omegaconf import DictConfig
+from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.cf_methods.artelt.artelt import Artelt
+from counterfactuals.cf_methods.local_methods.artelt.artelt import Artelt
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -32,7 +34,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactual explanations using the Artelt method.
 
@@ -50,13 +52,14 @@ def search_counterfactuals(
 
     Returns:
         Tuple containing:
-            - Xs_cfs: Generated counterfactual explanations
-            - Xs: Original test instances
-            - log_prob_threshold: Computed log probability threshold
-            - ys_orig: Original labels for test instances
-            - ys_target: Target labels for counterfactuals
-            - model_returned: Boolean array indicating successful generation
+            - Xs_cfs: Generated counterfactual explanations.
+            - Xs: Original test instances.
+            - ys_orig: Original labels for test instances.
+            - ys_target: Target labels for counterfactuals.
+            - model_returned: Boolean array indicating successful generation.
+            - cf_search_time: Duration of the counterfactual search.
     """
+    _ = gen_model  # Required by pipeline interface; Artelt does not use it directly.
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -68,19 +71,9 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     cf_method: Artelt = Artelt(disc_model=disc_model)
 
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
-
     logger.info("Handling counterfactual generation")
-    cf_dataloader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(
+    cf_dataloader = DataLoader(
+        TensorDataset(
             torch.tensor(X_test_origin).float(),
             torch.tensor(y_test_origin).float(),
         ),
@@ -88,13 +81,20 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
-    cf_method.fit_density_estimators(X_train=dataset.X_train, y_train=dataset.y_train)
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
-        dataloader=cf_dataloader, X_train=dataset.X_train, y_train=dataset.y_train
+    cf_method.fit_density_estimators(
+        X_train=np.asarray(dataset.X_train),
+        y_train=np.asarray(dataset.y_train).reshape(-1),
     )
+    explanation_result = cf_method.explain_dataloader(dataloader=cf_dataloader)
 
-    cf_search_time = np.mean(time() - time_start)
+    cf_search_time = time() - time_start
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+
+    Xs_cfs = np.atleast_2d(np.asarray(explanation_result.x_cfs))
+    Xs = np.atleast_2d(np.asarray(explanation_result.x_origs))
+    ys_orig = np.asarray(explanation_result.y_origs)
+    ys_target = np.asarray(explanation_result.y_cf_targets)
+    model_returned = ~np.isnan(Xs_cfs).any(axis=1)
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
@@ -102,7 +102,7 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def calculate_metrics(
@@ -110,14 +110,14 @@ def calculate_metrics(
     disc_model: torch.nn.Module,
     Xs_cfs: np.ndarray,
     model_returned: np.ndarray,
-    categorical_features: list,
-    continuous_features: list,
+    categorical_features: List[int],
+    continuous_features: List[int],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    y_target: np.ndarray = None,
+    y_target: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """
     Calculate comprehensive metrics for generated counterfactual explanations.
