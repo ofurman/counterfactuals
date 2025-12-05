@@ -92,7 +92,6 @@ def search_counterfactuals(
     explanation_result = cf_method.explain_dataloader(
         dataloader=cf_dataloader,
         target_class=target_class,
-        X_train=np.asarray(dataset.X_train),
     )
 
     cf_search_time = time() - time_start

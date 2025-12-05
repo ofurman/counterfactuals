@@ -1,0 +1,53 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+neptune:
+  enable: false
+  project: "/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["TCREx"]
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/moons.yaml
+
+disc_model:
+  train_model: false
+  epochs: 5000
+  batch_size: 128
+  patience: 300
+  noise_lvl: 0.00
+  lr: 0.001
+
+gen_model:
+  train_model: false
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    # specific parameters besides standard ones should be passed here
+    _target_: counterfactuals.cf_methods.TCREx
+  # TCREx specific parameters
+  tau: 0.9  # Accuracy threshold for valid rules
+  rho: 0.02  # Feasibility threshold for valid rules
+  surrogate_tree_params:
+    max_leaf_nodes: 8
+    random_state: 0
+  log_prob_quantile: 0.25
+  origin_class: 0
+  target_class: 1
+  batch_size: 4096 
