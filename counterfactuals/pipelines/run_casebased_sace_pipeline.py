@@ -4,16 +4,15 @@ from time import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
-import matplotlib
-
-matplotlib.use("Agg")  # Set non-interactive backend to prevent Qt issues
 import numpy as np
 import pandas as pd
 import torch
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.cf_methods.local_methods.artelt.artelt import Artelt
+from counterfactuals.cf_methods.local_methods.casebased_sace.casebased_sace import (
+    CaseBasedSACE,
+)
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
 from counterfactuals.preprocessing import (
@@ -36,30 +35,30 @@ def search_counterfactuals(
     save_folder: str,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
-    Generate counterfactual explanations using the Artelt method.
+    Generate counterfactual explanations using the Case-Based SACE method.
 
-    This function implements the Artelt counterfactual generation algorithm, which uses
-    density estimators to generate valid counterfactuals. It filters the test data to
-    exclude the target class, fits density estimators on the training data, and then
-    generates counterfactuals for the filtered test instances.
+    This function prepares the data by filtering out the target class, configures the
+    CaseBasedSACE counterfactual generator with dataset feature metadata, computes a
+    log-probability threshold from the generative model for plausibility, and then
+    generates counterfactuals for the selected instances.
 
     Args:
         cfg: Hydra configuration containing experiment parameters
-        dataset: Dataset object containing training and test data
-        gen_model: Trained generative model for density estimation
-        disc_model: Trained discriminative model for classification
-        save_folder: Directory path where results will be saved
+        dataset: Dataset object with train/test data and feature metadata
+        gen_model: Trained generative model used to compute log-probability threshold
+        disc_model: Trained discriminative model used by the CF method
+        save_folder: Directory where generated counterfactuals CSV will be saved
 
     Returns:
         Tuple containing:
-            - Xs_cfs: Generated counterfactual explanations.
-            - Xs: Original test instances.
-            - ys_orig: Original labels for test instances.
+            - Xs_cfs: Generated counterfactual examples.
+            - Xs: Original instances used for CF generation.
+            - ys_orig: Original predicted labels.
             - ys_target: Target labels for counterfactuals.
-            - model_returned: Boolean array indicating successful generation.
+            - model_returned: Boolean mask of successful generations.
             - cf_search_time: Duration of the counterfactual search.
     """
-    _ = gen_model  # Required by pipeline interface; Artelt does not use it directly.
+    _ = gen_model  # Required by pipeline interface; CaseBasedSACE does not use it directly.
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -69,7 +68,14 @@ def search_counterfactuals(
     y_test_origin = dataset.y_test[dataset.y_test != target_class]
 
     logger.info("Creating counterfactual model")
-    cf_method: Artelt = Artelt(disc_model=disc_model)
+    cf_method = CaseBasedSACE(
+        disc_model=disc_model,
+        variable_features=dataset.numerical_features_indices
+        + dataset.categorical_features_indices,
+        continuous_features=dataset.numerical_features_indices,
+        categorical_features_lists=dataset.categorical_features_lists,
+        **cfg.counterfactuals_params.cf_method,
+    )
 
     logger.info("Handling counterfactual generation")
     cf_dataloader = DataLoader(
@@ -81,27 +87,26 @@ def search_counterfactuals(
         shuffle=False,
     )
     time_start = time()
-    cf_method.fit_density_estimators(
+    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
+        dataloader=cf_dataloader,
         X_train=np.asarray(dataset.X_train),
-        y_train=np.asarray(dataset.y_train).reshape(-1),
+        y_train=np.asarray(dataset.y_train),
     )
-    explanation_result = cf_method.explain_dataloader(dataloader=cf_dataloader)
 
     cf_search_time = time() - time_start
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
-
-    Xs_cfs = np.atleast_2d(np.asarray(explanation_result.x_cfs))
-    Xs = np.atleast_2d(np.asarray(explanation_result.x_origs))
-    ys_orig = np.asarray(explanation_result.y_origs)
-    ys_target = np.asarray(explanation_result.y_cf_targets)
-    model_returned = ~np.isnan(Xs_cfs).any(axis=1)
-
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
-    pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-    logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
+    Xs_cfs = np.asarray(Xs_cfs)
+    Xs = np.asarray(Xs)
+    ys_orig = np.asarray(ys_orig)
+    ys_target = np.asarray(ys_target)
+    model_returned = np.asarray(model_returned).astype(bool)
+
+    pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    logger.info("Counterfactuals saved to %s", counterfactuals_path)
     return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
@@ -120,28 +125,27 @@ def calculate_metrics(
     y_target: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """
-    Calculate comprehensive metrics for generated counterfactual explanations.
+    Calculate evaluation metrics for generated counterfactual explanations.
 
-    This function evaluates the quality of counterfactual explanations using various
-    metrics including validity, coverage, proximity, diversity, and density-based
-    plausibility measures.
+    Uses the provided generative and discriminative models to evaluate validity,
+    plausibility, proximity, and diversity metrics on the generated counterfactuals.
 
     Args:
-        gen_model: Trained generative model used for density estimation
-        disc_model: Trained discriminative model used for classification
-        Xs_cfs: Generated counterfactual explanations
-        model_returned: Boolean array indicating successful generation
-        categorical_features: List of categorical feature indices
-        continuous_features: List of continuous feature indices
-        X_train: Training data features
-        y_train: Training data labels
-        X_test: Test data features (original instances)
-        y_test: Test data labels (original labels)
-        median_log_prob: Median log probability threshold for plausibility
-        y_target: Target labels for counterfactuals (optional)
+        gen_model: Trained generative model for plausibility computations
+        disc_model: Trained discriminative model for validity computations
+        Xs_cfs: Generated counterfactual examples
+        model_returned: Boolean mask for successful generations
+        categorical_features: Indices of categorical features
+        continuous_features: Indices of continuous features
+        X_train: Training features
+        y_train: Training labels
+        X_test: Original instances used for CFs
+        y_test: Original labels
+        median_log_prob: Plausibility threshold (median log-probability)
+        y_target: Optional target labels for CFs
 
     Returns:
-        Dictionary containing computed metrics for counterfactual quality evaluation
+        Dictionary containing computed evaluation metrics.
     """
     logger.info("Calculating metrics")
     metrics = evaluate_cf(
@@ -158,11 +162,13 @@ def calculate_metrics(
         median_log_prob=median_log_prob,
         y_target=y_target,
     )
-    logger.info(f"Metrics calculated: {list(metrics.keys())}")
+    logger.info(f"Metrics:\n{metrics}")
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="artelt_config", version_base="1.2")
+@hydra.main(
+    config_path="./conf", config_name="casebased_sace_config", version_base="1.2"
+)
 def main(cfg: DictConfig) -> None:
     preprocessing_pipeline = PreprocessingPipeline(
         [

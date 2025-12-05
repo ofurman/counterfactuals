@@ -16,31 +16,23 @@ dataset:
   config_path: config/datasets/blobs.yaml
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: true
+  train_model: false
   batch_size: 1024
   epochs: 2000
-  patience: 100
+  patience: 50
   lr: 0.003
   noise_lvl: 0.02
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.CEM.CEM_CF
-  # CEM specific parameters
-  mode: "PN"  # 'PN' (pertinent negative) or 'PP' (pertinent positive)
-  kappa: 0.2
-  beta: 0.1
-  c_init: 10.0
-  c_steps: 5
-  max_iterations: 200
-  learning_rate_init: 0.01
+    _target_: counterfactuals.cf_methods.cet.CounterfactualExplanationTree
   
   # General parameters
   target_class: 0
