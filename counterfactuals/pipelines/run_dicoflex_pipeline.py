@@ -184,6 +184,238 @@ def compute_feature_bounds(data: np.ndarray, padding: float = 0.05) -> List[tupl
     return bounds
 
 
+def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int):
+    logger.info("Running DiCoFlex pipeline for fold %s", fold_idx)
+    disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_idx)
+    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+    if cfg.experiment.relabel_with_disc_model:
+        dataset.y_train = disc_model.predict(dataset.X_train)
+        dataset.y_test = disc_model.predict(dataset.X_test)
+
+    masks = build_masks(dataset, cfg.counterfactuals_params)
+    (
+        train_loader,
+        val_loader,
+        class_to_index,
+        mask_vectors,
+        context_dim,
+    ) = create_dicoflex_dataloaders(
+        dataset.X_train,
+        dataset.y_train,
+        masks=masks,
+        p_values=list(cfg.counterfactuals_params.p_values),
+        n_neighbors=cfg.counterfactuals_params.n_neighbors,
+        noise_level=cfg.counterfactuals_params.noise_level,
+        factual_batch_size=cfg.counterfactuals_params.train_batch_factuals,
+        val_ratio=cfg.counterfactuals_params.val_ratio,
+        seed=cfg.experiment.seed,
+        numerical_indices=dataset.numerical_features_indices,
+        categorical_indices=dataset.categorical_features_indices,
+    )
+    vis_cfg = cfg.get("visualization")
+    if vis_cfg and vis_cfg.get("enable_training_batch", False):
+        try:
+            batch_cf, batch_context = next(iter(train_loader))
+        except StopIteration:
+            logger.warning("No batches available for visualization.")
+        else:
+            flat_cf = batch_cf.reshape(-1, batch_cf.shape[-1])
+            flat_context = batch_context.reshape(-1, batch_context.shape[-1])
+            visualize_training_batch(
+                batch_cf=flat_cf.cpu(),
+                batch_context=flat_context.cpu(),
+                feature_names=dataset.features,
+                save_path=Path(save_folder) / "training_batch_neighbors.png",
+                max_points=vis_cfg.get("training_batch_max_points", 200),
+                dataset_points=dataset.X_train[:, :2],
+            )
+    gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
+    if cfg.gen_model.train_model:
+        train_dicoflex_generator(
+            gen_model,
+            train_loader,
+            val_loader,
+            cfg,
+            gen_model_path,
+            device,
+        )
+    else:
+        gen_model.load(gen_model_path)
+
+    full_loader = get_full_training_loader(
+        train_loader, cfg.counterfactuals_params.train_batch_factuals
+    )
+    log_prob_threshold = compute_log_prob_threshold(
+        gen_model,
+        full_loader,
+        cfg.counterfactuals_params.log_prob_quantile,
+        device,
+    )
+
+    params = DiCoFlexParams(
+        mask_index=cfg.counterfactuals_params.inference_mask_index,
+        p_value=cfg.counterfactuals_params.inference_p_value,
+        num_counterfactuals=cfg.counterfactuals_params.num_counterfactuals,
+        target_class=cfg.counterfactuals_params.target_class,
+        sampling_batch_size=cfg.counterfactuals_params.sampling_batch_size,
+        cf_samples_per_factual=cfg.counterfactuals_params.cf_samples_per_factual,
+    )
+    mask_vector = mask_vectors[params.mask_index]
+    cf_method = DiCoFlex(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        class_to_index=class_to_index,
+        mask_vectors=mask_vectors,
+        params=params,
+        device=device,
+    )
+
+    target_class = cfg.counterfactuals_params.target_class
+    test_mask = dataset.y_test != target_class
+    if not np.any(test_mask):
+        logger.warning("All test samples already belong to the target class.")
+        return
+    filtered_X_test = dataset.X_test[test_mask]
+    filtered_y_test = dataset.y_test[test_mask]
+    cf_loader = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(
+            torch.from_numpy(filtered_X_test).float(),
+            torch.from_numpy(filtered_y_test).float(),
+        ),
+        batch_size=cfg.counterfactuals_params.sampling_batch_size,
+        shuffle=False,
+    )
+    start_time = time()
+    explanation_result = cf_method.explain_dataloader(
+        cf_loader,
+        epochs=0,
+        lr=0.0,
+    )
+    cf_time = time() - start_time
+    explanation_result.x_cfs = np.ascontiguousarray(
+        explanation_result.x_cfs.astype(np.float32, copy=False)
+    )
+    explanation_result.x_origs = np.ascontiguousarray(
+        explanation_result.x_origs.astype(np.float32, copy=False)
+    )
+    cf_group_ids = (
+        None
+        if explanation_result.cf_group_ids is None
+        else np.asarray(explanation_result.cf_group_ids, dtype=int)
+    )
+    model_returned_mask = np.array(
+        explanation_result.logs.get("model_returned_mask", []), dtype=bool
+    )
+    if model_returned_mask.size == 0:
+        model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
+
+    # Replace NaN rows (where counterfactuals couldn't be found) with original factuals
+    x_cfs_cleaned = explanation_result.x_cfs.copy()
+    nan_rows = np.any(np.isnan(x_cfs_cleaned), axis=1)
+    if np.any(nan_rows):
+        logger.info(
+            "Replacing %d rows with NaN (failed counterfactuals) with original factuals",
+            np.sum(nan_rows),
+        )
+        x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
+
+    mask_vector = mask_vectors[params.mask_index]
+    cf_contexts = build_context_matrix(
+        factual_points=explanation_result.x_origs,
+        labels=explanation_result.y_cf_targets,
+        mask_vector=mask_vector,
+        p_value=params.p_value,
+        class_to_index=class_to_index,
+    )
+    test_contexts = build_context_matrix(
+        factual_points=explanation_result.x_origs,
+        labels=explanation_result.y_origs,
+        mask_vector=mask_vector,
+        p_value=params.p_value,
+        class_to_index=class_to_index,
+    )
+    context_lookup = {
+        get_numpy_pointer(x_cfs_cleaned): cf_contexts,
+        get_numpy_pointer(explanation_result.x_origs): test_contexts,
+    }
+    metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
+        base_model=gen_model,
+        context_lookup=context_lookup,
+    )
+    if vis_cfg and vis_cfg.get("enable_cf_scatter", False):
+        try:
+            visualize_counterfactual_samples(
+                factual_points=explanation_result.x_origs[:, :2],
+                counterfactual_points=x_cfs_cleaned[:, :2],
+                feature_names=dataset.features,
+                save_path=Path(save_folder) / "counterfactuals_scatter.png",
+                dataset_points=dataset.X_train[:, :2],
+                max_points=vis_cfg.get("cf_scatter_max_points", 200),
+            )
+        except ValueError as exc:
+            logger.info("Skipping counterfactual scatter plot: %s", exc)
+    if vis_cfg and vis_cfg.get("enable_flow_contour", False):
+        try:
+            bounds = compute_feature_bounds(
+                dataset.X_train, vis_cfg.get("contour_padding", 0.05)
+            )
+            factual_idx = min(
+                vis_cfg.get("contour_factual_index", 0),
+                filtered_X_test.shape[0] - 1,
+            )
+            factual_point = filtered_X_test[factual_idx]
+            visualize_flow_contours(
+                gen_model=gen_model,
+                factual_point=factual_point,
+                target_label=target_class,
+                mask_vector=mask_vector,
+                p_value=params.p_value,
+                class_to_index=class_to_index,
+                feature_bounds=bounds,
+                save_path=Path(save_folder) / "flow_logprob_contour.png",
+                feature_names=dataset.features,
+                grid_size=vis_cfg.get("contour_grid_size", 200),
+                device=device,
+                dataset_points=dataset.X_train[:, :2],
+            )
+        except ValueError as exc:
+            logger.info("Skipping flow contour plot: %s", exc)
+
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    cf_path = os.path.join(
+        save_folder,
+        f"counterfactuals_DiCoFlex_{disc_model_name}.csv",
+    )
+
+    cf_original_space = dataset.inverse_transform(x_cfs_cleaned)
+    pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
+    logger.info("Saved counterfactuals to %s", cf_path)
+
+    metrics = evaluate_cf(
+        gen_model=metrics_gen_model,
+        disc_model=disc_model,
+        X_cf=x_cfs_cleaned,
+        model_returned=model_returned_mask,
+        categorical_features=dataset.categorical_features_indices,
+        continuous_features=dataset.numerical_features_indices,
+        X_train=dataset.X_train,
+        y_train=dataset.y_train,
+        X_test=explanation_result.x_origs,
+        y_test=explanation_result.y_origs,
+        median_log_prob=log_prob_threshold,
+        y_target=explanation_result.y_cf_targets,
+        cf_group_ids=cf_group_ids,
+        metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
+    )
+    logger.info(f"Metrics:\n{metrics}")
+
+    df_metrics = pd.DataFrame(metrics, index=[0])
+    df_metrics["cf_search_time"] = cf_time
+    metrics_path = os.path.join(save_folder, "cf_metrics_DiCoFlex.csv")
+    df_metrics.to_csv(metrics_path, index=False)
+    logger.info("Saved metrics to %s", metrics_path)
+
+
 @hydra.main(config_path="./conf", config_name="dicoflex_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(cfg.experiment.seed)
@@ -199,242 +431,8 @@ def main(cfg: DictConfig):
         ]
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-
-    use_cv = cfg.experiment.get("cv_folds", 0) and cfg.experiment.cv_folds > 1
-    fold_iterator = dataset.get_cv_splits(cfg.experiment.cv_folds) if use_cv else [None]
-
-    for fold_idx, _ in enumerate(fold_iterator):
-        logger.info("Running DiCoFlex pipeline for fold %s", fold_idx)
-        disc_model_path, gen_model_path, save_folder = set_model_paths(
-            cfg, fold=fold_idx if use_cv else None
-        )
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
-        if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train)
-            dataset.y_test = disc_model.predict(dataset.X_test)
-
-        masks = build_masks(dataset, cfg.counterfactuals_params)
-        (
-            train_loader,
-            val_loader,
-            class_to_index,
-            mask_vectors,
-            context_dim,
-        ) = create_dicoflex_dataloaders(
-            dataset.X_train,
-            dataset.y_train,
-            masks=masks,
-            p_values=list(cfg.counterfactuals_params.p_values),
-            n_neighbors=cfg.counterfactuals_params.n_neighbors,
-            noise_level=cfg.counterfactuals_params.noise_level,
-            factual_batch_size=cfg.counterfactuals_params.train_batch_factuals,
-            val_ratio=cfg.counterfactuals_params.val_ratio,
-            seed=cfg.experiment.seed,
-            numerical_indices=dataset.numerical_features_indices,
-            categorical_indices=dataset.categorical_features_indices,
-        )
-        vis_cfg = cfg.get("visualization")
-        if vis_cfg and vis_cfg.get("enable_training_batch", False):
-            try:
-                batch_cf, batch_context = next(iter(train_loader))
-            except StopIteration:
-                logger.warning("No batches available for visualization.")
-            else:
-                flat_cf = batch_cf.reshape(-1, batch_cf.shape[-1])
-                flat_context = batch_context.reshape(-1, batch_context.shape[-1])
-                visualize_training_batch(
-                    batch_cf=flat_cf.cpu(),
-                    batch_context=flat_context.cpu(),
-                    feature_names=dataset.features,
-                    save_path=Path(save_folder) / "training_batch_neighbors.png",
-                    max_points=vis_cfg.get("training_batch_max_points", 200),
-                    dataset_points=dataset.X_train[:, :2],
-                )
-        gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
-        if cfg.gen_model.train_model:
-            train_dicoflex_generator(
-                gen_model,
-                train_loader,
-                val_loader,
-                cfg,
-                gen_model_path,
-                device,
-            )
-        else:
-            gen_model.load(gen_model_path)
-
-        full_loader = get_full_training_loader(
-            train_loader, cfg.counterfactuals_params.train_batch_factuals
-        )
-        log_prob_threshold = compute_log_prob_threshold(
-            gen_model,
-            full_loader,
-            cfg.counterfactuals_params.log_prob_quantile,
-            device,
-        )
-
-        params = DiCoFlexParams(
-            mask_index=cfg.counterfactuals_params.inference_mask_index,
-            p_value=cfg.counterfactuals_params.inference_p_value,
-            num_counterfactuals=cfg.counterfactuals_params.num_counterfactuals,
-            target_class=cfg.counterfactuals_params.target_class,
-            sampling_batch_size=cfg.counterfactuals_params.sampling_batch_size,
-            cf_samples_per_factual=cfg.counterfactuals_params.cf_samples_per_factual,
-        )
-        mask_vector = mask_vectors[params.mask_index]
-        cf_method = DiCoFlex(
-            gen_model=gen_model,
-            disc_model=disc_model,
-            class_to_index=class_to_index,
-            mask_vectors=mask_vectors,
-            params=params,
-            device=device,
-        )
-
-        target_class = cfg.counterfactuals_params.target_class
-        test_mask = dataset.y_test != target_class
-        if not np.any(test_mask):
-            logger.warning("All test samples already belong to the target class.")
-            continue
-        filtered_X_test = dataset.X_test[test_mask]
-        filtered_y_test = dataset.y_test[test_mask]
-        cf_loader = torch.utils.data.DataLoader(
-            torch.utils.data.TensorDataset(
-                torch.from_numpy(filtered_X_test).float(),
-                torch.from_numpy(filtered_y_test).float(),
-            ),
-            batch_size=cfg.counterfactuals_params.sampling_batch_size,
-            shuffle=False,
-        )
-        start_time = time()
-        explanation_result = cf_method.explain_dataloader(
-            cf_loader,
-            epochs=0,
-            lr=0.0,
-        )
-        cf_time = time() - start_time
-        explanation_result.x_cfs = np.ascontiguousarray(
-            explanation_result.x_cfs.astype(np.float32, copy=False)
-        )
-        explanation_result.x_origs = np.ascontiguousarray(
-            explanation_result.x_origs.astype(np.float32, copy=False)
-        )
-        cf_group_ids = (
-            None
-            if explanation_result.cf_group_ids is None
-            else np.asarray(explanation_result.cf_group_ids, dtype=int)
-        )
-        model_returned_mask = np.array(
-            explanation_result.logs.get("model_returned_mask", []), dtype=bool
-        )
-        if model_returned_mask.size == 0:
-            model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
-
-        # Replace NaN rows (where counterfactuals couldn't be found) with original factuals
-        x_cfs_cleaned = explanation_result.x_cfs.copy()
-        nan_rows = np.any(np.isnan(x_cfs_cleaned), axis=1)
-        if np.any(nan_rows):
-            logger.info(
-                "Replacing %d rows with NaN (failed counterfactuals) with original factuals",
-                np.sum(nan_rows),
-            )
-            x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
-
-        mask_vector = mask_vectors[params.mask_index]
-        cf_contexts = build_context_matrix(
-            factual_points=explanation_result.x_origs,
-            labels=explanation_result.y_cf_targets,
-            mask_vector=mask_vector,
-            p_value=params.p_value,
-            class_to_index=class_to_index,
-        )
-        test_contexts = build_context_matrix(
-            factual_points=explanation_result.x_origs,
-            labels=explanation_result.y_origs,
-            mask_vector=mask_vector,
-            p_value=params.p_value,
-            class_to_index=class_to_index,
-        )
-        context_lookup = {
-            get_numpy_pointer(x_cfs_cleaned): cf_contexts,
-            get_numpy_pointer(explanation_result.x_origs): test_contexts,
-        }
-        metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
-            base_model=gen_model,
-            context_lookup=context_lookup,
-        )
-        if vis_cfg and vis_cfg.get("enable_cf_scatter", False):
-            try:
-                visualize_counterfactual_samples(
-                    factual_points=explanation_result.x_origs[:, :2],
-                    counterfactual_points=x_cfs_cleaned[:, :2],
-                    feature_names=dataset.features,
-                    save_path=Path(save_folder) / "counterfactuals_scatter.png",
-                    dataset_points=dataset.X_train[:, :2],
-                    max_points=vis_cfg.get("cf_scatter_max_points", 200),
-                )
-            except ValueError as exc:
-                logger.info("Skipping counterfactual scatter plot: %s", exc)
-        if vis_cfg and vis_cfg.get("enable_flow_contour", False):
-            try:
-                bounds = compute_feature_bounds(
-                    dataset.X_train, vis_cfg.get("contour_padding", 0.05)
-                )
-                factual_idx = min(
-                    vis_cfg.get("contour_factual_index", 0),
-                    filtered_X_test.shape[0] - 1,
-                )
-                factual_point = filtered_X_test[factual_idx]
-                visualize_flow_contours(
-                    gen_model=gen_model,
-                    factual_point=factual_point,
-                    target_label=target_class,
-                    mask_vector=mask_vector,
-                    p_value=params.p_value,
-                    class_to_index=class_to_index,
-                    feature_bounds=bounds,
-                    save_path=Path(save_folder) / "flow_logprob_contour.png",
-                    feature_names=dataset.features,
-                    grid_size=vis_cfg.get("contour_grid_size", 200),
-                    device=device,
-                    dataset_points=dataset.X_train[:, :2],
-                )
-            except ValueError as exc:
-                logger.info("Skipping flow contour plot: %s", exc)
-
-        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-        cf_path = os.path.join(
-            save_folder,
-            f"counterfactuals_DiCoFlex_{disc_model_name}.csv",
-        )
-
-        cf_original_space = dataset.inverse_transform(x_cfs_cleaned)
-        pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
-        logger.info("Saved counterfactuals to %s", cf_path)
-
-        metrics = evaluate_cf(
-            gen_model=metrics_gen_model,
-            disc_model=disc_model,
-            X_cf=x_cfs_cleaned,
-            model_returned=model_returned_mask,
-            categorical_features=dataset.categorical_features_indices,
-            continuous_features=dataset.numerical_features_indices,
-            X_train=dataset.X_train,
-            y_train=dataset.y_train,
-            X_test=explanation_result.x_origs,
-            y_test=explanation_result.y_origs,
-            median_log_prob=log_prob_threshold,
-            y_target=explanation_result.y_cf_targets,
-            cf_group_ids=cf_group_ids,
-            metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
-        )
-        logger.info(f"Metrics:\n{metrics}")
-
-        df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics["cf_search_time"] = cf_time
-        metrics_path = os.path.join(save_folder, "cf_metrics_DiCoFlex.csv")
-        df_metrics.to_csv(metrics_path, index=False)
-        logger.info("Saved metrics to %s", metrics_path)
+    for fold_idx, _ in enumerate(dataset.get_cv_splits(5)):
+        run_fold(cfg, dataset, device, fold_idx)
 
 
 if __name__ == "__main__":

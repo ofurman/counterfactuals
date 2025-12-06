@@ -6,7 +6,9 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
-from counterfactuals.cf_methods.local_methods.dice import DICE
+from counterfactuals.cf_methods.group_methods.glance.dice_wrapper import (
+    DiceExplainerWrapper,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +23,15 @@ class GLANCE:
         k: int = -1,
         s: int = 4,
         m: int = 1,
+        target_class: int = 1,
     ) -> None:
-        self.features = features
+        self.features = list(features)
+        self.target_name = "target"
+        self.features_with_target = self.features + [self.target_name]
         self.model = model
-        self.X = X_test[y_test != 1]
-        self.Y = y_test[y_test != 1]
+        self.target_class = target_class
+        self.X = X_test[y_test != self.target_class]
+        self.Y = y_test[y_test != self.target_class]
         self.n = len(self.X)
 
         self.k = k if k > 0 else self.n  # starting number of a groups
@@ -36,11 +42,12 @@ class GLANCE:
         self.__cluster()
 
         if method_to_use == "dice":
-            self.explainer = DICE(
+            self.explainer = DiceExplainerWrapper(
                 X_train,
                 y_train,
-                self.features,
+                self.features_with_target,
                 self.model,
+                desired_class=self.target_class,
             )
 
         self.__perform()
@@ -51,7 +58,7 @@ class GLANCE:
         self.centroids = kmeans.cluster_centers_
 
     def __np_to_pd(self, arr):
-        return pd.DataFrame(arr.reshape(1, -1), columns=self.features[:-1])
+        return pd.DataFrame(arr.reshape(1, -1), columns=self.features)
 
     def __perform(self) -> None:
         min_c1, min_c2 = (None, None), (None, None)
@@ -67,11 +74,11 @@ class GLANCE:
 
             for _m in range(self.m):
                 query_instance = self.__np_to_pd(c)
-                counterfactual = self.explainer.generate(query_instance)
+                counterfactual = self.explainer.generate(
+                    query_instance, desired_class=self.target_class
+                )
                 if counterfactual is not None:
-                    vec = counterfactual - c
-                    if len(vec.shape) == 2:
-                        vec = vec.squeeze(0)
+                    vec = counterfactual.squeeze() - c
                     actions[(tuple(c), c_lab)].add(tuple(vec))
 
         while len(actions) > self.s:
