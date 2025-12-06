@@ -11,7 +11,6 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
 
-from counterfactuals.cf_methods.global_methods.ares import AReS
 from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
@@ -87,6 +86,44 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     return data_oh, features
 
 
+def compute_bin_widths(
+    dataset: MethodDataset, data: pd.DataFrame, n_bins: int = 10
+) -> Dict[str, float]:
+    """Compute equal-width bin sizes for each continuous feature.
+
+    Args:
+        dataset: Dataset carrying feature metadata.
+        data: DataFrame containing feature values in original scale.
+        n_bins: Number of bins to use for continuous features.
+
+    Returns:
+        Mapping from continuous feature name to bin width.
+    """
+    bin_widths: Dict[str, float] = {}
+    for feature in data.columns:
+        if feature in dataset.categorical_features:
+            continue
+
+        try:
+            categories = pd.cut(data[feature].astype(float), bins=n_bins).cat.categories
+        except ValueError as err:
+            logger.warning(
+                "Skipping bin width computation for feature %s: %s", feature, err
+            )
+            continue
+
+        if len(categories) == 0:
+            logger.warning(
+                "Skipping bin width computation for feature %s: no categories returned",
+                feature,
+            )
+            continue
+
+        bin_widths[feature] = float(categories.length[-1])
+
+    return bin_widths
+
+
 def search_counterfactuals(
     cfg: DictConfig,
     dataset: DictConfig,
@@ -143,18 +180,12 @@ def search_counterfactuals(
     Xs = dataset.X_test[mask]
     ys_orig = ys_pred[mask]
 
-    logger.info("Creating counterfactual model")
-    ares_helper = AReS(
-        predict_fn=predict_fn,
+    logger.info("Computing bin widths for continuous features")
+    bin_widths = compute_bin_widths(
         dataset=dataset,
-        X=pd.DataFrame(X_test_unscaled, columns=dataset.features),
-        dropped_features=[],
+        data=pd.DataFrame(X_test_unscaled, columns=dataset.features),
         n_bins=10,
-        ordinal_features=[],
-        normalise=False,
-        constraints=[20, 7, 10],
     )
-    bin_widths = ares_helper.bin_widths
 
     cf_method = GLOBE_CE(
         predict_fn=predict_fn,

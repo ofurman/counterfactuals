@@ -11,7 +11,7 @@ experiment:
   output_folder: models/
   relabel_with_disc_model: true
   seed: 42
-  cv_folds: 0
+  cv_folds: 5
   use_gpu: false
 
 dataset:
