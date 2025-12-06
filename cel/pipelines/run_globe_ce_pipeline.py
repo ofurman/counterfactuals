@@ -11,13 +11,13 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
 
-from cel.cf_methods.global_methods.globe_ce import GLOBE_CE
-from cel.datasets.method_dataset import MethodDataset
-from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.nodes.disc_model_nodes import create_disc_model
-from cel.pipelines.nodes.gen_model_nodes import create_gen_model
-from cel.pipelines.nodes.helper_nodes import set_model_paths
-from cel.preprocessing import (
+from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
@@ -105,7 +105,9 @@ def compute_bin_widths(
         try:
             categories = pd.cut(data[feature].astype(float), bins=n_bins).cat.categories
         except ValueError as err:
-            logger.warning("Skipping bin width computation for feature %s: %s", feature, err)
+            logger.warning(
+                "Skipping bin width computation for feature %s: %s", feature, err
+            )
             continue
 
         if len(categories) == 0:

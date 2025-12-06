@@ -7,14 +7,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
-from cel.cf_methods.counterfactual_base import (
-    BaseCounterfactualMethod,
-    ExplanationResult,
-)
-from cel.cf_methods.group_counterfactual_mixin import (
-    GroupCounterfactualMixin,
-)
-from cel.cf_methods.group_methods.glance.dice_wrapper import (
+from counterfactuals.cf_methods.group_methods.glance.dice_wrapper import (
     DiceExplainerWrapper,
 )
 
