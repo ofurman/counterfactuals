@@ -10,7 +10,7 @@ from counterfactuals.models.regression_mixin import RegressionPytorchMixin
 
 
 class LinearRegression(PytorchBase, RegressionPytorchMixin):
-    def __init__(self, num_inputs: int, num_targets: int):
+    def __init__(self, num_inputs: int, num_targets: int, *other_args, **other_kwargs):
         super(LinearRegression, self).__init__(num_inputs, num_targets)
         self.linear = torch.nn.Linear(num_inputs, num_targets)
 

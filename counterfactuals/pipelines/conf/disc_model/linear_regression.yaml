@@ -1,2 +1,2 @@
 model:
-  _target_: counterfactuals.discriminative_models.LinearRegression
+  _target_: counterfactuals.models.regression.linear_regression.LinearRegression

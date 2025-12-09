@@ -110,7 +110,7 @@ def search_counterfactuals(
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
 
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_no_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_plaus_{cf_method_name}_{disc_model_name}.csv"
     )
 
     pd.DataFrame(x_cfs).to_csv(counterfactuals_path, index=False)
@@ -170,7 +170,7 @@ def main(cfg: DictConfig) -> None:
     """
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
+    
 
     logger.info("Loading dataset")
     file_dataset = instantiate(cfg.dataset)
@@ -181,62 +181,64 @@ def main(cfg: DictConfig) -> None:
         ]
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    target_scaler = MinMaxScaler()
-    dataset.y_train = target_scaler.fit_transform(
-        dataset.y_train.reshape(-1, 1)
-    ).astype(np.float32).reshape(-1)
-    dataset.y_test = target_scaler.transform(dataset.y_test.reshape(-1, 1)).astype(
-        np.float32
-    ).reshape(-1)
-    dataset.y_train = np.clip(dataset.y_train, 0.0, 1.0)
-    dataset.y_test = np.clip(dataset.y_test, 0.0, 1.0)
-    dataset.target_scaler = target_scaler
+    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        target_scaler = MinMaxScaler()
+        dataset.y_train = target_scaler.fit_transform(
+            dataset.y_train.reshape(-1, 1)
+        ).astype(np.float32).reshape(-1)
+        dataset.y_test = target_scaler.transform(dataset.y_test.reshape(-1, 1)).astype(
+            np.float32
+        ).reshape(-1)
+        dataset.y_train = np.clip(dataset.y_train, 0.0, 1.0)
+        dataset.y_test = np.clip(dataset.y_test, 0.0, 1.0)
+        dataset.target_scaler = target_scaler
 
-    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
-    if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = np.clip(
-            np.asarray(disc_model.predict(dataset.X_train), dtype=np.float32).reshape(
-                -1
-            ),
-            0.0,
-            1.0,
+        if cfg.experiment.relabel_with_disc_model:
+            dataset.y_train = np.clip(
+                np.asarray(disc_model.predict(dataset.X_train), dtype=np.float32).reshape(
+                    -1
+                ),
+                0.0,
+                1.0,
+            )
+            dataset.y_test = np.clip(
+                np.asarray(disc_model.predict(dataset.X_test), dtype=np.float32).reshape(
+                    -1
+                ),
+                0.0,
+                1.0,
+            )
+
+        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+
+        Xs_cfs, Xs, ys_orig, ys_target, delta, cf_search_time = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
-        dataset.y_test = np.clip(
-            np.asarray(disc_model.predict(dataset.X_test), dtype=np.float32).reshape(
-                -1
-            ),
-            0.0,
-            1.0,
+
+        metrics = calculate_metrics(
+            gen_model=gen_model,
+            disc_model=disc_model,
+            Xs_cfs=Xs_cfs,
+            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
+            X_train=dataset.X_train,
+            y_train=dataset.y_train.reshape(-1),
+            X_test=Xs,
+            y_test=ys_orig,
+            y_target=ys_target,
+            delta=delta,
         )
-
-    gen_model = create_gen_model(cfg, dataset, gen_model_path)
-
-    Xs_cfs, Xs, ys_orig, ys_target, delta, cf_search_time = search_counterfactuals(
-        cfg, dataset, gen_model, disc_model, save_folder
-    )
-
-    metrics = calculate_metrics(
-        gen_model=gen_model,
-        disc_model=disc_model,
-        Xs_cfs=Xs_cfs,
-        model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-        categorical_features=dataset.categorical_features_indices,
-        continuous_features=dataset.numerical_features_indices,
-        X_train=dataset.X_train,
-        y_train=dataset.y_train.reshape(-1),
-        X_test=Xs,
-        y_test=ys_orig,
-        y_target=ys_target,
-        delta=delta,
-    )
-    logger.info(f"Final metrics: {metrics}")
-    df_metrics = pd.DataFrame(metrics, index=[0])
-    df_metrics["cf_search_time"] = cf_search_time
-    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-    df_metrics.to_csv(
-        os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
-    )
+        logger.info(f"Final metrics: {metrics}")
+        df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
 
 
 if __name__ == "__main__":

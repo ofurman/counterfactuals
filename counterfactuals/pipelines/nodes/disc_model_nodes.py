@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from sklearn.metrics import classification_report, r2_score
+from sklearn.metrics import classification_report, r2_score, mean_absolute_error
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         cfg.disc_model.model,
         num_inputs=dataset.X_train.shape[1],
         num_targets=num_targets,
-        hidden_layer_sizes=cfg.disc_model.model.hidden_layer_sizes
+        # hidden_layer_sizes=cfg.disc_model.model.hidden_layer_sizes
     )
     return disc_model
 
@@ -121,7 +121,7 @@ def evaluate_disc_model(disc_model: torch.nn.Module, dataset: DictConfig) -> dic
     except ValueError:
         # evaluate regression model on R1 score
         report = [
-            {"r2_score": r2_score(dataset.y_test, disc_model.predict(dataset.X_test))}
+            {"MAE": mean_absolute_error(dataset.y_test, disc_model.predict(dataset.X_test))}
         ]
         print(report)
 
