@@ -31,8 +31,17 @@ class TorchDataTypeStep(PreprocessingStep):
         """
         context.X_train = context.X_train.astype(np.float32)
         context.X_test = context.X_test.astype(np.float32)
-        context.y_train = context.y_train.astype(np.int64)
-        context.y_test = context.y_test.astype(np.int64)
+        if context.y_train is not None:
+            if np.issubdtype(context.y_train.dtype, np.integer):
+                context.y_train = context.y_train.astype(np.int64)
+            else:
+                context.y_train = context.y_train.astype(np.float32)
+
+        if context.y_test is not None:
+            if np.issubdtype(context.y_test.dtype, np.integer):
+                context.y_test = context.y_test.astype(np.int64)
+            else:
+                context.y_test = context.y_test.astype(np.float32)
         return context
 
     def inverse_transform(self, context: PreprocessingContext) -> PreprocessingContext:

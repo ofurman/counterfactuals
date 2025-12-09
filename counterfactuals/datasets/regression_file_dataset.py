@@ -18,7 +18,9 @@ class RegressionFileDataset(DatasetBase):
             config_path: Path to the dataset configuration file.
         """
         super().__init__(config_path=config_path)
+        self.task_type = "regression"
         self.samples_keep = self.config.samples_keep
+        self.initial_transform_pipeline = None
 
         self.raw_data = self._load_csv(self.config.raw_data_path)
         self.X, self.y = self.preprocess(self.raw_data)

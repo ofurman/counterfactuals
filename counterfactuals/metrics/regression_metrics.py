@@ -95,7 +95,9 @@ class RegressionCFMetrics(CFMetrics):
         Returns:
             float: Proportion of valid counterfactuals
         """
-        y_cf_pred = self.disc_model.predict(self.X_cf).numpy().reshape(-1)
+        y_cf_pred = self._convert_to_numpy(
+            self.disc_model.predict(self.X_cf)
+        ).reshape(-1)
         relative_diff = np.abs(y_cf_pred - self.y_test)
         return np.mean(relative_diff)
 
@@ -106,7 +108,9 @@ class RegressionCFMetrics(CFMetrics):
         Returns:
             float: Mean relative difference between predicted and target values
         """
-        y_cf_pred = self.disc_model.predict(self.X_cf).numpy().reshape(-1)
+        y_cf_pred = self._convert_to_numpy(
+            self.disc_model.predict(self.X_cf)
+        ).reshape(-1)
         relative_diff = np.abs(y_cf_pred - self.y_target)
         return np.mean(relative_diff)
 

@@ -46,17 +46,25 @@ class MethodDataset:
                 preprocessing is applied and raw data is returned.
         """
         self.file_dataset = file_dataset
-        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
-            file_dataset.initial_transform_pipeline
+        self.task_type = getattr(file_dataset, "task_type", "classification")
+        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = getattr(
+            file_dataset, "initial_transform_pipeline", None
         )
 
         # Split raw data into train/test sets
+        stratify_split = (
+            getattr(self.file_dataset, "task_type", "classification") == "classification"
+        )
         (
             X_train,
             X_test,
             y_train,
             y_test,
-        ) = self.file_dataset.split_data(self.file_dataset.X, self.file_dataset.y)
+        ) = self.file_dataset.split_data(
+            self.file_dataset.X,
+            self.file_dataset.y,
+            stratify=stratify_split,
+        )
         self.X_train_raw = X_train.copy()
         self.X_test_raw = X_test.copy()
         self.y_train = y_train.copy()
@@ -64,8 +72,6 @@ class MethodDataset:
 
         # Store preprocessing pipeline (may be None)
         self.preprocessing_pipeline = preprocessing_pipeline
-
-        print(self.X_test_raw.shape)
 
         # Apply preprocessing if pipeline provided
         if self.preprocessing_pipeline is not None:

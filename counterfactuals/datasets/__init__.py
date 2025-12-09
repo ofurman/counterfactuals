@@ -4,6 +4,7 @@ from counterfactuals.datasets.base import (
     FeatureParameters,
 )
 from counterfactuals.datasets.file_dataset import FileDataset
+from counterfactuals.datasets.regression_file_dataset import RegressionFileDataset
 from counterfactuals.datasets.method_dataset import MethodDataset
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "DatasetParameters",
     "FeatureParameters",
     "FileDataset",
+    "RegressionFileDataset",
     "MethodDataset",
 ]

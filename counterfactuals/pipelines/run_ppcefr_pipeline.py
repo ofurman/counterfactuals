@@ -10,12 +10,19 @@ import torch
 import torch.utils
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from sklearn.preprocessing import MinMaxScaler
 
-from counterfactuals.cf_methods.regression_ppcef import PPCEFR
+from counterfactuals.cf_methods.local_methods.regression_ppcef import PPCEFR
 from counterfactuals.metrics import evaluate_cf_regression
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -166,13 +173,42 @@ def main(cfg: DictConfig) -> None:
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    target_scaler = MinMaxScaler()
+    dataset.y_train = target_scaler.fit_transform(
+        dataset.y_train.reshape(-1, 1)
+    ).astype(np.float32).reshape(-1)
+    dataset.y_test = target_scaler.transform(dataset.y_test.reshape(-1, 1)).astype(
+        np.float32
+    ).reshape(-1)
+    dataset.y_train = np.clip(dataset.y_train, 0.0, 1.0)
+    dataset.y_test = np.clip(dataset.y_test, 0.0, 1.0)
+    dataset.target_scaler = target_scaler
 
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
     if cfg.experiment.relabel_with_disc_model:
-        dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-        dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+        dataset.y_train = np.clip(
+            np.asarray(disc_model.predict(dataset.X_train), dtype=np.float32).reshape(
+                -1
+            ),
+            0.0,
+            1.0,
+        )
+        dataset.y_test = np.clip(
+            np.asarray(disc_model.predict(dataset.X_test), dtype=np.float32).reshape(
+                -1
+            ),
+            0.0,
+            1.0,
+        )
 
     gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
@@ -185,8 +221,8 @@ def main(cfg: DictConfig) -> None:
         disc_model=disc_model,
         Xs_cfs=Xs_cfs,
         model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
-        categorical_features=dataset.categorical_features,
-        continuous_features=dataset.numerical_features,
+        categorical_features=dataset.categorical_features_indices,
+        continuous_features=dataset.numerical_features_indices,
         X_train=dataset.X_train,
         y_train=dataset.y_train.reshape(-1),
         X_test=Xs,

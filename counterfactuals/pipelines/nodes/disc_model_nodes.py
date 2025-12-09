@@ -39,17 +39,20 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         # "WineDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
-    num_classes = (
-        1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
-    )
-    num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
+    if getattr(dataset, "task_type", "classification") == "regression":
+        num_targets = 1
+    else:
+        num_targets = (
+            1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
+        )
+        if dataset_name == "Scm20dDataset":
+            num_targets = 20
 
     disc_model = instantiate(
         cfg.disc_model.model,
         num_inputs=dataset.X_train.shape[1],
-        num_targets=num_classes,
-        hidden_layer_sizes=cfg.disc_model.model.hidden_layer_sizes,
-        dropout=cfg.disc_model.model.dropout,
+        num_targets=num_targets,
+        hidden_layer_sizes=cfg.disc_model.model.hidden_layer_sizes
     )
     return disc_model
 

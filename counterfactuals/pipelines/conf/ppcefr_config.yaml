@@ -12,17 +12,18 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.YachtDataset
+  _target_: counterfactuals.datasets.RegressionFileDataset
+  config_path: config/datasets/yacht.yaml
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 2000
   batch_size: 512
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: false
+  train_model: true
   batch_size: 512
   epochs: 2000
   patience: 50

@@ -1,3 +1,3 @@
 model:
-  _target_: counterfactuals.discriminative_models.NNRegression
+  _target_: counterfactuals.models.regression.mlp_regressor.MLPRegressor
   hidden_layer_sizes: [256, 128]
