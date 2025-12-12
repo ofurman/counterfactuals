@@ -255,7 +255,7 @@ def main(cfg: DictConfig):
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     dequantizer = GroupDequantizer(dataset.categorical_features_lists)
-    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+    for fold_n, _ in enumerate(dataset.get_cv_splits(3)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 

@@ -443,7 +443,82 @@ def evaluate_cf_for_rppcef(
         )
     return metrics
 
+def evaluate_dico_metrics(
+    disc_model: torch.nn.Module,
+    gen_model: torch.nn.Module,
+    X_cf: np.ndarray,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    continuous_features: List[int],
+    categorical_features: List[int],
+    median_log_prob: Optional[float] = None,
+    y_target: Optional[np.ndarray] = None,
+    ratio_cont: Optional[float] = None,
+) -> dict:
+    """
+    Oblicza specyficzny zestaw metryk dla algorytmu DiCO:
+    - Validity
+    - Proximity Continuous (Euclidean)
+    - Sparsity Continuous
+    - Sparsity Categorical
+    - LOF Score
+    """
+    
+    if y_target is None:
+        y_target = np.abs(1 - y_test)
+    
+    if isinstance(y_target, torch.Tensor):
+        y_target = y_target.detach().cpu().numpy()
+    metrics_obj = CFMetrics(
+        X_cf=X_cf,
+        y_target=y_target,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        gen_model=gen_model,
+        disc_model=disc_model,
+        continuous_features=continuous_features,
+        categorical_features=categorical_features,
+        ratio_cont=ratio_cont,
+        prob_plausibility_threshold=median_log_prob,
+    )
 
+    validity_score = metrics_obj.validity()
+    
+    proximity_cont = metrics_obj.feature_distance(
+        continuous_metric="euclidean", 
+        categorical_metric=None
+    )
+    
+    lof_score = metrics_obj.lof_scores(cf=True, n_neighbors=20)
+
+    X_test_np = metrics_obj.X_test
+    X_cf_np = metrics_obj.X_cf
+    
+    if continuous_features:
+        diff_cont = (X_test_np[:, continuous_features] != X_cf_np[:, continuous_features])
+        sparsity_cont = np.mean(diff_cont) 
+    else:
+        sparsity_cont = 0.0
+
+    if categorical_features:
+        diff_cat = (X_test_np[:, categorical_features] != X_cf_np[:, categorical_features])
+        sparsity_cat = np.mean(diff_cat)
+    else:
+        sparsity_cat = 0.0
+
+    metrics = {
+        "validity": validity_score,
+        "proximity_continuous": proximity_cont,
+        "sparsity_continuous": sparsity_cont,
+        "sparsity_categorical": sparsity_cat,
+        "lof_score": lof_score
+    }
+
+    return metrics
 # def median_abs_deviation(data, axis=None):
 #     """
 #     Calculate the Median Absolute Deviation (MAD) of a dataset along a specified axis.

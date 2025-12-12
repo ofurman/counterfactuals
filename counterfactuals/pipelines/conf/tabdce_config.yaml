@@ -1,0 +1,48 @@
+defaults:
+  - _self_
+  - disc_model: mlp
+  
+gen_model:
+  model:
+    _target_: counterfactuals.cf_methods.TabDCE
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/lending_club.yaml
+  # config_path: config/datasets/adult.yaml
+
+disc_model:
+  train_model: true
+  epochs: 200
+  batch_size: 128
+  patience: 20
+  lr: 0.001
+
+
+tabdce:
+  epochs: 1000        
+  batch_size: 128
+  lr: 0.001           
+  hidden_dim: 256     
+  T: 200           
+  k_neighbors: 25     
+  search_method: "knn" # 'knn', 'dpp' (Determinantal Point Process)
+  
+  use_gpu: true
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.tabdce.TabDCE
+
+  target_class: 0
+  batch_size: 1024
+  use_categorical: true 
+
