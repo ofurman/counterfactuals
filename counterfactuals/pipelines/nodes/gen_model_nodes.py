@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import torch
@@ -23,8 +24,13 @@ def instantiate_gen_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Modu
         torch.nn.Module: Instantiated generative model
     """
     logger.info("Creating generative model")
+    context_features = (
+        dataset.y_train.shape[1] if hasattr(dataset.y_train, "shape") else 1
+    )
     gen_model = instantiate(
-        cfg.gen_model.model, features=dataset.X_train.shape[1], context_features=1
+        cfg.gen_model.model,
+        features=dataset.X_train.shape[1],
+        context_features=context_features,
     )
     return gen_model
 
@@ -133,7 +139,8 @@ def create_gen_model(
         torch.nn.Module: Trained and evaluated generative model in evaluation mode
     """
     gen_model = instantiate_gen_model(cfg, dataset)
-    if cfg.gen_model.train_model:
+    should_train = cfg.gen_model.train_model or not os.path.exists(gen_model_path)
+    if should_train:
         gen_model = train_gen_model(
             gen_model, dataset, gen_model_path, cfg, dequantizer
         )

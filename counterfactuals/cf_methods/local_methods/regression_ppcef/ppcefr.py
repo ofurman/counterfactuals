@@ -63,6 +63,7 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
             x_param, context=context_target.type(torch.float32)
         )
         max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
+        max_inner = 0 * max_inner
 
         loss = dist + alpha * (loss_disc + max_inner)
         return {
@@ -114,7 +115,6 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
         for x_origin, contexts_origin in dataloader:
             x_origin = x_origin.to(self.device)
             contexts_origin = contexts_origin.to(self.device)
-            contexts_origin = contexts_origin.reshape(-1, 1)
             context_target = np.clip(contexts_origin + target_change, 0, 1)
 
             x_param = torch.as_tensor(x_origin).clone()

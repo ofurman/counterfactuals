@@ -40,7 +40,10 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
     if getattr(dataset, "task_type", "classification") == "regression":
-        num_targets = 1
+        if hasattr(dataset.y_train, "shape") and len(dataset.y_train.shape) > 1:
+            num_targets = dataset.y_train.shape[1]
+        else:
+            num_targets = 1
     else:
         num_targets = (
             1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
@@ -153,7 +156,8 @@ def create_disc_model(
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model = isntantiate_disc_model(cfg, dataset)
 
-    if cfg.disc_model.train_model:
+    should_train = cfg.disc_model.train_model or not os.path.exists(disc_model_path)
+    if should_train:
         disc_model = train_disc_model(disc_model, dataset, disc_model_path, cfg)
     else:
         logger.info("Loading discriminator model")

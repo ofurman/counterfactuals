@@ -32,7 +32,8 @@ class RegressionCFMetrics(CFMetrics):
         Initialize RegressionCFMetrics with additional regression-specific parameters.
 
         Args:
-            target_tolerance: Acceptable relative difference between predicted and target values
+            target_tolerance: Acceptable relative/absolute difference between predicted and
+            target values
             (all other parameters are inherited from CFMetrics)
         """
         # precheck input assumptions
@@ -57,11 +58,11 @@ class RegressionCFMetrics(CFMetrics):
 
         # convert everything to torch tensors if not already
         self.X_cf = self._convert_to_numpy(X_cf)
-        self.y_target = self._convert_to_numpy(np.squeeze(y_target))
+        self.y_target = self._ensure_2d(self._convert_to_numpy(y_target))
         self.X_train = self._convert_to_numpy(X_train)
-        self.y_train = self._convert_to_numpy(y_train)
+        self.y_train = self._ensure_2d(self._convert_to_numpy(y_train))
         self.X_test = self._convert_to_numpy(X_test)
-        self.y_test = self._convert_to_numpy(y_test)
+        self.y_test = self._ensure_2d(self._convert_to_numpy(y_test))
 
         # write class properties
         self.gen_model = gen_model
@@ -80,8 +81,10 @@ class RegressionCFMetrics(CFMetrics):
         self.categorical_features = categorical_features
         self.ratio_cont = ratio_cont
 
-        # filter only valid counterfactuals and test instances
-        self.y_cf_pred = self._convert_to_numpy(self.disc_model.predict(self.X_cf))
+        # store predictions for metrics; keep all instances for regression
+        self.y_cf_pred = self._ensure_2d(
+            self._convert_to_numpy(self.disc_model.predict(self.X_cf))
+        )
         self.X_cf_valid = self.X_cf
         self.X_test_valid = self.X_test
         self.target_tolerance = target_tolerance
@@ -90,29 +93,30 @@ class RegressionCFMetrics(CFMetrics):
         """
         Compute the validity metric for regression.
         A counterfactual is considered valid if its predicted value is within
-        the target_tolerance of the target value.
+        the target_tolerance of the target value. For multiple targets, all
+        dimensions must satisfy the tolerance.
 
         Returns:
-            float: Proportion of valid counterfactuals
+            float: Proportion of valid counterfactuals.
         """
-        y_cf_pred = self._convert_to_numpy(
-            self.disc_model.predict(self.X_cf)
-        ).reshape(-1)
-        relative_diff = np.abs(y_cf_pred - self.y_test)
-        return np.mean(relative_diff)
+        y_cf_pred = self.y_cf_pred
+        tolerance = np.maximum(
+            np.abs(self.y_target) * self.target_tolerance, self.target_tolerance
+        )
+        within_tolerance = np.abs(y_cf_pred - self.y_target) <= tolerance
+        valid_per_sample = within_tolerance.all(axis=1)
+        return float(valid_per_sample.mean())
 
     def target_achievement(self) -> float:
         """
         Compute how close the counterfactuals get to their target values on average.
 
         Returns:
-            float: Mean relative difference between predicted and target values
+            float: Mean absolute difference between predicted and target values.
         """
-        y_cf_pred = self._convert_to_numpy(
-            self.disc_model.predict(self.X_cf)
-        ).reshape(-1)
-        relative_diff = np.abs(y_cf_pred - self.y_target)
-        return np.mean(relative_diff)
+        y_cf_pred = self.y_cf_pred
+        absolute_diff = np.abs(y_cf_pred - self.y_target)
+        return float(absolute_diff.mean())
 
     def calc_all_metrics(self) -> dict:
         """
@@ -161,6 +165,15 @@ class RegressionCFMetrics(CFMetrics):
             "isolation_forest_scores_test": self.isolation_forest_scores(cf=False),
         }
         return metrics
+
+    @staticmethod
+    def _ensure_2d(y: np.ndarray) -> np.ndarray:
+        """Ensure target arrays are 2D (n_samples, n_targets)."""
+        if y.ndim == 1:
+            return y.reshape(-1, 1)
+        if y.ndim == 2:
+            return y
+        raise ValueError(f"Expected 1D or 2D targets, got shape {y.shape}")
 
 
 def evaluate_cf_regression(

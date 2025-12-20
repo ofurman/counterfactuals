@@ -43,7 +43,7 @@ class DatasetParameters:
         continuous_features: List of continuous feature names or indices.
         categorical_features: List of categorical feature names or indices.
         feature_config: Mapping of feature name/index to FeatureParameters.
-        target: Name of the target column.
+        target: Name or list of target columns.
     """
 
     raw_data_path: str
@@ -51,8 +51,8 @@ class DatasetParameters:
     continuous_features: List[Union[str, int]]
     categorical_features: List[Union[str, int]]
     feature_config: Dict[Union[str, int], FeatureParameters]
-    target: str
-    target_mapping: Dict[str, int]
+    target: Union[str, int, List[Union[str, int]]]
+    target_mapping: Dict[Union[str, int], int]
     samples_keep: int = -1
     initial_transforms: List[Dict[str, Any]] = field(default_factory=list)
 
@@ -196,13 +196,17 @@ class DatasetBase:
             k: FeatureParameters(**v) for k, v in cfg.get("feature_config", {}).items()
         }
 
+        target_cfg = cfg.get("target", "y")
+        if isinstance(target_cfg, list):
+            target_cfg = [t for t in target_cfg]
+
         return DatasetParameters(
             raw_data_path=cfg["raw_data_path"],
             features=cfg["features"],
             continuous_features=cfg.get("continuous_features", []),
             categorical_features=cfg.get("categorical_features", []),
             feature_config=feature_config,
-            target=cfg.get("target", "y"),
+            target=target_cfg,
             target_mapping=cfg.get("target_mapping", {}),
             samples_keep=cfg.get("samples_keep", 1000),
             initial_transforms=cfg.get("initial_transforms", []),

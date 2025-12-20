@@ -110,7 +110,7 @@ def search_counterfactuals(
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
 
     counterfactuals_path = os.path.join(
-        save_folder, f"counterfactuals_plaus_{cf_method_name}_{disc_model_name}.csv"
+        save_folder, f"counterfactuals_wach_{cf_method_name}_{disc_model_name}.csv"
     )
 
     pd.DataFrame(x_cfs).to_csv(counterfactuals_path, index=False)
@@ -170,7 +170,6 @@ def main(cfg: DictConfig) -> None:
     """
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    
 
     logger.info("Loading dataset")
     file_dataset = instantiate(cfg.dataset)
@@ -181,15 +180,24 @@ def main(cfg: DictConfig) -> None:
         ]
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+    cv_splits = (
+        dataset.get_cv_splits(cfg.experiment.num_folds)
+        if cfg.experiment.num_folds > 1
+        else [None]
+    )
+    for fold_n, split in enumerate(cv_splits):
+        if split is not None:
+            dataset.X_train, dataset.X_test, dataset.y_train, dataset.y_test = split
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        if dataset.y_train.ndim == 1:
+            dataset.y_train = dataset.y_train.reshape(-1, 1)
+        if dataset.y_test.ndim == 1:
+            dataset.y_test = dataset.y_test.reshape(-1, 1)
         target_scaler = MinMaxScaler()
-        dataset.y_train = target_scaler.fit_transform(
-            dataset.y_train.reshape(-1, 1)
-        ).astype(np.float32).reshape(-1)
-        dataset.y_test = target_scaler.transform(dataset.y_test.reshape(-1, 1)).astype(
+        dataset.y_train = target_scaler.fit_transform(dataset.y_train).astype(
             np.float32
-        ).reshape(-1)
+        )
+        dataset.y_test = target_scaler.transform(dataset.y_test).astype(np.float32)
         dataset.y_train = np.clip(dataset.y_train, 0.0, 1.0)
         dataset.y_test = np.clip(dataset.y_test, 0.0, 1.0)
         dataset.target_scaler = target_scaler
@@ -198,16 +206,12 @@ def main(cfg: DictConfig) -> None:
 
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = np.clip(
-                np.asarray(disc_model.predict(dataset.X_train), dtype=np.float32).reshape(
-                    -1
-                ),
+                np.asarray(disc_model.predict(dataset.X_train), dtype=np.float32),
                 0.0,
                 1.0,
             )
             dataset.y_test = np.clip(
-                np.asarray(disc_model.predict(dataset.X_test), dtype=np.float32).reshape(
-                    -1
-                ),
+                np.asarray(disc_model.predict(dataset.X_test), dtype=np.float32),
                 0.0,
                 1.0,
             )
@@ -226,7 +230,7 @@ def main(cfg: DictConfig) -> None:
             categorical_features=dataset.categorical_features_indices,
             continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
+            y_train=dataset.y_train,
             X_test=Xs,
             y_test=ys_orig,
             y_target=ys_target,
