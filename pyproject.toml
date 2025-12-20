@@ -40,6 +40,12 @@ dependencies = [
   "omlt",
   "tensorflow>=2.18.1",
   "alibi>=0.9.6",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.7.1",
+  "mkdocstrings[python]>=1.0.0",
+  "mkdocs-gen-files>=0.6.0",
+  "mkdocs-literate-nav>=0.6.2",
+  "mkdocs-section-index>=0.3.10",
 ]
 
 # Tooling and test libs should be installed as an extra (dev) instead of runtime deps
