@@ -17,7 +17,7 @@ SACE provides multiple variants for generating counterfactual explanations.
 ## Usage
 
 ```python
-from cel.cf_methods.local_methods.sace import SACE
+from counterfactuals.cf_methods.local_methods.sace import SACE
 
 method = SACE(
     gen_model=gen_model,

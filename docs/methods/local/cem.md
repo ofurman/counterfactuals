@@ -11,7 +11,7 @@ CEM identifies both pertinent positives (features that must be present) and pert
 ## Usage
 
 ```python
-from cel.cf_methods.local_methods.cem import CEM_CF
+from counterfactuals.cf_methods.local_methods.cem import CEM_CF
 
 method = CEM_CF(
     gen_model=gen_model,

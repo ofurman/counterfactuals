@@ -2,17 +2,10 @@
 
 The core workflow for generating counterfactual explanations.
 
-!!! note "Multiple Methods Available"
-    CEL provides 14 counterfactual methods. The example below demonstrates PPCEF, 
-    but the same `explain()` interface works for all local methods. See [Local Methods](../methods/local/index.md) 
-    for a complete list and comparison.
-
 ## Basic Usage
 
-This example uses PPCEF (Probabilistically Plausible Counterfactual Explanations with Flows):
-
 ```python
-from cel.cf_methods.local_methods import PPCEF
+from counterfactuals.cf_methods.local_methods import PPCEF
 
 # Initialize method
 method = PPCEF(
@@ -24,54 +17,25 @@ method = PPCEF(
 
 # Generate counterfactual
 result = method.explain(
-    X=instance,  # Instance to explain
-    y_origin=0,  # Current prediction
-    y_target=1,  # Desired prediction
-    X_train=X_train,  # Training data (for some methods)
+    X=instance,           # Instance to explain
+    y_origin=0,           # Current prediction
+    y_target=1,           # Desired prediction
+    X_train=X_train,      # Training data (for some methods)
     y_train=y_train
 )
-```
-
-## Using Different Methods
-
-All local methods share the same interface. Simply change the import:
-
-```python
-# Option 1: PPCEF (used in example above)
-from cel.cf_methods.local_methods import PPCEF
-
-method = PPCEF(gen_model=flow, disc_model=classifier, ...)
-
-# Option 2: DICE (diverse counterfactuals)
-from cel.cf_methods.local_methods import DICE
-
-method = DICE(model=classifier, ...)
-
-# Option 3: WACH (gradient-based)
-from cel.cf_methods.local_methods import WACH
-
-method = WACH(disc_model=classifier, ...)
-
-# Option 4: CEM (contrastive)
-from cel.cf_methods.local_methods import CEM
-
-method = CEM(model=classifier, ...)
-
-# All methods use the same explain() interface:
-result = method.explain(X=instance, y_origin=0, y_target=1, ...)
 ```
 
 ## Understanding ExplanationResult
 
 ```python
-from cel.cf_methods import ExplanationResult
+from counterfactuals.cf_methods import ExplanationResult
 
 # Result structure
-result.x_cfs  # Generated counterfactuals
+result.x_cfs         # Generated counterfactuals
 result.y_cf_targets  # Target labels
-result.x_origs  # Original instances
-result.y_origs  # Original labels
-result.logs  # Training logs (optional)
+result.x_origs       # Original instances
+result.y_origs       # Original labels
+result.logs          # Training logs (optional)
 result.cf_group_ids  # Group assignments (for group methods)
 ```
 
@@ -79,7 +43,7 @@ result.cf_group_ids  # Group assignments (for group methods)
 
 ```python
 # Create dataloader
-from cel.datasets import TorchDataLoader
+from counterfactuals.datasets import TorchDataLoader
 
 loader = TorchDataLoader(X_test, y_test, batch_size=32)
 
