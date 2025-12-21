@@ -2,7 +2,6 @@ name: ci
 on:
   push:
     branches:
-      - main
       - docs
 permissions:
   contents: write
@@ -25,7 +24,5 @@ jobs:
           path: ~/.cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material "mkdocstrings[python]" mkdocs-gen-files mkdocs-literate-nav mkdocs-section-index
-      - name: Install package without dependencies
-        run: pip install -e . --no-deps
+      - run: pip install mkdocs-material
       - run: mkdocs gh-deploy --force
