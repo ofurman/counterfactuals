@@ -203,10 +203,10 @@ If you use this library in your research, please cite:
 
 ```bibtex
 @software{counterfactuals,
-  author = {Furman, Oleksii},
+  author = {Furman, Oleksii, Łukasz Lenkiewicz, Marcel Musiałek},
   title = {Counterfactuals: A Python Library for Counterfactual Explanations},
   url = {https://github.com/ofurman/counterfactuals},
-  year = {2024}
+  year = {2026}
 }
 ```
 
