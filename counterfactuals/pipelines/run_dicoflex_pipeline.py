@@ -11,6 +11,7 @@ import torch
 import torch.utils.data
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from scipy.spatial.distance import pdist
 
 from counterfactuals.cf_methods.local_methods.dicoflex import DiCoFlex, DiCoFlexParams
 from counterfactuals.cf_methods.local_methods.dicoflex.context_utils import (
@@ -192,6 +193,24 @@ def compute_feature_bounds(
         pad = rng * padding
         bounds.append((mn - pad, mx + pad))
     return bounds
+
+
+def compute_pairwise_min_distance(samples: np.ndarray, group_ids: np.ndarray) -> float:
+    """Average minimum pairwise distance across counterfactual groups."""
+    if samples.size == 0 or group_ids.size == 0:
+        return float("nan")
+
+    min_dists: list[float] = []
+    for gid in np.unique(group_ids):
+        group_points = samples[group_ids == gid]
+        group_points = group_points[~np.isnan(group_points).any(axis=1)]
+        if group_points.shape[0] < 2:
+            continue
+        distances = pdist(group_points, metric="euclidean")
+        if distances.size > 0:
+            min_dists.append(float(distances.min()))
+
+    return float(np.mean(min_dists)) if min_dists else float("nan")
 
 
 def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int):
@@ -417,6 +436,17 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         cf_group_ids=cf_group_ids,
         metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
     )
+    if cf_group_ids is not None:
+        if cf_group_ids.shape[0] != x_cfs_cleaned.shape[0]:
+            logger.warning(
+                "Skipping pairwise_min_distance: %s cf_group_ids for %s counterfactuals",
+                cf_group_ids.shape[0],
+                x_cfs_cleaned.shape[0],
+            )
+        else:
+            metrics["pairwise_min_distance"] = compute_pairwise_min_distance(
+                x_cfs_cleaned, cf_group_ids
+            )
     logger.info(f"Metrics:\n{metrics}")
 
     df_metrics = pd.DataFrame(metrics, index=[0])
