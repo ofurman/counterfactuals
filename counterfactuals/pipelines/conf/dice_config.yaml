@@ -47,6 +47,6 @@ counterfactuals_params:
   method: "random"  # DiCE method ("random", "genetic", "kdtree")
   
   generation_params:
-    total_CFs: 1
+    total_CFs: 100
     desired_class: "opposite"
     posthoc_sparsity_param: null
