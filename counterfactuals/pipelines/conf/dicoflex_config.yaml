@@ -41,8 +41,8 @@ counterfactuals_params:
   noise_level: 0.02
   train_batch_factuals: 4
   val_ratio: 0.2
-  num_counterfactuals: 32
-  cf_samples_per_factual: 32
+  num_counterfactuals: 100
+  cf_samples_per_factual: 100
   sampling_batch_size: 256
   inference_mask_index: 0
   use_actionability_mask: true
