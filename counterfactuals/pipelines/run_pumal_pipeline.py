@@ -16,8 +16,13 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.group_methods.pumal import PUMAL
-from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
+from counterfactuals.metrics.metrics import evaluate_cf_for_pumal
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -36,7 +41,9 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
+) -> tuple[
+    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, dict[str, Any]
+]:
     """
     Generate counterfactuals using the PUMAL method.
 
@@ -143,7 +150,18 @@ def search_counterfactuals(
     ys_orig = y_indices[mask_origin]
     ys_target = np.full_like(ys_orig, target_class)
     model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
-    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
+
+    _, S_matrix, D_matrix = cf_method.delta.get_matrices()
+    extras = {
+        "S_matrix": S_matrix.detach().cpu().numpy()
+        if hasattr(S_matrix, "detach")
+        else np.asarray(S_matrix),
+        "D_matrix": D_matrix.detach().cpu().numpy()
+        if hasattr(D_matrix, "detach")
+        else np.asarray(D_matrix),
+    }
+
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time, extras
 
 
 def calculate_metrics(
@@ -159,6 +177,9 @@ def calculate_metrics(
     y_test: np.ndarray,
     median_log_prob: float,
     y_target: np.ndarray = None,
+    S_matrix: np.ndarray | None = None,
+    D_matrix: np.ndarray | None = None,
+    **_: Any,
 ) -> Dict[str, Any]:
     """
     Calculate evaluation metrics for generated counterfactuals.
@@ -184,7 +205,7 @@ def calculate_metrics(
         dict: Dictionary containing computed metrics
     """
     logger.info("Calculating metrics")
-    metrics = evaluate_cf(
+    metrics = evaluate_cf_for_pumal(
         gen_model=gen_model,
         disc_model=disc_model,
         X_cf=Xs_cfs,
@@ -197,6 +218,9 @@ def calculate_metrics(
         y_test=y_test,
         median_log_prob=median_log_prob,
         y_target=y_target,
+        S_matrix=S_matrix,
+        D_matrix=D_matrix,
+        metrics_conf_path="counterfactuals/pipelines/conf/metrics/group_metrics.yaml",
     )
     logger.info(f"Metrics:\n{metrics}")
     return metrics
@@ -204,15 +228,74 @@ def calculate_metrics(
 
 @hydra.main(config_path="./conf", config_name="pumal_config", version_base="1.2")
 def main(cfg: DictConfig):
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+
+    logger.info("Loading dataset")
+    file_dataset = instantiate(cfg.dataset)
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
+
+    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
+        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
+        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+
+        if cfg.experiment.relabel_with_disc_model:
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
+
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(
+                dataset.train_dataloader(
+                    batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+                )
+            ),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+
+        (
+            Xs_cfs,
+            Xs,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+            extras,
+        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
+
+        metrics = calculate_metrics(
+            gen_model=gen_model,
+            disc_model=disc_model,
+            Xs_cfs=Xs_cfs,
+            model_returned=model_returned,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
+            X_train=dataset.X_train,
+            y_train=dataset.y_train.reshape(-1),
+            X_test=Xs,
+            y_test=ys_orig,
+            y_target=ys_target,
+            median_log_prob=log_prob_threshold,
+            **extras,
+        )
+        df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        df_metrics.to_csv(
+            os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
+        )
 
 
 if __name__ == "__main__":
