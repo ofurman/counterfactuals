@@ -1,7 +1,7 @@
 import logging
 import os
 from time import time
-from typing import Tuple
+from typing import Any
 
 import hydra
 import numpy as np
@@ -10,10 +10,19 @@ import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.metrics.metrics import evaluate_cf_for_rppcef
+from counterfactuals.cf_methods.group_methods.glance.glance import GLANCE
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
+from counterfactuals.metrics.metrics import evaluate_cf_for_glance
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -27,74 +36,59 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    float,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    float,
+) -> tuple[
+    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, dict[str, Any]
 ]:
-    """
-    Generate counterfactual explanations using the GLANCE-style method.
-
-    This function instantiates the configured counterfactual method, computes a
-    plausibility threshold using the generative model, prepares any method-specific
-    state, and generates counterfactuals for eligible test instances.
+    """Generate counterfactual explanations using the GLANCE method.
 
     Args:
-        cfg: Hydra configuration with experiment parameters
-        dataset: Dataset object with train/test data and metadata
-        gen_model: Trained generative model for plausibility thresholding
-        disc_model: Trained discriminative model for predictions
-        save_folder: Directory for saving generated counterfactuals CSV
+        cfg: Hydra configuration with experiment parameters.
+        dataset: Dataset object containing train/test splits and metadata.
+        gen_model: Trained generative model (kept for interface compatibility).
+        disc_model: Trained discriminative model used by GLANCE.
+        save_folder: Directory where generated counterfactuals are stored.
 
     Returns:
-        Tuple containing:
-            - Xs_cfs: Generated counterfactuals
-            - Xs: Original instances used for counterfactuals
-            - log_prob_threshold: Computed log-probability threshold
-            - ys_orig: Original labels
-            - ys_target: Target labels for counterfactuals
-            - model_returned: Boolean array indicating successful generation
-            - cf_search_time: Average time taken for CF search
+        Tuple with generated counterfactuals, original instances, original labels,
+        target labels, success mask, and average search time.
     """
-    cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
+    _ = gen_model  # GLANCE does not rely on the generative model directly.
+    cf_method_name = GLANCE.__name__
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
+    target_class = cfg.counterfactuals_params.target_class
+    if target_class != 1:
+        logger.warning(
+            "GLANCE assumes target class 1; overriding configured target_class=%s",
+            target_class,
+        )
+        target_class = 1
+
     logger.info("Filtering out target class data for counterfactual generation")
-    target_class = 1
     Xs = dataset.X_test[dataset.y_test != target_class]
     ys_orig = dataset.y_test[dataset.y_test != target_class]
 
     logger.info("Creating counterfactual model")
-    cf_method = instantiate(
-        cfg.counterfactuals_params.cf_method,
+    cf_method_cfg = cfg.counterfactuals_params.cf_method
+    cf_method = GLANCE(
         X_test=dataset.X_test,
         y_test=dataset.y_test,
-        features=dataset.features,
         model=disc_model,
+        features=list(dataset.features),
+        k=int(cf_method_cfg.get("k", -1)),
+        s=int(cf_method_cfg.get("s", 4)),
+        m=int(cf_method_cfg.get("m", 1)),
+        target_class=target_class,
     )
-
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
 
     logger.info("Handling counterfactual generation")
     time_start = time()
     cf_method.prep(dataset.X_train, dataset.y_train)
     Xs_cfs = cf_method.explain()
     ys_target = np.abs(ys_orig - 1)
-    model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
+    model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
     cf_search_time = np.mean(time() - time_start)
-    logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+    logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
@@ -102,74 +96,114 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
-    return (
-        Xs_cfs,
-        Xs,
-        log_prob_threshold,
-        ys_orig,
-        ys_target,
-        model_returned,
-        cf_search_time,
+    extras = {"cf_group_ids": np.asarray(cf_method.clusters)}
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time, extras
+
+
+def calculate_metrics(
+    gen_model: torch.nn.Module,
+    disc_model: torch.nn.Module,
+    Xs_cfs: np.ndarray,
+    model_returned: np.ndarray,
+    categorical_features: list,
+    continuous_features: list,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    median_log_prob: float,
+    y_target: np.ndarray,
+    cf_group_ids: np.ndarray | None = None,
+    **_: dict,
+) -> dict:
+    """Calculate evaluation metrics for GLANCE counterfactuals."""
+    logger.info("Calculating metrics")
+    metrics = evaluate_cf_for_glance(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        X_cf=Xs_cfs,
+        model_returned=model_returned,
+        categorical_features=categorical_features,
+        continuous_features=continuous_features,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        y_target=y_target,
+        median_log_prob=median_log_prob,
+        cf_group_ids=cf_group_ids,
+        metrics_conf_path="counterfactuals/pipelines/conf/metrics/group_metrics.yaml",
     )
+    logger.info("Metrics calculated: %s", metrics)
+    return metrics
 
 
 @hydra.main(config_path="./conf", config_name="glance_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
-    """
-    Main pipeline function for GLANCE counterfactual generation and evaluation.
-
-    Orchestrates a 5-fold cross-validation pipeline: loads dataset, creates
-    discriminative and generative models, generates counterfactuals using the
-    configured GLANCE-like method, and evaluates them via `evaluate_cf_for_rppcef`.
-
-    Args:
-        cfg: Hydra configuration including dataset, model, and CF parameters
-    """
+    """Run GLANCE pipeline with preprocessing and standardized evaluation."""
     torch.manual_seed(0)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset)
+    file_dataset = instantiate(cfg.dataset)
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        logger.info(f"Processing fold {fold_n}")
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            logger.info("Relabeling dataset with discriminative model predictions")
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
+        dequantizer.fit(dataset.X_train)
+        gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+        dataset.X_train = dequantizer.transform(dataset.X_train)
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(
+                dataset.train_dataloader(
+                    batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+                )
+            ),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
 
         (
             Xs_cfs,
             Xs,
-            log_prob_threshold,
             ys_orig,
             ys_target,
             model_returned,
             cf_search_time,
+            extras,
         ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
 
-        logger.info("Calculating metrics")
-        metrics = evaluate_cf_for_rppcef(
+        gen_model = DequantizationWrapper(gen_model, dequantizer)
+
+        metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
-            X_cf=Xs_cfs,
+            Xs_cfs=Xs_cfs,
             model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,
             y_test=ys_orig,
             y_target=ys_target,
             median_log_prob=log_prob_threshold,
-            X_test_target=Xs,
+            **extras,
         )
-        logger.info(f"Metrics:\n{metrics}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]

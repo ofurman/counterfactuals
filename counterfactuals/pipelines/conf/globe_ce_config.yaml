@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - gen_model: large_maf
-  - disc_model: mlp
+  - disc_model: mlr
 
 hydra:
   sweeper:
@@ -12,7 +12,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/heloc.yaml
 
 disc_model:
   train_model: false
@@ -34,6 +35,6 @@ counterfactuals_params:
     _target_: counterfactuals.cf_methods.globe_ce.GLOBE_CE
   
   # General parameters
-  target_class: 0
+  target_class: 1
   batch_size: 4096
   log_prob_quantile: 0.25

@@ -8,14 +8,16 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.utils
-from hydra.utils import instantiate
 from omegaconf import DictConfig
 
-from counterfactuals.cf_methods.cegp.cegp import CEGP
+from counterfactuals.cf_methods.local_methods.cegp.cegp import CEGP
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -29,7 +31,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the CEGP method.
 
@@ -48,10 +50,10 @@ def search_counterfactuals(
         Tuple containing:
             - Xs_cfs: Generated counterfactual examples
             - Xs: Original instances used for CF generation
-            - log_prob_threshold: Computed log-probability threshold
             - ys_orig: Original predicted labels
             - ys_target: Target labels for counterfactuals
             - model_returned: Boolean array indicating successful generation
+            - cf_search_time: Duration of counterfactual search
     """
     cf_method_name = "CEGP"
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
@@ -91,12 +93,18 @@ def search_counterfactuals(
     )
 
     time_start = time()
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
+    explanation_result = cf_method.explain_dataloader(
         dataloader=cf_dataloader, target_class=target_class
     )
+    Xs_cfs = explanation_result.x_cfs
+    Xs = explanation_result.x_origs
+    ys_orig = explanation_result.y_origs
+    ys_target = explanation_result.y_cf_targets
+    model_returned = explanation_result.logs["model_returned"]
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+    logger.info("Generated counterfactuals shape %s", Xs_cfs.shape)
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
@@ -104,7 +112,7 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def calculate_metrics(
@@ -165,44 +173,15 @@ def calculate_metrics(
 
 @hydra.main(config_path="./conf", config_name="cegp_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
-    torch.manual_seed(0)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-    logger.info("Loading dataset")
-
-    dataset = instantiate(cfg.dataset)
-
-    for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
-        disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
-        disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
-
-        if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
-
-        gen_model = create_gen_model(cfg, dataset, gen_model_path)
-
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
-        )
-
-        metrics = calculate_metrics(
-            gen_model=gen_model,
-            disc_model=disc_model,
-            Xs_cfs=Xs_cfs,
-            model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
-            X_train=dataset.X_train,
-            y_train=dataset.y_train.reshape(-1),
-            X_test=Xs,
-            y_test=ys_orig,
-            y_target=ys_target,
-            median_log_prob=log_prob_threshold,
-        )
-
-        df_metrics = pd.DataFrame(metrics, index=[0])
-        df_metrics.to_csv(os.path.join(save_folder, "cf_metrics.csv"), index=False)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("minmax", MinMaxScalingStep()),
+            ("torch_dtype", TorchDataTypeStep()),
+        ]
+    )
+    full_pipeline(
+        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
+    )
 
 
 if __name__ == "__main__":

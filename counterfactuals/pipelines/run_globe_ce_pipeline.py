@@ -11,12 +11,17 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
 
-from counterfactuals.cf_methods.ares import AReS
-from counterfactuals.cf_methods.globe_ce import GLOBE_CE
+from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -81,6 +86,44 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     return data_oh, features
 
 
+def compute_bin_widths(
+    dataset: MethodDataset, data: pd.DataFrame, n_bins: int = 10
+) -> Dict[str, float]:
+    """Compute equal-width bin sizes for each continuous feature.
+
+    Args:
+        dataset: Dataset carrying feature metadata.
+        data: DataFrame containing feature values in original scale.
+        n_bins: Number of bins to use for continuous features.
+
+    Returns:
+        Mapping from continuous feature name to bin width.
+    """
+    bin_widths: Dict[str, float] = {}
+    for feature in data.columns:
+        if feature in dataset.categorical_features:
+            continue
+
+        try:
+            categories = pd.cut(data[feature].astype(float), bins=n_bins).cat.categories
+        except ValueError as err:
+            logger.warning(
+                "Skipping bin width computation for feature %s: %s", feature, err
+            )
+            continue
+
+        if len(categories) == 0:
+            logger.warning(
+                "Skipping bin width computation for feature %s: no categories returned",
+                feature,
+            )
+            continue
+
+        bin_widths[feature] = float(categories.length[-1])
+
+    return bin_widths
+
+
 def search_counterfactuals(
     cfg: DictConfig,
     dataset: DictConfig,
@@ -111,43 +154,45 @@ def search_counterfactuals(
             - ys_target: Target labels for counterfactuals
             - model_returned: Boolean mask indicating successful generation
     """
-    cf_method_name = "ARES"
+    cf_method_name = "GLOBE_CE"
     disc_model.eval()
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
-    X_test_unscaled = dataset.feature_transformer.inverse_transform(dataset.X_test)
+    # Get the MinMaxScaler step directly to avoid torch conversion
+    minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
+
+    X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
     data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1])
+        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
     )
 
     def predict_fn(x):
-        x_scaled = dataset.feature_transformer.transform(x)
-        return disc_model.predict(x_scaled).detach().numpy().flatten()
+        # Convert pandas DataFrame to numpy array if needed
+        x_array = x.values if isinstance(x, pd.DataFrame) else x
+        x_scaled = minmax_scaler._transform_array(x_array)
+        return disc_model.predict(x_scaled)
 
     logger.info("Filtering out target class data for counterfactual generation")
-    target_class = 1
+    target_class = cfg.counterfactuals_params.target_class
     ys_pred = predict_fn(X_test_unscaled)
-    Xs = dataset.X_test[ys_pred != target_class]
-    ys_orig = ys_pred[ys_pred != target_class]
+    mask = ys_pred != target_class
+    Xs_unscaled = X_test_unscaled[mask]
+    Xs = dataset.X_test[mask]
+    ys_orig = ys_pred[mask]
 
-    logger.info("Creating counterfactual model")
-    ares_helper = AReS(
-        predict_fn=predict_fn,
+    logger.info("Computing bin widths for continuous features")
+    bin_widths = compute_bin_widths(
         dataset=dataset,
-        X=pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1]),
-        dropped_features=[],
+        data=pd.DataFrame(X_test_unscaled, columns=dataset.features),
         n_bins=10,
-        ordinal_features=[],
-        normalise=False,
-        constraints=[20, 7, 10],
     )
-    bin_widths = ares_helper.bin_widths
 
     cf_method = GLOBE_CE(
         predict_fn=predict_fn,
         dataset=dataset,
-        X=pd.DataFrame(X_test_unscaled, columns=dataset.features[:-1]),
+        X=pd.DataFrame(Xs_unscaled, columns=dataset.features),
         bin_widths=bin_widths,
+        target_class=target_class,
     )
     logger.info("Calculating log_prob_threshold")
     train_dataloader_for_log_prob = dataset.train_dataloader(
@@ -162,8 +207,8 @@ def search_counterfactuals(
     logger.info("Handling counterfactual generation")
     time_start = time()
     Xs_cfs = cf_method.explain()
-    Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
-    ys_target = np.abs(ys_orig - 1)
+    Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
+    ys_target = np.full_like(ys_orig, target_class)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
@@ -232,16 +277,22 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     logger.info("Loading dataset")
-    dataset = instantiate(cfg.dataset, shuffle=False)
-
+    file_dataset = instantiate(cfg.dataset)
+    preprocessing_pipeline = PreprocessingPipeline(
+        [
+            ("torch_dtype", TorchDataTypeStep()),
+            ("minmax", MinMaxScalingStep()),
+        ]
+    )
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         logger.info(f"Processing fold {fold_n}")
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
-            dataset.y_train = disc_model.predict(dataset.X_train).detach().numpy()
-            dataset.y_test = disc_model.predict(dataset.X_test).detach().numpy()
+            dataset.y_train = disc_model.predict(dataset.X_train)
+            dataset.y_test = disc_model.predict(dataset.X_test)
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
@@ -254,8 +305,8 @@ def main(cfg: DictConfig) -> None:
             disc_model=disc_model,
             Xs_cfs=Xs_cfs,
             model_returned=model_returned,
-            categorical_features=dataset.categorical_features,
-            continuous_features=dataset.numerical_features,
+            categorical_features=dataset.categorical_features_indices,
+            continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
             y_train=dataset.y_train.reshape(-1),
             X_test=Xs,

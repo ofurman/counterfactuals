@@ -7,19 +7,26 @@ hydra:
   sweeper:
     max_batch_size: 1
 
+neptune:
+  enable: false
+  project: "/counterfactuals"
+  api_token: ${oc.env:NEPTUNE_API_TOKEN}
+  tags: ["TCREx"]
+
 experiment:
   output_folder: models/
   relabel_with_disc_model: true
 
 dataset:
   _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/blobs.yaml
+  config_path: config/datasets/moons.yaml
 
 disc_model:
   train_model: false
   epochs: 5000
   batch_size: 128
   patience: 300
+  noise_lvl: 0.00
   lr: 0.001
 
 gen_model:
@@ -33,23 +40,14 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.RPPCEF
-    cf_method_type: "PPCEF_2"
-    K: 1
-
-  disc_model_criterion:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
-
+    _target_: counterfactuals.cf_methods.TCREx
+  # TCREx specific parameters
+  tau: 0.9  # Accuracy threshold for valid rules
+  rho: 0.02  # Feasibility threshold for valid rules
+  surrogate_tree_params:
+    max_leaf_nodes: 8
+    random_state: 0
   log_prob_quantile: 0.25
-  target_class: 0
-  epochs: 20000
-  batch_size: 4096
-  lr: 0.001
-  alpha: 1000
-  alpha_s: 1000
-  alpha_k: 100
-  beta: 0.01
-  patience: 1000
-  
-    
+  origin_class: 0
+  target_class: 1
+  batch_size: 4096 

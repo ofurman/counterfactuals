@@ -32,7 +32,6 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    # specific parameters besides standard ones should be passed here
     _target_: counterfactuals.cf_methods.DiceExplainerWrapper
 
   disc_model_criterion:
@@ -41,7 +40,13 @@ counterfactuals_params:
 
   log_prob_quantile: 0.25
   target_class: 0
-  epochs: 20000
   batch_size: 4096
-  lr: 0.001
-    
+  
+  # DiCE configuration
+  backend: "PYT"  # Backend for DiCE model ("PYT" for PyTorch, "TF1", "TF2", "sklearn")
+  method: "random"  # DiCE method ("random", "genetic", "kdtree")
+  
+  generation_params:
+    total_CFs: 1
+    desired_class: "opposite"
+    posthoc_sparsity_param: null

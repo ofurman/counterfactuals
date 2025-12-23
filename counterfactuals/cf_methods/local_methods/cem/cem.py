@@ -11,6 +11,7 @@ from counterfactuals.cf_methods.counterfactual_base import (
 from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
+from counterfactuals.cf_methods.tf_compat import ensure_tf_session
 from counterfactuals.models.pytorch_base import PytorchBase
 
 
@@ -32,8 +33,9 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         super().__init__(disc_model=disc_model, device=device)
 
         tf.compat.v1.disable_eager_execution()
-        predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731
-        num_features = disc_model.input_size
+        ensure_tf_session()
+        predict_proba = lambda x: disc_model.predict_proba(x)  # noqa: E731
+        num_features = disc_model.num_inputs
         shape = (1, num_features)
 
         # Set gradient clipping
