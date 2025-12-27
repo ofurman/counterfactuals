@@ -18,6 +18,7 @@ from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.plotting.plot_utils import plot_3d_regression_cfs
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -222,6 +223,21 @@ def main(cfg: DictConfig) -> None:
             cfg, dataset, gen_model, disc_model, save_folder
         )
 
+        # Create 3D plot if data has exactly 2 features
+        cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+        plot_path = os.path.join(
+            save_folder, f"cf_3d_plot_{cf_method_name}_{disc_model_name}.png"
+        )
+        plot_3d_regression_cfs(
+            X_cfs=Xs_cfs,
+            X_origs=Xs,
+            y_origs=ys_orig,
+            y_targets=ys_target,
+            num_points=5,
+            save_path=plot_path,
+        )
+
         metrics = calculate_metrics(
             gen_model=gen_model,
             disc_model=disc_model,
@@ -239,10 +255,10 @@ def main(cfg: DictConfig) -> None:
         logger.info(f"Final metrics: {metrics}")
         df_metrics = pd.DataFrame(metrics, index=[0])
         df_metrics["cf_search_time"] = cf_search_time
-        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )
+        break
 
 
 if __name__ == "__main__":

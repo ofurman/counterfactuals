@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 
@@ -7,6 +8,8 @@ import numpy as np
 import torch
 from PIL import Image
 from sklearn.inspection import DecisionBoundaryDisplay
+
+logger = logging.getLogger(__name__)
 
 
 def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
@@ -169,3 +172,183 @@ def create_grid_image(folders, output_filename, classifier):
             index += 1
 
     grid_image.save(output_filename)
+
+
+def plot_3d_regression_cfs(
+    X_cfs: np.ndarray,
+    X_origs: np.ndarray,
+    y_origs: np.ndarray,
+    y_targets: np.ndarray,
+    save_path: str,
+    num_points: int = 10,
+) -> None:
+    """
+    Create a 3D plot showing regression counterfactuals.
+
+    Visualizes the original points, counterfactual points, and projections
+    onto three planes. Only works when data has exactly 2 features.
+
+    Args:
+        X_cfs: Generated counterfactuals
+        X_origs: Original instances
+        y_origs: Original target values
+        y_targets: Target values for counterfactuals
+        save_path: Path to save the plot
+        num_points: Number of points to subsample and plot
+    """
+    if X_cfs.shape[1] != 2:
+        logger.info(
+            f"Skipping 3D plot: data has {X_cfs.shape[1]} features (requires exactly 2)"
+        )
+        return
+
+    logger.info("Creating 3D regression counterfactual plot with %d points", num_points)
+
+    # Subsample points with original target closest to 0.4
+    n_samples = min(num_points, len(X_origs))
+    target_value = 0.4
+    distances = np.abs(y_origs.ravel() - target_value)
+    indices = np.argpartition(distances, n_samples)[:n_samples]
+    X_cfs_sub = X_cfs[indices]
+    X_origs_sub = X_origs[indices]
+    y_origs_sub = y_origs[indices]
+    y_targets_sub = y_targets[indices]
+
+    fig = plt.figure(figsize=(12, 9))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Plot original points
+    ax.scatter(
+        X_origs_sub[:, 0],
+        X_origs_sub[:, 1],
+        y_origs_sub.ravel(),
+        c="blue",
+        marker="o",
+        s=50,
+        alpha=0.7,
+        label="Original points",
+        depthshade=False,
+    )
+
+    # Plot counterfactual points
+    ax.scatter(
+        X_cfs_sub[:, 0],
+        X_cfs_sub[:, 1],
+        y_targets_sub.ravel(),
+        c="red",
+        marker="^",
+        s=80,
+        alpha=0.9,
+        label="Counterfactuals",
+        depthshade=False,
+    )
+
+    # Add projections onto feature2=1.0 plane
+    for i in range(n_samples):
+        # Projection from original point
+        ax.plot(
+            [X_origs_sub[i, 0], X_origs_sub[i, 0]],
+            [X_origs_sub[i, 1], 1.0],
+            [float(y_origs_sub.ravel()[i]), float(y_origs_sub.ravel()[i])],
+            color="blue",
+            linestyle="--",
+            alpha=0.3,
+            linewidth=1,
+        )
+        # Projection from counterfactual point
+        ax.plot(
+            [X_cfs_sub[i, 0], X_cfs_sub[i, 0]],
+            [X_cfs_sub[i, 1], 1.0],
+            [float(y_targets_sub.ravel()[i]), float(y_targets_sub.ravel()[i])],
+            color="red",
+            linestyle="--",
+            alpha=0.3,
+            linewidth=1,
+        )
+
+    # Add projections onto feature1=0.0 plane
+    for i in range(n_samples):
+        # Projection from original point
+        ax.plot(
+            [X_origs_sub[i, 0], 0.0],
+            [X_origs_sub[i, 1], X_origs_sub[i, 1]],
+            [float(y_origs_sub.ravel()[i]), float(y_origs_sub.ravel()[i])],
+            color="blue",
+            linestyle="--",
+            alpha=0.3,
+            linewidth=1,
+        )
+        # Projection from counterfactual point
+        ax.plot(
+            [X_cfs_sub[i, 0], 0.0],
+            [X_cfs_sub[i, 1], X_cfs_sub[i, 1]],
+            [float(y_targets_sub.ravel()[i]), float(y_targets_sub.ravel()[i])],
+            color="red",
+            linestyle="--",
+            alpha=0.3,
+            linewidth=1,
+        )
+
+    # Plot projection points on feature2=1.0 plane
+    ax.scatter(
+        X_origs_sub[:, 0],
+        np.full(n_samples, 1.0),
+        y_origs_sub.ravel(),
+        c="blue",
+        marker="o",
+        s=30,
+        alpha=0.4,
+        facecolors="none",
+        edgecolors="blue",
+        linewidth=1,
+    )
+    ax.scatter(
+        X_cfs_sub[:, 0],
+        np.full(n_samples, 1.0),
+        y_targets_sub.ravel(),
+        c="red",
+        marker="^",
+        s=40,
+        alpha=0.4,
+        facecolors="none",
+        edgecolors="red",
+        linewidth=1,
+    )
+
+    # Plot projection points on feature1=0.0 plane
+    ax.scatter(
+        np.full(n_samples, 0.0),
+        X_origs_sub[:, 1],
+        y_origs_sub.ravel(),
+        c="blue",
+        marker="o",
+        s=30,
+        alpha=0.4,
+        facecolors="none",
+        edgecolors="blue",
+        linewidth=1,
+    )
+    ax.scatter(
+        np.full(n_samples, 0.0),
+        X_cfs_sub[:, 1],
+        y_targets_sub.ravel(),
+        c="red",
+        marker="^",
+        s=40,
+        alpha=0.4,
+        facecolors="none",
+        edgecolors="red",
+        linewidth=1,
+    )
+
+    ax.set_xlabel("Feature 1", fontsize=12)
+    ax.set_ylabel("Feature 2", fontsize=12)
+    ax.set_zlabel("Target", fontsize=12)
+    ax.set_zlim(0.3, 0.7)
+    ax.set_title("Regression Counterfactuals with Decision Surface", fontsize=14)
+    ax.legend(loc="upper left", fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    logger.info(f"3D plot saved to {save_path}")
