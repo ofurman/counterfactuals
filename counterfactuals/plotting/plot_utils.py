@@ -175,25 +175,30 @@ def create_grid_image(folders, output_filename, classifier):
 
 
 def plot_3d_regression_cfs(
+    gen_model: torch.nn.Module,
     X_cfs: np.ndarray,
     X_origs: np.ndarray,
     y_origs: np.ndarray,
     y_targets: np.ndarray,
     save_path: str,
+    delta: float,
     num_points: int = 10,
 ) -> None:
     """
     Create a 3D plot showing regression counterfactuals.
 
     Visualizes the original points, counterfactual points, and projections
-    onto three planes. Only works when data has exactly 2 features.
+    onto two vertical planes, with high density region on the bottom plane.
+    Only works when data has exactly 2 features.
 
     Args:
+        gen_model: Trained generative model
         X_cfs: Generated counterfactuals
         X_origs: Original instances
         y_origs: Original target values
         y_targets: Target values for counterfactuals
         save_path: Path to save the plot
+        delta: Log probability threshold for high density region
         num_points: Number of points to subsample and plot
     """
     if X_cfs.shape[1] != 2:
@@ -214,8 +219,38 @@ def plot_3d_regression_cfs(
     y_origs_sub = y_origs[indices]
     y_targets_sub = y_targets[indices]
 
+    # Calculate z-axis limits based on point values
+    z_min = min(y_origs_sub.min(), y_targets_sub.min())
+    z_max = 0.6
+
     fig = plt.figure(figsize=(12, 9))
     ax = fig.add_subplot(111, projection="3d")
+
+    # Plot high density region on bottom plane
+    xline = torch.linspace(0, 1, 300)
+    yline = torch.linspace(0, 1, 300)
+    xgrid, ygrid = torch.meshgrid(xline, yline)
+    xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+
+    # Use target value 0.6 as context for the generative model
+    with torch.no_grad():
+        zgrid = gen_model(
+            xyinput, 0.6 * torch.ones(len(xyinput), 1)
+        ).exp().reshape(300, 300)
+        zgrid = zgrid.numpy()
+
+    # Plot high density region as heatmap on z_min plane
+    ax.plot_surface(
+        xgrid.numpy(),
+        ygrid.numpy(),
+        np.full_like(zgrid, z_min),
+        facecolors=plt.cm.Greens(zgrid / zgrid.max()),
+        shade=False,
+        alpha=0.3,
+        rasterized=True,
+        antialiased=False,
+        linewidth=0,
+    )
 
     # Plot original points
     ax.scatter(
@@ -228,6 +263,7 @@ def plot_3d_regression_cfs(
         alpha=0.7,
         label="Original points",
         depthshade=False,
+        zorder=10,
     )
 
     # Plot counterfactual points
@@ -241,6 +277,7 @@ def plot_3d_regression_cfs(
         alpha=0.9,
         label="Counterfactuals",
         depthshade=False,
+        zorder=10,
     )
 
     # Add projections onto feature2=1.0 plane
@@ -254,6 +291,7 @@ def plot_3d_regression_cfs(
             linestyle="--",
             alpha=0.3,
             linewidth=1,
+            zorder=5,
         )
         # Projection from counterfactual point
         ax.plot(
@@ -264,6 +302,7 @@ def plot_3d_regression_cfs(
             linestyle="--",
             alpha=0.3,
             linewidth=1,
+            zorder=5,
         )
 
     # Add projections onto feature1=0.0 plane
@@ -277,6 +316,7 @@ def plot_3d_regression_cfs(
             linestyle="--",
             alpha=0.3,
             linewidth=1,
+            zorder=5,
         )
         # Projection from counterfactual point
         ax.plot(
@@ -287,6 +327,20 @@ def plot_3d_regression_cfs(
             linestyle="--",
             alpha=0.3,
             linewidth=1,
+            zorder=5,
+        )
+
+    # Add projections onto feature1-feature2 plane (z=z_min) for counterfactuals
+    for i in range(n_samples):
+        ax.plot(
+            [X_cfs_sub[i, 0], X_cfs_sub[i, 0]],
+            [X_cfs_sub[i, 1], X_cfs_sub[i, 1]],
+            [float(y_targets_sub.ravel()[i]), z_min],
+            color="red",
+            linestyle="--",
+            alpha=0.3,
+            linewidth=1,
+            zorder=5,
         )
 
     # Plot projection points on feature2=1.0 plane
@@ -301,6 +355,7 @@ def plot_3d_regression_cfs(
         facecolors="none",
         edgecolors="blue",
         linewidth=1,
+        zorder=5,
     )
     ax.scatter(
         X_cfs_sub[:, 0],
@@ -313,6 +368,7 @@ def plot_3d_regression_cfs(
         facecolors="none",
         edgecolors="red",
         linewidth=1,
+        zorder=5,
     )
 
     # Plot projection points on feature1=0.0 plane
@@ -327,6 +383,7 @@ def plot_3d_regression_cfs(
         facecolors="none",
         edgecolors="blue",
         linewidth=1,
+        zorder=5,
     )
     ax.scatter(
         np.full(n_samples, 0.0),
@@ -339,14 +396,38 @@ def plot_3d_regression_cfs(
         facecolors="none",
         edgecolors="red",
         linewidth=1,
+        zorder=5,
+    )
+
+    # Plot projection points on feature1-feature2 plane (z=z_min) for counterfactuals
+    ax.scatter(
+        X_cfs_sub[:, 0],
+        X_cfs_sub[:, 1],
+        np.full(n_samples, z_min),
+        c="red",
+        marker="^",
+        s=40,
+        alpha=0.4,
+        facecolors="none",
+        edgecolors="red",
+        linewidth=1,
+        zorder=5,
     )
 
     ax.set_xlabel("Feature 1", fontsize=12)
     ax.set_ylabel("Feature 2", fontsize=12)
     ax.set_zlabel("Target", fontsize=12)
-    ax.set_zlim(0.3, 0.7)
+    ax.set_zlim(z_min, z_max)
+    ax.set_xlim(0,1)
+    ax.set_ylim(0,1)
     ax.set_title("Regression Counterfactuals with Decision Surface", fontsize=14)
     ax.legend(loc="upper left", fontsize=10)
+
+    # Ensure surface is rendered behind other elements
+    if ax.collections:
+        ax.collections[0].set_zorder(0)
+        for coll in ax.collections[1:]:
+            coll.set_zorder(10)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight")

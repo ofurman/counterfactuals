@@ -230,10 +230,12 @@ def main(cfg: DictConfig) -> None:
             save_folder, f"cf_3d_plot_{cf_method_name}_{disc_model_name}.png"
         )
         plot_3d_regression_cfs(
+            gen_model=gen_model,
             X_cfs=Xs_cfs,
             X_origs=Xs,
             y_origs=ys_orig,
             y_targets=ys_target,
+            delta=delta,
             num_points=5,
             save_path=plot_path,
         )
