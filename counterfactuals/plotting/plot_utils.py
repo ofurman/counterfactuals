@@ -209,15 +209,33 @@ def plot_3d_regression_cfs(
 
     logger.info("Creating 3D regression counterfactual plot with %d points", num_points)
 
-    # Subsample points with original target closest to 0.4
-    n_samples = min(num_points, len(X_origs))
-    target_value = 0.4
-    distances = np.abs(y_origs.ravel() - target_value)
-    indices = np.argpartition(distances, n_samples)[:n_samples]
-    X_cfs_sub = X_cfs[indices]
-    X_origs_sub = X_origs[indices]
-    y_origs_sub = y_origs[indices]
-    y_targets_sub = y_targets[indices]
+    # Filter points with original target in range [0.3, 0.35]
+    target_range_mask = (y_origs.ravel() >= 0.39) & (y_origs.ravel() <= 0.41)
+    X_origs_filtered = X_origs[target_range_mask]
+    y_origs_filtered = y_origs[target_range_mask]
+
+    # If no points in range, fall back to all points
+    if len(X_origs_filtered) == 0:
+        logger.warning("No points found in target range [0.3, 0.35], using all points")
+        X_origs_filtered = X_origs
+        y_origs_filtered = y_origs
+        filtered_indices = np.arange(len(X_origs))
+    else:
+        filtered_indices = np.where(target_range_mask)[0]
+
+    # Sample points with low plausibility from the filtered set
+    n_samples = min(num_points, len(X_origs_filtered))
+    with torch.no_grad():
+        X_origs_torch = torch.tensor(X_origs_filtered).float()
+        y_origs_torch = torch.tensor(y_origs_filtered).float()
+        log_probs = gen_model(X_origs_torch, y_origs_torch)
+    low_prob_local_indices = np.argpartition(log_probs.numpy().ravel(), n_samples)[:n_samples]
+    low_prob_indices = filtered_indices[low_prob_local_indices]
+
+    X_cfs_sub = X_cfs[low_prob_indices]
+    X_origs_sub = X_origs[low_prob_indices]
+    y_origs_sub = y_origs[low_prob_indices]
+    y_targets_sub = y_targets[low_prob_indices]
 
     # Calculate z-axis limits based on point values
     z_min = min(y_origs_sub.min(), y_targets_sub.min())
@@ -433,3 +451,288 @@ def plot_3d_regression_cfs(
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"3D plot saved to {save_path}")
+
+
+def plot_conditional_density_contours(
+    gen_model: torch.nn.Module,
+    X_cfs: np.ndarray,
+    X_origs: np.ndarray,
+    y_origs: np.ndarray,
+    y_targets: np.ndarray,
+    save_path: str,
+    target_values: list[float] = None,
+    delta: float = None,
+    num_points: int = 10,
+) -> None:
+    """
+    Create a 2D plot showing conditional density contours for multiple target values.
+
+    Visualizes p(x|y) as contour lines for different target values, showing how the
+    high-density regions shift across feature space. Original and counterfactual
+    points are overlaid to show the transformation.
+
+    Args:
+        gen_model: Trained generative model
+        X_cfs: Generated counterfactuals
+        X_origs: Original instances
+        y_origs: Original target values
+        y_targets: Target values for counterfactuals
+        save_path: Path to save the plot
+        target_values: List of target values to plot contours for
+        delta: Log probability threshold for highlighting high-density regions
+        num_points: Number of points to subsample and plot
+    """
+    if X_cfs.shape[1] != 2:
+        logger.info(
+            f"Skipping contour plot: data has {X_cfs.shape[1]} features (requires exactly 2)"
+        )
+        return
+
+    if target_values is None:
+        target_values = [0.4, 0.6]
+
+    # Use same sampling logic as 3D plot
+    target_range_mask = (y_origs.ravel() >= 0.39) & (y_origs.ravel() <= 0.41)
+    X_origs_filtered = X_origs[target_range_mask]
+    y_origs_filtered = y_origs[target_range_mask]
+
+    if len(X_origs_filtered) == 0:
+        X_origs_filtered = X_origs
+        y_origs_filtered = y_origs
+        filtered_indices = np.arange(len(X_origs))
+    else:
+        filtered_indices = np.where(target_range_mask)[0]
+
+    n_samples = min(num_points, len(X_origs_filtered))
+    with torch.no_grad():
+        X_origs_torch = torch.tensor(X_origs_filtered).float()
+        y_origs_torch = torch.tensor(y_origs_filtered).float()
+        log_probs = gen_model(X_origs_torch, y_origs_torch)
+    low_prob_local_indices = np.argpartition(log_probs.numpy().ravel(), n_samples)[:n_samples]
+    low_prob_indices = filtered_indices[low_prob_local_indices]
+
+    X_cfs_sub = X_cfs[low_prob_indices]
+    X_origs_sub = X_origs[low_prob_indices]
+    y_origs_sub = y_origs[low_prob_indices]
+    y_targets_sub = y_targets[low_prob_indices]
+
+    logger.info("Creating conditional density contour plot with target values: %s", target_values)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Create grid for contour plotting
+    xline = torch.linspace(0, 1, 200)
+    yline = torch.linspace(0, 1, 200)
+    xgrid, ygrid = torch.meshgrid(xline, yline)
+    xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+
+    # Define colors for each target value
+    colors = plt.cm.tab10(np.linspace(0, 1, len(target_values)))
+
+    # Plot contours for each target value
+    contour_handles = []
+    for idx, target_val in enumerate(target_values):
+        with torch.no_grad():
+            zgrid = gen_model(
+                xyinput, target_val * torch.ones(len(xyinput), 1)
+            ).exp().reshape(200, 200)
+            zgrid = zgrid.numpy()
+
+        # Clip very large values to avoid oversized contours
+        z_clipped = np.clip(zgrid, a_min=0, a_max=np.percentile(zgrid, 99.9))
+
+        # Plot filled contour for high-density region (above delta if provided)
+        if delta is not None:
+            delta_exp = np.exp(delta)
+            ax.contourf(
+                xgrid.numpy(),
+                ygrid.numpy(),
+                z_clipped,
+                levels=[delta_exp, z_clipped.max()],
+                alpha=0.1,
+                colors=[colors[idx]],
+            )
+
+        # Plot contour lines with reasonable levels
+        contour_levels = np.linspace(
+            delta_exp if delta is not None else z_clipped.min(),
+            z_clipped.max(),
+            8
+        )
+        cs = ax.contour(
+            xgrid.numpy(),
+            ygrid.numpy(),
+            z_clipped,
+            levels=contour_levels,
+            alpha=0.6,
+            colors=[colors[idx]],
+            linewidths=1,
+        )
+        # Save contour for legend
+        contour_handles.append(cs)
+
+    # Create legend handles for contours
+    from matplotlib.lines import Line2D
+    legend_handles = [
+        Line2D([0], [0], color=colors[i], linewidth=2, label=f"p(x|y={target_values[i]:.1f})")
+        for i in range(len(target_values))
+    ]
+    legend_handles.extend([
+        Line2D([0], [0], marker="o", color="blue", markerfacecolor="blue", markersize=8, label="Original points", linestyle="None"),
+        Line2D([0], [0], marker="^", color="red", markerfacecolor="red", markersize=10, label="Counterfactuals", linestyle="None"),
+    ])
+
+    # Plot original points
+    ax.scatter(
+        X_origs_sub[:, 0],
+        X_origs_sub[:, 1],
+        c="blue",
+        marker="o",
+        s=50,
+        alpha=0.7,
+        edgecolors="black",
+        linewidth=0.5,
+    )
+
+    # Plot counterfactual points
+    ax.scatter(
+        X_cfs_sub[:, 0],
+        X_cfs_sub[:, 1],
+        c="red",
+        marker="^",
+        s=80,
+        alpha=0.9,
+        edgecolors="black",
+        linewidth=0.5,
+    )
+
+    # Plot arrows from originals to counterfactuals
+    for i in range(n_samples):
+        ax.annotate(
+            "",
+            xy=(X_cfs_sub[i, 0], X_cfs_sub[i, 1]),
+            xytext=(X_origs_sub[i, 0], X_origs_sub[i, 1]),
+            arrowprops=dict(
+                arrowstyle="->",
+                color="gray",
+                alpha=0.5,
+                lw=1,
+            ),
+        )
+
+    ax.set_xlabel("Feature 1", fontsize=12)
+    ax.set_ylabel("Feature 2", fontsize=12)
+    ax.set_xlim(0.2, 0.8)
+    ax.set_ylim(0.2, 0.8)
+    ax.set_title("Conditional Density Contours p(x|y) with Counterfactuals", fontsize=14)
+    ax.legend(handles=legend_handles, loc="upper right", fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    logger.info(f"Contour plot saved to {save_path}")
+
+
+def plot_plausibility_comparison(
+    gen_model: torch.nn.Module,
+    X_cfs: np.ndarray,
+    X_origs: np.ndarray,
+    y_origs: np.ndarray,
+    y_targets: np.ndarray,
+    save_path: str,
+    delta: float,
+) -> None:
+    """
+    Create a scatter plot comparing plausibility of original vs counterfactual points.
+
+    Visualizes p(x|y) vs p(x_cf|y_cf) with threshold lines and valid region shading.
+    Shows whether counterfactuals remain plausible for their new target values.
+
+    Args:
+        gen_model: Trained generative model
+        X_cfs: Generated counterfactuals
+        X_origs: Original instances
+        y_origs: Original target values
+        y_targets: Target values for counterfactuals
+        save_path: Path to save the plot
+        delta: Log probability threshold for validity
+    """
+    logger.info("Creating plausibility comparison plot")
+
+    # Calculate log probabilities for original points
+    with torch.no_grad():
+        X_origs_torch = torch.tensor(X_origs).float()
+        y_origs_torch = torch.tensor(y_origs).float()
+        log_probs_orig = gen_model(X_origs_torch, y_origs_torch)
+
+    # Calculate log probabilities for counterfactuals
+    with torch.no_grad():
+        X_cfs_torch = torch.tensor(X_cfs).float()
+        y_targets_torch = torch.tensor(y_targets).float()
+        log_probs_cf = gen_model(X_cfs_torch, y_targets_torch)
+
+    # Use log probabilities directly for plotting
+    log_probs_orig_plot = log_probs_orig.numpy().ravel()
+    log_probs_cf_plot = log_probs_cf.numpy().ravel()
+
+    # Log probability statistics for debugging
+    logger.info(f"Original log_probs - min: {log_probs_orig_plot.min():.2f}, max: {log_probs_orig_plot.max():.2f}")
+    logger.info(f"CF log_probs - min: {log_probs_cf_plot.min():.2f}, max: {log_probs_cf_plot.max():.2f}")
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    # Plot diagonal line (equal plausibility)
+    min_log = min(log_probs_orig_plot.min(), log_probs_cf_plot.min())
+    max_log = max(log_probs_orig_plot.max(), log_probs_cf_plot.max())
+    ax.plot(
+        [min_log, max_log],
+        [min_log, max_log],
+        "k--",
+        alpha=0.5,
+        linewidth=1,
+        label="Equal plausibility",
+    )
+
+    # Plot threshold lines
+    ax.axvline(
+        delta,
+        color="gray",
+        linestyle="--",
+        alpha=0.3,
+        linewidth=1,
+    )
+    ax.axhline(
+        delta,
+        color="gray",
+        linestyle="--",
+        alpha=0.3,
+        linewidth=1,
+    )
+
+    # Plot points colored by counterfactual plausibility
+    scatter = ax.scatter(
+        log_probs_orig_plot,
+        log_probs_cf_plot,
+        c=log_probs_cf_plot,
+        cmap="viridis",
+        marker="o",
+        s=30,
+        alpha=0.7,
+        edgecolors="black",
+        linewidth=0.5,
+    )
+
+    # Add colorbar
+    cbar = plt.colorbar(scatter, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label("CF log-probability log p(x_cf|y_cf)", fontsize=11)
+
+    ax.set_xlabel("log p(x|y) - Original log-probability", fontsize=12)
+    ax.set_ylabel("log p(x_cf|y_cf) - CF log-probability", fontsize=12)
+    ax.set_title("Plausibility Comparison: Original vs Counterfactual", fontsize=14)
+    ax.legend(loc="upper left", fontsize=9)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    logger.info(f"Plausibility comparison plot saved to {save_path}")

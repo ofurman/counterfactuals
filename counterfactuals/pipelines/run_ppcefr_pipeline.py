@@ -18,7 +18,11 @@ from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.datasets.method_dataset import MethodDataset
-from counterfactuals.plotting.plot_utils import plot_3d_regression_cfs
+from counterfactuals.plotting.plot_utils import (
+    plot_3d_regression_cfs,
+    plot_conditional_density_contours,
+    plot_plausibility_comparison,
+)
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -236,8 +240,37 @@ def main(cfg: DictConfig) -> None:
             y_origs=ys_orig,
             y_targets=ys_target,
             delta=delta,
-            num_points=5,
+            num_points=3,
             save_path=plot_path,
+        )
+
+        # Create conditional density contour plot
+        contour_path = os.path.join(
+            save_folder, f"cf_contour_plot_{cf_method_name}_{disc_model_name}.png"
+        )
+        plot_conditional_density_contours(
+            gen_model=gen_model,
+            X_cfs=Xs_cfs,
+            X_origs=Xs,
+            y_origs=ys_orig,
+            y_targets=ys_target,
+            delta=delta,
+            num_points=3,
+            save_path=contour_path,
+        )
+
+        # Create plausibility comparison plot
+        plausibility_path = os.path.join(
+            save_folder, f"cf_plausibility_plot_{cf_method_name}_{disc_model_name}.png"
+        )
+        plot_plausibility_comparison(
+            gen_model=gen_model,
+            X_cfs=Xs_cfs,
+            X_origs=Xs,
+            y_origs=ys_orig,
+            y_targets=ys_target,
+            delta=delta,
+            save_path=plausibility_path,
         )
 
         metrics = calculate_metrics(
