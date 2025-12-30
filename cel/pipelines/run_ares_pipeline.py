@@ -315,8 +315,6 @@ def search_counterfactuals(
     time_start = time()
     ys_target = np.full_like(ys_orig, target_class)
     explanation_result = cf_method.explain(
-        apriori_threshold=apriori_threshold,
-        max_triples_eval=max_triples_eval,
         y_origin=ys_orig,
         y_target=ys_target,
     )
@@ -329,7 +327,7 @@ def search_counterfactuals(
                 Xs_cfs = feature_transformer.transform(Xs_cfs)
         else:
             Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-    Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
+    model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.2f} seconds")
 

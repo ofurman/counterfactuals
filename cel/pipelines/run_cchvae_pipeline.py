@@ -7,6 +7,7 @@ import hydra
 import numpy as np
 import pandas as pd
 import torch
+import torch.utils
 from omegaconf import DictConfig, OmegaConf
 
 from counterfactuals.cf_methods.local_methods.c_chvae.c_chvae import CCHVAE

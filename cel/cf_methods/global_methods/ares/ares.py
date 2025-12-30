@@ -216,15 +216,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         apriori_threshold: float = 0.6,
         y_origin: Optional[np.ndarray] = None,
         y_target: Optional[np.ndarray] = None,
-        max_triples_eval: int = 5000,
-        max_triples_select: int = 5000,
-        disable_tqdm: bool = False,
     ) -> ExplanationResult:
-        if max_triples_eval < 0:
-            raise ValueError("max_triples_eval must be >= 0")
-        if max_triples_select < 0:
-            raise ValueError("max_triples_select must be >= 0")
-
         self.generate_itemsets(
             apriori_threshold=apriori_threshold,
             max_width=None,  # defaults to e2-1

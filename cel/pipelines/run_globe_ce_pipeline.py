@@ -254,7 +254,7 @@ def search_counterfactuals(
     )
     Xs_cfs = explanation_result.x_cfs
     Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-    Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
+    model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
 
