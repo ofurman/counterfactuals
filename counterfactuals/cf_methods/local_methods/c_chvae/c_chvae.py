@@ -1,10 +1,18 @@
 import logging
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import torch
 from numpy import linalg as LA
+
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
+    LocalCounterfactualMixin,
+)
 
 from .mlmodel import MLModel
 from .utils import (
@@ -19,7 +27,7 @@ logging.basicConfig(
 )
 
 
-class CCHVAE:
+class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
     """Implementation of CCHVAE.
 
     This class implements the Counterfactuals via Conditional Variational Autoencoders
@@ -287,17 +295,16 @@ class CCHVAE:
         return df_cfs
 
     def get_counterfactuals_without_check(self, factuals: pd.DataFrame) -> pd.DataFrame:
-        """Generates counterfactuals without running the post-hoc validity checks.
+        """Generates counterfactuals without running post-hoc validity checks.
 
-        This is similar to `get_counterfactuals` but skips `check_counterfactuals`,
-        returning the raw counterfactual outputs projected back to the model's
-        original feature order.
+        This method mirrors `get_counterfactuals` but skips validation, returning the
+        raw counterfactual outputs aligned to the model's feature order.
 
         Args:
-          factuals: DataFrame of factual instances.
+            factuals: DataFrame of factual instances.
 
         Returns:
-          DataFrame containing counterfactual instances aligned to `factuals`.
+            DataFrame containing counterfactual instances aligned to `factuals`.
         """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
@@ -316,3 +323,90 @@ class CCHVAE:
 
         df_cfs = self._mlmodel.get_ordered_features(df_cfs)
         return df_cfs
+
+    def explain(
+        self,
+        X: np.ndarray,
+        y_origin: np.ndarray,
+        y_target: np.ndarray,
+        X_train: Optional[np.ndarray] = None,
+        y_train: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for given instances.
+
+        This method provides the standard interface required by BaseCounterfactualMethod.
+        It converts numpy arrays to pandas DataFrame, calls the internal counterfactual
+        generation method, and returns results in the standard ExplanationResult format.
+
+        Args:
+            X: Input instances to explain with shape (n_instances, n_features).
+            y_origin: Original predictions/labels for X with shape (n_instances,).
+            y_target: Desired target predictions/labels with shape (n_instances,).
+            X_train: Training data (not used by CCHVAE).
+            y_train: Training labels (not used by CCHVAE).
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing counterfactuals, targets, originals,
+                and any additional logging information.
+        """
+        factuals = pd.DataFrame(X, columns=self._mlmodel.feature_input_order)
+        df_cfs = self.get_counterfactuals_without_check(factuals)
+        x_cfs = df_cfs.to_numpy()
+
+        return ExplanationResult(
+            x_cfs=x_cfs,
+            y_cf_targets=y_target,
+            x_origs=X,
+            y_origs=y_origin,
+            logs=None,
+        )
+
+    def explain_dataloader(
+        self,
+        dataloader,
+        epochs: int = None,
+        lr: float = None,
+        patience_eps: float = 1e-5,
+        y_target: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for data provided via DataLoader.
+
+        This method provides the standard interface required by BaseCounterfactualMethod.
+        Note: CCHVAE does not use epochs, lr, or patience_eps as it's a sampling-based
+        method rather than an optimization-based one.
+
+        Args:
+            dataloader: PyTorch DataLoader containing (X, y) pairs.
+            epochs: Not used by CCHVAE (included for interface compatibility).
+            lr: Not used by CCHVAE (included for interface compatibility).
+            patience_eps: Not used by CCHVAE (included for interface compatibility).
+            y_target: Optional target labels aligned to the dataloader.
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing all generated counterfactuals,
+                their targets, original instances, and detailed logging information.
+        """
+        xs: list[np.ndarray] = []
+        ys: list[np.ndarray] = []
+        for batch in dataloader:
+            batch_x, batch_y = batch[:2]
+            xs.append(batch_x.detach().cpu().numpy())
+            ys.append(batch_y.detach().cpu().numpy())
+
+        X = np.vstack(xs)
+        y_origin = np.concatenate(ys).reshape(-1)
+
+        if y_target is None:
+            y_target = np.abs(1 - y_origin)
+        else:
+            y_target = np.asarray(y_target).reshape(-1)
+
+        return self.explain(
+            X=X,
+            y_origin=y_origin,
+            y_target=y_target,
+        )

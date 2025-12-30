@@ -215,7 +215,12 @@ def search_counterfactuals(
 
     logger.info("Handling counterfactual generation")
     time_start = time()
-    Xs_cfs = cf_method.explain()
+    ys_target = np.full_like(ys_orig, target_class)
+    explanation_result = cf_method.explain(
+        y_origin=ys_orig,
+        y_target=ys_target,
+    )
+    Xs_cfs = explanation_result.x_cfs
     if Xs_cfs.shape[0] > 0:
         if feature_transformer is not None:
             if hasattr(feature_transformer, "_transform_array"):
@@ -224,7 +229,6 @@ def search_counterfactuals(
                 Xs_cfs = feature_transformer.transform(Xs_cfs)
         else:
             Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-    ys_target = np.full_like(ys_orig, target_class)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.2f} seconds")

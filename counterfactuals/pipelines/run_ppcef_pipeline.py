@@ -129,7 +129,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
-    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def get_categorical_intervals(

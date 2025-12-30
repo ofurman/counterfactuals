@@ -144,6 +144,7 @@ def search_counterfactuals(
 
     Xs_cfs = np.array(Xs_cfs)
     ys_target = np.abs(1 - y_test_origin)
+    model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
@@ -152,6 +153,7 @@ def search_counterfactuals(
         X_test_origin,
         y_test_origin,
         ys_target,
+        model_returned,
         cf_search_time,
     )
 

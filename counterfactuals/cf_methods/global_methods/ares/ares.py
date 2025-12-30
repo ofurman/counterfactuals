@@ -1,6 +1,7 @@
 import copy
 import itertools
 import warnings
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,14 @@ import pandas as pd
 from mlxtend.frequent_patterns import apriori
 from sklearn import preprocessing
 from tqdm import tqdm
+
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.global_counterfactual_mixin import (
+    GlobalCounterfactualMixin,
+)
 
 
 def create_feature_values_tree(features_tree, use_values=False):
@@ -41,7 +50,7 @@ def create_features_tree(feature_values):
     return features_tree
 
 
-class AReS:
+class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
     def __init__(
         self,
         predict_fn,
@@ -205,7 +214,9 @@ class AReS:
     def explain(
         self,
         apriori_threshold: float = 0.6,
-    ):
+        y_origin: Optional[np.ndarray] = None,
+        y_target: Optional[np.ndarray] = None,
+    ) -> ExplanationResult:
         self.generate_itemsets(
             apriori_threshold=apriori_threshold,
             max_width=None,  # defaults to e2-1
@@ -229,7 +240,62 @@ class AReS:
             print_terms=False,
             plot_accuracy=False,
         )
-        return self.R.cfx_matrix[-1]
+        x_cfs = self.R.cfx_matrix[-1]
+        x_origs = self.X_aff_original.to_numpy()
+        if y_origin is None:
+            y_origin = np.zeros(x_origs.shape[0], dtype=int)
+        if y_target is None:
+            y_target = np.ones(x_origs.shape[0], dtype=int)
+        return ExplanationResult(
+            x_cfs=x_cfs,
+            y_cf_targets=np.asarray(y_target).reshape(-1),
+            x_origs=x_origs,
+            y_origs=np.asarray(y_origin).reshape(-1),
+            logs=None,
+        )
+
+    def explain_dataloader(
+        self,
+        dataloader,
+        epochs: int = None,
+        lr: float = None,
+        patience_eps: float = 1e-5,
+        y_target: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for data provided via DataLoader.
+
+        Args:
+            dataloader: PyTorch DataLoader containing (X, y) pairs.
+            epochs: Not used by AReS (included for interface compatibility).
+            lr: Not used by AReS (included for interface compatibility).
+            patience_eps: Not used by AReS (included for interface compatibility).
+            y_target: Optional target labels aligned to the dataloader.
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing generated counterfactuals, targets,
+                original instances, and any additional logging information.
+        """
+        xs: list[np.ndarray] = []
+        ys: list[np.ndarray] = []
+        for batch in dataloader:
+            batch_x, batch_y = batch[:2]
+            xs.append(batch_x.detach().cpu().numpy())
+            ys.append(batch_y.detach().cpu().numpy())
+
+        X = np.vstack(xs)
+        y_origin = np.concatenate(ys).reshape(-1)
+
+        if y_target is None:
+            y_target = np.ones_like(y_origin)
+        else:
+            y_target = np.asarray(y_target).reshape(-1)
+
+        return self.explain(
+            y_origin=y_origin,
+            y_target=y_target,
+        )
 
     def bin_continuous_features(self, data):
         """
