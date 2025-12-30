@@ -1,11 +1,19 @@
 import logging
 from collections import defaultdict
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.group_counterfactual_mixin import (
+    GroupCounterfactualMixin,
+)
 from counterfactuals.cf_methods.group_methods.glance.dice_wrapper import (
     DiceExplainerWrapper,
 )
@@ -13,7 +21,7 @@ from counterfactuals.cf_methods.group_methods.glance.dice_wrapper import (
 logger = logging.getLogger(__name__)
 
 
-class GLANCE:
+class GLANCE(BaseCounterfactualMethod, GroupCounterfactualMixin):
     def __init__(
         self,
         X_test,
@@ -258,9 +266,95 @@ class GLANCE:
         """
         return self.final_clusters
 
-    def explain(self):
-        X_aff = self.X[self.Y == 0]
+    def _explain(self, X: np.ndarray) -> np.ndarray:
+        X_aff = X.copy()
         for i in range(X_aff.shape[0]):
             X_aff[i] = self.get_counterfactual(X_aff[i])
-
         return X_aff
+
+    def explain(
+        self,
+        X: np.ndarray,
+        y_origin: np.ndarray,
+        y_target: np.ndarray,
+        X_train: Optional[np.ndarray] = None,
+        y_train: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for given instances.
+
+        Args:
+            X: Input instances to explain with shape (n_instances, n_features).
+            y_origin: Original predictions/labels for X with shape (n_instances,).
+            y_target: Desired target predictions/labels with shape (n_instances,).
+            X_train: Training data used to fit the underlying explainer.
+            y_train: Training labels used to fit the underlying explainer.
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing counterfactuals, targets, originals,
+                and any additional logging information.
+        """
+        if X_train is not None and y_train is not None:
+            method_to_use = kwargs.get("method_to_use", "dice")
+            self.prep(X_train, y_train, method_to_use=method_to_use)
+        elif not hasattr(self, "explainer"):
+            raise ValueError(
+                "GLANCE must be prepared with training data before explain()."
+            )
+
+        X_cfs = self._explain(X)
+        return ExplanationResult(
+            x_cfs=X_cfs,
+            y_cf_targets=y_target,
+            x_origs=X,
+            y_origs=y_origin,
+            logs=None,
+            cf_group_ids=np.asarray(self.clusters),
+        )
+
+    def explain_dataloader(
+        self,
+        dataloader,
+        epochs: int = None,
+        lr: float = None,
+        patience_eps: float = 1e-5,
+        y_target: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for data provided via DataLoader.
+
+        Args:
+            dataloader: PyTorch DataLoader containing (X, y) pairs.
+            epochs: Not used by GLANCE (included for interface compatibility).
+            lr: Not used by GLANCE (included for interface compatibility).
+            patience_eps: Not used by GLANCE (included for interface compatibility).
+            y_target: Optional target labels aligned to the dataloader.
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing generated counterfactuals, targets,
+                original instances, and any additional logging information.
+        """
+        xs: list[np.ndarray] = []
+        ys: list[np.ndarray] = []
+        for batch in dataloader:
+            batch_x, batch_y = batch[:2]
+            xs.append(batch_x.detach().cpu().numpy())
+            ys.append(batch_y.detach().cpu().numpy())
+
+        X = np.vstack(xs)
+        y_origin = np.concatenate(ys).reshape(-1)
+
+        if y_target is None:
+            y_target = np.abs(1 - y_origin)
+        else:
+            y_target = np.asarray(y_target).reshape(-1)
+
+        return self.explain(
+            X=X,
+            y_origin=y_origin,
+            y_target=y_target,
+            X_train=kwargs.get("X_train"),
+            y_train=kwargs.get("y_train"),
+        )

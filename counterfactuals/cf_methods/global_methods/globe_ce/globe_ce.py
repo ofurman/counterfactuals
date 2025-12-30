@@ -1,12 +1,21 @@
 import copy
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.global_counterfactual_mixin import (
+    GlobalCounterfactualMixin,
+)
 
-class GLOBE_CE:
+
+class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
     def __init__(
         self,
         predict_fn,
@@ -899,12 +908,71 @@ class GLOBE_CE:
                 delta[self.feature_values.index(r + " = " + then)] = 1.1
         return delta
 
-    def explain(self):
+    def explain(
+        self,
+        y_origin: Optional[np.ndarray] = None,
+        y_target: Optional[np.ndarray] = None,
+    ) -> ExplanationResult:
         best_delta = self.get_best_delta()
         best_k_s = self.get_best_k_s(best_delta)
         muls_ = best_k_s.reshape(-1, 1) @ best_delta.reshape(1, -1)
         Xs_cfs = self.x_aff + muls_
-        return Xs_cfs
+        x_origs = self.x_aff
+        if y_origin is None:
+            affected_mask = self.preds != self.target_class
+            y_origin = self.preds[affected_mask]
+        if y_target is None:
+            y_target = np.full(x_origs.shape[0], self.target_class, dtype=int)
+        return ExplanationResult(
+            x_cfs=Xs_cfs,
+            y_cf_targets=np.asarray(y_target).reshape(-1),
+            x_origs=x_origs,
+            y_origs=np.asarray(y_origin).reshape(-1),
+            logs=None,
+        )
+
+    def explain_dataloader(
+        self,
+        dataloader,
+        epochs: int = None,
+        lr: float = None,
+        patience_eps: float = 1e-5,
+        y_target: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for data provided via DataLoader.
+
+        Args:
+            dataloader: PyTorch DataLoader containing (X, y) pairs.
+            epochs: Not used by GLOBE_CE (included for interface compatibility).
+            lr: Not used by GLOBE_CE (included for interface compatibility).
+            patience_eps: Not used by GLOBE_CE (included for interface compatibility).
+            y_target: Optional target labels aligned to the dataloader.
+            **kwargs: Additional method-specific parameters.
+
+        Returns:
+            ExplanationResult: Object containing generated counterfactuals, targets,
+                original instances, and any additional logging information.
+        """
+        xs: list[np.ndarray] = []
+        ys: list[np.ndarray] = []
+        for batch in dataloader:
+            batch_x, batch_y = batch[:2]
+            xs.append(batch_x.detach().cpu().numpy())
+            ys.append(batch_y.detach().cpu().numpy())
+
+        X = np.vstack(xs)
+        y_origin = np.concatenate(ys).reshape(-1)
+
+        if y_target is None:
+            y_target = np.full(y_origin.shape[0], self.target_class, dtype=int)
+        else:
+            y_target = np.asarray(y_target).reshape(-1)
+
+        return self.explain(
+            y_origin=y_origin,
+            y_target=y_target,
+        )
 
     def get_best_k_s(self, best_delta):
         _, cos_s, k_s = self.scale(
