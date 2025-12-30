@@ -1,0 +1,150 @@
+site_name: Counterfactuals
+site_description: A Python library for counterfactual explanations with datasets, methods, and benchmarks
+site_url: https://ofurman.github.io/counterfactuals
+repo_url: https://github.com/ofurman/counterfactuals
+repo_name: ofurman/counterfactuals
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            docstring_options:
+              ignore_init_summary: true
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            signature_crossrefs: true
+            allow_inspection: true
+  - section-index
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - tables
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ofurman/counterfactuals
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Core Concepts: getting-started/concepts.md
+  - User Guide:
+    - user-guide/index.md
+    - Working with Datasets: user-guide/datasets.md
+    - Training Models: user-guide/models.md
+    - Generating Counterfactuals: user-guide/generating-counterfactuals.md
+    - Evaluating Results: user-guide/evaluation.md
+    - Running Pipelines: user-guide/pipelines.md
+  - Methods:
+    - methods/index.md
+    - Local Methods:
+      - methods/local/index.md
+      - PPCEF: methods/local/ppcef.md
+      - DiCoFlex: methods/local/dicoflex.md
+      - DICE: methods/local/dice.md
+      - WACH: methods/local/wach.md
+      - SACE: methods/local/sace.md
+      - CEM: methods/local/cem.md
+      - CEGP: methods/local/cegp.md
+      - CET: methods/local/cet.md
+      - CCHVAE: methods/local/cchvae.md
+      - Artelt: methods/local/artelt.md
+    - Global Methods:
+      - methods/global/index.md
+      - GLOBE-CE: methods/global/globe-ce.md
+      - AReS: methods/global/ares.md
+    - Group Methods:
+      - methods/group/index.md
+      - ReViCE: methods/group/revice.md
+      - GLANCE: methods/group/glance.md
+      - Group GLOBE-CE: methods/group/group-globe-ce.md
+  - Datasets:
+    - datasets/index.md
+    - Classification Datasets: datasets/classification.md
+    - Regression Datasets: datasets/regression.md
+    - Custom Datasets: datasets/custom.md
+  - Benchmarks:
+    - benchmarks/index.md
+    - Evaluation Metrics: benchmarks/metrics.md
+    - Benchmark Results: benchmarks/results.md
+    - Running Benchmarks: benchmarks/running.md
+  - API Reference: reference/index.md
+  - Contributing: contributing.md
