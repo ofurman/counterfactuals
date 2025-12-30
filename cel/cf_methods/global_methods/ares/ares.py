@@ -10,11 +10,11 @@ from mlxtend.frequent_patterns import apriori
 from sklearn import preprocessing
 from tqdm import tqdm
 
-from cel.cf_methods.counterfactual_base import (
+from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
-from cel.cf_methods.global_counterfactual_mixin import (
+from counterfactuals.cf_methods.global_counterfactual_mixin import (
     GlobalCounterfactualMixin,
 )
 

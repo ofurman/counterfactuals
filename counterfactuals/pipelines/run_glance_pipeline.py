@@ -83,9 +83,15 @@ def search_counterfactuals(
 
     logger.info("Handling counterfactual generation")
     time_start = time()
-    cf_method.prep(dataset.X_train, dataset.y_train)
-    Xs_cfs = cf_method.explain()
     ys_target = np.abs(ys_orig - 1)
+    explanation_results = cf_method.explain(
+        X=Xs,
+        y_origin=ys_orig,
+        y_target=ys_target,
+        X_train=dataset.X_train,
+        y_train=dataset.y_train,
+    )
+    Xs_cfs = explanation_results.x_cfs
     model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
@@ -96,7 +102,7 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
-    extras = {"cf_group_ids": np.asarray(cf_method.clusters)}
+    extras = {"cf_group_ids": explanation_results.cf_group_ids}
     return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time, extras
 
 
@@ -132,7 +138,7 @@ def calculate_metrics(
         y_target=y_target,
         median_log_prob=median_log_prob,
         cf_group_ids=cf_group_ids,
-        metrics_conf_path="counterfactuals/pipelines/conf/metrics/group_metrics.yaml",
+        metrics_conf_path="counterfactuals/pipelines/conf/metrics/default.yaml",
     )
     logger.info("Metrics calculated: %s", metrics)
     return metrics

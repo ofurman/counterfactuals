@@ -6,11 +6,11 @@ import pandas as pd
 import torch
 from numpy import linalg as LA
 
-from cel.cf_methods.counterfactual_base import (
+from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
-from cel.cf_methods.local_counterfactual_mixin import (
+from counterfactuals.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
 

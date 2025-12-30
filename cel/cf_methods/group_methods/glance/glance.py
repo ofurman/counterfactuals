@@ -7,6 +7,13 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+from counterfactuals.cf_methods.group_counterfactual_mixin import (
+    GroupCounterfactualMixin,
+)
 from counterfactuals.cf_methods.group_methods.glance.dice_wrapper import (
     DiceExplainerWrapper,
 )
@@ -286,7 +293,9 @@ class GLANCE(BaseCounterfactualMethod, GroupCounterfactualMixin):
             method_to_use = kwargs.get("method_to_use", "dice")
             self.prep(X_train, y_train, method_to_use=method_to_use)
         elif not hasattr(self, "explainer"):
-            raise ValueError("GLANCE must be prepared with training data before explain().")
+            raise ValueError(
+                "GLANCE must be prepared with training data before explain()."
+            )
 
         X_cfs = self._explain(X)
         return ExplanationResult(

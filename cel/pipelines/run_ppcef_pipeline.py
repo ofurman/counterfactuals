@@ -126,11 +126,14 @@ def search_counterfactuals(
     )
 
     if cfg.counterfactuals_params.use_categorical:
-        Xs_cfs = apply_categorical_discretization(dataset.categorical_features_lists, Xs_cfs)
+        Xs_cfs = apply_categorical_discretization(
+            dataset.categorical_features_lists, Xs_cfs
+        )
+    model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
-    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def get_categorical_intervals(
