@@ -52,24 +52,37 @@ import numpy as np
 
 from counterfactuals.metrics.metrics import evaluate_cf
 
-def check_ppcef(ds):
+def check_ppcef(ds, config_name):
     try:
+        # Split data into train/test
+        try:
+            X_train, X_test, y_train, y_test = ds.split_data(ds.X, ds.y, train_ratio=0.8, stratify=True)
+        except ValueError:
+             # Fallback for small datasets or single-class issues
+            X_train, X_test, y_train, y_test = ds.split_data(ds.X, ds.y, train_ratio=0.8, stratify=False)
+
         import torch
         class DummyGen:
             def predict_log_prob(self, *a, **kw):
-                return torch.zeros((len(ds.X_test),))
+                return torch.zeros((len(X_test),))
             def __call__(self, X, y):
                 return torch.zeros((len(X),))
+            def to(self, device):
+                return self
+            def eval(self):
+                return self
         class DummyDisc:
             def predict(self, X):
                 return np.zeros((len(X),))
             def __call__(self, x):
                 return x
+            def to(self, device):
+                return self
         dummy_gen = DummyGen()
         dummy_disc = DummyDisc()
         ppcef = PPCEF(gen_model=dummy_gen, disc_model=dummy_disc, disc_model_criterion=None)
         # Generate dummy counterfactuals (identity for reproducibility)
-        Xs_cfs = ds.X_test.copy()
+        Xs_cfs = X_test.copy()
         model_returned = np.ones(len(Xs_cfs), dtype=bool)
         metrics = evaluate_cf(
             gen_model=dummy_gen,
@@ -77,40 +90,53 @@ def check_ppcef(ds):
             X_cf=Xs_cfs,
             model_returned=model_returned,
             categorical_features=list(range(len(ds.categorical_features))),
-            continuous_features=list(range(len(ds.continuous_features))),
-            X_train=ds.X_train,
-            y_train=ds.y_train,
-            X_test=ds.X_test,
-            y_test=ds.y_test,
+            continuous_features=list(range(len(ds.config.continuous_features))),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
             median_log_prob=0.0,
-            y_target=ds.y_test,
+            y_target=y_test,
         )
-        print(f"[OK] PPCEF metrics for {ds.config.name}: {metrics}")
+        print(f"[OK] PPCEF metrics for {config_name}: {metrics}")
         return metrics
     except Exception as e:
-        print(f"[FAIL] PPCEF failed for {ds.config.name}: {e}")
+        print(f"[FAIL] PPCEF failed for {config_name}: {e}")
         traceback.print_exc()
         return None
 
-def check_globe_ce(ds):
+def check_globe_ce(ds, config_name):
     try:
+        # Split data into train/test
+        try:
+            X_train, X_test, y_train, y_test = ds.split_data(ds.X, ds.y, train_ratio=0.8, stratify=True)
+        except ValueError:
+             # Fallback for small datasets or single-class issues
+            X_train, X_test, y_train, y_test = ds.split_data(ds.X, ds.y, train_ratio=0.8, stratify=False)
+        
         import torch
         def dummy_predict_fn(x):
             return np.zeros((len(x),))
         class DummyGen:
             def predict_log_prob(self, *a, **kw):
-                return torch.zeros((len(ds.X_test),))
+                return torch.zeros((len(X_test),))
             def __call__(self, X, y):
                 return torch.zeros((len(X),))
+            def to(self, device):
+                return self
+            def eval(self):
+                return self
         class DummyDisc:
             def predict(self, X):
                 return np.zeros((len(X),))
             def __call__(self, x):
                 return x
+            def to(self, device):
+                return self
         dummy_gen = DummyGen()
         dummy_disc = DummyDisc()
-        globe_ce = GLOBE_CE(predict_fn=dummy_predict_fn, dataset=ds, X=None, bin_widths=None, target_class=0)
-        Xs_cfs = ds.X_test.copy()
+        globe_ce = GLOBE_CE(predict_fn=dummy_predict_fn, dataset=ds, X=X_train, bin_widths=None, target_class=0)
+        Xs_cfs = X_test.copy()
         model_returned = np.ones(len(Xs_cfs), dtype=bool)
         metrics = evaluate_cf(
             gen_model=dummy_gen,
@@ -118,18 +144,18 @@ def check_globe_ce(ds):
             X_cf=Xs_cfs,
             model_returned=model_returned,
             categorical_features=list(range(len(ds.categorical_features))),
-            continuous_features=list(range(len(ds.continuous_features))),
-            X_train=ds.X_train,
-            y_train=ds.y_train,
-            X_test=ds.X_test,
-            y_test=ds.y_test,
+            continuous_features=list(range(len(ds.config.continuous_features))),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
             median_log_prob=0.0,
-            y_target=ds.y_test,
+            y_target=y_test,
         )
-        print(f"[OK] GLOBE-CE metrics for {ds.config.name}: {metrics}")
+        print(f"[OK] GLOBE-CE metrics for {config_name}: {metrics}")
         return metrics
     except Exception as e:
-        print(f"[FAIL] GLOBE-CE failed for {ds.config.name}: {e}")
+        print(f"[FAIL] GLOBE-CE failed for {config_name}: {e}")
         traceback.print_exc()
         return None
 
@@ -143,10 +169,11 @@ def main():
         ds = check_dataset(config_path)
         if ds is None:
             continue
-        ppcef_metrics = check_ppcef(ds)
-        globe_ce_metrics = check_globe_ce(ds)
+        config_name = config_path.stem
+        ppcef_metrics = check_ppcef(ds, config_name)
+        globe_ce_metrics = check_globe_ce(ds, config_name)
         results.append({
-            "dataset": ds.config.name,
+            "dataset": config_name,
             "ppcef": ppcef_metrics,
             "globe_ce": globe_ce_metrics
         })

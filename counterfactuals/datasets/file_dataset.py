@@ -127,3 +127,36 @@ class FileDataset(DatasetBase):
             if params.actionable and feature in self.features
         ]
         self.one_hot_feature_groups = context.one_hot_feature_groups
+
+    @property
+    def features_tree(self) -> dict[str, list[str]]:
+        """Returns a dictionary mapping features to their categories (if any)."""
+        tree = {}
+        processed_features = set()
+        
+        col_to_group = {}
+        for group, cols in self.one_hot_feature_groups.items():
+            for col in cols:
+                col_to_group[col] = group
+
+        for feature in self.features:
+            if feature in processed_features:
+                continue
+                
+            if feature in col_to_group:
+                group = col_to_group[feature]
+                if group not in tree:
+                    tree[group] = self.one_hot_feature_groups[group]
+                for col in self.one_hot_feature_groups[group]:
+                    processed_features.add(col)
+            else:
+                if feature in self.numerical_features:
+                    tree[feature] = []
+                else:
+                    if feature in self.raw_data.columns:
+                         unique_vals = sorted(self.raw_data[feature].unique().astype(str).tolist())
+                         tree[feature] = [f"{feature} = {v}" for v in unique_vals]
+                    else:
+                        tree[feature] = []
+                processed_features.add(feature)
+        return tree
