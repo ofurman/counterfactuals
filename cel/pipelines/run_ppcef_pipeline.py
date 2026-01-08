@@ -1,10 +1,5 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional
-
-import matplotlib
-
-matplotlib.use("Agg")  # Use non-interactive backend
 from time import time
 from typing import Any, Dict, List, Optional
 
