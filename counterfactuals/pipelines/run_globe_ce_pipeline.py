@@ -166,7 +166,7 @@ def search_counterfactuals(
         dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
     )
 
-    def predict_fn(x):
+    def predict_fn(x: pd.DataFrame | np.ndarray) -> np.ndarray:
         # Convert pandas DataFrame to numpy array if needed
         x_array = x.values if isinstance(x, pd.DataFrame) else x
         x_scaled = minmax_scaler._transform_array(x_array)

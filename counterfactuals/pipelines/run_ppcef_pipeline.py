@@ -1,11 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional
-
-import matplotlib
-
-matplotlib.use("Agg")  # Use non-interactive backend
 from time import time
+from typing import Any, Dict, List, Optional
 
 import hydra
 import numpy as np
@@ -118,7 +114,7 @@ def search_counterfactuals(
     ys_orig = explanation_result.y_origs
     ys_target = explanation_result.y_cf_targets
 
-    cf_search_time = np.mean(time() - time_start)
+    cf_search_time = time() - time_start
     logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"

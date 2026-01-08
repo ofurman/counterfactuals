@@ -115,3 +115,26 @@ class Sparsity(Metric):
         X_test = inputs["X_test"]
         X_cf = inputs["X_cf"]
         return (X_test != X_cf).mean()
+
+
+@register_metric("number_of_instances")
+class NumberOfInstances(Metric):
+    """
+    Number of instances metric - total count of counterfactual instances.
+    """
+
+    name = "number_of_instances"
+
+    def required_inputs(self) -> set[str]:
+        """Return the set of required input keys."""
+        return {"X_cf"}
+
+    def __call__(self, **inputs: Any) -> float:
+        """
+        Compute the number of instances metric.
+
+        Returns:
+            float: Total number of instances in the counterfactual set.
+        """
+        X_cf = inputs["X_cf"]
+        return float(X_cf.shape[0])
