@@ -166,7 +166,7 @@ def search_counterfactuals(
         dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
     )
 
-    def predict_fn(x):
+    def predict_fn(x: pd.DataFrame | np.ndarray) -> np.ndarray:
         # Convert pandas DataFrame to numpy array if needed
         x_array = x.values if isinstance(x, pd.DataFrame) else x
         x_scaled = minmax_scaler._transform_array(x_array)
@@ -206,9 +206,13 @@ def search_counterfactuals(
 
     logger.info("Handling counterfactual generation")
     time_start = time()
-    Xs_cfs = cf_method.explain()
-    Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
     ys_target = np.full_like(ys_orig, target_class)
+    explanation_result = cf_method.explain(
+        y_origin=ys_orig,
+        y_target=ys_target,
+    )
+    Xs_cfs = explanation_result.x_cfs
+    Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
     model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")

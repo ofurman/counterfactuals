@@ -137,6 +137,18 @@ class VariationalAutoencoder(nn.Module):
         if isinstance(xtrain, pd.DataFrame):
             xtrain = xtrain.values
 
+        xtrain = np.asarray(xtrain, dtype=np.float32)
+        x_min = np.nanmin(xtrain)
+        x_max = np.nanmax(xtrain)
+        if x_min < 0.0 or x_max > 1.0:
+            logger.warning(
+                "VAE input out of [0, 1] range (min=%.4f, max=%.4f). "
+                "Clipping to [0, 1]. Ensure preprocessing includes min-max scaling.",
+                x_min,
+                x_max,
+            )
+            xtrain = np.clip(xtrain, 0.0, 1.0)
+
         train_loader = torch.utils.data.DataLoader(
             xtrain, batch_size=batch_size, shuffle=True
         )

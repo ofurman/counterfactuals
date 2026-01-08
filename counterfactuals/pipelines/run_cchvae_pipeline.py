@@ -7,6 +7,7 @@ import hydra
 import numpy as np
 import pandas as pd
 import torch
+import torch.utils
 from omegaconf import DictConfig, OmegaConf
 
 from counterfactuals.cf_methods.local_methods.c_chvae.c_chvae import CCHVAE
@@ -32,7 +33,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the CCHVAE method.
 
@@ -53,6 +54,7 @@ def search_counterfactuals(
             - Xs: Original instances used for CF generation (np.ndarray)
             - ys_orig: Original labels (np.ndarray)
             - ys_target: Target labels (np.ndarray)
+            - model_returned: Boolean array of successful CF generations (np.ndarray)
             - cf_search_time: Average counterfactual search time (float)
     """
 
@@ -83,9 +85,24 @@ def search_counterfactuals(
     exp = CCHVAE(wrapped_model, hyperparams)
 
     logger.info("Handling counterfactual generation")
+    cf_dataloader = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(
+            torch.tensor(X_test_origin).float(),
+            torch.tensor(y_test_origin).float(),
+        ),
+        batch_size=cfg.counterfactuals_params.batch_size,
+        shuffle=False,
+    )
     time_start = time()
-    factuals = pd.DataFrame(X_test_origin, columns=wrapped_model.feature_input_order)
-    cfs = exp.get_counterfactuals_without_check(factuals)
+    explanation_result = exp.explain_dataloader(
+        dataloader=cf_dataloader,
+        epochs=cfg.counterfactuals_params.epochs,
+        lr=cfg.counterfactuals_params.lr,
+    )
+    Xs = explanation_result.x_origs
+    Xs_cfs = explanation_result.x_cfs
+    ys_orig = explanation_result.y_origs
+    ys_target = explanation_result.y_cf_targets
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
@@ -93,16 +110,15 @@ def search_counterfactuals(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
 
-    Xs_cfs = cfs.to_numpy()
-    ys_target = np.abs(1 - y_test_origin)
-
+    model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
     return (
         Xs_cfs,
-        X_test_origin,
-        y_test_origin,
+        Xs,
+        ys_orig,
         ys_target,
+        model_returned,
         cf_search_time,
     )
 
