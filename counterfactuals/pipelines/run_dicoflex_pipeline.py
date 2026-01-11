@@ -34,7 +34,6 @@ from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
-    OneHotEncodingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
@@ -206,6 +205,15 @@ def compute_pairwise_mean_distance(samples: np.ndarray, group_ids: np.ndarray) -
 def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int):
     logger.info("Running DiCoFlex pipeline for fold %s", fold_idx)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_idx)
+    gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    if cfg.experiment.relabel_with_disc_model:
+        cf_gen_model_filename = (
+            f"gen_model_{gen_model_name}_dicoflex_relabeled_by_{disc_model_name}.pt"
+        )
+    else:
+        cf_gen_model_filename = f"gen_model_{gen_model_name}_dicoflex.pt"
+    cf_gen_model_path = os.path.join(save_folder, cf_gen_model_filename)
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
@@ -255,11 +263,11 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
             train_loader,
             val_loader,
             cfg,
-            gen_model_path,
+            cf_gen_model_path,
             device,
         )
     else:
-        gen_model.load(gen_model_path)
+        gen_model.load(cf_gen_model_path)
 
     full_loader = get_full_training_loader(
         train_loader, cfg.counterfactuals_params.train_batch_factuals
@@ -485,7 +493,6 @@ def main(cfg: DictConfig):
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
-            ("onehot", OneHotEncodingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
