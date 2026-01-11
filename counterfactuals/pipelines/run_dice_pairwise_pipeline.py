@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from time import time
 from typing import Any, Dict, List, Tuple
 
@@ -20,6 +21,8 @@ from counterfactuals.preprocessing import (
     TorchDataTypeStep,
 )
 
+warnings.filterwarnings("ignore", category=FutureWarning, module="dice_ml")
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -39,22 +42,23 @@ class DiscWrapper(nn.Module):
         return torch.sigmoid(self.model(x))
 
 
-def compute_pairwise_min_distance(samples: np.ndarray, group_size: int) -> float:
-    """Average minimum pairwise distance across counterfactual sets."""
-    if samples.size == 0 or group_size < 2:
+def compute_pairwise_mean_distance(cfs: np.ndarray) -> float:
+    """Average minimum pairwise distance across counterfactual sets.
+
+    Args:
+        cfs: Array of shape (n_instances, cfs_per_instance, n_features)
+
+    Returns:
+        Mean of minimum pairwise distances across all instances
+    """
+    if cfs.size == 0 or cfs.shape[1] < 2:
         return float("nan")
-    min_dists: list[float] = []
-    num_groups = samples.shape[0] // group_size
-    for gid in range(num_groups):
-        start = gid * group_size
-        end = start + group_size
-        group_points = samples[start:end]
-        if group_points.shape[0] < 2:
-            continue
-        distances = pdist(group_points, metric="euclidean")
+    mean_dists: list[float] = []
+    for group in cfs:
+        distances = pdist(group, metric="euclidean")
         if distances.size > 0:
-            min_dists.append(float(distances.min()))
-    return float(np.mean(min_dists)) if min_dists else float("nan")
+            mean_dists.append(float(distances.mean()))
+    return float(np.mean(mean_dists)) if mean_dists else float("nan")
 
 
 def search_counterfactuals(
@@ -63,8 +67,22 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
-    """Generate counterfactuals with DiCE and expand to fixed CF_PER_INSTANCE per factual."""
+) -> Tuple[
+    Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float
+]:
+    """Generate counterfactuals with DiCE and expand to fixed CF_PER_INSTANCE per factual.
+
+    Returns:
+        Tuple containing:
+            - Xs_cfs_bundle: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
+                - Xs_cfs_first: First CF per factual instance (for original metrics)
+                - Xs_cfs_all: All CFs expanded (for pairwise distance)
+            - X_test_origin: Original test instances
+            - y_test_origin: Original test labels
+            - ys_target: Target labels
+            - model_returned_first: Mask indicating successful CF generation (first CF only)
+            - cf_search_time: Average time for CF search
+    """
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
@@ -112,50 +130,51 @@ def search_counterfactuals(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
 
-    Xs_cfs_blocks: list[np.ndarray] = []
-    Xs_blocks: list[np.ndarray] = []
-    ys_orig_blocks: list[np.ndarray] = []
-    ys_target_blocks: list[np.ndarray] = []
-    model_returned_blocks: list[np.ndarray] = []
+    # Store first CF per instance (for original metrics)
+    Xs_cfs_first_list: list[np.ndarray] = []
+    model_returned_first_list: list[bool] = []
 
-    for orig_idx, (orig, cf) in enumerate(zip(X_test_origin, cfs.cf_examples_list)):
+    # Store all CFs as 3D array (n_instances, CF_PER_INSTANCE, n_features)
+    Xs_cfs_all_list: list[np.ndarray] = []
+
+    for orig, cf in zip(X_test_origin, cfs.cf_examples_list):
         cf_df = cf.final_cfs_df
         if cf_df is None or cf_df.empty:
+            Xs_cfs_first_list.append(orig)
+            model_returned_first_list.append(False)
             cf_block = np.repeat(orig[None, :], CF_PER_INSTANCE, axis=0)
-            returned_mask = np.zeros(CF_PER_INSTANCE, dtype=bool)
         else:
             cf_array = cf_df.to_numpy()[:, :-1]
+            Xs_cfs_first_list.append(cf_array[0])
+            model_returned_first_list.append(True)
+
             cf_block = cf_array[:CF_PER_INSTANCE]
-            returned_mask = np.ones(cf_block.shape[0], dtype=bool)
             if cf_block.shape[0] < CF_PER_INSTANCE:
                 deficit = CF_PER_INSTANCE - cf_block.shape[0]
                 padding = np.repeat(orig[None, :], deficit, axis=0)
                 cf_block = np.vstack([cf_block, padding])
-                returned_mask = np.concatenate(
-                    [returned_mask, np.zeros(deficit, dtype=bool)]
-                )
 
-        Xs_cfs_blocks.append(cf_block)
-        Xs_blocks.append(np.repeat(orig[None, :], CF_PER_INSTANCE, axis=0))
-        ys_orig_blocks.append(np.repeat(y_test_origin[orig_idx], CF_PER_INSTANCE))
-        ys_target_blocks.append(np.repeat(target_class, CF_PER_INSTANCE))
-        model_returned_blocks.append(returned_mask)
+        Xs_cfs_all_list.append(cf_block)
 
-    Xs_cfs = np.vstack(Xs_cfs_blocks)
-    Xs_expanded = np.vstack(Xs_blocks)
-    ys_orig_expanded = np.concatenate(ys_orig_blocks)
-    ys_target = np.concatenate(ys_target_blocks)
-    model_returned = np.concatenate(model_returned_blocks)
+    Xs_cfs_first = np.array(Xs_cfs_first_list)
+    model_returned_first = np.array(model_returned_first_list)
+    Xs_cfs_all = np.stack(
+        Xs_cfs_all_list
+    )  # Shape: (n_instances, CF_PER_INSTANCE, n_features)
+    ys_target = np.abs(1 - y_test_origin)
 
-    pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    # Save all CFs to file (flatten for CSV)
+    pd.DataFrame(Xs_cfs_all.reshape(-1, Xs_cfs_all.shape[-1])).to_csv(
+        counterfactuals_path, index=False
+    )
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
     return (
-        Xs_cfs,
-        Xs_expanded,
-        ys_orig_expanded,
+        (Xs_cfs_first, Xs_cfs_all),
+        X_test_origin,
+        y_test_origin,
         ys_target,
-        model_returned,
+        model_returned_first,
         cf_search_time,
     )
 
@@ -163,7 +182,7 @@ def search_counterfactuals(
 def calculate_metrics(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
-    Xs_cfs: np.ndarray,
+    Xs_cfs: np.ndarray | tuple,
     model_returned: np.ndarray,
     categorical_features: List[int],
     continuous_features: List[int],
@@ -174,9 +193,24 @@ def calculate_metrics(
     median_log_prob: float,
     y_target: np.ndarray | None = None,
     metrics_conf_path: str | None = None,
+    Xs_cfs_all: np.ndarray | None = None,
     **_: Any,
 ) -> Dict[str, Any]:
-    """Calculate metrics and append pairwise minimum distance per factual."""
+    """Calculate metrics using first CF only, then append pairwise distance from all CFs.
+
+    Args:
+        Xs_cfs: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
+            - Xs_cfs_first: First counterfactual per instance (n_instances, n_features)
+            - Xs_cfs_all: All counterfactuals (n_instances * CF_PER_INSTANCE, n_features)
+        Other args: Standard metric calculation arguments
+
+    Returns:
+        Dictionary of metrics with pairwise_min_distance included
+    """
+    Xs_cfs_first, Xs_cfs_all = Xs_cfs
+    Xs_cfs = Xs_cfs_first
+
+    logger.info("Calculating standard metrics using first CF per instance...")
     metrics = evaluate_cf(
         gen_model=gen_model,
         disc_model=disc_model,
@@ -193,9 +227,11 @@ def calculate_metrics(
         metrics_conf_path=metrics_conf_path
         or "counterfactuals/pipelines/conf/metrics/default.yaml",
     )
-    metrics["pairwise_min_distance"] = compute_pairwise_min_distance(
-        Xs_cfs, CF_PER_INSTANCE
-    )
+
+    # Calculate pairwise distance on all CFs
+    logger.info("Calculating pairwise minimum distance across all CFs...")
+    metrics["pairwise_min_distance"] = compute_pairwise_mean_distance(Xs_cfs_all)
+
     logger.info("Metrics calculated: %s", metrics)
     return metrics
 

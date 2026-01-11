@@ -305,24 +305,51 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         )
         x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
 
+    # Handle multiple CFs per instance: extract first CF for metrics
+    cf_per_instance = params.cf_samples_per_factual
+    if cf_per_instance > 1:
+        n_instances = x_cfs_cleaned.shape[0] // cf_per_instance
+        x_cfs_3d = x_cfs_cleaned.reshape(n_instances, cf_per_instance, -1)
+        x_cfs_for_metrics = x_cfs_3d[:, 0, :].copy()
+        x_origs_for_metrics = explanation_result.x_origs[::cf_per_instance].copy()
+        y_origs_for_metrics = explanation_result.y_origs[::cf_per_instance].copy()
+        y_targets_for_metrics = explanation_result.y_cf_targets[
+            ::cf_per_instance
+        ].copy()
+        model_returned_for_metrics = model_returned_mask[::cf_per_instance].copy()
+        cf_group_ids_for_metrics = (
+            cf_group_ids[::cf_per_instance] if cf_group_ids is not None else None
+        )
+    else:
+        x_cfs_for_metrics = x_cfs_cleaned
+        x_origs_for_metrics = explanation_result.x_origs
+        y_origs_for_metrics = explanation_result.y_origs
+        y_targets_for_metrics = explanation_result.y_cf_targets
+        model_returned_for_metrics = model_returned_mask
+        cf_group_ids_for_metrics = cf_group_ids
+
+    # Ensure arrays are contiguous for pointer-based context lookup
+    x_cfs_for_metrics = np.ascontiguousarray(x_cfs_for_metrics, dtype=np.float32)
+    x_origs_for_metrics = np.ascontiguousarray(x_origs_for_metrics, dtype=np.float32)
+
     mask_vector = mask_vectors[params.mask_index]
     cf_contexts = build_context_matrix(
-        factual_points=explanation_result.x_origs,
-        labels=explanation_result.y_cf_targets,
+        factual_points=x_origs_for_metrics,
+        labels=y_targets_for_metrics,
         mask_vector=mask_vector,
         p_value=params.p_value,
         class_to_index=class_to_index,
     )
     test_contexts = build_context_matrix(
-        factual_points=explanation_result.x_origs,
-        labels=explanation_result.y_origs,
+        factual_points=x_origs_for_metrics,
+        labels=y_origs_for_metrics,
         mask_vector=mask_vector,
         p_value=params.p_value,
         class_to_index=class_to_index,
     )
     context_lookup = {
-        get_numpy_pointer(x_cfs_cleaned): cf_contexts,
-        get_numpy_pointer(explanation_result.x_origs): test_contexts,
+        get_numpy_pointer(x_cfs_for_metrics): cf_contexts,
+        get_numpy_pointer(x_origs_for_metrics): test_contexts,
     }
     metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
         base_model=gen_model,
@@ -380,17 +407,17 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     metrics = evaluate_cf(
         gen_model=metrics_gen_model,
         disc_model=disc_model,
-        X_cf=x_cfs_cleaned,
-        model_returned=model_returned_mask,
+        X_cf=x_cfs_for_metrics,
+        model_returned=model_returned_for_metrics,
         categorical_features=dataset.categorical_features_indices,
         continuous_features=dataset.numerical_features_indices,
         X_train=dataset.X_train,
         y_train=dataset.y_train,
-        X_test=explanation_result.x_origs,
-        y_test=explanation_result.y_origs,
+        X_test=x_origs_for_metrics,
+        y_test=y_origs_for_metrics,
         median_log_prob=log_prob_threshold,
-        y_target=explanation_result.y_cf_targets,
-        cf_group_ids=cf_group_ids,
+        y_target=y_targets_for_metrics,
+        cf_group_ids=cf_group_ids_for_metrics,
         metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
     )
     if cf_group_ids is not None:
