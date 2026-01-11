@@ -185,7 +185,7 @@ def compute_feature_bounds(data: np.ndarray, padding: float = 0.05) -> List[tupl
     return bounds
 
 
-def compute_pairwise_min_distance(samples: np.ndarray, group_ids: np.ndarray) -> float:
+def compute_pairwise_mean_distance(samples: np.ndarray, group_ids: np.ndarray) -> float:
     """Average minimum pairwise distance across counterfactual groups."""
     if samples.size == 0 or group_ids.size == 0:
         return float("nan")
@@ -456,19 +456,21 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     if cf_group_ids is not None:
         if cf_group_ids.shape[0] != x_cfs_cleaned.shape[0]:
             logger.warning(
-                "Skipping pairwise_min_distance: %s cf_group_ids for %s counterfactuals",
+                "Skipping pairwise_mean_distance: %s cf_group_ids for %s counterfactuals",
                 cf_group_ids.shape[0],
                 x_cfs_cleaned.shape[0],
             )
         else:
-            metrics["pairwise_min_distance"] = compute_pairwise_min_distance(
+            metrics["pairwise_mean_distance"] = compute_pairwise_mean_distance(
                 x_cfs_cleaned, cf_group_ids
             )
     logger.info(f"Metrics:\n{metrics}")
 
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_time
-    metrics_path = os.path.join(save_folder, "cf_metrics_DiCoFlex.csv")
+    metrics_path = os.path.join(
+        save_folder, f"cf_metrics_DiCoFlex_{disc_model_name}.csv"
+    )
     df_metrics.to_csv(metrics_path, index=False)
     logger.info("Saved metrics to %s", metrics_path)
 

@@ -37,6 +37,7 @@ from counterfactuals.preprocessing import (
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
+from counterfactuals.preprocessing.base import PreprocessingContext
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -180,7 +181,7 @@ def get_full_training_loader(
     )
 
 
-def compute_pairwise_min_distance(cfs: np.ndarray) -> float:
+def compute_pairwise_mean_distance(cfs: np.ndarray) -> float:
     """Average minimum pairwise distance across counterfactual sets.
 
     Args:
@@ -193,10 +194,9 @@ def compute_pairwise_min_distance(cfs: np.ndarray) -> float:
         return float("nan")
     min_dists: list[float] = []
     for group in cfs:
-        group_clean = group[~np.isnan(group).any(axis=1)]
-        if group_clean.shape[0] < 2:
+        if group.shape[0] < 2:
             continue
-        distances = pdist(group_clean, metric="euclidean")
+        distances = pdist(group, metric="euclidean")
         if distances.size > 0:
             min_dists.append(float(distances.mean()))
     return float(np.mean(min_dists)) if min_dists else float("nan")
@@ -318,26 +318,61 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     if model_returned_mask.size == 0:
         model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
 
-    # Replace NaN rows (where counterfactuals couldn't be found) with original factuals
-    x_cfs_cleaned = explanation_result.x_cfs.copy()
-    nan_rows = np.any(np.isnan(x_cfs_cleaned), axis=1)
-    if np.any(nan_rows):
-        logger.info(
-            "Replacing %d rows with NaN (failed counterfactuals) with original factuals",
-            np.sum(nan_rows),
-        )
-        x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
-
     # Reshape to 3D for pairwise distance: (n_instances, cf_per_instance, n_features)
-    n_instances = x_cfs_cleaned.shape[0] // cf_per_instance
-    x_cfs_3d = x_cfs_cleaned.reshape(n_instances, cf_per_instance, -1)
+    n_instances = explanation_result.x_cfs.shape[0] // cf_per_instance
+    x_cfs_raw = explanation_result.x_cfs.reshape(n_instances, cf_per_instance, -1)
+    x_origs_raw = explanation_result.x_origs.reshape(n_instances, cf_per_instance, -1)
+
+    # DiCE-style padding: keep valid CFs; if block empty, fill entire block with factual
+    cleaned_blocks = []
+    model_returned_blocks: list[bool] = []
+    for idx in range(n_instances):
+        cf_block = x_cfs_raw[idx]
+        factual_block = np.repeat(
+            x_origs_raw[idx : idx + 1, 0, :], cf_per_instance, axis=0
+        )
+        valid_mask = ~np.isnan(cf_block).any(axis=1)
+        valid_rows = cf_block[valid_mask]
+        if valid_rows.size == 0:
+            cleaned_block = factual_block
+            model_returned_blocks.append(False)
+        else:
+            cleaned_block = factual_block.copy()
+            cleaned_block[: min(cf_per_instance, valid_rows.shape[0])] = valid_rows[
+                :cf_per_instance
+            ]
+            model_returned_blocks.append(True)
+        cleaned_blocks.append(cleaned_block)
+
+    x_cfs_3d = np.stack(cleaned_blocks)
+    model_returned_mask = np.repeat(
+        np.array(model_returned_blocks, dtype=bool), cf_per_instance
+    )
+    # Decode one-hot categories for diversity calculation while keeping scaled numeric features
+    decoded_for_diversity = x_cfs_3d
+    onehot_step = dataset.preprocessing_pipeline.get_step("onehot")
+    if onehot_step is not None:
+        flat = x_cfs_3d.reshape(-1, x_cfs_3d.shape[-1])
+        decode_context = PreprocessingContext(
+            X_train=flat,
+            categorical_indices=dataset.categorical_features_indices,
+            continuous_indices=dataset.numerical_features_indices,
+        )
+        decoded_context = onehot_step.inverse_transform(decode_context)
+        decoded_for_diversity = decoded_context.X_train.reshape(
+            x_cfs_3d.shape[0], x_cfs_3d.shape[1], -1
+        )
 
     # Extract first CF per instance for standard metrics
     x_cfs_first = x_cfs_3d[:, 0, :].copy()
-    x_origs_first = explanation_result.x_origs[::cf_per_instance].copy()
-    y_origs_first = explanation_result.y_origs[::cf_per_instance].copy()
-    y_targets_first = explanation_result.y_cf_targets[::cf_per_instance].copy()
-    model_returned_first = model_returned_mask[::cf_per_instance].copy()
+    x_origs_first = x_origs_raw[:, 0, :].copy()
+    y_origs_first = explanation_result.y_origs.reshape(n_instances, cf_per_instance)[
+        :, 0
+    ].copy()
+    y_targets_first = explanation_result.y_cf_targets.reshape(
+        n_instances, cf_per_instance
+    )[:, 0].copy()
+    model_returned_first = np.array(model_returned_blocks, dtype=bool)
 
     # Ensure arrays are contiguous for pointer-based context lookup
     x_cfs_first = np.ascontiguousarray(x_cfs_first, dtype=np.float32)
@@ -373,7 +408,8 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         f"counterfactuals_DiCoFlexPairwise_{disc_model_name}.csv",
     )
 
-    cf_original_space = dataset.inverse_transform(x_cfs_cleaned)
+    x_cfs_flat = x_cfs_3d.reshape(-1, x_cfs_3d.shape[-1])
+    cf_original_space = dataset.inverse_transform(x_cfs_flat)
     pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
     logger.info("Saved all counterfactuals to %s", cf_path)
 
@@ -400,15 +436,19 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         "Calculating pairwise minimum distance across %d CFs per instance...",
         cf_per_instance,
     )
-    metrics["pairwise_min_distance"] = compute_pairwise_min_distance(x_cfs_3d)
-    logger.info("pairwise_min_distance: %.6f", metrics["pairwise_min_distance"])
+    metrics["pairwise_mean_distance"] = compute_pairwise_mean_distance(
+        decoded_for_diversity
+    )
+    logger.info("pairwise_mean_distance: %.6f", metrics["pairwise_mean_distance"])
 
     logger.info("Metrics:\n%s", metrics)
 
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_time
     df_metrics["cf_per_instance"] = cf_per_instance
-    metrics_path = os.path.join(save_folder, "cf_metrics_DiCoFlexPairwise.csv")
+    metrics_path = os.path.join(
+        save_folder, f"cf_metrics_DiCoFlexPairwise_{disc_model_name}.csv"
+    )
     df_metrics.to_csv(metrics_path, index=False)
     logger.info("Saved metrics to %s", metrics_path)
 
