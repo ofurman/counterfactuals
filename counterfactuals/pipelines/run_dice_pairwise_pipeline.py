@@ -28,8 +28,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-CF_PER_INSTANCE = 100
-
 
 class DiscWrapper(nn.Module):
     """Wrap discriminative model with sigmoid forward pass for DiCE."""
@@ -70,7 +68,7 @@ def search_counterfactuals(
 ) -> Tuple[
     Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float
 ]:
-    """Generate counterfactuals with DiCE and expand to fixed CF_PER_INSTANCE per factual.
+    """Generate counterfactuals with DiCE and expand to fixed cf_per_instance per factual.
 
     Returns:
         Tuple containing:
@@ -116,12 +114,13 @@ def search_counterfactuals(
     exp = dice_ml.Dice(dice, model, method=cfg.counterfactuals_params.method)
 
     logger.info("Handling counterfactual generation")
+    cf_per_instance = int(cfg.counterfactuals_params.generation_params.total_CFs)
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     time_start = time()
     generation_params: Dict[str, Any] = OmegaConf.to_container(
         cfg.counterfactuals_params.generation_params, resolve=True
     )
-    generation_params["total_CFs"] = CF_PER_INSTANCE
+    generation_params["total_CFs"] = cf_per_instance
     cfs = exp.generate_counterfactuals(query_instance, **generation_params)
     cf_search_time = np.mean(time() - time_start)
     logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
@@ -134,7 +133,7 @@ def search_counterfactuals(
     Xs_cfs_first_list: list[np.ndarray] = []
     model_returned_first_list: list[bool] = []
 
-    # Store all CFs as 3D array (n_instances, CF_PER_INSTANCE, n_features)
+    # Store all CFs as 3D array (n_instances, cf_per_instance, n_features)
     Xs_cfs_all_list: list[np.ndarray] = []
 
     for orig, cf in zip(X_test_origin, cfs.cf_examples_list):
@@ -142,15 +141,15 @@ def search_counterfactuals(
         if cf_df is None or cf_df.empty:
             Xs_cfs_first_list.append(orig)
             model_returned_first_list.append(False)
-            cf_block = np.repeat(orig[None, :], CF_PER_INSTANCE, axis=0)
+            cf_block = np.repeat(orig[None, :], cf_per_instance, axis=0)
         else:
             cf_array = cf_df.to_numpy()[:, :-1]
             Xs_cfs_first_list.append(cf_array[0])
             model_returned_first_list.append(True)
 
-            cf_block = cf_array[:CF_PER_INSTANCE]
-            if cf_block.shape[0] < CF_PER_INSTANCE:
-                deficit = CF_PER_INSTANCE - cf_block.shape[0]
+            cf_block = cf_array[:cf_per_instance]
+            if cf_block.shape[0] < cf_per_instance:
+                deficit = cf_per_instance - cf_block.shape[0]
                 padding = np.repeat(orig[None, :], deficit, axis=0)
                 cf_block = np.vstack([cf_block, padding])
 
@@ -160,7 +159,7 @@ def search_counterfactuals(
     model_returned_first = np.array(model_returned_first_list)
     Xs_cfs_all = np.stack(
         Xs_cfs_all_list
-    )  # Shape: (n_instances, CF_PER_INSTANCE, n_features)
+    )  # Shape: (n_instances, cf_per_instance, n_features)
     ys_target = np.abs(1 - y_test_origin)
 
     # Save all CFs to file (flatten for CSV)
@@ -201,7 +200,7 @@ def calculate_metrics(
     Args:
         Xs_cfs: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
             - Xs_cfs_first: First counterfactual per instance (n_instances, n_features)
-            - Xs_cfs_all: All counterfactuals (n_instances * CF_PER_INSTANCE, n_features)
+            - Xs_cfs_all: All counterfactuals (n_instances * cf_per_instance, n_features)
         Other args: Standard metric calculation arguments
 
     Returns:

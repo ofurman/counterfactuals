@@ -1,8 +1,3 @@
-"""DiCoFlex pipeline with pairwise diversity metric.
-
-Generates multiple counterfactuals per instance and computes min pairwise distance.
-"""
-
 import logging
 import os
 from time import time
@@ -18,22 +13,20 @@ from omegaconf import DictConfig
 from scipy.spatial.distance import pdist
 
 from counterfactuals.cf_methods.local_methods.dicoflex import DiCoFlex, DiCoFlexParams
-from counterfactuals.cf_methods.local_methods.dicoflex.context_utils import (
-    DiCoFlexGeneratorMetricsAdapter,
-    build_context_matrix,
-    get_numpy_pointer,
-)
 from counterfactuals.cf_methods.local_methods.dicoflex.data import (
     build_actionability_mask,
     create_dicoflex_dataloaders,
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_threshold
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
-    OneHotEncodingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
@@ -43,6 +36,11 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
+
+# =============================================================================
+# CF Generation Flow (for sampling counterfactuals) - follows DiCoFlex pattern
+# =============================================================================
 
 
 def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
@@ -62,10 +60,14 @@ def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
     return masks
 
 
-def instantiate_gen_model(
+def instantiate_cf_gen_model(
     cfg: DictConfig, dataset: MethodDataset, context_dim: int, device: str
 ):
-    """Instantiate the conditional flow used by DiCoFlex."""
+    """Instantiate the conditional flow used by DiCoFlex for CF generation.
+
+    This flow learns p(x_cf | x_factual, target_class, mask, p_value) -
+    the distribution of counterfactuals conditioned on factual points and context.
+    """
     model = instantiate(
         cfg.gen_model.model,
         features=dataset.X_train.shape[1],
@@ -165,22 +167,6 @@ def compute_log_prob_threshold(
     return torch.quantile(concat, quantile).item()
 
 
-def get_full_training_loader(
-    subset_loader: torch.utils.data.DataLoader, batch_size: int
-) -> torch.utils.data.DataLoader:
-    """Create a loader that iterates over the complete DiCoFlex dataset."""
-    base_dataset = (
-        subset_loader.dataset.dataset
-        if hasattr(subset_loader.dataset, "dataset")
-        else subset_loader.dataset
-    )
-    return torch.utils.data.DataLoader(
-        base_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-    )
-
-
 def compute_pairwise_mean_distance(cfs: np.ndarray) -> float:
     """Average minimum pairwise distance across counterfactual sets.
 
@@ -203,7 +189,12 @@ def compute_pairwise_mean_distance(cfs: np.ndarray) -> float:
 
 
 def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int):
-    """Run DiCoFlex pipeline for a single fold with pairwise diversity metric."""
+    """Run DiCoFlex pipeline for a single fold with pairwise diversity metric.
+
+    Uses two separate flows:
+    1. Density flow - trained on (X, y) pairs for plausibility metrics
+    2. CF generation flow - trained on counterfactual pairs for sampling
+    """
     cf_per_instance = cfg.counterfactuals_params.cf_samples_per_factual
     logger.info(
         "Running DiCoFlex pairwise pipeline for fold %s with %d CFs per instance",
@@ -211,11 +202,43 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         cf_per_instance,
     )
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_idx)
+    gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    if cfg.experiment.relabel_with_disc_model:
+        cf_gen_model_filename = (
+            f"gen_model_{gen_model_name}_dicoflex_relabeled_by_{disc_model_name}.pt"
+        )
+    else:
+        cf_gen_model_filename = f"gen_model_{gen_model_name}_dicoflex.pt"
+    cf_gen_model_path = os.path.join(save_folder, cf_gen_model_filename)
+
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
 
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
+    dequantizer.fit(dataset.X_train)
+
+    logger.info("Setting up density model for plausibility estimation...")
+    density_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+    original_X_train = dataset.X_train.copy()
+    dataset.X_train = dequantizer.transform(dataset.X_train)
+    batch_size = cfg.counterfactuals_params.get(
+        "batch_size",
+        cfg.gen_model.get("batch_size", cfg.counterfactuals_params.sampling_batch_size),
+    )
+    log_prob_threshold = get_log_prob_threshold(
+        density_model,
+        dataset,
+        batch_size,
+        cfg.counterfactuals_params.log_prob_quantile,
+        logger,
+    )
+    dataset.X_train = original_X_train
+
+    logger.info("Setting up CF generation model...")
     masks = build_masks(dataset, cfg.counterfactuals_params)
     (
         train_loader,
@@ -237,28 +260,18 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         categorical_indices=dataset.categorical_features_indices,
     )
 
-    gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
+    cf_gen_model = instantiate_cf_gen_model(cfg, dataset, context_dim, device)
     if cfg.gen_model.train_model:
         train_dicoflex_generator(
-            gen_model,
+            cf_gen_model,
             train_loader,
             val_loader,
             cfg,
-            gen_model_path,
+            cf_gen_model_path,
             device,
         )
     else:
-        gen_model.load(gen_model_path)
-
-    full_loader = get_full_training_loader(
-        train_loader, cfg.counterfactuals_params.train_batch_factuals
-    )
-    log_prob_threshold = compute_log_prob_threshold(
-        gen_model,
-        full_loader,
-        cfg.counterfactuals_params.log_prob_quantile,
-        device,
-    )
+        cf_gen_model.load(cf_gen_model_path)
 
     params = DiCoFlexParams(
         mask_index=cfg.counterfactuals_params.inference_mask_index,
@@ -269,7 +282,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         cf_samples_per_factual=cf_per_instance,
     )
     cf_method = DiCoFlex(
-        gen_model=gen_model,
+        gen_model=cf_gen_model,  # Use CF generation model for sampling
         disc_model=disc_model,
         class_to_index=class_to_index,
         mask_vectors=mask_vectors,
@@ -374,33 +387,9 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     )[:, 0].copy()
     model_returned_first = np.array(model_returned_blocks, dtype=bool)
 
-    # Ensure arrays are contiguous for pointer-based context lookup
+    # Ensure arrays are contiguous
     x_cfs_first = np.ascontiguousarray(x_cfs_first, dtype=np.float32)
     x_origs_first = np.ascontiguousarray(x_origs_first, dtype=np.float32)
-
-    mask_vector = mask_vectors[params.mask_index]
-    cf_contexts = build_context_matrix(
-        factual_points=x_origs_first,
-        labels=y_targets_first,
-        mask_vector=mask_vector,
-        p_value=params.p_value,
-        class_to_index=class_to_index,
-    )
-    test_contexts = build_context_matrix(
-        factual_points=x_origs_first,
-        labels=y_origs_first,
-        mask_vector=mask_vector,
-        p_value=params.p_value,
-        class_to_index=class_to_index,
-    )
-    context_lookup = {
-        get_numpy_pointer(x_cfs_first): cf_contexts,
-        get_numpy_pointer(x_origs_first): test_contexts,
-    }
-    metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
-        base_model=gen_model,
-        context_lookup=context_lookup,
-    )
 
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     cf_path = os.path.join(
@@ -413,10 +402,11 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
     logger.info("Saved all counterfactuals to %s", cf_path)
 
-    # Calculate standard metrics on first CF only
     logger.info("Calculating standard metrics using first CF per instance...")
+    logger.info("Using density model for plausibility metrics")
+    density_model_for_metrics = DequantizationWrapper(density_model, dequantizer)
     metrics = evaluate_cf(
-        gen_model=metrics_gen_model,
+        gen_model=density_model_for_metrics,  # Use density model for plausibility metrics
         disc_model=disc_model,
         X_cf=x_cfs_first,
         model_returned=model_returned_first,
@@ -468,7 +458,6 @@ def main(cfg: DictConfig):
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
-            ("onehot", OneHotEncodingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
