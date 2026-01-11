@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Sequence, Tuple
@@ -11,6 +12,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 
 from counterfactuals.datasets.method_dataset import MethodDataset
+
+logger = logging.getLogger(__name__)
 
 
 def build_actionability_mask(dataset: MethodDataset) -> np.ndarray:
@@ -169,6 +172,14 @@ class DiCoFlexTrainingDataset(Dataset):
 
     def _precompute_neighbors(self) -> Dict[Tuple[int, float, int], np.ndarray]:
         neighbor_map: Dict[Tuple[int, float, int], np.ndarray] = {}
+        logger.info(
+            "Precomputing neighbors | factuals=%d | features=%d | masks=%d | p_values=%d | classes=%d",
+            self.X.shape[0],
+            self.n_features,
+            len(self.masks),
+            len(self.p_values),
+            len(self.classes),
+        )
         for mask_idx, mask in enumerate(self.masks):
             mask_weight = mask.reshape(1, 1, -1)
             for p_value in self.p_values:
@@ -177,16 +188,85 @@ class DiCoFlexTrainingDataset(Dataset):
                     if target_indices.size == 0:
                         continue
                     targets = self.X[target_indices]
-                    # Broadcast to compute pairwise masked distances.
-                    diff = np.abs(self.X[:, None, :] - targets[None, :, :]) ** p_value
-                    diff *= mask_weight
-                    distances = np.sum(diff, axis=2) ** (1.0 / p_value)
                     max_neighbors = min(self.total_candidates, target_indices.size)
-                    neighbor_ids = np.argsort(distances, axis=1)[:, :max_neighbors]
-                    neighbor_map[(mask_idx, p_value, target_class)] = target_indices[
-                        neighbor_ids
-                    ]
+                    logger.info(
+                        "Neighbor pass | mask=%d/%d | p=%.3f | class=%s | candidates=%d | keep=%d",
+                        mask_idx + 1,
+                        len(self.masks),
+                        p_value,
+                        target_class,
+                        target_indices.size,
+                        max_neighbors,
+                    )
+                    neighbor_ids = self._compute_chunked_neighbors(
+                        targets=targets,
+                        target_indices=target_indices,
+                        mask_weight=mask_weight,
+                        p_value=p_value,
+                        max_neighbors=max_neighbors,
+                    )
+                    neighbor_map[(mask_idx, p_value, target_class)] = neighbor_ids
         return neighbor_map
+
+    def _compute_chunked_neighbors(
+        self,
+        targets: np.ndarray,
+        target_indices: np.ndarray,
+        mask_weight: np.ndarray,
+        p_value: float,
+        max_neighbors: int,
+        factual_chunk_size: int = 1024,
+        target_chunk_size: int = 2048,
+    ) -> np.ndarray:
+        """Compute nearest neighbors in chunks to avoid materializing dense tensors."""
+        n_factuals = self.X.shape[0]
+        neighbors = np.empty((n_factuals, max_neighbors), dtype=int)
+        total_f_batches = math.ceil(n_factuals / factual_chunk_size)
+        for batch_idx, f_start in enumerate(range(0, n_factuals, factual_chunk_size)):
+            f_end = min(f_start + factual_chunk_size, n_factuals)
+            factual_batch = self.X[f_start:f_end]
+            batch_size = factual_batch.shape[0]
+            best_dist = np.full((batch_size, max_neighbors), np.inf, dtype=np.float32)
+            best_idx = np.full((batch_size, max_neighbors), -1, dtype=int)
+
+            for t_start in range(0, targets.shape[0], target_chunk_size):
+                t_end = min(t_start + target_chunk_size, targets.shape[0])
+                target_batch = targets[t_start:t_end]
+                distances = np.abs(factual_batch[:, None, :] - target_batch[None, :, :])
+                distances = distances**p_value
+                distances *= mask_weight
+                distances = np.sum(distances, axis=2) ** (1.0 / p_value)
+
+                candidate_dist = np.concatenate([best_dist, distances], axis=1)
+                candidate_idx = np.concatenate(
+                    [
+                        best_idx,
+                        np.broadcast_to(
+                            target_indices[t_start:t_end], (batch_size, t_end - t_start)
+                        ),
+                    ],
+                    axis=1,
+                )
+                kth = min(max_neighbors - 1, candidate_dist.shape[1] - 1)
+                part_idx = np.argpartition(candidate_dist, kth, axis=1)[
+                    :, :max_neighbors
+                ]
+                row_idx = np.arange(batch_size)[:, None]
+                best_dist = candidate_dist[row_idx, part_idx]
+                best_idx = candidate_idx[row_idx, part_idx]
+
+            order = np.argsort(best_dist, axis=1)
+            neighbors[f_start:f_end] = best_idx[np.arange(batch_size)[:, None], order]
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(
+                    "Neighbor chunks processed: %d/%d (factuals %d-%d)",
+                    batch_idx + 1,
+                    total_f_batches,
+                    f_start,
+                    f_end,
+                )
+
+        return neighbors
 
     def _build_factual_entries(
         self,

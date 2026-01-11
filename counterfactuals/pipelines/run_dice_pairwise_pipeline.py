@@ -205,7 +205,7 @@ def calculate_metrics(
         Other args: Standard metric calculation arguments
 
     Returns:
-        Dictionary of metrics with pairwise_min_distance included
+        Dictionary of metrics with pairwise_mean_distance included
     """
     Xs_cfs_first, Xs_cfs_all = Xs_cfs
     Xs_cfs = Xs_cfs_first
@@ -230,7 +230,7 @@ def calculate_metrics(
 
     # Calculate pairwise distance on all CFs
     logger.info("Calculating pairwise minimum distance across all CFs...")
-    metrics["pairwise_min_distance"] = compute_pairwise_mean_distance(Xs_cfs_all)
+    metrics["pairwise_mean_distance"] = compute_pairwise_mean_distance(Xs_cfs_all)
 
     logger.info("Metrics calculated: %s", metrics)
     return metrics
