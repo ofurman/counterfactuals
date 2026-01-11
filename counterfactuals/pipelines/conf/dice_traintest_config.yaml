@@ -1,0 +1,55 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlr
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+  seed: 42
+  use_gpu: false
+
+dataset:
+  _target_: counterfactuals.datasets.TrainTestFileDataset
+  config_path: config/datasets/lending_club.yaml
+  train_data_path: data/lending_club_train.csv
+  test_data_path: data/lending_club_test.csv
+
+disc_model:
+  train_model: true
+  epochs: 5000
+  batch_size: 128
+  patience: 300
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.DiceExplainerWrapper
+
+  disc_model_criterion:
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+
+  log_prob_quantile: 0.25
+  target_class: 0
+  batch_size: 4096
+
+  # DiCE configuration
+  backend: "PYT"
+  method: "random"
+
+  generation_params:
+    total_CFs: 100
+    desired_class: "opposite"
+    posthoc_sparsity_param: null
