@@ -1,3 +1,15 @@
+"""DiCE pipeline for pre-split train/test datasets.
+
+This script runs the DiCE counterfactual generation pipeline on datasets
+where train and test splits are provided as separate files, rather than using
+cross-validation.
+
+Usage:
+    uv run python -m counterfactuals.pipelines.run_dice_traintest_pipeline \
+        dataset.train_data_path=data/my_train.csv \
+        dataset.test_data_path=data/my_test.csv
+"""
+
 import logging
 import os
 import warnings
@@ -10,11 +22,17 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.distance import pdist
 
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.dequantization.dequantizer import GroupDequantizer
+from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
+from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -59,9 +77,28 @@ def compute_pairwise_mean_distance(cfs: np.ndarray) -> float:
     return float(np.mean(mean_dists)) if mean_dists else float("nan")
 
 
+def get_log_prob_threshold(
+    gen_model: torch.nn.Module,
+    dataset: MethodDataset,
+    batch_size: int,
+    log_prob_quantile: float,
+) -> float:
+    """Calculate log probability threshold from training data."""
+    logger.info("Calculating log_prob_threshold")
+    train_dataloader_for_log_prob = dataset.train_dataloader(
+        batch_size=batch_size, shuffle=False
+    )
+    log_prob_threshold = torch.quantile(
+        gen_model.predict_log_prob(train_dataloader_for_log_prob),
+        log_prob_quantile,
+    )
+    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
+    return log_prob_threshold
+
+
 def search_counterfactuals(
     cfg: DictConfig,
-    dataset: DictConfig,
+    dataset: MethodDataset,
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
@@ -192,7 +229,6 @@ def calculate_metrics(
     median_log_prob: float,
     y_target: np.ndarray | None = None,
     metrics_conf_path: str | None = None,
-    Xs_cfs_all: np.ndarray | None = None,
     **_: Any,
 ) -> Dict[str, Any]:
     """Calculate metrics using first CF only, then append pairwise distance from all CFs.
@@ -200,20 +236,19 @@ def calculate_metrics(
     Args:
         Xs_cfs: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
             - Xs_cfs_first: First counterfactual per instance (n_instances, n_features)
-            - Xs_cfs_all: All counterfactuals (n_instances * cf_per_instance, n_features)
+            - Xs_cfs_all: All counterfactuals (n_instances, cf_per_instance, n_features)
         Other args: Standard metric calculation arguments
 
     Returns:
         Dictionary of metrics with pairwise_mean_distance included
     """
     Xs_cfs_first, Xs_cfs_all = Xs_cfs
-    Xs_cfs = Xs_cfs_first
 
     logger.info("Calculating standard metrics using first CF per instance...")
     metrics = evaluate_cf(
         gen_model=gen_model,
         disc_model=disc_model,
-        X_cf=Xs_cfs,
+        X_cf=Xs_cfs_first,
         model_returned=model_returned,
         categorical_features=categorical_features,
         continuous_features=continuous_features,
@@ -235,20 +270,79 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(config_path="./conf", config_name="dice_config", version_base="1.2")
+def run_pipeline(cfg: DictConfig, dataset: MethodDataset):
+    """Run the DiCE pipeline on a single train-test split."""
+    logger.info("Running DiCE pipeline on train-test split")
+
+    dequantizer = GroupDequantizer(dataset.categorical_features_lists)
+    disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=0)
+
+    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+
+    if cfg.experiment.relabel_with_disc_model:
+        dataset.y_train = disc_model.predict(dataset.X_train)
+        dataset.y_test = disc_model.predict(dataset.X_test)
+
+    dequantizer.fit(dataset.X_train)
+    gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+
+    # Transform for log prob threshold calculation
+    dataset.X_train = dequantizer.transform(dataset.X_train)
+    log_prob_threshold = get_log_prob_threshold(
+        gen_model,
+        dataset,
+        cfg.counterfactuals_params.batch_size,
+        cfg.counterfactuals_params.log_prob_quantile,
+    )
+    dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
+
+    Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
+        search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+    )
+
+    gen_model = DequantizationWrapper(gen_model, dequantizer)
+
+    metrics = calculate_metrics(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        Xs_cfs=Xs_cfs,
+        model_returned=model_returned,
+        categorical_features=dataset.categorical_features_indices,
+        continuous_features=dataset.numerical_features_indices,
+        X_train=dataset.X_train,
+        y_train=dataset.y_train.reshape(-1),
+        X_test=Xs,
+        y_test=ys_orig,
+        y_target=ys_target,
+        median_log_prob=log_prob_threshold,
+    )
+
+    df_metrics = pd.DataFrame(metrics, index=[0])
+    df_metrics["cf_search_time"] = cf_search_time
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+    metrics_path = os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv")
+    df_metrics.to_csv(metrics_path, index=False)
+    logger.info("Saved metrics to %s", metrics_path)
+
+
+@hydra.main(
+    config_path="./conf", config_name="dice_traintest_config", version_base="1.2"
+)
 def main(cfg: DictConfig) -> None:
-    """Run DiCE pipeline with fixed-number CFs and additional diversity metric."""
-    torch.manual_seed(0)
+    """Run DiCE pipeline on pre-split train/test data."""
+    torch.manual_seed(cfg.experiment.get("seed", 42))
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+
+    file_dataset = instantiate(cfg.dataset)
+    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
+    run_pipeline(cfg, dataset)
 
 
 if __name__ == "__main__":

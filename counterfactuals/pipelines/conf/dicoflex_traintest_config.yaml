@@ -11,12 +11,13 @@ experiment:
   output_folder: models/
   relabel_with_disc_model: true
   seed: 42
-  cv_folds: 5
   use_gpu: false
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: counterfactuals.datasets.TrainTestFileDataset
   config_path: config/datasets/give_me_some_credit.yaml
+  train_data_path: data/give_me_some_credit.csv
+  test_data_path: data/give_me_some_credit.csv
 
 disc_model:
   train_model: true
