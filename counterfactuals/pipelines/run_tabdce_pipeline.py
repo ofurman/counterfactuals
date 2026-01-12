@@ -1,12 +1,13 @@
 import logging
 import os
 from pathlib import Path
-from typing import Tuple
+from time import time
+from typing import Any, Dict, List, Optional, Tuple
 
 import hydra
 import numpy as np
+import pandas as pd
 import torch
-from hydra.utils import instantiate
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -20,8 +21,8 @@ from counterfactuals.cf_methods.local_methods.tabdce.diffusion import (
 )
 from counterfactuals.cf_methods.local_methods.tabdce.tabdce import TabDCE
 from counterfactuals.datasets.method_dataset import MethodDataset
-from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -130,49 +131,17 @@ def train_tabdce_diffusion(
         logger.info("Loaded best diffusion weights from %s", model_path)
 
 
-def generate_counterfactuals(
-    cf_method: TabDCE,
-    X: np.ndarray,
-    y: np.ndarray,
-    batch_size: int,
-    target_class: int,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Run counterfactual generation on the provided split."""
-    mask = y != target_class
-    if not np.any(mask):
-        logger.warning(
-            "All samples already belong to the target class %s", target_class
-        )
-        return (
-            np.empty((0, X.shape[1])),
-            np.empty((0, X.shape[1])),
-            np.array([]),
-            np.array([]),
-        )
-
-    filtered_X = X[mask]
-    filtered_y = y[mask]
-    dataloader = DataLoader(
-        TensorDataset(
-            torch.from_numpy(filtered_X).float(),
-            torch.from_numpy(filtered_y).float(),
-        ),
-        batch_size=batch_size,
-        shuffle=False,
-    )
-
-    result = cf_method.explain_dataloader(
-        dataloader=dataloader,
-        target_class=target_class,
-    )
-    return result.x_cfs, result.x_origs, result.y_cf_targets, result.y_origs
-
-
-@hydra.main(config_path="./conf", config_name="tabdce_config", version_base="1.2")
-def main(cfg: DictConfig) -> None:
-    """Train TabDCE diffusion and generate counterfactuals."""
-    seed = cfg.experiment.get("seed", 0)
-    torch.manual_seed(seed)
+def search_counterfactuals(
+    cfg: DictConfig,
+    dataset: MethodDataset,
+    gen_model: torch.nn.Module,
+    disc_model: torch.nn.Module,
+    save_folder: str,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
+    """Generate counterfactuals using the TabDCE method."""
+    _ = gen_model, disc_model
+    cf_method_name = "TabDCE"
+    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
     use_gpu = torch.cuda.is_available() and cfg.tabdce.get("use_gpu", False)
     if not use_gpu:
@@ -180,29 +149,31 @@ def main(cfg: DictConfig) -> None:
     device = torch.device("cuda" if use_gpu else "cpu")
     logger.info("Using device: %s", device)
 
-    disc_model_path, gen_model_path, save_folder = set_model_paths(cfg)
-    file_dataset = instantiate(cfg.dataset)
-    preprocessing_pipeline = build_preprocessing_pipeline()
-    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-
-    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
-    if cfg.experiment.get("relabel_with_disc_model", False):
-        dataset.y_train = disc_model.predict(dataset.X_train)
-        dataset.y_test = disc_model.predict(dataset.X_test)
+    target_class = cfg.counterfactuals_params.target_class
+    mask = dataset.y_test != target_class
+    if not np.any(mask):
+        logger.info("All samples already belong to the target class %s", target_class)
+        return (
+            np.empty((0, dataset.X_test.shape[1])),
+            np.empty((0, dataset.X_test.shape[1])),
+            np.array([]),
+            np.array([]),
+            np.array([], dtype=bool),
+            0.0,
+        )
 
     tab_dataset = prepare_tabular_dataset(dataset, cfg, device)
     train_loader = DataLoader(
-        tab_dataset,
-        batch_size=cfg.tabdce.batch_size,
-        shuffle=True,
+        tab_dataset, batch_size=cfg.tabdce.batch_size, shuffle=True
     )
     diffusion_model = create_diffusion_model(tab_dataset, cfg, device)
+    diffusion_path = Path(save_folder) / "tabdce_diffusion.pt"
     train_tabdce_diffusion(
         model=diffusion_model,
         dataloader=train_loader,
         epochs=cfg.tabdce.epochs,
         lr=cfg.tabdce.lr,
-        model_path=Path(gen_model_path),
+        model_path=diffusion_path,
     )
 
     cf_method = TabDCE(
@@ -213,22 +184,83 @@ def main(cfg: DictConfig) -> None:
         device=device,
     )
 
-    x_cfs, x_origs, y_targets, y_origs = generate_counterfactuals(
-        cf_method=cf_method,
-        X=dataset.X_test,
-        y=dataset.y_test,
+    X_test_origin = dataset.X_test[mask]
+    y_test_origin = dataset.y_test[mask]
+    cf_dataloader = DataLoader(
+        TensorDataset(
+            torch.tensor(X_test_origin).float(),
+            torch.tensor(y_test_origin).float(),
+        ),
         batch_size=cfg.counterfactuals_params.batch_size,
-        target_class=cfg.counterfactuals_params.target_class,
+        shuffle=False,
     )
 
-    if x_cfs.size == 0:
-        logger.info("No counterfactuals generated.")
-        return
+    time_start = time()
+    explanation_result = cf_method.explain_dataloader(
+        dataloader=cf_dataloader,
+        target_class=target_class,
+    )
+    cf_search_time = time() - time_start
+    logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
 
-    cf_original_space = dataset.inverse_transform(x_cfs)
-    cf_path = Path(save_folder) / "counterfactuals_TabDCE.csv"
-    np.savetxt(cf_path, cf_original_space, delimiter=",")
-    logger.info("Saved counterfactuals to %s", cf_path)
+    Xs_cfs = np.asarray(explanation_result.x_cfs)
+    Xs = np.asarray(explanation_result.x_origs)
+    ys_orig = np.asarray(explanation_result.y_origs)
+    ys_target = np.asarray(explanation_result.y_cf_targets)
+    model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
+
+    counterfactuals_path = os.path.join(
+        save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
+    )
+    pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
+    logger.info("Counterfactuals saved to %s", counterfactuals_path)
+
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
+
+
+def calculate_metrics(
+    gen_model: torch.nn.Module,
+    disc_model: torch.nn.Module,
+    Xs_cfs: np.ndarray,
+    model_returned: np.ndarray,
+    categorical_features: List[int],
+    continuous_features: List[int],
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    median_log_prob: float,
+    y_target: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
+    """Calculate evaluation metrics for generated counterfactual explanations."""
+    logger.info("Calculating metrics")
+    metrics = evaluate_cf(
+        gen_model=gen_model,
+        disc_model=disc_model,
+        X_cf=Xs_cfs,
+        model_returned=model_returned,
+        categorical_features=categorical_features,
+        continuous_features=continuous_features,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        median_log_prob=median_log_prob,
+        y_target=y_target,
+    )
+    logger.info("Metrics:\n%s", metrics)
+    return metrics
+
+
+@hydra.main(config_path="./conf", config_name="tabdce_config", version_base="1.2")
+def main(cfg: DictConfig) -> None:
+    """Run TabDCE with the standard full pipeline interface."""
+    seed = cfg.experiment.get("seed", 0)
+    torch.manual_seed(seed)
+    preprocessing_pipeline = build_preprocessing_pipeline()
+    full_pipeline(
+        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
+    )
 
 
 if __name__ == "__main__":

@@ -69,7 +69,7 @@ def instantiate_cf_gen_model(
     the distribution of counterfactuals conditioned on factual points and context.
     """
     model = instantiate(
-        cfg.gen_model.model,
+        cfg.sampling_model.model,
         features=dataset.X_train.shape[1],
         context_features=context_dim,
     )
@@ -80,17 +80,17 @@ def train_dicoflex_generator(
     model,
     train_loader: torch.utils.data.DataLoader,
     val_loader: torch.utils.data.DataLoader,
-    cfg: DictConfig,
+    sampling_cfg: DictConfig,
     model_path: str,
     device: str,
 ) -> None:
     """Train the flow model with early stopping."""
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.gen_model.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=sampling_cfg.lr)
     best_val = float("inf")
     patience_counter = 0
-    eps = cfg.gen_model.get("eps", 1e-5)
+    eps = sampling_cfg.get("eps", 1e-5)
 
-    for epoch in range(cfg.gen_model.epochs):
+    for epoch in range(sampling_cfg.epochs):
         model.train()
         train_loss = 0.0
         for batch_cf, batch_context in train_loader:
@@ -136,7 +136,7 @@ def train_dicoflex_generator(
             model.save(model_path)
         else:
             patience_counter += 1
-            if patience_counter > cfg.gen_model.patience:
+            if patience_counter > sampling_cfg.patience:
                 logger.info("Early stopping after %s epochs", epoch + 1)
                 break
 
@@ -202,7 +202,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         cf_per_instance,
     )
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_idx)
-    gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
+    gen_model_name = cfg.sampling_model.model._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     if cfg.experiment.relabel_with_disc_model:
         cf_gen_model_filename = (
@@ -261,12 +261,12 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     )
 
     cf_gen_model = instantiate_cf_gen_model(cfg, dataset, context_dim, device)
-    if cfg.gen_model.train_model:
+    if cfg.sampling_model.train_model:
         train_dicoflex_generator(
             cf_gen_model,
             train_loader,
             val_loader,
-            cfg,
+            cfg.sampling_model,
             cf_gen_model_path,
             device,
         )
