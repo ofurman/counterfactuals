@@ -173,7 +173,7 @@ def compute_pairwise_mean_distance(samples: np.ndarray, group_ids: np.ndarray) -
 def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int):
     logger.info("Running DiCoFlex pipeline for fold %s", fold_idx)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_idx)
-    gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
+    gen_model_name = cfg.sampling_model.model._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     if cfg.experiment.relabel_with_disc_model:
         cf_gen_model_filename = (
@@ -225,26 +225,25 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
                 dataset_points=dataset.X_train[:, :2],
             )
     gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
-    if cfg.gen_model.train_model:
+    if cfg.sampling_model.train_model:
         train_dicoflex_generator(
             gen_model,
             train_loader,
             val_loader,
-            cfg,
+            cfg.sampling_model,
             cf_gen_model_path,
             device,
         )
     else:
         gen_model.load(cf_gen_model_path)
 
-    full_loader = get_full_training_loader(
-        train_loader, cfg.counterfactuals_params.train_batch_factuals
-    )
-    log_prob_threshold = compute_log_prob_threshold(
-        gen_model,
-        full_loader,
+    density_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer=None)
+    log_prob_threshold = get_log_prob_threshold(
+        density_model,
+        dataset,
+        cfg.counterfactuals_params.sampling_batch_size,
         cfg.counterfactuals_params.log_prob_quantile,
-        device,
+        logger,
     )
 
     params = DiCoFlexParams(
@@ -341,29 +340,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     x_cfs_for_metrics = np.ascontiguousarray(x_cfs_for_metrics, dtype=np.float32)
     x_origs_for_metrics = np.ascontiguousarray(x_origs_for_metrics, dtype=np.float32)
 
-    mask_vector = mask_vectors[params.mask_index]
-    cf_contexts = build_context_matrix(
-        factual_points=x_origs_for_metrics,
-        labels=y_targets_for_metrics,
-        mask_vector=mask_vector,
-        p_value=params.p_value,
-        class_to_index=class_to_index,
-    )
-    test_contexts = build_context_matrix(
-        factual_points=x_origs_for_metrics,
-        labels=y_origs_for_metrics,
-        mask_vector=mask_vector,
-        p_value=params.p_value,
-        class_to_index=class_to_index,
-    )
-    context_lookup = {
-        get_numpy_pointer(x_cfs_for_metrics): cf_contexts,
-        get_numpy_pointer(x_origs_for_metrics): test_contexts,
-    }
-    metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
-        base_model=gen_model,
-        context_lookup=context_lookup,
-    )
+    metrics_gen_model = density_model
     if vis_cfg and vis_cfg.get("enable_cf_scatter", False):
         try:
             visualize_counterfactual_samples(
