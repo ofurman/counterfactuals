@@ -19,27 +19,28 @@ dataset:
   config_path: config/datasets/give_me_some_credit.yaml
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 2000
   batch_size: 128
   patience: 200
   lr: 0.001
 
 gen_model:
-  train_model: true
-  epochs: 200
+  train_model: false
+  batch_size: 1024
+  epochs: 2000
   patience: 100
-  lr: 0.001
+  lr: 0.003
+  noise_lvl: 0.02
 
-density_model:
+sampling_model:
   model: ${gen_model.model}
   train_model: true
-  batch_size: 256
+  batch_size: 1024
   epochs: 20
   patience: 100
-  lr: 0.001
+  lr: 0.003
   noise_lvl: 0.02
-  eps: 1e-5
 
 counterfactuals_params:
   cf_method:

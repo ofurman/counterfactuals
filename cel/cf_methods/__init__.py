@@ -20,6 +20,8 @@ from .local_methods import (
     SACE,
     WACH,
     Artelt,
+    DiCoFlex,
+    TabDCE,
 )
 
 # Import from subpackages
@@ -40,8 +42,7 @@ __all__ = [
     "Artelt",
     "CEM_CF",
     "CCHVAE",
-    "CEGP",
-    "SACE",
+    "TabDCE",
     # Global methods
     "AReS",
     "GLOBE_CE",

@@ -13,6 +13,7 @@ from .dicoflex import DiCoFlex
 from .ppcef.ppcef import PPCEF
 from .regression_ppcef.ppcefr import PPCEFR
 from .sace.sace import SACE
+from .tabdce.tabdce import TabDCE
 from .wach.wach import WACH
 from .wach.wach_ours import WACH_OURS
 
@@ -39,4 +40,5 @@ __all__ = [
     "CET",
     "CEGP",
     "CaseBasedSACE",
+    "TabDCE",
 ]

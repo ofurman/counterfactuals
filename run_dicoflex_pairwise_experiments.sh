@@ -35,8 +35,7 @@ for dataset in "${DATASETS[@]}"; do
 
         uv run python -m counterfactuals.pipelines.run_dicoflex_pairwise_pipeline \
             disc_model="$disc_model" \
-            dataset.config_path="config/datasets/${dataset}.yaml" \
-            experiment.output_folder="models/dicoflex_pairwise/${dataset}/${disc_model}"
+            dataset.config_path="config/datasets/${dataset}.yaml"
 
         echo "Completed: dataset=$dataset, disc_model=$disc_model"
         echo ""
