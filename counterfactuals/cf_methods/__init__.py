@@ -18,6 +18,7 @@ from .local_methods import (
     WACH_OURS,
     Artelt,
     DiCoFlex,
+    TabDCE,
 )
 
 # Import from subpackages
@@ -38,6 +39,7 @@ __all__ = [
     "Artelt",
     "PPCEFR",
     "CCHVAE",
+    "TabDCE",
     # Global methods
     "AReS",
     "GLOBE_CE",
