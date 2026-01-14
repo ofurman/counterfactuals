@@ -59,10 +59,9 @@ class CEARM(BaseCounterfactualMethod, LocalCounterfactualMixin):
         # Objective function for Bayesian Optimization
         def objective_function(X_new, index):
             X_new = X_new.reshape(1, -1)
-            y_query = self.disc_model.predict(
-                torch.from_numpy(X_test[index].reshape(1, -1))
-            ).numpy()  # Current prediction we want to change
-            y_pred = self.disc_model.predict(X_new).numpy()
+            y_query = self.disc_model.predict(X_test[index].reshape(1, -1))
+            # y_query = np.clip(y_query + target_change, 0, 1)
+            y_pred = self.disc_model.predict(X_new)
             potential = ep_potential(y_query, y_pred)
             return potential
 
@@ -97,10 +96,11 @@ class CEARM(BaseCounterfactualMethod, LocalCounterfactualMixin):
         x_origs = X_test.detach().cpu().numpy()
         y_origs = y_test.detach().cpu().numpy()
         y_cf_targets = y_test.detach().cpu().numpy()
+        y_cf_targets = np.clip(y_cf_targets + target_change, 0, 1)
 
         return (
-            np.concatenate(Xs_cfs, axis=0),
-            np.concatenate(x_origs, axis=0),
+            Xs_cfs,
+            x_origs,
             np.concatenate(y_origs, axis=0),
             np.concatenate(y_cf_targets, axis=0),
             None,

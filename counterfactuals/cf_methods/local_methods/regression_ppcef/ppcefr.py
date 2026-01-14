@@ -65,11 +65,11 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
         max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
         max_inner = 0 * max_inner
 
-        loss = dist + alpha * (loss_disc + max_inner)
+        loss = 10 * dist + alpha * loss_disc + alpha * max_inner
         return {
             "loss": loss,
-            "dist": dist,
-            "max_inner": max_inner,
+            "loss_dist": dist,
+            "loss_prob": max_inner,
             "loss_disc": loss_disc,
         }
 
@@ -138,20 +138,19 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 mean_loss.backward()
                 optimizer.step()
 
+                pbar_desc = ""
                 for loss_name, loss in loss_components.items():
                     loss_components_logging.setdefault(
                         f"cf_search/{loss_name}", []
                     ).append(loss.mean().detach().cpu().item())
 
+                    pbar_desc += f"{loss_name}: {loss.mean().detach().cpu().item():.4f}, "
+
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
-                prob_loss = loss_components["max_inner"].detach().cpu().mean().item()
-                epoch_pbar.set_description(
-                    f"Discriminator loss: {disc_loss:.4f}, Prob loss: {prob_loss:.4f}"
-                )
+                prob_loss = loss_components["loss_prob"].detach().cpu().mean().item()
+                epoch_pbar.set_description(pbar_desc)
                 if disc_loss < patience_eps and prob_loss < patience_eps:
                     break
-            print(x_param[:5])
-            print(x_origin[:5])
             x_cfs.append(x_param.detach().cpu().numpy())
             x_origs.append(x_origin.detach().cpu().numpy())
             y_origs.append(contexts_origin.detach().cpu().numpy())

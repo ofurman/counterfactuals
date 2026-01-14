@@ -19,6 +19,7 @@ from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.plotting.plot_utils import (
+    plot_2d_regression_dataset,
     plot_3d_regression_cfs,
     plot_conditional_density_contours,
     plot_plausibility_comparison,
@@ -209,6 +210,9 @@ def main(cfg: DictConfig) -> None:
 
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
+        cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
+        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
+
         if cfg.experiment.relabel_with_disc_model:
             dataset.y_train = np.clip(
                 np.asarray(disc_model.predict(dataset.X_train), dtype=np.float32),
@@ -227,11 +231,26 @@ def main(cfg: DictConfig) -> None:
             cfg, dataset, gen_model, disc_model, save_folder
         )
 
+        # Create 2D dataset plot with model predictions, contours, and counterfactuals
+        dataset_plot_path = os.path.join(
+            save_folder, f"dataset_2d_plot_{cf_method_name}_{disc_model_name}.pdf"
+        )
+        plot_2d_regression_dataset(
+            gen_model=gen_model,
+            disc_model=disc_model,
+            X_test=dataset.X_test,
+            X_cfs=Xs_cfs,
+            X_origs=Xs,
+            y_origs=ys_orig,
+            y_targets=ys_target,
+            delta=delta,
+            num_points=3,
+            save_path=dataset_plot_path,
+        )
+
         # Create 3D plot if data has exactly 2 features
-        cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
-        disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         plot_path = os.path.join(
-            save_folder, f"cf_3d_plot_{cf_method_name}_{disc_model_name}.png"
+            save_folder, f"cf_3d_plot_{cf_method_name}_{disc_model_name}.pdf"
         )
         plot_3d_regression_cfs(
             gen_model=gen_model,
@@ -246,10 +265,11 @@ def main(cfg: DictConfig) -> None:
 
         # Create conditional density contour plot
         contour_path = os.path.join(
-            save_folder, f"cf_contour_plot_{cf_method_name}_{disc_model_name}.png"
+            save_folder, f"cf_contour_plot_{cf_method_name}_{disc_model_name}.pdf"
         )
         plot_conditional_density_contours(
             gen_model=gen_model,
+            disc_model=disc_model,
             X_cfs=Xs_cfs,
             X_origs=Xs,
             y_origs=ys_orig,
@@ -261,7 +281,7 @@ def main(cfg: DictConfig) -> None:
 
         # Create plausibility comparison plot
         plausibility_path = os.path.join(
-            save_folder, f"cf_plausibility_plot_{cf_method_name}_{disc_model_name}.png"
+            save_folder, f"cf_plausibility_plot_{cf_method_name}_{disc_model_name}.pdf"
         )
         plot_plausibility_comparison(
             gen_model=gen_model,
@@ -293,8 +313,6 @@ def main(cfg: DictConfig) -> None:
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )
-        break
-
 
 if __name__ == "__main__":
     main()

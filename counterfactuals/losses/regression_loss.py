@@ -8,7 +8,7 @@ class ThresholdRegressionLoss(torch.nn.modules.loss._Loss):
         reduce=None,
         mode="rmse",
         reduction: str = "mean",
-        eps=0.02,
+        eps=0.05,
     ) -> None:
         super().__init__(size_average, reduce, reduction)
         self.eps = eps

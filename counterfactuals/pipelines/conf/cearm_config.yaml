@@ -34,7 +34,7 @@ gen_model:
 counterfactuals_params:
   target_change: 0.2
   cf_method:
-    _target_: counterfactuals.cf_methods.regression_ppcef.WACH
+    _target_: counterfactuals.cf_methods.regression_ppcef.CEARM
   epochs: 3000
   batch_size: 8096
   lr: 0.001

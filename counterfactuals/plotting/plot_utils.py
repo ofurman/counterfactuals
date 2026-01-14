@@ -46,6 +46,71 @@ def plot_generative_model_distribution(ax, model, prob_threshold, num_classes):
     return ax
 
 
+def plot_regression_conditional_density_contours(ax, model, target_values, delta=None):
+    """Plot conditional density contours p(x|y) for regression.
+
+    Args:
+        ax: Matplotlib axis
+        model: Generative model
+        target_values: List of target values to plot contours for
+        delta: Log probability threshold for high-density highlighting
+
+    Returns:
+        ax: The modified axis
+    """
+    xline = torch.linspace(0, 1, 200)
+    yline = torch.linspace(0, 1, 200)
+    xgrid, ygrid = torch.meshgrid(xline, yline)
+    xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
+
+    for idx, target_val in enumerate(target_values):
+        with torch.no_grad():
+            zgrid = model(
+                xyinput, target_val * torch.ones(len(xyinput), 1)
+            ).exp().reshape(200, 200)
+            zgrid = zgrid.numpy()
+
+        # Clip very large values to avoid oversized contours
+        z_clipped = np.clip(zgrid, a_min=0, a_max=np.percentile(zgrid, 99.9))
+
+        # Alternate between blue and red for each target value
+        color = "blue" if idx % 2 == 0 else "red"
+
+        # Plot filled contour for high-density region (above delta if provided)
+        if delta is not None:
+            delta_exp = np.exp(delta)
+            ax.contourf(
+                xgrid.numpy(),
+                ygrid.numpy(),
+                z_clipped,
+                levels=[delta_exp, z_clipped.max()],
+                alpha=0.3,
+                colors=[color],
+            )
+
+        # Plot contour lines with reasonable levels
+        # contour_levels = np.linspace(
+        #     delta_exp if delta is not None else z_clipped.min(),
+        #     z_clipped.max(),
+        #     8
+        # )
+        ax.contour(
+            xgrid.numpy(),
+            ygrid.numpy(),
+            z_clipped,
+            levels=9,
+            alpha=0.8,
+            colors=[color],
+            linewidths=0.4,
+            antialiased=True,
+        )
+
+    ax.set_xlim(0.2, 0.8)
+    ax.set_ylim(0.2, 0.8)
+
+    return ax
+
+
 def plot_classifier_decision_region(ax, model):
     xline = torch.linspace(-0, 1, 400)
     yline = torch.linspace(-0, 1, 400)
@@ -89,10 +154,10 @@ def plot_arrows(ax, observations, counterfactuals):
             observations[i, 1],
             counterfactuals[i, 0] - observations[i, 0],
             counterfactuals[i, 1] - observations[i, 1],
-            width=0.001,
-            lw=0.001,
+            width=0.003,
+            lw=0.003,
             length_includes_head=True,
-            alpha=0.5,
+            alpha=0.8,
             color="k",
         )
     return ax
@@ -210,7 +275,7 @@ def plot_3d_regression_cfs(
     logger.info("Creating 3D regression counterfactual plot with %d points", num_points)
 
     # Filter points with original target in range [0.3, 0.35]
-    target_range_mask = (y_origs.ravel() >= 0.39) & (y_origs.ravel() <= 0.41)
+    target_range_mask = (y_origs.ravel() >= 0.38) & (y_origs.ravel() <= 0.41)
     X_origs_filtered = X_origs[target_range_mask]
     y_origs_filtered = y_origs[target_range_mask]
 
@@ -262,9 +327,9 @@ def plot_3d_regression_cfs(
         xgrid.numpy(),
         ygrid.numpy(),
         np.full_like(zgrid, z_min),
-        facecolors=plt.cm.Greens(zgrid / zgrid.max()),
+        facecolors=plt.cm.Reds(zgrid / zgrid.max()),
         shade=False,
-        alpha=0.3,
+        alpha=0.5,
         rasterized=True,
         antialiased=False,
         linewidth=0,
@@ -275,7 +340,7 @@ def plot_3d_regression_cfs(
         X_origs_sub[:, 0],
         X_origs_sub[:, 1],
         y_origs_sub.ravel(),
-        c="blue",
+        c="black",
         marker="o",
         s=50,
         alpha=0.7,
@@ -290,13 +355,28 @@ def plot_3d_regression_cfs(
         X_cfs_sub[:, 1],
         y_targets_sub.ravel(),
         c="red",
-        marker="^",
+        marker="o",
         s=80,
         alpha=0.9,
         label="Counterfactuals",
         depthshade=False,
         zorder=10,
     )
+
+    # Add arrows from originals to counterfactuals
+    for i in range(n_samples):
+        ax.quiver(
+            X_origs_sub[i, 0],
+            X_origs_sub[i, 1],
+            y_origs_sub.ravel()[i],
+            X_cfs_sub[i, 0] - X_origs_sub[i, 0],
+            X_cfs_sub[i, 1] - X_origs_sub[i, 1],
+            y_targets_sub.ravel()[i] - y_origs_sub.ravel()[i],
+            color="k",
+            alpha=0.6,
+            arrow_length_ratio=0.1,
+            linewidth=1,
+        )
 
     # Add projections onto feature2=1.0 plane
     for i in range(n_samples):
@@ -305,7 +385,7 @@ def plot_3d_regression_cfs(
             [X_origs_sub[i, 0], X_origs_sub[i, 0]],
             [X_origs_sub[i, 1], 1.0],
             [float(y_origs_sub.ravel()[i]), float(y_origs_sub.ravel()[i])],
-            color="blue",
+            color="black",
             linestyle="--",
             alpha=0.3,
             linewidth=1,
@@ -330,7 +410,7 @@ def plot_3d_regression_cfs(
             [X_origs_sub[i, 0], 0.0],
             [X_origs_sub[i, 1], X_origs_sub[i, 1]],
             [float(y_origs_sub.ravel()[i]), float(y_origs_sub.ravel()[i])],
-            color="blue",
+            color="black",
             linestyle="--",
             alpha=0.3,
             linewidth=1,
@@ -366,12 +446,12 @@ def plot_3d_regression_cfs(
         X_origs_sub[:, 0],
         np.full(n_samples, 1.0),
         y_origs_sub.ravel(),
-        c="blue",
+        c="black",
         marker="o",
         s=30,
         alpha=0.4,
         facecolors="none",
-        edgecolors="blue",
+        edgecolors="black",
         linewidth=1,
         zorder=5,
     )
@@ -380,7 +460,7 @@ def plot_3d_regression_cfs(
         np.full(n_samples, 1.0),
         y_targets_sub.ravel(),
         c="red",
-        marker="^",
+        marker="o",
         s=40,
         alpha=0.4,
         facecolors="none",
@@ -394,12 +474,12 @@ def plot_3d_regression_cfs(
         np.full(n_samples, 0.0),
         X_origs_sub[:, 1],
         y_origs_sub.ravel(),
-        c="blue",
+        c="black",
         marker="o",
         s=30,
         alpha=0.4,
         facecolors="none",
-        edgecolors="blue",
+        edgecolors="black",
         linewidth=1,
         zorder=5,
     )
@@ -408,7 +488,7 @@ def plot_3d_regression_cfs(
         X_cfs_sub[:, 1],
         y_targets_sub.ravel(),
         c="red",
-        marker="^",
+        marker="o",
         s=40,
         alpha=0.4,
         facecolors="none",
@@ -423,7 +503,7 @@ def plot_3d_regression_cfs(
         X_cfs_sub[:, 1],
         np.full(n_samples, z_min),
         c="red",
-        marker="^",
+        marker="o",
         s=40,
         alpha=0.4,
         facecolors="none",
@@ -441,6 +521,9 @@ def plot_3d_regression_cfs(
     ax.set_title("Regression Counterfactuals with Decision Surface", fontsize=14)
     ax.legend(loc="upper left", fontsize=10)
 
+    # Rotate view to the left
+    ax.view_init(elev=20, azim=-40)
+
     # Ensure surface is rendered behind other elements
     if ax.collections:
         ax.collections[0].set_zorder(0)
@@ -455,6 +538,7 @@ def plot_3d_regression_cfs(
 
 def plot_conditional_density_contours(
     gen_model: torch.nn.Module,
+    disc_model: torch.nn.Module,
     X_cfs: np.ndarray,
     X_origs: np.ndarray,
     y_origs: np.ndarray,
@@ -520,78 +604,54 @@ def plot_conditional_density_contours(
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    # Create grid for contour plotting
+    # Plot heatmap of discriminative model predictions as background
     xline = torch.linspace(0, 1, 200)
     yline = torch.linspace(0, 1, 200)
     xgrid, ygrid = torch.meshgrid(xline, yline)
     xyinput = torch.cat([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], dim=1)
 
-    # Define colors for each target value
-    colors = plt.cm.tab10(np.linspace(0, 1, len(target_values)))
+    # Get discriminative model predictions
+    with torch.no_grad():
+        y_pred = disc_model(xyinput).reshape(200, 200)
 
-    # Plot contours for each target value
-    contour_handles = []
-    for idx, target_val in enumerate(target_values):
-        with torch.no_grad():
-            zgrid = gen_model(
-                xyinput, target_val * torch.ones(len(xyinput), 1)
-            ).exp().reshape(200, 200)
-            zgrid = zgrid.numpy()
+    # Plot as background heatmap
+    heatmap = ax.pcolormesh(
+        xgrid.numpy(),
+        ygrid.numpy(),
+        y_pred.numpy(),
+        cmap="viridis",
+        alpha=0.5,
+        shading="auto",
+        vmin=0,
+        vmax=1,
+    )
 
-        # Clip very large values to avoid oversized contours
-        z_clipped = np.clip(zgrid, a_min=0, a_max=np.percentile(zgrid, 99.9))
+    # Add colorbar for the heatmap
+    cbar = plt.colorbar(heatmap, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label("Regression Model Output", fontsize=10)
 
-        # Plot filled contour for high-density region (above delta if provided)
-        if delta is not None:
-            delta_exp = np.exp(delta)
-            ax.contourf(
-                xgrid.numpy(),
-                ygrid.numpy(),
-                z_clipped,
-                levels=[delta_exp, z_clipped.max()],
-                alpha=0.1,
-                colors=[colors[idx]],
-            )
+    # Plot contours using the helper function
+    plot_regression_conditional_density_contours(ax, gen_model, target_values, delta)
 
-        # Plot contour lines with reasonable levels
-        contour_levels = np.linspace(
-            delta_exp if delta is not None else z_clipped.min(),
-            z_clipped.max(),
-            8
-        )
-        cs = ax.contour(
-            xgrid.numpy(),
-            ygrid.numpy(),
-            z_clipped,
-            levels=contour_levels,
-            alpha=0.6,
-            colors=[colors[idx]],
-            linewidths=1,
-        )
-        # Save contour for legend
-        contour_handles.append(cs)
-
-    # Create legend handles for contours
+    # Create legend handles with alternating blue/red colors
     from matplotlib.lines import Line2D
     legend_handles = [
-        Line2D([0], [0], color=colors[i], linewidth=2, label=f"p(x|y={target_values[i]:.1f})")
+        Line2D([0], [0], color="blue" if i % 2 == 0 else "red", linewidth=2, label=f"p(x|y={target_values[i]:.1f})")
         for i in range(len(target_values))
     ]
     legend_handles.extend([
-        Line2D([0], [0], marker="o", color="blue", markerfacecolor="blue", markersize=8, label="Original points", linestyle="None"),
-        Line2D([0], [0], marker="^", color="red", markerfacecolor="red", markersize=10, label="Counterfactuals", linestyle="None"),
+        Line2D([0], [0], marker="o", color="black", markerfacecolor="black", markersize=8, label="Original points", linestyle="None"),
+        Line2D([0], [0], marker="o", color="red", markerfacecolor="red", markersize=8, label="Counterfactuals", linestyle="None"),
     ])
 
     # Plot original points
     ax.scatter(
         X_origs_sub[:, 0],
         X_origs_sub[:, 1],
-        c="blue",
+        c="black",
         marker="o",
         s=50,
         alpha=0.7,
-        edgecolors="black",
-        linewidth=0.5,
     )
 
     # Plot counterfactual points
@@ -599,11 +659,9 @@ def plot_conditional_density_contours(
         X_cfs_sub[:, 0],
         X_cfs_sub[:, 1],
         c="red",
-        marker="^",
+        marker="o",
         s=80,
         alpha=0.9,
-        edgecolors="black",
-        linewidth=0.5,
     )
 
     # Plot arrows from originals to counterfactuals
@@ -614,7 +672,7 @@ def plot_conditional_density_contours(
             xytext=(X_origs_sub[i, 0], X_origs_sub[i, 1]),
             arrowprops=dict(
                 arrowstyle="->",
-                color="gray",
+                color="k",
                 alpha=0.5,
                 lw=1,
             ),
@@ -622,15 +680,167 @@ def plot_conditional_density_contours(
 
     ax.set_xlabel("Feature 1", fontsize=12)
     ax.set_ylabel("Feature 2", fontsize=12)
-    ax.set_xlim(0.2, 0.8)
-    ax.set_ylim(0.2, 0.8)
-    ax.set_title("Conditional Density Contours p(x|y) with Counterfactuals", fontsize=14)
+    ax.set_xlim(0.3, 0.7)
+    ax.set_ylim(0.3, 0.7)
+    # ax.set_title("Conditional Density Contours p(x|y) with Counterfactuals", fontsize=14)
     ax.legend(handles=legend_handles, loc="upper right", fontsize=10)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
     logger.info(f"Contour plot saved to {save_path}")
+
+
+def plot_2d_regression_dataset(
+    gen_model: torch.nn.Module,
+    disc_model: torch.nn.Module,
+    X_test: np.ndarray,
+    X_cfs: np.ndarray,
+    X_origs: np.ndarray,
+    y_origs: np.ndarray,
+    y_targets: np.ndarray,
+    save_path: str,
+    delta: float = None,
+    num_points: int = 3,
+) -> None:
+    """
+    Create a 2D scatter plot of the test dataset colored by regression model output,
+    with density contours, original points, counterfactuals, and arrows.
+
+    Args:
+        gen_model: Trained generative model
+        disc_model: Trained discriminative/regression model
+        X_test: Test features (must have exactly 2 features)
+        X_cfs: Generated counterfactuals
+        X_origs: Original instances
+        y_origs: Original target values
+        y_targets: Target values for counterfactuals
+        save_path: Path to save the plot
+        delta: Log probability threshold for highlighting high-density regions
+        num_points: Number of original/counterfactual points to plot
+    """
+    if X_test.shape[1] != 2:
+        logger.info(
+            f"Skipping 2D dataset plot: data has {X_test.shape[1]} features (requires exactly 2)"
+        )
+        return
+
+    logger.info("Creating 2D regression dataset plot")
+
+    # Sample points using same logic as other plots
+    target_range_mask = (y_origs.ravel() >= 0.39) & (y_origs.ravel() <= 0.41)
+    X_origs_filtered = X_origs[target_range_mask]
+    y_origs_filtered = y_origs[target_range_mask]
+
+    if len(X_origs_filtered) == 0:
+        X_origs_filtered = X_origs
+        y_origs_filtered = y_origs
+        filtered_indices = np.arange(len(X_origs))
+    else:
+        filtered_indices = np.where(target_range_mask)[0]
+
+    n_samples = min(num_points, len(X_origs_filtered))
+    with torch.no_grad():
+        X_origs_torch = torch.tensor(X_origs_filtered).float()
+        y_origs_torch = torch.tensor(y_origs_filtered).float()
+        log_probs = gen_model(X_origs_torch, y_origs_torch)
+    low_prob_local_indices = np.argpartition(log_probs.numpy().ravel(), n_samples)[:n_samples]
+    low_prob_indices = filtered_indices[low_prob_local_indices]
+
+    X_cfs_sub = X_cfs[low_prob_indices]
+    X_origs_sub = X_origs[low_prob_indices]
+    y_origs_sub = y_origs[low_prob_indices]
+    y_targets_sub = y_targets[low_prob_indices]
+
+    # Get model predictions for coloring
+    with torch.no_grad():
+        X_test_torch = torch.tensor(X_test).float()
+        y_pred = disc_model(X_test_torch).numpy().ravel()
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Plot dataset points colored by model predictions
+    scatter = ax.scatter(
+        X_test[:, 0],
+        X_test[:, 1],
+        c=y_pred,
+        cmap="viridis",
+        marker="o",
+        s=30,
+        alpha=0.6,
+        edgecolors="none",
+        vmin=0,
+        vmax=1,
+    )
+    cbar = plt.colorbar(scatter, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label("Regression Model Output", fontsize=10)
+
+    # Plot density contours
+    target_values = [0.4, 0.6]
+    plot_regression_conditional_density_contours(ax, gen_model, target_values, delta)
+
+    # Plot original points
+    ax.scatter(
+        X_origs_sub[:, 0],
+        X_origs_sub[:, 1],
+        c="black",
+        marker="o",
+        s=50,
+        alpha=0.9,
+        # edgecolors="white",
+        linewidth=1.5,
+        zorder=10,
+        label="Original points",
+    )
+
+    # Plot counterfactual points
+    ax.scatter(
+        X_cfs_sub[:, 0],
+        X_cfs_sub[:, 1],
+        c="red",
+        marker="o",
+        s=50,
+        alpha=0.9,
+        # edgecolors="white",
+        # linewidth=1.5,
+        zorder=10,
+        label="Counterfactuals",
+    )
+
+    # Plot arrows from originals to counterfactuals
+    for i in range(n_samples):
+        ax.annotate(
+            "",
+            xy=(X_cfs_sub[i, 0], X_cfs_sub[i, 1]),
+            xytext=(X_origs_sub[i, 0], X_origs_sub[i, 1]),
+            arrowprops=dict(
+                arrowstyle="->",
+                color="k",
+                alpha=0.7,
+                lw=1.5,
+            ),
+            zorder=9,
+        )
+
+    # Create legend
+    from matplotlib.lines import Line2D
+    legend_handles = [
+        Line2D([0], [0], color="blue", linewidth=2, label=f"p(x|y={target_values[0]:.1f})"),
+        Line2D([0], [0], color="red", linewidth=2, label=f"p(x|y={target_values[1]:.1f})"),
+        Line2D([0], [0], marker="o", color="black", markerfacecolor="black", markersize=8, label="Original points", linestyle="None"),
+        Line2D([0], [0], marker="o", color="red", markerfacecolor="red", markersize=8, label="Counterfactuals", linestyle="None"),
+    ]
+
+    ax.set_xlabel("Feature 1", fontsize=12)
+    ax.set_ylabel("Feature 2", fontsize=12)
+    ax.set_xlim(0.2, 0.8)
+    ax.set_ylim(0.2, 0.8)
+    ax.legend(handles=legend_handles, loc="upper right", fontsize=9)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    logger.info(f"2D dataset plot saved to {save_path}")
 
 
 def plot_plausibility_comparison(
