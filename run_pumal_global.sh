@@ -87,9 +87,6 @@ python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
     disc_model=mlp \
-    counterfactuals_params.alpha_plaus=100 \
-    counterfactuals_params.alpha_class=10000 \
-    counterfactuals_params.alpha_s=1000
 
 
 python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
@@ -98,10 +95,7 @@ python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     counterfactuals_params.cf_method.K=1 \
     counterfactuals_params.alpha_k=0 \
     counterfactuals_params.alpha_d=0 \
-    disc_model=mlr \
-    counterfactuals_params.alpha_plaus=100 \
-    counterfactuals_params.alpha_class=10000 \
-    counterfactuals_params.alpha_s=1000
+    disc_model=mlr
 
 
 #########################
@@ -126,22 +120,3 @@ python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
     disc_model=mlr \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003
-
-########################
-#### Credit Default #####
-########################
-# python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-# counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
-#     counterfactuals_params.cf_method.K=1 \
-#     counterfactuals_params.alpha_k=0 \
-#     counterfactuals_params.alpha_d=0 \
-#     disc_model=mlp
-
-# python3 counterfactuals/pipelines/run_pumal_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-# counterfactuals_params.cf_method.cf_method_type="GLOBAL_CE" \
-#     counterfactuals_params.cf_method.K=1 \
-#     counterfactuals_params.alpha_k=0 \
-#     counterfactuals_params.alpha_d=0 \
-#     disc_model=mlr

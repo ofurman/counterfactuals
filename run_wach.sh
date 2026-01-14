@@ -76,14 +76,3 @@ python3 counterfactuals/pipelines/run_wach_pipeline.py -m \
     disc_model=mlr \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003
-
-# ########################
-# #### Credit Default #####
-# ########################
-# python3 counterfactuals/pipelines/run_wach_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-#     disc_model=mlp
-
-# python3 counterfactuals/pipelines/run_wach_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-#     disc_model=mlr

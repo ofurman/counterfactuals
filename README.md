@@ -109,12 +109,6 @@ delta, Xs, ys_orig, ys_target = cf_method.explain_dataloader(
     epochs=20000,
     lr=0.01,
     patience=500,
-    alpha_dist=1e-1,
-    alpha_plaus=10**4,
-    alpha_class=10**5,
-    alpha_s=10**4,
-    alpha_k=10**3,
-    alpha_d=10**2,
     log_prob_threshold=log_prob_threshold,
 )
 Xs_cfs = Xs + delta().detach().numpy()

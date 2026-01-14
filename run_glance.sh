@@ -86,14 +86,3 @@ python3 counterfactuals/pipelines/run_glance_pipeline.py -m \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003 \
     counterfactuals_params.cf_method.s=4
-
-########################
-#### Credit Default #####
-########################
-# python3 counterfactuals/pipelines/run_glance_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-#     disc_model=mlp
-
-# python3 counterfactuals/pipelines/run_glance_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-#     disc_model=mlr

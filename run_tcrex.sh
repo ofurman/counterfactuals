@@ -99,20 +99,3 @@ python3 counterfactuals/pipelines/run_tcrex_pipeline.py -m \
     disc_model=mlr \
     gen_model=digits_maf \
     gen_model.noise_lvl=0.003
-
-########################
-#### Credit Default #####
-########################
-# python3 counterfactuals/pipelines/run_tcrex_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-#     counterfactuals_params.tau=0.8 \
-#     counterfactuals_params.rho=0.03 \
-#     counterfactuals_params.surrogate_tree_params.max_leaf_nodes=16 \
-#     disc_model=mlp
-
-# python3 counterfactuals/pipelines/run_tcrex_pipeline.py -m \
-#     dataset._target_=counterfactuals.datasets.CreditDefaultDataset \
-#     counterfactuals_params.tau=0.8 \
-#     counterfactuals_params.rho=0.03 \
-#     counterfactuals_params.surrogate_tree_params.max_leaf_nodes=16 \
-#     disc_model=mlr
