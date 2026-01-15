@@ -72,6 +72,8 @@ class DiCoFlexDatasetConfig:
     p_values: List[float]
     n_neighbors: int
     noise_level: float
+    factual_chunk_size: int | None = None
+    target_chunk_size: int | None = None
     seed: int | None = None
 
 
@@ -106,6 +108,12 @@ class DiCoFlexTrainingDataset(Dataset):
         self.class_to_index: Dict[int, int] = {cls: idx for idx, cls in enumerate(self.classes)}
         self.total_candidates = max(
             self.n_neighbors * max(len(self.classes) - 1, 1), self.n_neighbors
+        )
+        self.factual_chunk_size = (
+            max(1, config.factual_chunk_size) if config.factual_chunk_size else 512
+        )
+        self.target_chunk_size = (
+            max(1, config.target_chunk_size) if config.target_chunk_size else 1024
         )
         # Pre-separate data by class to reduce memory usage during neighbor computation
         self._X_by_class: Dict[int, np.ndarray] = {}
@@ -168,21 +176,14 @@ class DiCoFlexTrainingDataset(Dataset):
             )
         return vector
 
-    def _precompute_neighbors(
-        self,
-    ) -> Dict[Tuple[int, float, int, int], np.ndarray]:
-        """Compute nearest neighbors using class-separated approach for memory efficiency.
+    def _precompute_neighbors(self) -> Dict[Tuple[int, float, int, int], np.ndarray]:
+        """Compute nearest neighbors using class-separated, chunked distance computation.
 
-        Instead of computing distances from ALL samples to target class (O(N * N_target)),
-        we compute distances only from each factual class to target class (O(N_factual * N_target)).
-        This reduces memory usage significantly for large datasets.
-
-        Returns:
-            Dict mapping (mask_idx, p_value, factual_class, target_class) to neighbor indices.
+        Distances are computed between factual/target class subsets in chunks, reducing
+        peak memory usage while still selecting the closest candidates.
         """
         neighbor_map: Dict[Tuple[int, float, int, int], np.ndarray] = {}
         for mask_idx, mask in enumerate(self.masks):
-            mask_weight = mask.reshape(1, 1, -1)
             for p_value in self.p_values:
                 for target_class in self.classes:
                     target_indices = np.where(self.y == target_class)[0]
@@ -193,6 +194,68 @@ class DiCoFlexTrainingDataset(Dataset):
                     neighbor_ids = np.argsort(distances, axis=1)[:, :max_neighbors]
                     neighbor_map[(mask_idx, p_value, target_class)] = target_indices[neighbor_ids]
         return neighbor_map
+
+    def _compute_neighbors_chunked(
+        self,
+        X_factual: np.ndarray,
+        X_target: np.ndarray,
+        target_global_indices: np.ndarray,
+        mask: np.ndarray,
+        p_value: float,
+    ) -> np.ndarray:
+        max_neighbors = min(self.total_candidates, X_target.shape[0])
+        factual_chunk = min(self.factual_chunk_size, X_factual.shape[0])
+        target_chunk = min(self.target_chunk_size, X_target.shape[0])
+        neighbor_global_ids = np.empty(
+            (X_factual.shape[0], max_neighbors), dtype=target_global_indices.dtype
+        )
+        mask_weight = mask.reshape(1, 1, -1)
+
+        for start in range(0, X_factual.shape[0], factual_chunk):
+            end = min(start + factual_chunk, X_factual.shape[0])
+            factual_block = X_factual[start:end]
+            best_dists = np.full(
+                (factual_block.shape[0], max_neighbors),
+                np.inf,
+                dtype=np.float32,
+            )
+            best_indices = np.full(
+                (factual_block.shape[0], max_neighbors),
+                -1,
+                dtype=target_global_indices.dtype,
+            )
+
+            for t_start in range(0, X_target.shape[0], target_chunk):
+                t_end = min(t_start + target_chunk, X_target.shape[0])
+                target_block = X_target[t_start:t_end]
+                diff = (
+                    np.abs(factual_block[:, None, :] - target_block[None, :, :])
+                    ** p_value
+                )
+                diff *= mask_weight
+                distances = np.sum(diff, axis=2) ** (1.0 / p_value)
+
+                target_ids = target_global_indices[t_start:t_end]
+                combined_dists = np.concatenate([best_dists, distances], axis=1)
+                combined_indices = np.concatenate(
+                    [
+                        best_indices,
+                        np.broadcast_to(target_ids, distances.shape),
+                    ],
+                    axis=1,
+                )
+                partition = np.argpartition(combined_dists, max_neighbors - 1, axis=1)[
+                    :, :max_neighbors
+                ]
+                best_dists = np.take_along_axis(combined_dists, partition, axis=1)
+                best_indices = np.take_along_axis(combined_indices, partition, axis=1)
+
+            order = np.argsort(best_dists, axis=1)
+            neighbor_global_ids[start:end] = np.take_along_axis(
+                best_indices, order, axis=1
+            )
+
+        return neighbor_global_ids
 
     def _build_factual_entries(
         self,
@@ -282,13 +345,22 @@ def create_dicoflex_dataloaders(
     seed: int,
     numerical_indices: Sequence[int],
     categorical_indices: Sequence[int],
+    factual_chunk_size: int | None = None,
+    target_chunk_size: int | None = None,
 ) -> Tuple[DataLoader, DataLoader, Dict[int, int], List[np.ndarray], int]:
-    """Create train/validation loaders for DiCoFlex flow training."""
+    """Create train/validation loaders for DiCoFlex flow training.
+
+    Args:
+        factual_chunk_size: Chunk size for factual samples in neighbor search.
+        target_chunk_size: Chunk size for target samples in neighbor search.
+    """
     config = DiCoFlexDatasetConfig(
         masks=masks,
         p_values=p_values,
         n_neighbors=n_neighbors,
         noise_level=noise_level,
+        factual_chunk_size=factual_chunk_size,
+        target_chunk_size=target_chunk_size,
         seed=seed,
     )
     dataset = DiCoFlexTrainingDataset(
