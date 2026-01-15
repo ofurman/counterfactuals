@@ -205,6 +205,10 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         seed=cfg.experiment.seed,
         numerical_indices=dataset.numerical_features_indices,
         categorical_indices=dataset.categorical_features_indices,
+        factual_chunk_size=cfg.counterfactuals_params.get(
+            "neighbor_factual_chunk_size"
+        ),
+        target_chunk_size=cfg.counterfactuals_params.get("neighbor_target_chunk_size"),
     )
     vis_cfg = cfg.get("visualization")
     if vis_cfg and vis_cfg.get("enable_training_batch", False):
