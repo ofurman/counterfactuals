@@ -182,7 +182,7 @@ class PUMAL(BaseCounterfactual):
             disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         )
         validity_loss = self.disc_model_criterion(disc_logits, context_target)
-        max_violation = abs(log_prob_threshold) * 2  # or tune based on your data
+        max_violation = abs(log_prob_threshold) * 2
         p_x_param_c_target = self.gen_model(
             x_origin + delta(), context=context_target.float()
         ).clamp(max=10 ** 5)
@@ -193,7 +193,6 @@ class PUMAL(BaseCounterfactual):
         k_loss = delta.cols_entropy()
         d_loss = delta.determinant_diversity_penalty()
 
-        # delta_loss = delta.loss(alpha_s, alpha_k, alpha_d)
         loss = (
                 alpha_dist * dist
                 + alpha_class * validity_loss
@@ -346,5 +345,4 @@ class PUMAL(BaseCounterfactual):
         x_origs = np.concatenate(original, axis=0)
         y_origs = np.concatenate(original_classes, axis=0)
         y_target = np.concatenate(target_classes, axis=0)
-        # x_cfs = x_origs + self.delta().detach().numpy()
         return self.delta, x_origs, y_origs, y_target

@@ -197,6 +197,7 @@ class GCE(torch.nn.Module):
         vectors_normalized = vectors / (vectors.norm(dim=1, keepdim=True) + 1e-8)
 
         gram_matrix = torch.mm(vectors_normalized, vectors_normalized.T)
+        return 1 - gram_matrix
         epsilon = 1e-5
         gram_matrix_regularized = gram_matrix + epsilon * torch.eye(n).to(vectors.device)
 
@@ -231,7 +232,7 @@ class GCE(torch.nn.Module):
         n = prob_dist.shape[1]  # number of classes/dimensions
         max_entropy = torch.log(torch.tensor(n, dtype=prob_dist.dtype))
         normalized_entropy = row_wise_entropy / max_entropy
-        return row_wise_entropy
+        return normalized_entropy
 
     def forward(self):
         return torch.exp(self.m) * self.sparsemax(self.s) @ self.d
@@ -244,15 +245,12 @@ class GCE(torch.nn.Module):
         s_col_prob = self.sparsemax(self.s).sum(axis=0) / self.sparsemax(self.s).sum()
         s_col_prob = s_col_prob.clamp(min=1e-9)
         col_wise_entropy = -torch.sum(s_col_prob * torch.log(s_col_prob))
-
-        # Normalize
-        n = s_col_prob.shape[0]  # number of columns
+        n = s_col_prob.shape[0]
         max_entropy = torch.log(torch.tensor(n, dtype=s_col_prob.dtype, device=s_col_prob.device))
         normalized_col_wise_entropy = col_wise_entropy / max_entropy
         return normalized_col_wise_entropy
 
     def loss(self, alpha_s, alpha_k, alpha_d):
-        # return alpha_s * self.rows_entropy() + alpha_s * torch.norm(self.d, p=0, dim=1).sum() # + alpha_k * self.cols_entropy()
         return (
             alpha_s * self.rows_entropy()
             + alpha_d * self.determinant_diversity_penalty()
