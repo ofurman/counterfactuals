@@ -4,7 +4,7 @@ from sklearn.compose import ColumnTransformer
 import torch
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, QuantileTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, QuantileTransformer, LabelEncoder
 from counterfactuals.datasets.base import AbstractDataset
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -308,9 +308,9 @@ class DefaultDataset(AbstractDataset):
         raw_data["EDUCATION"] = raw_data["EDUCATION"] - 1
 
         # Replace the PAY_i columns values -1, -2, 0 with 0
-        pay_columns = ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"]
-        for col in pay_columns:
-            raw_data[col] = raw_data[col].replace([-1, -2], 0)
+        #pay_columns = ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"]
+        #for col in pay_columns:
+        #    raw_data[col] = raw_data[col].replace([-1, -2], 0)
 
         # # Downsample the majority class (0) to match the minority class (1)
         # count_class_0, count_class_1 = np.bincount(raw_data[self.target_column].values)
@@ -322,8 +322,8 @@ class DefaultDataset(AbstractDataset):
         X = raw_data[self.feature_columns].values
         y = raw_data[self.target_column].values
         # invert y to be 1 for non-default and 0 for default
-        y = 1 - y
-        y = np.load(pred_path)
+        #y = 1 - y
+        #y = np.load(pred_path)
 
         self.numerical_columns = list(range(0, 14))
         self.categorical_columns = list(range(14, len(self.feature_columns)))
@@ -387,9 +387,14 @@ class DefaultDataset(AbstractDataset):
         X_train = np.array(X_train.astype(np.float32))
         X_test = np.array(X_test.astype(np.float32))
 
-        #self.y_transformer = OneHotEncoder(sparse_output=False)
-        #y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
-        #y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
+        self.X_train_orig = X_train
+        self.X_test_orig = X_test
+
+        self.y_transformer = LabelEncoder()
+        print("Shapes", y_train.shape)
+        print(y_train.reshape(-1).shape)
+        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
+        y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
         #y_train = np.array(y_train.astype(np.int64))
         #y_test = np.array(y_test.astype(np.int64))
 

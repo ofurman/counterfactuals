@@ -2,7 +2,7 @@ import sys
 
 import pandas as pd
 
-sys.path.append(r"C:\Users\marsz\Studia\GMUM\counters_base\counterfactuals")
+sys.path.append(r"C:\Users\marsz\Studies\ML-papers\DiCoFlex\counterfactuals")
 sys.path.append("/home/z1172691/counterfactuals")
 
 import numpy as np
@@ -52,9 +52,8 @@ def prepare_dataset_and_models(
     ):
     dataset = dataset_class()
     disc_model = MultilayerPerceptron(
-        input_size=dataset.X_train.shape[1],
-        hidden_layer_sizes=[256, 256],
-        target_size=np.unique(dataset.y_train).shape[0]
+        D=dataset.X_train_orig.shape[1],
+        weights_path=os.path.join(save_dir, "model.pt")
     )
     #if load_from_save_dir:
     #    disc_model.load_state_dict(torch.load(os.path.join(save_dir, "disc_model.pth")))
@@ -67,13 +66,17 @@ def prepare_dataset_and_models(
     #        patience=100,
     #        checkpoint_path=os.path.join(save_dir, "disc_model.pth")
     #)
-    #disc_model = disc_model.eval()
-    #y_train = disc_model.predict(dataset.X_train).numpy().astype(int)
-    #y_test = disc_model.predict(dataset.X_test).numpy().astype(int)
-    #logger.info(f"Discriminator model accuracy: {np.sum(y_test == dataset.y_test) / len(dataset.y_test)}")
+    disc_model.eval()
+    y_train = disc_model.predict(dataset.X_train_orig).astype(int)
+    y_test = disc_model.predict(dataset.X_test_orig).astype(int)
+    logger.info(f"Discriminator model accuracy: {np.sum(y_test == dataset.y_test) / len(dataset.y_test)}")
 
-    #dataset.y_train = y_train
-    #dataset.y_test = y_test
+    print(dataset.y_train[:10])
+
+    dataset.y_train = y_train
+    dataset.y_test = y_test
+
+    print(dataset.y_train[:10])
 
     gen_model = MaskedAutoregressiveFlow(
         features=dataset.X_train.shape[1],
@@ -130,7 +133,9 @@ def train_method(
         dataset_name: str = "Moons",
         save_dir: str = "results/moons_multiclass",
         prob_threshold: float = 0.99,
-        n_nearest: int = 16
+        n_nearest: int = 16,
+        data_dir = "data/moons_multiclass",
+        load_from_save_dir: bool = False
 ):
     """
     Example using the moons dataset with multiclass counterfactual generation
@@ -140,7 +145,7 @@ def train_method(
 
     os.makedirs(save_dir, exist_ok=True)
     
-    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, save_dir, load_from_save_dir=False)
+    dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, data_dir, load_from_save_dir=False)
     
     # Visualize the dataset
     visualize_dataset(
@@ -446,6 +451,7 @@ if __name__ == "__main__":
             dataset_class=AdultDataset,
             dataset_name="Adult",
             save_dir=f"{args.save_dir}/adult",
+            data_dir=f"data/adult",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -457,6 +463,7 @@ if __name__ == "__main__":
             dataset_class=BankDataset,
             dataset_name="Bank",
             save_dir=f"{args.save_dir}/bank",
+            data_dir=f"data/bank",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -468,6 +475,7 @@ if __name__ == "__main__":
             dataset_class=GMCDataset,
             dataset_name="GMC",
             save_dir=f"{args.save_dir}/gmc",
+            data_dir=f"data/gmc",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -478,7 +486,8 @@ if __name__ == "__main__":
         gmc_model, gmc_dataset = train_method(
             dataset_class=LendingClubDataset,
             dataset_name="LendingClub",
-            save_dir=f"{args.save_dir}/lending_club",
+            save_dir=f"{args.save_dir}/lending-club",
+            data_dir=f"data/lending-club",
             prob_threshold=0.55,
             n_nearest=32
         )
@@ -490,6 +499,7 @@ if __name__ == "__main__":
             dataset_class=DefaultDataset,
             dataset_name="Default",
             save_dir=f"{args.save_dir}/default",
+            data_dir=f"data/default",
             prob_threshold=0.55,
             n_nearest=32
         )

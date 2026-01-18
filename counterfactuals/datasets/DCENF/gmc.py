@@ -1,6 +1,6 @@
 from typing import Union
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, QuantileTransformer
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, QuantileTransformer, LabelEncoder
 import torch
 import numpy as np
 import pandas as pd
@@ -69,7 +69,7 @@ class GMCDataset(AbstractDataset):
 
         X = raw_data[self.feature_columns].to_numpy()
         y = raw_data[target_column].to_numpy()
-        y = np.load(pred_path)
+        #y = np.load(pred_path)
         return X, y
 
     def transform(
@@ -87,13 +87,22 @@ class GMCDataset(AbstractDataset):
                 ("MinMaxScaler", MinMaxScaler(), self.numerical_columns),
                 (
                     "OneHotEncoder",
-                    OneHotEncoder(sparse_output=False),
+                    OneHotEncoder(sparse_output=False, handle_unknown="ignore"),
                     self.categorical_columns,
                 ),
             ],
         )
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
+
+        self.X_train_orig = X_train
+        self.X_test_orig = X_test
+
+        self.y_transformer = LabelEncoder()
+        print("Shapes", y_train.shape)
+        print(y_train.reshape(-1).shape)
+        y_train = self.y_transformer.fit_transform(y_train.reshape(-1, 1))
+        y_test = self.y_transformer.transform(y_test.reshape(-1, 1))
 
         y_train = y_train.reshape(-1)
         y_test = y_test.reshape(-1)
