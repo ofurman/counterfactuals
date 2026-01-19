@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 
 sys.path.append(r"C:\Users\marsz\Studies\ML-papers\DiCoFlex\counterfactuals")
-sys.path.append("/home/z1172691/counterfactuals")
+sys.path.append("/shared/results/marszale/counterfactuals")
 
 import numpy as np
 import matplotlib.pyplot as plt
