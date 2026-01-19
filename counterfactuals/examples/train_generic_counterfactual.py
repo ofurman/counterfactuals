@@ -52,7 +52,7 @@ def prepare_dataset_and_models(
     ):
     dataset = dataset_class()
     disc_model = MultilayerPerceptron(
-        D=dataset.X_train_orig.shape[1],
+        D=dataset.X_train_clf.shape[1],
         weights_path=os.path.join(save_dir, "model.pt")
     )
     #if load_from_save_dir:
@@ -67,16 +67,20 @@ def prepare_dataset_and_models(
     #        checkpoint_path=os.path.join(save_dir, "disc_model.pth")
     #)
     disc_model.eval()
-    y_train = disc_model.predict(dataset.X_train_orig).astype(int)
-    y_test = disc_model.predict(dataset.X_test_orig).astype(int)
+    y_train = disc_model.predict(dataset.X_train_clf).astype(int)
+    y_test = disc_model.predict(dataset.X_test_clf).astype(int)
     logger.info(f"Discriminator model accuracy: {np.sum(y_test == dataset.y_test) / len(dataset.y_test)}")
-
-    print(dataset.y_train[:10])
 
     dataset.y_train = y_train
     dataset.y_test = y_test
 
-    print(dataset.y_train[:10])
+    # Train set
+    print("Train true counts:", np.bincount(y_train))
+    #print("Train predicted counts:", np.bincount(y_pred_train))
+
+    # Test set
+    print("Test true counts:", np.bincount(y_test))
+    #print("Test predicted counts:", np.bincount(y_pred_test))
 
     gen_model = MaskedAutoregressiveFlow(
         features=dataset.X_train.shape[1],

@@ -1,6 +1,6 @@
 from typing import Union
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, QuantileTransformer, LabelEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, QuantileTransformer, LabelEncoder, StandardScaler
 import torch
 import numpy as np
 import pandas as pd
@@ -98,6 +98,28 @@ class BankDataset(AbstractDataset):
                 ),
             ],
         )
+
+        self.clf_transformer = ColumnTransformer(
+            transformers=[
+                # ("num0", StandardScaler(), self.numerical_columns[0:1]),
+                # ("cat", CustomCategoricalTransformer(), self.categorical_columns),
+                # ("num1", StandardScaler(), self.numerical_columns[1:]),
+                ("MinMaxScaler", StandardScaler(), self.numerical_columns),
+                (
+                    "OneHotEncoder",
+                    OneHotEncoder(handle_unknown="ignore"),
+                    self.categorical_columns,
+                ),
+            ],
+            remainder="drop",
+        )
+
+        X_train_clf = self.clf_transformer.fit_transform(X_train)
+        X_test_clf = self.clf_transformer.transform(X_test)
+
+        self.X_train_clf = X_train_clf.astype(np.float32)
+        self.X_test_clf = X_test_clf.astype(np.float32)
+
         X_train = self.feature_transformer.fit_transform(X_train)
         X_test = self.feature_transformer.transform(X_test)
 

@@ -301,11 +301,11 @@ class DefaultDataset(AbstractDataset):
         #]
         self.target_column = "default payment next month"
         #raw_data = raw_data[raw_data["SEX"].isin([1, 2])]
-        raw_data["SEX"] = raw_data["SEX"] - 1
+        #raw_data["SEX"] = raw_data["SEX"] - 1
         #raw_data = raw_data[raw_data["MARRIAGE"].isin([1, 2])]
-        raw_data["MARRIAGE"] = raw_data["MARRIAGE"] - 1
+        #raw_data["MARRIAGE"] = raw_data["MARRIAGE"] - 1
         #raw_data = raw_data[raw_data["EDUCATION"].isin([1, 2, 3])]
-        raw_data["EDUCATION"] = raw_data["EDUCATION"] - 1
+        #raw_data["EDUCATION"] = raw_data["EDUCATION"] - 1
 
         # Replace the PAY_i columns values -1, -2, 0 with 0
         #pay_columns = ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"]
@@ -380,15 +380,34 @@ class DefaultDataset(AbstractDataset):
             ],
             remainder="passthrough",
         )
+
+        self.clf_transformer = ColumnTransformer(
+            transformers=[
+                # ("num0", StandardScaler(), self.numerical_columns[0:1]),
+                # ("cat", CustomCategoricalTransformer(), self.categorical_columns),
+                # ("num1", StandardScaler(), self.numerical_columns[1:]),
+                ("MinMaxScaler", StandardScaler(), self.numerical_columns),
+                (
+                    "OneHotEncoder",
+                    OneHotEncoder(handle_unknown="ignore"),
+                    self.categorical_columns,
+                ),
+            ],
+            remainder="drop",
+        )
+
+        X_train_clf = self.clf_transformer.fit_transform(X_train)
+        X_test_clf = self.clf_transformer.transform(X_test)
+
+        self.X_train_clf = X_train_clf.astype(np.float32).toarray()
+        self.X_test_clf = X_test_clf.astype(np.float32).toarray()
+
         # self.feature_transformer = MinMaxScaler()
         X_train = self.feature_transformer.fit_transform(X_train.astype(np.float32))
         X_test = self.feature_transformer.transform(X_test.astype(np.float32))
 
         X_train = np.array(X_train.astype(np.float32))
         X_test = np.array(X_test.astype(np.float32))
-
-        self.X_train_orig = X_train
-        self.X_test_orig = X_test
 
         self.y_transformer = LabelEncoder()
         print("Shapes", y_train.shape)
