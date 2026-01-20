@@ -10,7 +10,7 @@ from counterfactuals.cf_methods.local_counterfactual_mixin import (
 )
 
 
-class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
+class WACH_REGR(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         gen_model,
@@ -59,16 +59,10 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
         )
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
-        p_x_param_c_target = self.gen_model(
-            x_param, context=context_target.type(torch.float32)
-        )
-        max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
-
-        loss = 10 * dist + alpha * loss_disc + alpha * max_inner
+        loss = (10 * dist) + (alpha * loss_disc)
         return {
             "loss": loss,
             "loss_dist": dist,
-            "loss_prob": max_inner,
             "loss_disc": loss_disc,
         }
 
@@ -146,9 +140,8 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
                     pbar_desc += f"{loss_name}: {loss.mean().detach().cpu().item():.4f}, "
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
-                prob_loss = loss_components["loss_prob"].detach().cpu().mean().item()
                 epoch_pbar.set_description(pbar_desc)
-                if disc_loss < patience_eps and prob_loss < patience_eps:
+                if disc_loss < patience_eps:
                     break
             x_cfs.append(x_param.detach().cpu().numpy())
             x_origs.append(x_origin.detach().cpu().numpy())

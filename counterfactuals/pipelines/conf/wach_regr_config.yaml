@@ -17,28 +17,28 @@ dataset:
   config_path: config/datasets/toy_regression.yaml
 
 disc_model:
-  train_model: true
+  train_model: false
   epochs: 2000
   batch_size: 512
   patience: 300
   lr: 0.001
 
 gen_model:
-  train_model: true
+  train_model: false
   batch_size: 512
   epochs: 2000
-  patience: 300
+  patience: 50
   lr: 0.001
   noise_lvl: 0.03
 
 counterfactuals_params:
   target_change: 0.2
   cf_method:
-    _target_: counterfactuals.cf_methods.regression_ppcef.PPCEFR
+    _target_: counterfactuals.cf_methods.regression_ppcef.WACH_REGR
   epochs: 10000
   batch_size: 8096
-  lr: 0.001
-  alpha: 1000
+  lr: 0.0001
+  alpha: 100
   patience: 300
   log_prob_quantile: 0.5
   disc_loss:

@@ -17,10 +17,10 @@ DATASET_DISPLAY_NAMES = {
     'scm20d': 'SCM20D'
 }
 MODELS = ['LinearRegression', 'MLPRegressor']
-METHODS = ['CEARM', 'WACH', 'PPCEFR']
+METHODS = ['CEARM', 'WACH_REGR', 'PPCEFR']
 METHOD_DISPLAY_NAMES = {
     'CEARM': 'CEARM',
-    'WACH': 'WACH',
+    'WACH_REGR': 'WACH',
     'PPCEFR': '\\our{}'
 }
 BASE_PATH = Path('/Users/oleksiifurman/Developer/counterfactuals/models')
@@ -82,12 +82,13 @@ def aggregate_results(dataset, method, model):
     return results
 
 def format_value(mean, std, metric, show_std=True):
-    """Format value as mean or mean ± std with appropriate precision"""
+    """Format value as mean ± std with appropriate precision"""
     # Use 2 decimal places for consistency with user's example table
     decimals = 2
 
-    if show_std and std > 0:
-        return f"{mean:.{decimals}f} $\\pm$ {std:.{decimals}f}"
+    # Always show std in format: 0.31$\pm$0.02
+    if show_std:
+        return f"{mean:.{decimals}f}$\\pm${std:.{decimals}f}"
     else:
         return f"{mean:.{decimals}f}"
 
@@ -119,7 +120,12 @@ def find_best_values(all_method_results, metric):
 
 def generate_latex_table(model_name):
     """Generate LaTeX table for a specific model comparing all methods"""
-    model_display = 'LR' if model_name == 'LinearRegression' else 'MLP'
+    if model_name == 'LinearRegression':
+        model_display = 'Linear Regression (LR)'
+        label = 'lr'
+    else:
+        model_display = 'Deep Neural Network Regression (DNN)'
+        label = 'dnn'
 
     # Collect all results: {dataset: {method: results}}
     all_results = {}
@@ -141,8 +147,8 @@ def generate_latex_table(model_name):
     print("\\centering")
     print(f"\\caption{{Comparative Results of \\our{{}} for {model_display}. "
           f"\\our{{}} method performance is contrasted with Wachter et al. and CEARM. "
-          f"Results show mean across 5-fold cross-validation.}}")
-    print(f"\\label{{tab:regression_ours_vs_all_{model_display.lower()}}}")
+          f"The results demonstrate \\our{{}} consistently valid and probabilistically plausible results and its ability to produce counterfactuals even in complex scenarios like multi-target regression.}}")
+    print(f"\\label{{tab:regression_ours_vs_all_{label}}}")
     print("\\begin{center}")
     print("\\begin{sc}")
     print("\\begin{tiny}")
@@ -189,7 +195,7 @@ def generate_latex_table(model_name):
             for metric in metric_list:
                 if metric in results:
                     mean, std = results[metric]
-                    value_str = format_value(mean, std, metric, show_std=False)
+                    value_str = format_value(mean, std, metric, show_std=True)
 
                     # Check if this is the best value
                     best_methods = find_best_values(dataset_results, metric)
