@@ -35,7 +35,7 @@ gen_model:
 
 sampling_model:
   model: ${gen_model.model}
-  train_model: true
+  train_model: false
   batch_size: 1024
   epochs: 20
   patience: 100

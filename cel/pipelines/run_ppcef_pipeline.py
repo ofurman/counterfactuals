@@ -14,6 +14,7 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.local_methods.ppcef import PPCEF
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
