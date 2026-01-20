@@ -44,6 +44,7 @@ from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -372,6 +373,9 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
             np.sum(nan_rows),
         )
         x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
+    x_cfs_cleaned = apply_categorical_discretization(
+        dataset.categorical_features_lists, x_cfs_cleaned
+    )
 
     # Handle multiple CFs per instance: extract first CF for metrics
     cf_per_instance = params.cf_samples_per_factual

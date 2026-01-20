@@ -316,6 +316,9 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
             np.sum(nan_rows),
         )
         x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
+    x_cfs_cleaned = apply_categorical_discretization(
+        dataset.categorical_features_lists, x_cfs_cleaned
+    )
 
     # Handle multiple CFs per instance: extract first CF for metrics
     cf_per_instance = params.cf_samples_per_factual

@@ -25,6 +25,7 @@ from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_t
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -312,8 +313,6 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     start_time = time()
     explanation_result = cf_method.explain_dataloader(
         cf_loader,
-        epochs=0,
-        lr=0.0,
     )
     cf_time = time() - start_time
     logger.info("CF search completed in %.4f seconds", cf_time)
@@ -362,6 +361,10 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         cleaned_blocks.append(cleaned_block)
 
     x_cfs_3d = np.stack(cleaned_blocks)
+    x_cfs_3d = apply_categorical_discretization(
+        dataset.categorical_features_lists,
+        x_cfs_3d.reshape(-1, x_cfs_3d.shape[-1]),
+    ).reshape(x_cfs_3d.shape)
     model_returned_mask = np.repeat(
         np.array(model_returned_blocks, dtype=bool), cf_per_instance
     )
