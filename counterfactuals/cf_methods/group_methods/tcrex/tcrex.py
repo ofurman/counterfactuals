@@ -1,291 +1,580 @@
+from __future__ import annotations
+
+import logging
+from collections import Counter
+from dataclasses import dataclass
 from itertools import product
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
-import torch
-from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.utils.validation import check_array, check_X_y
+from sklearn.utils.validation import check_array
 
-from counterfactuals.cf_methods.counterfactual_base import BaseCounterfactualMethod
+from counterfactuals.cf_methods.counterfactual_base import (
+    BaseCounterfactualMethod,
+    ExplanationResult,
+)
+
+try:
+    import torch
+except ImportError:  # pragma: no cover - torch is optional for predictions
+    torch = None
+
+logger = logging.getLogger(__name__)
 
 
-class Hyperrectangle:
-    def __init__(self, bounds):
-        # Bounds is a list of tuples (lower, upper) for each feature
-        self.bounds = bounds
+@dataclass(frozen=True)
+class Rule:
+    """Hyperrectangular rule in feature space."""
 
-    def contains(self, x):
-        return all(l <= xi <= u for xi, (l, u) in zip(x, self.bounds))
+    bounds: list[tuple[float, float]]
+
+    def contains(self, x: np.ndarray) -> bool:
+        """Check if point x is contained within this rule."""
+        for i, (lb, ub) in enumerate(self.bounds):
+            if not (lb <= x[i] < ub):
+                return False
+        return True
 
 
-class CounterfactualRule:
-    def __init__(self, hyperrectangle, accuracy, feasibility):
-        self.hyperrectangle = hyperrectangle
-        self.accuracy = accuracy
-        self.feasibility = feasibility
+@dataclass
+class TreeNode:
+    """Custom tree node for meta-rule classification."""
+
+    feature: int = -1
+    threshold: float = -1.0
+    left: Optional["TreeNode"] = None
+    right: Optional["TreeNode"] = None
+    prediction: Optional[int] = None
+    values: Optional[list[int]] = None
+
+    def is_leaf(self) -> bool:
+        """Return True when node is a leaf."""
+        return self.prediction is not None
+
+
+@dataclass
+class CRE:
+    """Counterfactual Rule Explanation container."""
+
+    target: list[int]
+    max_valid_rules: list[Rule]
+    meta_rules: list[Rule]
+    meta_tree: TreeNode
+
+    def __call__(self, x: np.ndarray) -> tuple[int, Rule]:
+        """Return optimal rule index and rule for x."""
+        optimal_idx = predict_tree(self.meta_tree, x)
+        return optimal_idx, self.max_valid_rules[optimal_idx]
+
+
+def _as_numpy(predictions: Any) -> np.ndarray:
+    if torch is not None and isinstance(predictions, torch.Tensor):
+        predictions = predictions.detach().cpu().numpy()
+    return np.asarray(predictions)
+
+
+def _to_labels(predictions: Any) -> np.ndarray:
+    predictions = _as_numpy(predictions)
+    if predictions.ndim > 1:
+        return predictions.argmax(axis=1)
+    return predictions.reshape(-1)
+
+
+def gini_impurity(y: np.ndarray) -> float:
+    """Compute Gini impurity for labels."""
+    if len(y) == 0:
+        return 0.0
+    counts = Counter(y)
+    total = len(y)
+    return 1.0 - sum((count / total) ** 2 for count in counts.values())
+
+
+def split_data(
+    X: np.ndarray, y: np.ndarray, feature: int, threshold: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Split data based on a feature threshold."""
+    left_mask = X[:, feature] <= threshold
+    right_mask = ~left_mask
+    return X[left_mask], y[left_mask], X[right_mask], y[right_mask]
+
+
+def build_tree(
+    X: np.ndarray,
+    y: np.ndarray,
+    max_depth: float,
+    current_depth: int,
+    allowed_thresholds: list[list[float]],
+) -> TreeNode:
+    """Build a decision tree with constrained thresholds."""
+    filtered_thresholds = []
+    for bounds in allowed_thresholds:
+        filtered_thresholds.append([t for t in bounds if not np.isinf(t)])
+
+    if len(np.unique(y)) == 1 or current_depth >= max_depth:
+        return TreeNode(
+            prediction=int(Counter(y).most_common(1)[0][0]),
+            values=list(y),
+        )
+
+    best_gini = np.inf
+    best_feature = -1
+    best_threshold = -1.0
+    best_split = None
+
+    for feature in range(X.shape[1]):
+        for threshold in filtered_thresholds[feature]:
+            left_X, left_y, right_X, right_y = split_data(X, y, feature, threshold)
+            if len(left_y) == 0 or len(right_y) == 0:
+                continue
+            n = len(y)
+            weighted_gini = (len(left_y) / n * gini_impurity(left_y)) + (
+                len(right_y) / n * gini_impurity(right_y)
+            )
+            if weighted_gini < best_gini:
+                best_gini = weighted_gini
+                best_feature = feature
+                best_threshold = threshold
+                best_split = (left_X, left_y, right_X, right_y)
+
+    if best_feature == -1 or best_split is None:
+        return TreeNode(
+            prediction=int(Counter(y).most_common(1)[0][0]),
+            values=list(y),
+        )
+
+    left_X, left_y, right_X, right_y = best_split
+    left_node = build_tree(
+        left_X, left_y, max_depth, current_depth + 1, allowed_thresholds
+    )
+    right_node = build_tree(
+        right_X, right_y, max_depth, current_depth + 1, allowed_thresholds
+    )
+
+    return TreeNode(
+        feature=best_feature,
+        threshold=best_threshold,
+        left=left_node,
+        right=right_node,
+    )
+
+
+def predict_tree(node: TreeNode, x: np.ndarray) -> int:
+    """Predict class for a single instance using the custom tree."""
+    if node.is_leaf():
+        return int(node.prediction)
+    if x[node.feature] <= node.threshold:
+        return predict_tree(node.left, x)
+    return predict_tree(node.right, x)
+
+
+def extract_rules_from_sklearn_tree(
+    tree: DecisionTreeClassifier, n_features: int
+) -> list[Rule]:
+    """Extract hyperrectangular rules from a sklearn decision tree."""
+    tree_ = tree.tree_
+
+    def recurse(node_id: int, conditions: list[list[float]]) -> list[Rule]:
+        rules = [Rule([tuple(b) for b in conditions])]
+        if tree_.children_left[node_id] == tree_.children_right[node_id]:
+            return rules
+
+        feature = tree_.feature[node_id]
+        threshold = tree_.threshold[node_id]
+
+        left_conditions = [list(b) for b in conditions]
+        left_conditions[feature][1] = min(left_conditions[feature][1], threshold)
+        rules.extend(recurse(tree_.children_left[node_id], left_conditions))
+
+        right_conditions = [list(b) for b in conditions]
+        right_conditions[feature][0] = max(right_conditions[feature][0], threshold)
+        rules.extend(recurse(tree_.children_right[node_id], right_conditions))
+        return rules
+
+    initial_conditions = [[float("-inf"), float("inf")] for _ in range(n_features)]
+    return recurse(0, initial_conditions)
+
+
+def extract_rules_from_sklearn_forest(
+    forest: RandomForestClassifier, n_features: int
+) -> list[Rule]:
+    """Extract unique rules from all trees in a random forest."""
+    all_rules: list[Rule] = []
+    for tree in forest.estimators_:
+        all_rules.extend(extract_rules_from_sklearn_tree(tree, n_features))
+
+    seen: set[tuple[tuple[float, float], ...]] = set()
+    unique_rules = []
+    for rule in all_rules:
+        key = tuple(rule.bounds)
+        if key not in seen:
+            seen.add(key)
+            unique_rules.append(rule)
+    return unique_rules
+
+
+def rule_feasibility(rule: Rule, X: np.ndarray) -> float:
+    """Compute feasibility as the fraction of points contained by the rule."""
+    count = sum(1 for x in X if rule.contains(x))
+    return count / len(X)
+
+
+def rule_accuracy(
+    rule: Rule, X: np.ndarray, predictions: np.ndarray, target: list[int]
+) -> float:
+    """Compute rule accuracy for the target class(es)."""
+    in_rule = 0
+    correct = 0
+    for i, x in enumerate(X):
+        if rule.contains(x):
+            in_rule += 1
+            if predictions[i] in target:
+                correct += 1
+    return correct / in_rule if in_rule > 0 else 0.0
+
+
+def is_subrule(rule: Rule, other: Rule) -> bool:
+    """Return True when rule is contained within other."""
+    for (lb1, ub1), (lb2, ub2) in zip(rule.bounds, other.bounds):
+        if not (lb2 <= lb1 and ub1 <= ub2):
+            return False
+    return True
+
+
+def max_valid_rules(
+    rules: list[Rule],
+    X: np.ndarray,
+    predictions: np.ndarray,
+    target: list[int],
+    tau: float,
+) -> list[Rule]:
+    """Find maximal rules that satisfy the accuracy threshold."""
+    candidate_rules = [
+        rule for rule in rules if rule_accuracy(rule, X, predictions, target) >= tau
+    ]
+
+    maximal = []
+    for i, rule in enumerate(candidate_rules):
+        others = candidate_rules[:i] + candidate_rules[i + 1 :]
+        if all(not is_subrule(rule, other) for other in others):
+            maximal.append(rule)
+    return maximal
+
+
+def partition_bounds(rules: list[Rule]) -> list[list[float]]:
+    """Compute sorted unique bounds per feature dimension."""
+    if not rules:
+        return []
+
+    n_features = len(rules[0].bounds)
+    bounds_per_dim: list[list[float]] = []
+    for dim in range(n_features):
+        bounds = {float("-inf"), float("inf")}
+        for rule in rules:
+            lb, ub = rule.bounds[dim]
+            bounds.add(lb)
+            bounds.add(ub)
+        bounds_per_dim.append(sorted(bounds))
+    return bounds_per_dim
+
+
+def induced_grid(rules: list[Rule]) -> list[tuple[tuple[float, float], ...]]:
+    """Compute the induced grid partition from rules."""
+    bounds_per_dim = partition_bounds(rules)
+    consecutive_per_dim = []
+    for bounds in bounds_per_dim:
+        pairs = [(bounds[i], bounds[i + 1]) for i in range(len(bounds) - 1)]
+        consecutive_per_dim.append(pairs)
+    return list(product(*consecutive_per_dim))
+
+
+def rule_contains_points(rule: Rule, X: np.ndarray) -> np.ndarray:
+    """Return the subset of X contained by rule."""
+    mask = np.array([rule.contains(x) for x in X])
+    return X[mask]
+
+
+def prototype(
+    grid_cell: tuple[tuple[float, float], ...],
+    X: np.ndarray,
+    pick_arbitrary: bool = False,
+) -> np.ndarray:
+    """Select a prototype point for a grid cell."""
+    rule = Rule(list(grid_cell))
+    contained = rule_contains_points(rule, X)
+    if len(contained) == 0:
+        return np.array(
+            [
+                (lb + ub) / 2
+                if not np.isinf(lb) and not np.isinf(ub)
+                else (lb if not np.isinf(lb) else ub)
+                for lb, ub in grid_cell
+            ]
+        )
+    if pick_arbitrary:
+        return contained[np.random.randint(len(contained))]
+    return contained.mean(axis=0)
+
+
+def rule_changes(rule: Rule, x: np.ndarray) -> int:
+    """Count number of feature changes needed for x to fit the rule."""
+    changes = 0
+    for i, (lb, ub) in enumerate(rule.bounds):
+        if x[i] < lb or x[i] >= ub:
+            changes += 1
+    return changes
+
+
+def rule_cost(rule: Rule, x: np.ndarray, X: np.ndarray) -> float:
+    """Compute rule cost for x."""
+    return rule_changes(rule, x) - rule_feasibility(rule, X)
+
+
+def cre_for_point(
+    rules: list[Rule], x: np.ndarray, X: np.ndarray, return_index: bool = False
+) -> Union[Rule, int]:
+    """Return the lowest-cost rule for x."""
+    costs = [rule_cost(rule, x, X) for rule in rules]
+    idx = int(np.argmin(costs))
+    return idx if return_index else rules[idx]
+
+
+def classify_prototypes(
+    prototypes: np.ndarray, rule_assignments: np.ndarray, bounds: list[list[float]]
+) -> TreeNode:
+    """Build the meta-tree classifier for prototypes."""
+    if len(np.unique(rule_assignments)) == 1:
+        return TreeNode(
+            prediction=int(rule_assignments[0]), values=list(rule_assignments)
+        )
+    return build_tree(prototypes, rule_assignments, np.inf, 0, bounds)
+
+
+class TCRExGenerator:
+    """T-CREx generator implementing the algorithm from Bewley et al. (2024)."""
+
+    def __init__(
+        self,
+        rho: float = 0.2,
+        tau: float = 0.9,
+        use_forest: bool = False,
+        surrogate_tree_params: Optional[dict[str, Any]] = None,
+    ) -> None:
+        self.rho = rho
+        self.tau = tau
+        self.use_forest = use_forest
+        self.surrogate_tree_params = surrogate_tree_params or {}
+
+    def grow_surrogate(
+        self, X: np.ndarray, predictions: np.ndarray
+    ) -> Union[DecisionTreeClassifier, RandomForestClassifier]:
+        """Train a tree-based surrogate model."""
+        min_samples = max(1, int(self.rho * len(X)))
+        params = {"min_samples_leaf": min_samples, "random_state": 42}
+        params.update(self.surrogate_tree_params)
+
+        if self.use_forest:
+            surrogate = RandomForestClassifier(**params)
+        else:
+            surrogate = DecisionTreeClassifier(**params)
+
+        surrogate.fit(X, predictions)
+        return surrogate
+
+    def generate(
+        self,
+        target: list[int],
+        X: np.ndarray,
+        model: Any,
+        predict_fn: Optional[Callable[[np.ndarray], Any]] = None,
+    ) -> CRE:
+        """Generate a counterfactual rule explanation for the target class."""
+        predictions = predict_fn(X) if predict_fn is not None else model.predict(X)
+        predictions = _to_labels(predictions)
+
+        n_features = X.shape[1]
+        surrogate = self.grow_surrogate(X, predictions)
+
+        if self.use_forest:
+            rules = extract_rules_from_sklearn_forest(surrogate, n_features)
+        else:
+            rules = extract_rules_from_sklearn_tree(surrogate, n_features)
+
+        max_rules = max_valid_rules(rules, X, predictions, target, self.tau)
+        if len(max_rules) == 0:
+            raise ValueError(
+                f"No valid rules found for target {target} with tau={self.tau}. "
+                "Try lowering tau or adjusting rho."
+            )
+
+        if len(max_rules) == 1:
+            return CRE(
+                target=target,
+                max_valid_rules=max_rules,
+                meta_rules=max_rules,
+                meta_tree=TreeNode(prediction=0, values=[0]),
+            )
+
+        grid = induced_grid(max_rules)
+        prototypes = np.array(
+            [prototype(cell, X, pick_arbitrary=False) for cell in grid]
+        )
+        rule_assignments = np.array(
+            [cre_for_point(max_rules, p, X, return_index=True) for p in prototypes]
+        )
+
+        bounds = partition_bounds(max_rules)
+        meta_tree = classify_prototypes(prototypes, rule_assignments, bounds)
+
+        return CRE(
+            target=target,
+            max_valid_rules=max_rules,
+            meta_rules=max_rules,
+            meta_tree=meta_tree,
+        )
 
 
 class TCREx(BaseCounterfactualMethod):
-    def __init__(self, target_model, tau=0.9, rho=0.02, surrogate_tree_params=None):
+    """T-CREx counterfactual method wrapper."""
+
+    def __init__(
+        self,
+        target_model: Optional[Any] = None,
+        tau: float = 0.9,
+        rho: float = 0.02,
+        use_forest: bool = False,
+        surrogate_tree_params: Optional[dict[str, Any]] = None,
+        predict_fn: Optional[Callable[[np.ndarray], Any]] = None,
+        **kwargs,
+    ) -> None:
+        disc_model = kwargs.pop("disc_model", None)
+        target_model = target_model or disc_model
+        if target_model is None:
+            raise ValueError("TCREx requires a target_model or disc_model.")
+        super().__init__(disc_model=target_model, **kwargs)
         self.target_model = target_model
         self.tau = tau
         self.rho = rho
-        self.surrogate_tree_params = surrogate_tree_params or {"max_leaf_nodes": 8}
-        self.rules_ = []
-        self.metarule_tree_ = None
-        self.n_groups_ = 0  # Add attribute to track number of groups
+        self.use_forest = use_forest
+        self.surrogate_tree_params = surrogate_tree_params or {}
+        self.predict_fn = predict_fn
 
-    def fit(self, X, y):
-        X, y = check_X_y(X, y)
-        self.X_ = X
-        self.y_ = y
-        self.n_features_ = X.shape[1]
+        self._generator: Optional[TCRExGenerator] = None
+        self._cre: Optional[CRE] = None
+        self._target_signature: Optional[tuple[int, ...]] = None
+        self._X_train: Optional[np.ndarray] = None
+        self._y_train: Optional[np.ndarray] = None
+        self.n_groups_: int = 0
 
-        # Step 1: Train surrogate tree
-        surrogate = DecisionTreeClassifier(**self.surrogate_tree_params)
-        surrogate.fit(X, y)
-        self.surrogate_ = surrogate
-
-        # Step 2: Extract candidate rules (nodes)
-        self.rules_ = self._extract_rules(surrogate)
-
-        # Step 3: Filter maximal valid rules
-        self.maximal_rules_ = self._filter_maximal_rules()
-
-        # Step 4: Partition input space into grid
-        self.grid_cells_ = self._partition_grid()
-
-        # Step 5: Assign optimal rule to each grid cell
-        self.cell_rules_ = self._assign_optimal_rules()
-
-        # Step 6: Train metarule tree
-        self.metarule_tree_ = self._train_metarule_tree()
-
-        self.n_groups_ = self.metarule_tree_.get_n_leaves()
-
+    def fit(self, X_train: np.ndarray, y_train: np.ndarray, **kwargs) -> "TCREx":
+        """Store training data for rule induction."""
+        self._X_train = check_array(X_train)
+        self._y_train = _to_labels(y_train)
         return self
 
-    def _extract_rules(self, surrogate):
-        # Extract all nodes' hyperrectangles from the surrogate tree
-        rules = []
-        n_nodes = surrogate.tree_.node_count
-        for node_id in range(n_nodes):
-            if surrogate.tree_.children_left[node_id] == -1:  # Leaf node
-                bounds = self._get_node_bounds(surrogate, node_id)
-                feasibility = surrogate.tree_.n_node_samples[node_id] / len(self.X_)
-                node_indices = surrogate.apply(self.X_) == node_id
-                y_true = self.y_[node_indices]
-                y_pred = self.target_model.predict(self.X_[node_indices])
-                if isinstance(y_pred, torch.Tensor):
-                    y_pred = y_pred.numpy().reshape(-1)
-                accuracy = accuracy_score(y_true, y_pred)
-                rules.append(
-                    CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility)
-                )
-        return rules
+    def _ensure_cre(self, targets: list[int], X_train: np.ndarray) -> None:
+        signature = tuple(sorted(set(targets)))
+        if self._generator is None:
+            self._generator = TCRExGenerator(
+                rho=self.rho,
+                tau=self.tau,
+                use_forest=self.use_forest,
+                surrogate_tree_params=self.surrogate_tree_params,
+            )
 
-    def _get_node_bounds(self, tree, node_id):
-        # Reconstruct bounds from the tree splits
-        bounds = [(-np.inf, np.inf)] * self.n_features_
-        feature = tree.tree_.feature
-        threshold = tree.tree_.threshold
-        node = node_id
-        while node != 0:  # Traverse up to root
-            parent = np.where(tree.tree_.children_left == node)[0]
-            if parent.size > 0:
-                parent = parent[0]
-                if tree.tree_.feature[parent] != -2:
-                    f = tree.tree_.feature[parent]
-                    if tree.tree_.threshold[parent] <= bounds[f][1]:
-                        bounds[f] = (tree.tree_.threshold[parent], bounds[f][1])
-                    node = parent
-                    continue
-            parent = np.where(tree.tree_.children_right == node)[0]
-            if parent.size > 0:
-                parent = parent[0]
-                if tree.tree_.feature[parent] != -2:
-                    f = tree.tree_.feature[parent]
-                    if tree.tree_.threshold[parent] >= bounds[f][0]:
-                        bounds[f] = (bounds[f][0], tree.tree_.threshold[parent])
-                    node = parent
-        return bounds
+        if self._cre is None or self._target_signature != signature:
+            logger.info("Building T-CREx rules for target classes: %s", signature)
+            self._cre = self._generator.generate(
+                target=list(signature),
+                X=X_train,
+                model=self.target_model,
+                predict_fn=self.predict_fn,
+            )
+            self._target_signature = signature
+            self.n_groups_ = _count_leaves(self._cre.meta_tree)
 
-    def _filter_maximal_rules(self):
-        # Filter rules by tau and rho, then remove non-maximal
-        valid_rules = [
-            r
-            for r in self.rules_
-            if r.accuracy >= self.tau and r.feasibility >= self.rho
-        ]
-        maximal_rules = []
-        for rule in valid_rules:
-            is_maximal = True
-            for other in valid_rules:
-                if rule != other and self._is_subset(
-                    rule.hyperrectangle, other.hyperrectangle
-                ):
-                    is_maximal = False
-                    break
-            if is_maximal:
-                maximal_rules.append(rule)
-        return maximal_rules
-
-    def _is_subset(self, hr1, hr2):
-        # Check if hr1 is a subset of hr2
-        return all(
-            l2 <= l1 and u1 <= u2 for (l1, u1), (l2, u2) in zip(hr1.bounds, hr2.bounds)
-        )
-
-    def _partition_grid(self):
-        # Create grid cells based on maximal rules' bounds
-        if (
-            not self.maximal_rules_
-        ):  # If there are no maximal rules, create at least one grid cell
-            return [Hyperrectangle([(-np.inf, np.inf)] * self.n_features_)]
-
-        # Extract all unique bound values per feature
-        bounds_per_feature = []
-        for d in range(self.n_features_):
-            values = set()
-            for rule in self.maximal_rules_:
-                l, u = rule.hyperrectangle.bounds[d]
-                values.add(l)
-                values.add(u)
-            values.add(-np.inf)
-            values.add(np.inf)
-            bounds_per_feature.append(sorted(values))
-
-        # Create intervals for each feature
-        intervals = []
-        for bounds in bounds_per_feature:
-            feature_intervals = []
-            for i in range(len(bounds) - 1):
-                feature_intervals.append((bounds[i], bounds[i + 1]))
-            intervals.append(feature_intervals)
-
-        # Generate grid cells using Cartesian product
-        grid_cells = []
-        for cell_intervals in product(*intervals):
-            grid_cells.append(Hyperrectangle(list(cell_intervals)))
-
-        return grid_cells
-
-    def _assign_optimal_rules(self):
-        # Assign optimal rule to each grid cell (simplified)
-        if not self.maximal_rules_:  # Handle case with no maximal rules
-            return {}
-
-        # If only one rule exists, assign it to all cells
-        if len(self.maximal_rules_) == 1:
-            return {cell: self.maximal_rules_[0] for cell in self.grid_cells_}
-
-        # Otherwise compute optimal rule for each cell
-        return {cell: self._compute_optimal_rule(cell) for cell in self.grid_cells_}
-
-    def _compute_optimal_rule(self, cell):
-        # Compute cost for each rule and select the minimal
-        if not self.maximal_rules_:
-            return None
-
-        # Get a prototype point from the cell (e.g., midpoint)
-        prototype = self._get_prototype(cell)
-
-        costs = []
-        for rule in self.maximal_rules_:
-            # Calculate sparsity (number of dimensions that need to change)
-            sparsity = 0
-            for d in range(self.n_features_):
-                l, u = rule.hyperrectangle.bounds[d]
-                if prototype[d] < l or prototype[d] > u:
-                    sparsity += 1
-
-            # Cost function: sparsity - feasibility
-            cost = sparsity - rule.feasibility
-            costs.append(cost)
-
-        return self.maximal_rules_[np.argmin(costs)]
-
-    def _get_prototype(self, cell):
-        # Return a representative point for the cell (e.g., midpoint)
-        prototype = np.zeros(self.n_features_)
-        for d in range(self.n_features_):
-            l, u = cell.bounds[d]
-            # Handle infinite bounds
-            if np.isinf(l) and np.isinf(u):
-                prototype[d] = 0  # Default to 0 if both bounds are infinite
-            elif np.isinf(l):
-                prototype[d] = u - 1  # Just inside upper bound
-            elif np.isinf(u):
-                prototype[d] = l + 1  # Just inside lower bound
-            else:
-                prototype[d] = (l + u) / 2  # Midpoint
-        return prototype
-
-    def _train_metarule_tree(self):
-        # Train a decision tree on grid cell prototypes
-        if not self.grid_cells_:  # Handle case with no grid cells
-            # Create a dummy tree
-            meta_tree = DecisionTreeClassifier()
-            X_dummy = np.zeros((1, self.n_features_))
-            y_dummy = np.zeros(1)
-            meta_tree.fit(X_dummy, y_dummy)
-            return meta_tree
-
-        X_meta = np.array([self._get_prototype(cell) for cell in self.grid_cells_])
-        y_meta = np.array([id(self.cell_rules_[cell]) for cell in self.grid_cells_])
-
-        # Make sure we have unique identifiers for rules
-        unique_y = np.unique(y_meta)
-        y_labels = np.zeros_like(y_meta)
-        for i, val in enumerate(unique_y):
-            y_labels[y_meta == val] = i
-
-        meta_tree = DecisionTreeClassifier()
-        meta_tree.fit(X_meta, y_labels)
-        return meta_tree
-
-    def generate_counterfactual_point(self, x, rule):
-        cf_point = np.copy(x)
-        for d, (l, u) in enumerate(rule.hyperrectangle.bounds):
-            if x[d] < l:
-                cf_point[d] = l
-            elif x[d] > u:
-                cf_point[d] = u
+    def _project_to_rule(self, x: np.ndarray, rule: Rule) -> np.ndarray:
+        cf_point = np.array(x, copy=True)
+        for i, (lb, ub) in enumerate(rule.bounds):
+            if x[i] < lb:
+                cf_point[i] = lb
+            elif x[i] >= ub:
+                if np.isinf(ub):
+                    cf_point[i] = x[i]
+                else:
+                    cf_point[i] = np.nextafter(ub, lb)
         return cf_point
 
-    def explain(self, X):
-        # Check if X is a single sample and reshape if needed
-        X = check_array(X, ensure_2d=True)
+    def explain(
+        self,
+        X: np.ndarray,
+        y_origin: Optional[np.ndarray] = None,
+        y_target: Optional[np.ndarray] = None,
+        X_train: Optional[np.ndarray] = None,
+        y_train: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactual explanations for given instances."""
+        X = check_array(X)
+        if X_train is not None:
+            self._X_train = check_array(X_train)
+        if y_train is not None:
+            self._y_train = _to_labels(y_train)
 
-        if self.metarule_tree_ is None:
-            # If no metarule tree was trained, return the input
-            return X
+        if self._X_train is None:
+            raise ValueError("TCREx requires training data via fit() or X_train.")
 
-        leaf_ids = self.metarule_tree_.apply(X)
+        if y_origin is None:
+            y_origin = _to_labels(self.target_model.predict(X))
+        if y_target is None:
+            raise ValueError("TCREx requires y_target to build target-specific rules.")
+
+        target_labels = _to_labels(y_target)
+        self._ensure_cre(target_labels.tolist(), self._X_train)
+
         cf_points = np.zeros_like(X)
+        group_ids = np.zeros(X.shape[0], dtype=int)
+        for i, x in enumerate(X):
+            rule_idx, rule = self._cre(x)
+            group_ids[i] = rule_idx
+            cf_points[i] = self._project_to_rule(x, rule)
 
-        # Map each leaf to a rule
-        prototype_points = np.array(
-            [self._get_prototype(cell) for cell in self.grid_cells_]
+        return ExplanationResult(
+            x_cfs=cf_points,
+            y_cf_targets=target_labels,
+            x_origs=X,
+            y_origs=_to_labels(y_origin),
+            logs=None,
+            cf_group_ids=group_ids,
         )
-        prototype_leaf_ids = self.metarule_tree_.apply(prototype_points)
 
-        leaf_to_rule = {}
-        for i, leaf_id in enumerate(prototype_leaf_ids):
-            if leaf_id not in leaf_to_rule and i < len(self.grid_cells_):
-                leaf_to_rule[leaf_id] = self.cell_rules_[self.grid_cells_[i]]
+    def explain_dataloader(
+        self,
+        dataloader,
+        epochs: int = None,
+        lr: float = None,
+        patience_eps: Union[float, int] = 1e-5,
+        y_target: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> ExplanationResult:
+        """Generate counterfactuals for a DataLoader."""
+        xs: list[np.ndarray] = []
+        ys: list[np.ndarray] = []
+        for batch in dataloader:
+            X_batch, y_batch = batch
+            xs.append(_as_numpy(X_batch))
+            ys.append(_as_numpy(y_batch))
+        X = np.concatenate(xs, axis=0)
+        y_origin = _to_labels(np.concatenate(ys, axis=0))
 
-        # Generate counterfactual points
-        for i, (x, leaf_id) in enumerate(zip(X, leaf_ids)):
-            # If we can't find a rule for this leaf, return the original point
-            rule = leaf_to_rule.get(leaf_id)
-            if rule:
-                cf_points[i] = self.generate_counterfactual_point(x, rule)
-            else:
-                cf_points[i] = x
+        if y_target is None:
+            raise ValueError("TCREx explain_dataloader requires y_target.")
 
-        return cf_points
+        return self.explain(X=X, y_origin=y_origin, y_target=y_target, **kwargs)
 
-    def explain_dataloader(self, dataloader):
-        Xs, ys = dataloader.dataset.tensors
-        return self.explain(Xs)
+
+def _count_leaves(node: TreeNode) -> int:
+    if node.is_leaf():
+        return 1
+    return _count_leaves(node.left) + _count_leaves(node.right)

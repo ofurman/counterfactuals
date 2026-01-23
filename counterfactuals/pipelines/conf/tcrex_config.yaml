@@ -19,7 +19,7 @@ experiment:
 
 dataset:
   _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/moons.yaml
+  config_path: config/datasets/heloc.yaml
 
 disc_model:
   train_model: false
@@ -42,12 +42,12 @@ counterfactuals_params:
     # specific parameters besides standard ones should be passed here
     _target_: counterfactuals.cf_methods.TCREx
   # TCREx specific parameters
-  tau: 0.9  # Accuracy threshold for valid rules
-  rho: 0.02  # Feasibility threshold for valid rules
+  tau: 0.9 # Accuracy threshold for valid rules
+  rho: 0.02 # Feasibility threshold for valid rules
   surrogate_tree_params:
     max_leaf_nodes: 8
     random_state: 0
   log_prob_quantile: 0.25
   origin_class: 0
   target_class: 1
-  batch_size: 4096 
+  batch_size: 4096

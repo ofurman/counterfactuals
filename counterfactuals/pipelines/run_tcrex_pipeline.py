@@ -66,7 +66,13 @@ def search_counterfactuals(
 
     # Generate counterfactuals for the test instances
     logger.info("Generating counterfactuals")
-    Xs_cfs = cf_method.explain(X_test_origin)
+    y_target = np.full_like(y_test_origin, target_class)
+    cf_result = cf_method.explain(
+        X=X_test_origin,
+        y_origin=y_test_origin,
+        y_target=y_target,
+    )
+    Xs_cfs = cf_result.x_cfs
 
     cf_search_time = np.mean(time() - time_start)
 
@@ -94,7 +100,7 @@ def search_counterfactuals(
         X_test_origin,
         log_prob_threshold,
         y_test_origin,
-        np.full_like(y_test_origin, target_class),
+        y_target,
         cf_search_time,
         n_groups,
     )
