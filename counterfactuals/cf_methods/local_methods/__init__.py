@@ -5,6 +5,7 @@ from .c_chvae.c_chvae import CCHVAE
 from .casebased_sace.casebased_sace import CaseBasedSACE
 from .cegp.cegp import CEGP
 from .cem.cem import CEM_CF
+from .ceflow import CeFlow
 from .cet.cet import CounterfactualExplanationTree as CET
 from .dice.dice import DICE
 from .dicoflex import DiCoFlex
@@ -35,6 +36,7 @@ __all__ = [
     "PPCEFR",
     "DICE",
     "CEM_CF",
+    "CeFlow",
     "SACE",
     # "LiCE",
     "CET",
