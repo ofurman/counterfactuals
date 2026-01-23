@@ -17,6 +17,7 @@ from .local_methods import (
     WACH,
     WACH_OURS,
     Artelt,
+    CeFlow,
     DiCoFlex,
     TabDCE,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "PPCEFR",
     "CCHVAE",
     "TabDCE",
+    "CeFlow",
     # Global methods
     "AReS",
     "GLOBE_CE",
