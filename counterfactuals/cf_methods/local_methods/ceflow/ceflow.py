@@ -94,6 +94,14 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 from the discriminator are used.
             **kwargs: Ignored extra parameters.
         """
+        if hasattr(self.flow_model, "get_class_means"):
+            logger.info("CeFlow using learned GMM class means from flow model.")
+            self._class_means = {
+                label: mean.to(self.device)
+                for label, mean in self.flow_model.get_class_means().items()
+            }
+            return
+
         x_np = np.asarray(X_train, dtype=np.float32)
         if y_train is None or self.params.use_predicted_labels:
             logger.info("CeFlow computing class means using discriminator predictions.")
