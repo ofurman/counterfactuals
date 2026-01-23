@@ -44,6 +44,7 @@ __all__ = [
     "CEM_CF",
     "CCHVAE",
     "TabDCE",
+    "CeFlow",
     # Global methods
     "AReS",
     "GLOBE_CE",
