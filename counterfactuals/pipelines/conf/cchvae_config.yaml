@@ -13,7 +13,7 @@ experiment:
 
 dataset:
   _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/heloc.yaml
+  config_path: config/datasets/lending_club.yaml
 
 disc_model:
   train_model: false
@@ -44,6 +44,7 @@ counterfactuals_params:
   epochs: 20000
   batch_size: 4096
   lr: 0.001
+  num_counterfactuals: 10
 
   # CCHVAE hyperparameters dictionary
   hyperparams:
@@ -64,4 +65,3 @@ counterfactuals_params:
       epochs: 10
       lr: 1e-3
       batch_size: 32
-    
