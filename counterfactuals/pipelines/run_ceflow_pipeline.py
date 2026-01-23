@@ -37,6 +37,18 @@ def _resolve_flow_transforms(
     Optional[Callable[[torch.Tensor], torch.Tensor]],
     Optional[Callable[[torch.Tensor], torch.Tensor]],
 ]:
+    if hasattr(flow_model, "transform_to_latent") and hasattr(
+        flow_model, "transform_to_data"
+    ):
+
+        def encode(x: torch.Tensor) -> torch.Tensor:
+            return flow_model.transform_to_latent(x)
+
+        def decode(z: torch.Tensor) -> torch.Tensor:
+            return flow_model.transform_to_data(z)
+
+        return encode, decode
+
     if hasattr(flow_model, "inverse"):
         return None, None
 
@@ -152,9 +164,14 @@ def search_counterfactuals(
             "CeFlow flow_model must be unconditional; set flow_model.context_features to null."
         )
     base_encode, base_decode = _resolve_flow_transforms(flow_model)
-    encode_fn, decode_fn = _wrap_with_dequantizer(
-        base_encode, base_decode, flow_model, dequantizer
-    )
+    if hasattr(flow_model, "transform_to_latent") and hasattr(
+        flow_model, "transform_to_data"
+    ):
+        encode_fn, decode_fn = base_encode, base_decode
+    else:
+        encode_fn, decode_fn = _wrap_with_dequantizer(
+            base_encode, base_decode, flow_model, dequantizer
+        )
     params = _build_ceflow_params(cfg)
     cf_method = CeFlow(
         flow_model=flow_model,
@@ -276,12 +293,16 @@ def _create_gen_model_from_cfg(
     model_path: str,
     dequantizer: GroupDequantizer,
 ) -> torch.nn.Module:
-    context_features = model_cfg.get("context_features", 1)
-    gen_model = instantiate(
-        model_cfg.model,
-        features=dataset.X_train.shape[1],
-        context_features=context_features,
-    )
+    model_target = model_cfg.model._target_
+    is_ceflow_gmm = "CeFlowGMM" in model_target
+    init_kwargs = {"features": dataset.X_train.shape[1]}
+    if is_ceflow_gmm:
+        init_kwargs["categorical_groups"] = dataset.categorical_features_lists
+        init_kwargs["n_classes"] = len(np.unique(dataset.y_train))
+    else:
+        context_features = model_cfg.get("context_features", 1)
+        init_kwargs["context_features"] = context_features
+    gen_model = instantiate(model_cfg.model, **init_kwargs)
     if model_cfg.train_model:
         train_loader = dataset.train_dataloader(
             batch_size=model_cfg.batch_size,

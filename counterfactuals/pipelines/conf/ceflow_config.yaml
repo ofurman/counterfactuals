@@ -2,7 +2,7 @@ defaults:
   - _self_
   - gen_model: large_maf
   - disc_model: mlp
-  - flow_model: real_nvp
+  - flow_model: ceflow_gmm
 
 hydra:
   sweeper:
@@ -38,13 +38,13 @@ flow_model:
   epochs: 2000
   patience: 100
   lr: 0.003
-  noise_lvl: 0.02
+  noise_lvl: 0.0
 
 counterfactuals_params:
   cf_method:
     _target_: counterfactuals.cf_methods.CeFlow
 
-  alpha_min: 0.9
+  alpha_min: 0.8
   alpha_max: 1.0
   alpha_steps: 9
   alpha_grid: []
