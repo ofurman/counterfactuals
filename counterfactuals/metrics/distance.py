@@ -153,7 +153,7 @@ class CombinedDistanceMetric(BaseDistanceMetric):
         return dist
 
 
-@register_metric("proximity_categorical_hamming")
+@register_metric("proximity_euclidean_hamming")
 class EuclideanHammingCombinedDistance(CombinedDistanceMetric):
     """
     Combined distance using Euclidean (continuous) and Hamming (categorical) metrics.
@@ -189,12 +189,10 @@ class EuclideanHammingCombinedDistance(CombinedDistanceMetric):
         )
 
 
-@register_metric("proximity_categorical_jaccard")
+@register_metric("proximity_euclidean_jaccard")
 class EuclideanJaccardCombinedDistance(CombinedDistanceMetric):
     """
     Combined distance using Euclidean (continuous) and Jaccard (categorical) metrics.
-
-    Registered as: proximity_categorical_jaccard (legacy compatibility name)
 
     Note: This replicates the buggy behavior from CFMetrics.feature_distance()
     where calling with categorical_metric="jaccard" still had continuous_metric="euclidean"
@@ -225,12 +223,10 @@ class EuclideanJaccardCombinedDistance(CombinedDistanceMetric):
         )
 
 
-@register_metric("proximity_continuous_manhattan")
+@register_metric("proximity_l1_jaccard")
 class ManhattanJaccardCombinedDistance(CombinedDistanceMetric):
     """
     Combined distance using Manhattan/Cityblock (continuous) and Jaccard (categorical) metrics.
-
-    Registered as: proximity_continuous_manhattan (legacy compatibility name)
 
     Note: This replicates the buggy behavior from CFMetrics.feature_distance()
     where calling with continuous_metric="cityblock" still had categorical_metric="jaccard"
@@ -261,49 +257,10 @@ class ManhattanJaccardCombinedDistance(CombinedDistanceMetric):
         )
 
 
-@register_metric("proximity_continuous_euclidean")
-class EuclideanJaccardCombinedDistanceAlt(CombinedDistanceMetric):
-    """
-    Combined distance using Euclidean (continuous) and Jaccard (categorical) metrics.
-
-    Registered as: proximity_continuous_euclidean (legacy compatibility name)
-
-    Note: This replicates the buggy behavior from CFMetrics.feature_distance()
-    where calling with continuous_metric="euclidean" still had categorical_metric="jaccard"
-    as default, resulting in a combined distance calculation.
-    This is actually the same as proximity_l2_jaccard but registered under a different name.
-    """
-
-    continuous_metric = "euclidean"
-    categorical_metric = "jaccard"
-
-    def __call__(self, **inputs: Any) -> float:
-        """Compute combined Euclidean and Jaccard distance."""
-        X_test_valid, X_cf_valid = self._filter_valid(
-            inputs["X_test"],
-            inputs["X_cf"],
-            inputs["y_test"],
-            inputs["y_target"],
-            inputs["y_cf_pred"],
-        )
-
-        return self._compute_combined_distance(
-            X_test_valid=X_test_valid,
-            X_cf_valid=X_cf_valid,
-            continuous_features=inputs["continuous_features"],
-            categorical_features=inputs["categorical_features"],
-            ratio_cont=inputs.get("ratio_cont"),
-            continuous_metric=self.continuous_metric,
-            categorical_metric=self.categorical_metric,
-        )
-
-
-@register_metric("proximity_continuous_mad")
+@register_metric("proximity_mad_jaccard")
 class MADJaccardCombinedDistance(CombinedDistanceMetric):
     """
     Combined distance using MAD (continuous) and Jaccard (categorical) metrics.
-
-    Registered as: proximity_continuous_mad (legacy compatibility name)
 
     Note: This replicates the buggy behavior from CFMetrics.feature_distance()
     where calling with continuous_metric="mad" still had categorical_metric="jaccard"
