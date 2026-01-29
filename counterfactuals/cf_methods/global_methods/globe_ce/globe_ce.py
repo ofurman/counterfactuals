@@ -981,7 +981,10 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         _, min_costs_idxs = self.min_scalar_costs(
             cos_s, return_idxs=True, inf=True
         )  # Implicitly computes Algorithm 1, Lines 4-6, returning minimum costs per input and their indices in the k vector
+        nan_idxs = np.isnan(min_costs_idxs)
+        min_costs_idxs[nan_idxs] = 0
         best_k_s = k_s[min_costs_idxs.astype(np.int16)]
+        best_k_s[nan_idxs] = 0
         return best_k_s
 
     def get_best_delta(self):
