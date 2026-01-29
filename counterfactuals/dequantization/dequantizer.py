@@ -60,6 +60,7 @@ class Dequantizer(BaseEstimator, TransformerMixin):
         Returns:
             np.ndarray: Logit-transformed array with unconstrained real values.
         """
+        x = np.clip(x, 0, 1)
         x = ALPHA + (1 - 2 * ALPHA) * x
         return np.log(x / (1.0 - x))
 
