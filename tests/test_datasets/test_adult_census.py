@@ -4,6 +4,7 @@ import tempfile
 import pytest
 from pathlib import Path
 from unittest.mock import patch
+import traceback
 
 from hydra import compose, initialize
 from hydra.core.global_hydra import GlobalHydra
@@ -65,16 +66,16 @@ def test_adult_census_ppcef_execution():
                     config_name="ppcef_config",
                     overrides=[
                         "dataset.config_path=config/datasets/adult_census.yaml",
-                        "dataset.samples_keep=50",  # Tiny dataset for speed
+                        "++dataset.samples_keep=2000",  # Tiny dataset for speed
                         "disc_model.train_model=true",
-                        "disc_model.epochs=1",
+                        "disc_model.epochs=3",
                         "disc_model.batch_size=16",
                         "disc_model.patience=1",
                         "gen_model.train_model=true",
-                        "gen_model.epochs=1",
+                        "gen_model.epochs=3",
                         "gen_model.batch_size=16",
                         "gen_model.patience=1",
-                        "counterfactuals_params.epochs=1",
+                        "counterfactuals_params.epochs=3",
                         "counterfactuals_params.batch_size=16",
                         f"experiment.output_folder={tmp_dir}",
                     ]
@@ -113,6 +114,7 @@ def test_adult_census_ppcef_execution():
                     # Likely the environment issue on windows
                     pytest.skip(f"Skipping due to environment issue: {e}")
                 else:
+                    traceback.print_exc()
                     pytest.fail(f"PPCEF pipeline execution failed with error: {e}")
             
             # Verify that output files were created in the temp directory
@@ -147,16 +149,16 @@ def test_adult_census_globe_ce_execution():
                     config_name="globe_ce_config",
                     overrides=[
                         "dataset.config_path=config/datasets/adult_census.yaml",
-                        "dataset.samples_keep=50",  # Tiny dataset for speed
+                        "++dataset.samples_keep=2000",  # Tiny dataset for speed
                         "disc_model.train_model=true",
-                        "disc_model.epochs=1",
+                        "disc_model.epochs=3",
                         "disc_model.batch_size=16",
                         "disc_model.patience=1",
                         "gen_model.train_model=true",
-                        "gen_model.epochs=1",
+                        "gen_model.epochs=3",
                         "gen_model.batch_size=16",
                         "gen_model.patience=1",
-                        "counterfactuals_params.limit_samples=2",                        
+                        "++counterfactuals_params.limit_samples=2",                        
                         "counterfactuals_params.batch_size=16",
                         f"experiment.output_folder={tmp_dir}",
                     ]
@@ -192,6 +194,7 @@ def test_adult_census_globe_ce_execution():
                  if "tensorflow" in str(e).lower() or "dll" in str(e).lower():
                     pytest.skip(f"Skipping due to environment issue: {e}")
                  else:
+                    traceback.print_exc()
                     pytest.fail(f"GLOBE-CE pipeline execution failed with error: {e}")
 
             # Verify outputs
