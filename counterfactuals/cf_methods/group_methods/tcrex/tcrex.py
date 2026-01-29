@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import product
 from typing import Any, Callable, Optional, Union
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class Rule:
     """Hyperrectangular rule in feature space."""
 
-    bounds: list[tuple[float, float]]
+    bounds: tuple[tuple[float, float], ...]
 
     def contains(self, x: np.ndarray) -> bool:
         """Check if point x is contained within this rule."""
@@ -67,6 +67,41 @@ class CRE:
         """Return optimal rule index and rule for x."""
         optimal_idx = predict_tree(self.meta_tree, x)
         return optimal_idx, self.max_valid_rules[optimal_idx]
+
+
+@dataclass
+class CategoricalFeatureInfo:
+    """Metadata for a one-hot encoded categorical feature."""
+
+    name: str
+    feature_indices: list[int]
+    n_categories: int
+
+    @property
+    def index_set(self) -> set[int]:
+        return set(self.feature_indices)
+
+
+@dataclass
+class FeatureConfig:
+    """Configuration for numerical and categorical feature indices."""
+
+    n_features: int
+    categorical_features: list[CategoricalFeatureInfo] = field(default_factory=list)
+    numerical_indices: set[int] = field(default_factory=set)
+
+    def __post_init__(self) -> None:
+        all_categorical_indices: set[int] = set()
+        for cat in self.categorical_features:
+            all_categorical_indices.update(cat.feature_indices)
+        self.numerical_indices = set(range(self.n_features)) - all_categorical_indices
+
+    def get_categorical_for_index(self, idx: int) -> Optional[CategoricalFeatureInfo]:
+        """Return the categorical feature containing idx, if any."""
+        for cat in self.categorical_features:
+            if idx in cat.feature_indices:
+                return cat
+        return None
 
 
 def _as_numpy(predictions: Any) -> np.ndarray:
@@ -176,7 +211,7 @@ def extract_rules_from_sklearn_tree(
     tree_ = tree.tree_
 
     def recurse(node_id: int, conditions: list[list[float]]) -> list[Rule]:
-        rules = [Rule([tuple(b) for b in conditions])]
+        rules = [Rule(tuple(tuple(b) for b in conditions))]
         if tree_.children_left[node_id] == tree_.children_right[node_id]:
             return rules
 
@@ -235,8 +270,93 @@ def rule_accuracy(
 
 
 def is_subrule(rule: Rule, other: Rule) -> bool:
-    """Return True when rule is contained within other."""
+    """Return True when rule is a strict subset of other."""
+    if rule.bounds == other.bounds:
+        return False
     for (lb1, ub1), (lb2, ub2) in zip(rule.bounds, other.bounds):
+        if not (lb2 <= lb1 and ub1 <= ub2):
+            return False
+    return True
+
+
+def is_rule_well_formed(rule: Rule, feature_config: FeatureConfig) -> bool:
+    """Check categorical well-formedness constraints."""
+    for cat_info in feature_config.categorical_features:
+        hot_indices = []
+        cold_indices = []
+        for idx in cat_info.feature_indices:
+            lb, ub = rule.bounds[idx]
+            if lb >= 0.5:
+                hot_indices.append(idx)
+            elif ub <= 0.5:
+                cold_indices.append(idx)
+
+        if len(hot_indices) > 1:
+            return False
+        if hot_indices and cold_indices:
+            return False
+        if len(cold_indices) > cat_info.n_categories - 1:
+            return False
+    return True
+
+
+def simplify_rule_categoricals(rule: Rule, feature_config: FeatureConfig) -> Rule:
+    """Simplify categorical specifications following Appendix A.2.1."""
+    new_bounds = [list(bounds) for bounds in rule.bounds]
+    for cat_info in feature_config.categorical_features:
+        hot_idx = None
+        cold_indices = []
+        for idx in cat_info.feature_indices:
+            lb, ub = new_bounds[idx]
+            if lb >= 0.5:
+                hot_idx = idx
+            elif ub <= 0.5:
+                cold_indices.append(idx)
+
+        if hot_idx is not None:
+            for idx in cat_info.feature_indices:
+                if idx != hot_idx:
+                    new_bounds[idx] = [float("-inf"), float("inf")]
+        elif len(cold_indices) == cat_info.n_categories - 1:
+            remaining_hot = set(cat_info.feature_indices) - set(cold_indices)
+            hot_idx = remaining_hot.pop()
+            new_bounds[hot_idx] = [0.5, float("inf")]
+            for idx in cold_indices:
+                new_bounds[idx] = [float("-inf"), float("inf")]
+
+    return Rule(tuple(tuple(b) for b in new_bounds))
+
+
+def _modify_bounds_for_subset_check(
+    rule: Rule, feature_config: FeatureConfig
+) -> list[tuple[float, float]]:
+    """Modify bounds for categorical-aware subset checks."""
+    modified = [list(bounds) for bounds in rule.bounds]
+    for cat_info in feature_config.categorical_features:
+        hot_idx = None
+        for idx in cat_info.feature_indices:
+            lb, _ = modified[idx]
+            if lb >= 0.5:
+                hot_idx = idx
+                break
+        if hot_idx is not None:
+            for idx in cat_info.feature_indices:
+                if idx != hot_idx:
+                    lb, ub = modified[idx]
+                    if ub > 0.5:
+                        modified[idx] = [lb, 0.5]
+    return [tuple(b) for b in modified]
+
+
+def is_subrule_with_categoricals(
+    rule: Rule, other: Rule, feature_config: FeatureConfig
+) -> bool:
+    """Return True when rule is a strict subset of other with categorical semantics."""
+    if rule.bounds == other.bounds:
+        return False
+    rule_modified = _modify_bounds_for_subset_check(rule, feature_config)
+    other_modified = _modify_bounds_for_subset_check(other, feature_config)
+    for (lb1, ub1), (lb2, ub2) in zip(rule_modified, other_modified):
         if not (lb2 <= lb1 and ub1 <= ub2):
             return False
     return True
@@ -248,16 +368,37 @@ def max_valid_rules(
     predictions: np.ndarray,
     target: list[int],
     tau: float,
+    feature_config: Optional[FeatureConfig] = None,
 ) -> list[Rule]:
     """Find maximal rules that satisfy the accuracy threshold."""
     candidate_rules = [
         rule for rule in rules if rule_accuracy(rule, X, predictions, target) >= tau
     ]
 
+    if feature_config is not None and feature_config.categorical_features:
+        candidate_rules = [
+            simplify_rule_categoricals(rule, feature_config) for rule in candidate_rules
+        ]
+        candidate_rules = [
+            rule
+            for rule in candidate_rules
+            if is_rule_well_formed(rule, feature_config)
+        ]
+
     maximal = []
     for i, rule in enumerate(candidate_rules):
         others = candidate_rules[:i] + candidate_rules[i + 1 :]
-        if all(not is_subrule(rule, other) for other in others):
+        is_maximal = True
+        for other in others:
+            if feature_config is not None and feature_config.categorical_features:
+                if is_subrule_with_categoricals(rule, other, feature_config):
+                    is_maximal = False
+                    break
+            else:
+                if is_subrule(rule, other):
+                    is_maximal = False
+                    break
+        if is_maximal:
             maximal.append(rule)
     return maximal
 
@@ -289,6 +430,47 @@ def induced_grid(rules: list[Rule]) -> list[tuple[tuple[float, float], ...]]:
     return list(product(*consecutive_per_dim))
 
 
+def is_valid_grid_cell(
+    cell: tuple[tuple[float, float], ...], feature_config: FeatureConfig
+) -> bool:
+    """Return True when a grid cell is valid for categorical constraints."""
+    for cat_info in feature_config.categorical_features:
+        hot_count = 0
+        cold_count = 0
+        for idx in cat_info.feature_indices:
+            lb, ub = cell[idx]
+            if lb >= 0.5:
+                hot_count += 1
+            if ub <= 0.5:
+                cold_count += 1
+        if hot_count > 1:
+            return False
+        if hot_count == 0 and cold_count < cat_info.n_categories:
+            return False
+        if hot_count == 0 and cold_count == cat_info.n_categories:
+            return False
+    return True
+
+
+def induced_grid_with_categoricals(
+    rules: list[Rule], feature_config: Optional[FeatureConfig] = None
+) -> list[tuple[tuple[float, float], ...]]:
+    """Compute induced grid and filter impossible categorical cells."""
+    all_cells = induced_grid(rules)
+    if feature_config is None or not feature_config.categorical_features:
+        return all_cells
+    valid_cells = [
+        cell for cell in all_cells if is_valid_grid_cell(cell, feature_config)
+    ]
+    logger.info(
+        "Grid filtering: %s -> %s cells (%s removed)",
+        len(all_cells),
+        len(valid_cells),
+        len(all_cells) - len(valid_cells),
+    )
+    return valid_cells
+
+
 def rule_contains_points(rule: Rule, X: np.ndarray) -> np.ndarray:
     """Return the subset of X contained by rule."""
     mask = np.array([rule.contains(x) for x in X])
@@ -301,7 +483,7 @@ def prototype(
     pick_arbitrary: bool = False,
 ) -> np.ndarray:
     """Select a prototype point for a grid cell."""
-    rule = Rule(list(grid_cell))
+    rule = Rule(tuple(grid_cell))
     contained = rule_contains_points(rule, X)
     if len(contained) == 0:
         return np.array(
@@ -360,11 +542,13 @@ class TCRExGenerator:
         tau: float = 0.9,
         use_forest: bool = False,
         surrogate_tree_params: Optional[dict[str, Any]] = None,
+        feature_config: Optional[FeatureConfig] = None,
     ) -> None:
         self.rho = rho
         self.tau = tau
         self.use_forest = use_forest
         self.surrogate_tree_params = surrogate_tree_params or {}
+        self.feature_config = feature_config
 
     def grow_surrogate(
         self, X: np.ndarray, predictions: np.ndarray
@@ -394,6 +578,8 @@ class TCRExGenerator:
         predictions = _to_labels(predictions)
 
         n_features = X.shape[1]
+        if self.feature_config is None:
+            self.feature_config = FeatureConfig(n_features=n_features)
         surrogate = self.grow_surrogate(X, predictions)
 
         if self.use_forest:
@@ -401,7 +587,14 @@ class TCRExGenerator:
         else:
             rules = extract_rules_from_sklearn_tree(surrogate, n_features)
 
-        max_rules = max_valid_rules(rules, X, predictions, target, self.tau)
+        max_rules = max_valid_rules(
+            rules,
+            X,
+            predictions,
+            target,
+            self.tau,
+            feature_config=self.feature_config,
+        )
         if len(max_rules) == 0:
             raise ValueError(
                 f"No valid rules found for target {target} with tau={self.tau}. "
@@ -416,7 +609,15 @@ class TCRExGenerator:
                 meta_tree=TreeNode(prediction=0, values=[0]),
             )
 
-        grid = induced_grid(max_rules)
+        grid = induced_grid_with_categoricals(max_rules, self.feature_config)
+        if not grid:
+            logger.warning("No valid grid cells after categorical filtering.")
+            return CRE(
+                target=target,
+                max_valid_rules=max_rules,
+                meta_rules=max_rules,
+                meta_tree=TreeNode(prediction=0, values=[0]),
+            )
         prototypes = np.array(
             [prototype(cell, X, pick_arbitrary=False) for cell in grid]
         )
@@ -446,6 +647,7 @@ class TCREx(BaseCounterfactualMethod):
         use_forest: bool = False,
         surrogate_tree_params: Optional[dict[str, Any]] = None,
         predict_fn: Optional[Callable[[np.ndarray], Any]] = None,
+        categorical_features: Optional[list[dict[str, Any]]] = None,
         **kwargs,
     ) -> None:
         disc_model = kwargs.pop("disc_model", None)
@@ -459,19 +661,43 @@ class TCREx(BaseCounterfactualMethod):
         self.use_forest = use_forest
         self.surrogate_tree_params = surrogate_tree_params or {}
         self.predict_fn = predict_fn
+        self.categorical_features_config = categorical_features
 
         self._generator: Optional[TCRExGenerator] = None
         self._cre: Optional[CRE] = None
         self._target_signature: Optional[tuple[int, ...]] = None
         self._X_train: Optional[np.ndarray] = None
         self._y_train: Optional[np.ndarray] = None
+        self._feature_config: Optional[FeatureConfig] = None
         self.n_groups_: int = 0
 
     def fit(self, X_train: np.ndarray, y_train: np.ndarray, **kwargs) -> "TCREx":
         """Store training data for rule induction."""
         self._X_train = check_array(X_train)
         self._y_train = _to_labels(y_train)
+        self._feature_config = self._build_feature_config(X_train.shape[1])
         return self
+
+    def _build_feature_config(self, n_features: int) -> FeatureConfig:
+        if not self.categorical_features_config:
+            return FeatureConfig(n_features=n_features)
+
+        cat_infos = []
+        for idx, cat_spec in enumerate(self.categorical_features_config):
+            if isinstance(cat_spec, dict):
+                indices = cat_spec["indices"]
+                name = cat_spec.get("name", f"cat_{idx}")
+            else:
+                indices = list(cat_spec)
+                name = f"cat_{idx}"
+            cat_infos.append(
+                CategoricalFeatureInfo(
+                    name=name,
+                    feature_indices=list(indices),
+                    n_categories=len(indices),
+                )
+            )
+        return FeatureConfig(n_features=n_features, categorical_features=cat_infos)
 
     def _ensure_cre(self, targets: list[int], X_train: np.ndarray) -> None:
         signature = tuple(sorted(set(targets)))
@@ -481,6 +707,7 @@ class TCREx(BaseCounterfactualMethod):
                 tau=self.tau,
                 use_forest=self.use_forest,
                 surrogate_tree_params=self.surrogate_tree_params,
+                feature_config=self._feature_config,
             )
 
         if self._cre is None or self._target_signature != signature:
@@ -524,6 +751,8 @@ class TCREx(BaseCounterfactualMethod):
 
         if self._X_train is None:
             raise ValueError("TCREx requires training data via fit() or X_train.")
+        if self._feature_config is None:
+            self._feature_config = self._build_feature_config(self._X_train.shape[1])
 
         if y_origin is None:
             y_origin = _to_labels(self.target_model.predict(X))

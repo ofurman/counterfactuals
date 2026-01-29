@@ -48,12 +48,14 @@ def search_counterfactuals(
     y_test_origin = dataset.y_test[dataset.y_test == origin_class]
 
     logger.info("Creating TCREx counterfactual model")
+    categorical_features = dataset.categorical_features_lists
     # Create the TCREx instance with configuration parameters
     cf_method = TCREx(
         target_model=disc_model,
         tau=cfg.counterfactuals_params.tau,
         rho=cfg.counterfactuals_params.rho,
         surrogate_tree_params=cfg.counterfactuals_params.surrogate_tree_params,
+        categorical_features=categorical_features,
     )
 
     # Fit the TCREx model on training data
