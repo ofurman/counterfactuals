@@ -32,24 +32,51 @@ For dataset details, see [docs/datasets/classification.md](docs/datasets/classif
 
 ## Logging Results
 
-To log results for PPCEF and GLOBE-CE, please add your results in the table below:
+To log results for PPCEF and GLOBE-CE, please add your results in the table below.
 
-| Dataset                | PPCEF Result | GLOBE-CE Result |
-|------------------------|--------------|-----------------|
-| adult                  |              |                 |
-| german_credit          |              |                 |
-| credit_default         |              |                 |
-| give_me_some_credit    |              |                 |
-| heloc                  |              |                 |
-| lending_club           |              |                 |
-| compas                 |              |                 |
-| bank_marketing         |              |                 |
-| wine                   |              |                 |
-| digits                 |              |                 |
-| moons                  |              |                 |
-| blobs                  |              |                 |
-| law                    |              |                 |
-| audit                  |              |                 |
+### Benchmark Scope
+- **Datasets**: All 15 classification datasets are covered (regression datasets and MNIST are excluded).
+- **Binary Classification (13 datasets)**: Both **GLOBE-CE** and **ARES** methods are evaluated.
+- **Multi-class Classification (2 datasets)**: Only **GLOBE-CE** is executed for `wine` and `digits`. **ARES** is excluded as it does not support multi-class targets (rule-based method restricted to binary classification).
+
+
+### GLOBE-CE Results
+| Dataset             | Validity | Proximity | Sparsity | Plausibility | Diversity | Time (s) | Notes                       |
+|---------------------|----------|-----------|----------|--------------|-----------|----------|-----------------------------|
+| adult               |          |           |          |              |           |          |                             |
+| adult_census        |          |           |          |              |           |          |                             |
+| audit               |          |           |          |              |           |          | Target=0                    |
+| bank_marketing      |          |           |          |              |           |          |                             |
+| blobs               |          |           |          |              |           |          | Target=0                    |
+| compas              |          |           |          |              |           |          |                             |
+| credit_default      |          |           |          |              |           |          |                             |
+| digits              |          |           |          |              |           |          |                             |
+| german_credit       |          |           |          |              |           |          |                             |
+| give_me_some_credit |          |           |          |              |           |          |                             |
+| heloc               |          |           |          |              |           |          |                             |
+| law                 |          |           |          |              |           |          |                             |
+| lending_club        |          |           |          |              |           |          |                             |
+| moons               |          |           |          |              |           |          | Target=0                    |
+| wine                |          |           |          |              |           |          |                             |
+
+### ARES Results
+| Dataset             | Validity | Proximity | Sparsity | Plausibility | Diversity | Time (s) | Notes                       |
+|---------------------|----------|-----------|----------|--------------|-----------|----------|-----------------------------|
+| adult               |          |           |          |              |           |          |                             |
+| adult_census        |          |           |          |              |           |          |                             |
+| audit               |          |           |          |              |           |          | Target=0                    |
+| bank_marketing      |          |           |          |              |           |          |                             |
+| blobs               |          |           |          |              |           |          | Target=0                    |
+| compas              |          |           |          |              |           |          |                             |
+| credit_default      |          |           |          |              |           |          |                             |
+| digits              | N/A      | N/A       | N/A      | N/A          | N/A       | N/A      | Multi-class (Not Supported) |
+| german_credit       |          |           |          |              |           |          |                             |
+| give_me_some_credit |          |           |          |              |           |          |                             |
+| heloc               |          |           |          |              |           |          |                             |
+| law                 |          |           |          |              |           |          |                             |
+| lending_club        |          |           |          |              |           |          |                             |
+| moons               |          |           |          |              |           |          | Target=0                    |
+| wine                | N/A      | N/A       | N/A      | N/A          | N/A       | N/A      | Multi-class (Not Supported) |
 
 ---
 
