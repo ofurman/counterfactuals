@@ -68,14 +68,14 @@ def test_bank_marketing_ppcef_execution():
                         "++dataset.samples_keep=2000",
                         "disc_model.train_model=true",
                         "disc_model.epochs=3",
-                        "disc_model.batch_size=16",
+                        "disc_model.batch_size=8",
                         "disc_model.patience=1",
                         "gen_model.train_model=true",
                         "gen_model.epochs=3",
-                        "gen_model.batch_size=16",
+                        "gen_model.batch_size=8",
                         "gen_model.patience=1",
                         "counterfactuals_params.epochs=3",
-                        "counterfactuals_params.batch_size=16",
+                        "counterfactuals_params.batch_size=8",
                         f"experiment.output_folder={tmp_dir}",
                     ]
                 )

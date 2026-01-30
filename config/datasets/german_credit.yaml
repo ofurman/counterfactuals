@@ -76,3 +76,9 @@ feature_config:
   job:
     actionable: true
 target: default
+initial_transforms:
+  - name: dropna
+  - name: reorder_columns
+  - name: one_hot_encode
+    params:
+      drop_first: false

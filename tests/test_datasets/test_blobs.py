@@ -135,17 +135,16 @@ def test_blobs_globe_ce_execution():
                     config_name="globe_ce_config",
                     overrides=[
                         "dataset.config_path=config/datasets/blobs.yaml",
-                        "++dataset.samples_keep=600",
                         "disc_model.train_model=true",
                         "disc_model.epochs=3",
-                        "disc_model.batch_size=16",
+                        "disc_model.batch_size=8",
                         "disc_model.patience=1",
                         "gen_model.train_model=true",
                         "gen_model.epochs=3",
-                        "gen_model.batch_size=16",
+                        "gen_model.batch_size=8",
                         "gen_model.patience=1",
                         "++counterfactuals_params.limit_samples=2",                        
-                        "counterfactuals_params.batch_size=16",
+                        "counterfactuals_params.batch_size=8",
                         "counterfactuals_params.target_class=0", # Ensure we have candidates if balanced
                         f"experiment.output_folder={tmp_dir}",
                     ]
