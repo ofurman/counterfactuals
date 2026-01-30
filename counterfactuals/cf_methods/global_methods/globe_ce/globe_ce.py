@@ -295,7 +295,9 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         # Process costs and return values
         if not vector:
             if correct.any():
-                return correct.mean() * 100, np.mean(cost[cost != 0])
+                non_zero_costs = cost[cost != 0]
+                mean_cost = np.mean(non_zero_costs) if non_zero_costs.size > 0 else 0.0
+                return correct.mean() * 100, mean_cost
             else:
                 return correct.mean() * 100, 0.0
         if none_type == "inf":
@@ -584,9 +586,10 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
                 if x_idx.any():
                     max_scalar_costs[x_idx] = scalar_cost[x_idx]
                     new_cor = cor + x_idx.sum()
-                    new_avg_cost = max_scalar_costs[x_idx].mean()
+                    valid_costs = max_scalar_costs[max_scalar_costs != np.inf]
+                    new_avg_cost = valid_costs.mean() if valid_costs.size > 0 else np.inf
                     costs_c[i], corrects_c[i] = (
-                        max_scalar_costs[max_scalar_costs != np.inf].mean(),
+                        new_avg_cost,
                         new_cor / x_aff.shape[0] * 100,
                     )
                     if print_outputs:
@@ -647,7 +650,8 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
                             )
                         last_rules = rules
                     cor = new_cor
-                    avg_cost = max_scalar_costs[max_scalar_costs != np.inf].mean()
+                    valid_costs = max_scalar_costs[max_scalar_costs != np.inf]
+                    avg_cost = valid_costs.mean() if valid_costs.size > 0 else np.inf
         if print_outputs and not latex_table:
             print(
                 "\n\033[1mCoverage:\t{}%".format(round(cor / x_aff.shape[0] * 100, 4))
@@ -981,7 +985,10 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         _, min_costs_idxs = self.min_scalar_costs(
             cos_s, return_idxs=True, inf=True
         )  # Implicitly computes Algorithm 1, Lines 4-6, returning minimum costs per input and their indices in the k vector
+        nan_idxs = np.isnan(min_costs_idxs)
+        min_costs_idxs[nan_idxs] = 0
         best_k_s = k_s[min_costs_idxs.astype(np.int16)]
+        best_k_s[nan_idxs] = 0
         return best_k_s
 
     def get_best_delta(self):

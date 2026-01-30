@@ -104,6 +104,9 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def explain_dataloader(
         self,
         dataloader,
+        epochs: int,
+        lr: float,
+        patience_eps: float = 1e-5,
         **kwargs,
     ) -> ExplanationResult:
         """Adapter around explain() for DataLoader inputs."""

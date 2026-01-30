@@ -148,6 +148,11 @@ class MethodDataset:
         return transformed_context.X_train
 
     @property
+    def features_tree(self):
+        """Return features tree from the underlying dataset."""
+        return self.file_dataset.features_tree
+
+    @property
     def features(self):
         """Return feature names from the underlying dataset."""
         return self.file_dataset.features

@@ -169,7 +169,7 @@ def search_counterfactuals(
         dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
     )
 
-    def predict_fn_raw(x: pd.DataFrame | np.ndarray) -> np.ndarray:
+    def predict_fn_raw(x):
         x_array = x.values if isinstance(x, pd.DataFrame) else x
         if feature_transformer is not None:
             if hasattr(feature_transformer, "_transform_array"):

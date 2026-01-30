@@ -1,7 +1,11 @@
 import logging
 import os
-from time import time
 from typing import Any, Dict, List, Optional
+
+import matplotlib
+
+matplotlib.use("Agg")  # Use non-interactive backend
+from time import time
 
 import hydra
 import numpy as np
@@ -14,7 +18,6 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.local_methods.ppcef import PPCEF
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
-from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -115,7 +118,7 @@ def search_counterfactuals(
     ys_orig = explanation_result.y_origs
     ys_target = explanation_result.y_cf_targets
 
-    cf_search_time = time() - time_start
+    cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
@@ -149,6 +152,29 @@ def get_categorical_intervals(
         List of categorical feature intervals if use_categorical is True, None otherwise
     """
     return categorical_features_lists if use_categorical else None
+
+
+def apply_categorical_discretization(
+    categorical_features_lists: List[List[int]], Xs_cfs: np.ndarray
+) -> np.ndarray:
+    """
+    Apply categorical discretization to counterfactual examples.
+
+    For each categorical feature interval, this function finds the maximum value
+    and applies one-hot encoding to discretize the categorical features.
+
+    Args:
+        categorical_features_lists: List of lists containing indices of categorical features
+        Xs_cfs: Counterfactual examples array to be discretized
+
+    Returns:
+        np.ndarray: Discretized counterfactual examples with one-hot encoded categorical features
+    """
+    for interval in categorical_features_lists:
+        max_indices = np.argmax(Xs_cfs[:, interval], axis=1)
+        Xs_cfs[:, interval] = np.eye(Xs_cfs[:, interval].shape[1])[max_indices]
+
+    return Xs_cfs
 
 
 def calculate_metrics(

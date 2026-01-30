@@ -16,4 +16,3 @@ metrics_to_compute:
   - "lof_scores_test"
   - "isolation_forest_scores_cf"
   - "isolation_forest_scores_test"
-  - "number_of_instances"

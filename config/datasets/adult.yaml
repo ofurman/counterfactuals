@@ -43,3 +43,9 @@ feature_config:
   "gender":
     actionable: false  # Protected attribute
 target: "income"
+initial_transforms:
+- name: reorder_columns
+- name: dropna
+- name: one_hot_encode
+  params:
+    drop_first: false

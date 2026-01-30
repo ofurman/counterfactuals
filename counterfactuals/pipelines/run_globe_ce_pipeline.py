@@ -29,61 +29,7 @@ logging.basicConfig(
 )
 
 
-def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """
-    Apply one-hot encoding to categorical features in the dataset.
 
-    Mirrors the AReS preprocessing utility: encodes categoricals and optionally
-    bins continuous features, updating dataset metadata for later use.
-
-    Args:
-        dataset: Dataset object that will be updated with encoding metadata
-        data: DataFrame with raw features to be encoded
-
-    Returns:
-        Tuple containing:
-            - data_oh: One-hot encoded DataFrame
-            - features: List of feature names after encoding
-    """
-    label_encoder = LabelEncoder()
-    data_encode = data.copy()
-    dataset.bins = {}
-    dataset.bins_tree = {}
-    dataset.features_tree = {}
-    dataset.n_bins = None
-
-    # Assign encoded features to one hot columns
-    data_oh, features = [], []
-    for x in data.columns:
-        dataset.features_tree[x] = []
-        categorical = x in dataset.categorical_features
-        if categorical:
-            data_encode[x] = label_encoder.fit_transform(data_encode[x])
-            cols = label_encoder.classes_
-        elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(
-                data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins
-            )
-            cols = data_encode[x].cat.categories
-            dataset.bins_tree[x] = {}
-        else:
-            data_oh.append(data[x])
-            features.append(x)
-            continue
-
-        one_hot = pd.get_dummies(data_encode[x])
-        data_oh.append(one_hot)
-        for col in cols:
-            feature_value = x + " = " + str(col)
-            features.append(feature_value)
-            dataset.features_tree[x].append(feature_value)
-            if not categorical:
-                dataset.bins[feature_value] = col.mid
-                dataset.bins_tree[x][feature_value] = col.mid
-
-    data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
-    data_oh.columns = features
-    return data_oh, features
 
 
 def compute_bin_widths(
@@ -130,18 +76,17 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the GLOBE-CE method.
 
     This function constructs required helpers (AReS for bin widths, GLOBE-CE for
-    explanation), filters out target-class instances, computes a plausibility
-    threshold using the generative model, and generates counterfactuals.
+    explanation), filters out target-class instances, and generates counterfactuals.
 
     Args:
         cfg: Hydra configuration with counterfactual parameters
         dataset: Dataset with training/test data and metadata
-        gen_model: Pre-trained generative model
+        gen_model: Pre-trained generative model (unused but kept for interface compatibility)
         disc_model: Pre-trained discriminative model
         save_folder: Directory path where counterfactuals will be saved
 
@@ -149,10 +94,10 @@ def search_counterfactuals(
         Tuple containing:
             - Xs_cfs: Generated counterfactual examples
             - Xs: Original examples used for generation
-            - log_prob_threshold: Calculated log probability threshold
             - ys_orig: Original predicted labels
             - ys_target: Target labels for counterfactuals
             - model_returned: Boolean mask indicating successful generation
+            - cf_search_time: Time taken for counterfactual search
     """
     cf_method_name = "GLOBE_CE"
     disc_model.eval()
@@ -162,11 +107,8 @@ def search_counterfactuals(
     minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
 
     X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
-    )
 
-    def predict_fn(x: pd.DataFrame | np.ndarray) -> np.ndarray:
+    def predict_fn(x):
         # Convert pandas DataFrame to numpy array if needed
         x_array = x.values if isinstance(x, pd.DataFrame) else x
         x_scaled = minmax_scaler._transform_array(x_array)
@@ -194,15 +136,7 @@ def search_counterfactuals(
         bin_widths=bin_widths,
         target_class=target_class,
     )
-    logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
-    )
-    log_prob_threshold = torch.quantile(
-        gen_model.predict_log_prob(train_dataloader_for_log_prob),
-        cfg.counterfactuals_params.log_prob_quantile,
-    )
-    logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
+
 
     logger.info("Handling counterfactual generation")
     time_start = time()
@@ -223,7 +157,7 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def calculate_metrics(
@@ -300,7 +234,17 @@ def main(cfg: DictConfig) -> None:
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
+        logger.info("Calculating log_prob_threshold")
+        train_dataloader_for_log_prob = dataset.train_dataloader(
+            batch_size=cfg.counterfactuals_params.batch_size, shuffle=False
+        )
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(train_dataloader_for_log_prob),
+            cfg.counterfactuals_params.log_prob_quantile,
+        )
+        logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
+
+        Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
             search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
         )
 

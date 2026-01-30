@@ -1,13 +1,14 @@
-"""Script to calculate counterfactual metrics and save a markdown table."""
+"""Script to calculate and display counterfactual metrics across multiple configurations.
 
-from __future__ import annotations
+This script loads metric files from different dataset/method/model combinations,
+calculates mean and standard deviation across folds, and outputs formatted
+markdown tables both to console and to a file.
+"""
 
-import argparse
-import logging
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-from omegaconf import OmegaConf
 
 
 def dataframe_to_markdown(df: pd.DataFrame) -> str:
@@ -46,7 +47,7 @@ def load_and_aggregate_metrics(
     method: str,
     model_name: str,
     num_folds: int = 5,
-    models_root: Path = Path("models"),
+    models_root: str = "../models",
 ) -> pd.DataFrame:
     """Load metrics from all folds and calculate mean/std.
 
@@ -60,43 +61,23 @@ def load_and_aggregate_metrics(
     Returns:
         DataFrame with aggregated metrics (mean ± std format).
     """
-    root = models_root / dataset / method
-    metrics: list[pd.DataFrame] = []
+    root = Path(models_root) / dataset / method
+    metrics = []
 
     for i in range(num_folds):
         path = root / f"fold_{i}" / f"cf_metrics_{model_name}.csv"
         if not path.exists():
-            logging.warning("Metrics file missing: %s", path)
+            print(f"Warning: File not found: {path}")
             continue
         df = pd.read_csv(path)
         metrics.append(df)
 
     if not metrics:
-        logging.warning(
-            "No metrics found for dataset=%s method=%s model=%s",
-            dataset,
-            method,
-            model_name,
-        )
+        print(f"No metrics found for {dataset}/{method}/{model_name}")
         return pd.DataFrame()
 
     merged_df = pd.concat(metrics, axis=0, ignore_index=True)
     mean_ = merged_df.mean(axis=0)
-    if "number_of_instances" in merged_df.columns:
-        weights = merged_df["number_of_instances"]
-        total_weight = weights.sum()
-        if total_weight > 0:
-            weighted_means: dict[str, float] = {}
-            for col in merged_df.columns:
-                if col == "cf_search_time":
-                    weighted_means[col] = merged_df[col].mean()
-                elif col == "number_of_instances":
-                    weighted_means[col] = float(total_weight)
-                else:
-                    weighted_means[col] = float(
-                        (merged_df[col] * weights).sum() / total_weight
-                    )
-            mean_ = pd.Series(weighted_means)
     std_ = merged_df.std(axis=0)
 
     formatted = pd.DataFrame(
@@ -112,7 +93,7 @@ def calculate_metrics_table(
     model_name: str,
     used_metrics: list[str],
     num_folds: int = 5,
-    models_root: Path = Path("models"),
+    models_root: str = "../models",
 ) -> str:
     """Calculate metrics and return as markdown table.
 
@@ -130,104 +111,88 @@ def calculate_metrics_table(
     df = load_and_aggregate_metrics(dataset, method, model_name, num_folds, models_root)
 
     if df.empty:
-        raise ValueError("No data available for the requested configuration.")
+        return "No data available"
 
     # Select only the requested metrics that exist in the dataframe
-    missing_metrics = [metric for metric in used_metrics if metric not in df.columns]
-    if missing_metrics:
-        logging.warning("Missing metrics in data: %s", ", ".join(missing_metrics))
-
     available_metrics = [m for m in used_metrics if m in df.columns]
     if not available_metrics:
-        raise ValueError("No requested metrics found in data.")
+        return "No requested metrics found in data"
 
     df_filtered = df[available_metrics]
     return dataframe_to_markdown(df_filtered)
 
 
-def _build_table_name(
-    dataset: str, method: str, model_name: str, table_name: str | None
-) -> str:
-    """Build a default markdown filename from the inputs."""
-    if table_name:
-        return table_name if table_name.endswith(".md") else f"{table_name}.md"
-    return f"{dataset}_{method}_{model_name}_metrics.md"
-
-
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Calculate aggregated counterfactual metrics and save a markdown table."
-        )
-    )
-    parser.add_argument("--dataset", required=True, help="Dataset name.")
-    parser.add_argument("--method", required=True, help="Method name.")
-    parser.add_argument(
-        "--model-name", required=True, help="Discriminative model name."
-    )
-    parser.add_argument(
-        "--output-dir",
-        required=True,
-        help="Directory where the markdown table will be saved.",
-    )
-    parser.add_argument(
-        "--table-name",
-        help="Optional output filename (without path). Defaults to dataset/method/model.",
-    )
-    parser.add_argument(
-        "--models-root",
-        default="models",
-        help="Root directory containing model outputs (default: models).",
-    )
-    parser.add_argument(
-        "--num-folds",
-        type=int,
-        default=5,
-        help="Number of folds to aggregate (default: 5).",
-    )
-    parser.add_argument(
-        "--metrics-conf-path",
-        default="counterfactuals/pipelines/conf/metrics/default.yaml",
-        help="Path to metrics config (default: counterfactuals/pipelines/conf/metrics/default.yaml).",
-    )
-    return parser.parse_args()
-
-
 def main() -> None:
-    """Calculate metrics for a single configuration and save a markdown table."""
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
-    args = _parse_args()
+    """Main function to calculate and print metrics for configured combinations."""
+    # Configuration: List of (dataset, method, model_name) tuples
+    configurations = [
+        ("lending_club", "DiceExplainerWrapper", "MLPClassifier"),
+        ("lending_club", "DiceExplainerWrapper", "MultinomialLogisticRegression"),
+        ("give_me_some_credit", "DiceExplainerWrapper", "MLPClassifier"),
+        (
+            "give_me_some_credit",
+            "DiceExplainerWrapper",
+            "MultinomialLogisticRegression",
+        ),
+        ("bank_marketing", "DiceExplainerWrapper", "MLPClassifier"),
+        ("bank_marketing", "DiceExplainerWrapper", "MultinomialLogisticRegression"),
+        ("credit_default", "DiceExplainerWrapper", "MLPClassifier"),
+        ("credit_default", "DiceExplainerWrapper", "MultinomialLogisticRegression"),
+        ("adult_census", "DiceExplainerWrapper", "MLPClassifier"),
+        ("adult_census", "DiceExplainerWrapper", "MultinomialLogisticRegression"),
+    ]
 
-    try:
-        metrics_conf = OmegaConf.load(args.metrics_conf_path)
-        used_metrics = list(metrics_conf.metrics_to_compute)
-    except Exception as exc:  # noqa: BLE001 - report config issues clearly
-        logging.error("Failed to load metrics config: %s", exc)
-        raise SystemExit(1) from exc
+    # Metrics to include in the output tables
+    used_metrics = [
+        "validity",
+        "prob_plausibility",
+        "lof_scores_cf",
+        "isolation_forest_scores_cf",
+        "log_density_cf",
+        "proximity_continuous_manhattan",
+        "proximity_continuous_euclidean",
+        "cf_search_time",
+    ]
 
-    try:
-        table = calculate_metrics_table(
-            dataset=args.dataset,
-            method=args.method,
-            model_name=args.model_name,
-            used_metrics=used_metrics,
-            num_folds=args.num_folds,
-            models_root=Path(args.models_root),
-        )
-    except ValueError as exc:
-        logging.error("Failed to calculate metrics: %s", exc)
-        raise SystemExit(1) from exc
+    # Number of folds
+    num_folds = 5
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_file = output_dir / _build_table_name(
-        args.dataset,
-        args.method,
-        args.model_name,
-        args.table_name,
+    # Root directory for models (relative to this script)
+    models_root = "../models"
+
+    # Output file path
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = Path(__file__).parent / f"metrics_summary_{timestamp}.md"
+
+    # Collect all output
+    output_lines = []
+    output_lines.append("# Counterfactual Metrics Summary\n")
+    output_lines.append(
+        f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     )
-    output_file.write_text(table + "\n", encoding="utf-8")
-    logging.info("Saved metrics table to %s", output_file)
+
+    # Calculate and print metrics for each configuration
+    for dataset, method, model_name in configurations:
+        section_header = f"\n## {dataset} - {method} - {model_name}\n"
+        print(section_header)
+        output_lines.append(section_header + "\n")
+
+        table = calculate_metrics_table(
+            dataset=dataset,
+            method=method,
+            model_name=model_name,
+            used_metrics=used_metrics,
+            num_folds=num_folds,
+            models_root=models_root,
+        )
+        print(table)
+        print()
+        output_lines.append(table + "\n\n")
+
+    # Write to file
+    output_content = "".join(output_lines)
+    output_file.write_text(output_content, encoding="utf-8")
+    print(f"\n✓ Metrics saved to: {output_file}")
 
 
 if __name__ == "__main__":

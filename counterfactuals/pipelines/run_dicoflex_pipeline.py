@@ -11,9 +11,13 @@ import torch
 import torch.utils.data
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from scipy.spatial.distance import pdist
 
 from counterfactuals.cf_methods.local_methods.dicoflex import DiCoFlex, DiCoFlexParams
+from counterfactuals.cf_methods.local_methods.dicoflex.context_utils import (
+    DiCoFlexGeneratorMetricsAdapter,
+    build_context_matrix,
+    get_numpy_pointer,
+)
 from counterfactuals.cf_methods.local_methods.dicoflex.data import (
     build_actionability_mask,
     create_dicoflex_dataloaders,
@@ -25,13 +29,11 @@ from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_threshold
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
-from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
-from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
+    OneHotEncodingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
@@ -59,9 +61,9 @@ def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
 def instantiate_gen_model(
     cfg: DictConfig, dataset: MethodDataset, context_dim: int, device: str
 ):
-    """Instantiate the conditional flow used by DiCoFlex for sampling."""
+    """Instantiate the conditional flow used by DiCoFlex."""
     model = instantiate(
-        cfg.sampling_model.model,
+        cfg.gen_model.model,
         features=dataset.X_train.shape[1],
         context_features=context_dim,
     )
@@ -72,17 +74,17 @@ def train_dicoflex_generator(
     model,
     train_loader: torch.utils.data.DataLoader,
     val_loader: torch.utils.data.DataLoader,
-    sampling_cfg: DictConfig,
+    cfg: DictConfig,
     model_path: str,
     device: str,
 ) -> None:
     """Train the flow model with early stopping."""
-    optimizer = torch.optim.Adam(model.parameters(), lr=sampling_cfg.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.gen_model.lr)
     best_val = float("inf")
     patience_counter = 0
-    eps = sampling_cfg.get("eps", 1e-5)
+    eps = cfg.gen_model.get("eps", 1e-5)
 
-    for epoch in range(sampling_cfg.epochs):
+    for epoch in range(cfg.gen_model.epochs):
         model.train()
         train_loss = 0.0
         for batch_cf, batch_context in train_loader:
@@ -128,11 +130,51 @@ def train_dicoflex_generator(
             model.save(model_path)
         else:
             patience_counter += 1
-            if patience_counter > sampling_cfg.patience:
+            if patience_counter > cfg.gen_model.patience:
                 logger.info("Early stopping after %s epochs", epoch + 1)
                 break
 
     model.load(model_path)
+
+
+def compute_log_prob_threshold(
+    model,
+    dataloader: torch.utils.data.DataLoader,
+    quantile: float,
+    device: str,
+) -> float:
+    """Estimate a plausibility threshold based on training log probabilities."""
+    log_probs = []
+    model.eval()
+    with torch.no_grad():
+        for batch_cf, batch_context in dataloader:
+            batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
+                device
+            )
+            batch_scores = model(
+                batch_cf,
+                context=batch_context,
+            )
+            log_probs.append(batch_scores.cpu())
+    concat = torch.cat(log_probs)
+    return torch.quantile(concat, quantile).item()
+
+
+def get_full_training_loader(
+    subset_loader: torch.utils.data.DataLoader, batch_size: int
+) -> torch.utils.data.DataLoader:
+    """Create a loader that iterates over the complete DiCoFlex dataset."""
+    base_dataset = (
+        subset_loader.dataset.dataset
+        if hasattr(subset_loader.dataset, "dataset")
+        else subset_loader.dataset
+    )
+    return torch.utils.data.DataLoader(
+        base_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+    )
 
 
 def compute_feature_bounds(
@@ -152,36 +194,9 @@ def compute_feature_bounds(
     return bounds
 
 
-def compute_pairwise_mean_distance(samples: np.ndarray, group_ids: np.ndarray) -> float:
-    """Average minimum pairwise distance across counterfactual groups."""
-    if samples.size == 0 or group_ids.size == 0:
-        return float("nan")
-
-    min_dists: list[float] = []
-    for gid in np.unique(group_ids):
-        group_points = samples[group_ids == gid]
-        group_points = group_points[~np.isnan(group_points).any(axis=1)]
-        if group_points.shape[0] < 2:
-            continue
-        distances = pdist(group_points, metric="euclidean")
-        if distances.size > 0:
-            min_dists.append(float(distances.min()))
-
-    return float(np.mean(min_dists)) if min_dists else float("nan")
-
-
 def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int):
     logger.info("Running DiCoFlex pipeline for fold %s", fold_idx)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_idx)
-    gen_model_name = cfg.sampling_model.model._target_.split(".")[-1]
-    disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-    if cfg.experiment.relabel_with_disc_model:
-        cf_gen_model_filename = (
-            f"gen_model_{gen_model_name}_dicoflex_relabeled_by_{disc_model_name}.pt"
-        )
-    else:
-        cf_gen_model_filename = f"gen_model_{gen_model_name}_dicoflex.pt"
-    cf_gen_model_path = os.path.join(save_folder, cf_gen_model_filename)
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
@@ -206,10 +221,6 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         seed=cfg.experiment.seed,
         numerical_indices=dataset.numerical_features_indices,
         categorical_indices=dataset.categorical_features_indices,
-        factual_chunk_size=cfg.counterfactuals_params.get(
-            "neighbor_factual_chunk_size"
-        ),
-        target_chunk_size=cfg.counterfactuals_params.get("neighbor_target_chunk_size"),
     )
     vis_cfg = cfg.get("visualization")
     if vis_cfg and vis_cfg.get("enable_training_batch", False):
@@ -229,25 +240,26 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
                 dataset_points=dataset.X_train[:, :2],
             )
     gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
-    if cfg.sampling_model.train_model:
+    if cfg.gen_model.train_model:
         train_dicoflex_generator(
             gen_model,
             train_loader,
             val_loader,
-            cfg.sampling_model,
-            cf_gen_model_path,
+            cfg,
+            gen_model_path,
             device,
         )
     else:
-        gen_model.load(cf_gen_model_path)
+        gen_model.load(gen_model_path)
 
-    density_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer=None)
-    log_prob_threshold = get_log_prob_threshold(
-        density_model,
-        dataset,
-        cfg.counterfactuals_params.sampling_batch_size,
+    full_loader = get_full_training_loader(
+        train_loader, cfg.counterfactuals_params.train_batch_factuals
+    )
+    log_prob_threshold = compute_log_prob_threshold(
+        gen_model,
+        full_loader,
         cfg.counterfactuals_params.log_prob_quantile,
-        logger,
+        device,
     )
 
     params = DiCoFlexParams(
@@ -316,38 +328,30 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
             np.sum(nan_rows),
         )
         x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
-    x_cfs_cleaned = apply_categorical_discretization(
-        dataset.categorical_features_lists, x_cfs_cleaned
+
+    mask_vector = mask_vectors[params.mask_index]
+    cf_contexts = build_context_matrix(
+        factual_points=explanation_result.x_origs,
+        labels=explanation_result.y_cf_targets,
+        mask_vector=mask_vector,
+        p_value=params.p_value,
+        class_to_index=class_to_index,
     )
-
-    # Handle multiple CFs per instance: extract first CF for metrics
-    cf_per_instance = params.cf_samples_per_factual
-    if cf_per_instance > 1:
-        n_instances = x_cfs_cleaned.shape[0] // cf_per_instance
-        x_cfs_3d = x_cfs_cleaned.reshape(n_instances, cf_per_instance, -1)
-        x_cfs_for_metrics = x_cfs_3d[:, 0, :].copy()
-        x_origs_for_metrics = explanation_result.x_origs[::cf_per_instance].copy()
-        y_origs_for_metrics = explanation_result.y_origs[::cf_per_instance].copy()
-        y_targets_for_metrics = explanation_result.y_cf_targets[
-            ::cf_per_instance
-        ].copy()
-        model_returned_for_metrics = model_returned_mask[::cf_per_instance].copy()
-        cf_group_ids_for_metrics = (
-            cf_group_ids[::cf_per_instance] if cf_group_ids is not None else None
-        )
-    else:
-        x_cfs_for_metrics = x_cfs_cleaned
-        x_origs_for_metrics = explanation_result.x_origs
-        y_origs_for_metrics = explanation_result.y_origs
-        y_targets_for_metrics = explanation_result.y_cf_targets
-        model_returned_for_metrics = model_returned_mask
-        cf_group_ids_for_metrics = cf_group_ids
-
-    # Ensure arrays are contiguous for pointer-based context lookup
-    x_cfs_for_metrics = np.ascontiguousarray(x_cfs_for_metrics, dtype=np.float32)
-    x_origs_for_metrics = np.ascontiguousarray(x_origs_for_metrics, dtype=np.float32)
-
-    metrics_gen_model = density_model
+    test_contexts = build_context_matrix(
+        factual_points=explanation_result.x_origs,
+        labels=explanation_result.y_origs,
+        mask_vector=mask_vector,
+        p_value=params.p_value,
+        class_to_index=class_to_index,
+    )
+    context_lookup = {
+        get_numpy_pointer(x_cfs_cleaned): cf_contexts,
+        get_numpy_pointer(explanation_result.x_origs): test_contexts,
+    }
+    metrics_gen_model = DiCoFlexGeneratorMetricsAdapter(
+        base_model=gen_model,
+        context_lookup=context_lookup,
+    )
     if vis_cfg and vis_cfg.get("enable_cf_scatter", False):
         try:
             visualize_counterfactual_samples(
@@ -400,37 +404,24 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     metrics = evaluate_cf(
         gen_model=metrics_gen_model,
         disc_model=disc_model,
-        X_cf=x_cfs_for_metrics,
-        model_returned=model_returned_for_metrics,
+        X_cf=x_cfs_cleaned,
+        model_returned=model_returned_mask,
         categorical_features=dataset.categorical_features_indices,
         continuous_features=dataset.numerical_features_indices,
         X_train=dataset.X_train,
         y_train=dataset.y_train,
-        X_test=x_origs_for_metrics,
-        y_test=y_origs_for_metrics,
+        X_test=explanation_result.x_origs,
+        y_test=explanation_result.y_origs,
         median_log_prob=log_prob_threshold,
-        y_target=y_targets_for_metrics,
-        cf_group_ids=cf_group_ids_for_metrics,
+        y_target=explanation_result.y_cf_targets,
+        cf_group_ids=cf_group_ids,
         metrics_conf_path=cfg.counterfactuals_params.metrics_conf_path,
     )
-    if cf_group_ids is not None:
-        if cf_group_ids.shape[0] != x_cfs_cleaned.shape[0]:
-            logger.warning(
-                "Skipping pairwise_mean_distance: %s cf_group_ids for %s counterfactuals",
-                cf_group_ids.shape[0],
-                x_cfs_cleaned.shape[0],
-            )
-        else:
-            metrics["pairwise_mean_distance"] = compute_pairwise_mean_distance(
-                x_cfs_cleaned, cf_group_ids
-            )
     logger.info(f"Metrics:\n{metrics}")
 
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_time
-    metrics_path = os.path.join(
-        save_folder, f"cf_metrics_DiCoFlex_{disc_model_name}.csv"
-    )
+    metrics_path = os.path.join(save_folder, "cf_metrics_DiCoFlex.csv")
     df_metrics.to_csv(metrics_path, index=False)
     logger.info("Saved metrics to %s", metrics_path)
 
@@ -449,6 +440,7 @@ def main(cfg: DictConfig):
     preprocessing_pipeline = PreprocessingPipeline(
         [
             ("minmax", MinMaxScalingStep()),
+            ("onehot", OneHotEncodingStep()),
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )

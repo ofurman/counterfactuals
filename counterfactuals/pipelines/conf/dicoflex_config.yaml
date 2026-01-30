@@ -16,31 +16,20 @@ experiment:
 
 dataset:
   _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/give_me_some_credit.yaml
+  config_path: config/datasets/moons.yaml
 
 disc_model:
-  train_model: false
+  train_model: true
   epochs: 2000
   batch_size: 128
   patience: 200
   lr: 0.001
 
 gen_model:
-  train_model: false
-  batch_size: 1024
-  epochs: 2000
+  train_model: true
+  epochs: 200
   patience: 100
-  lr: 0.003
-  noise_lvl: 0.02
-
-sampling_model:
-  model: ${gen_model.model}
-  train_model: false
-  batch_size: 1024
-  epochs: 20
-  patience: 100
-  lr: 0.003
-  noise_lvl: 0.02
+  lr: 0.001
 
 counterfactuals_params:
   cf_method:
@@ -52,16 +41,14 @@ counterfactuals_params:
   noise_level: 0.02
   train_batch_factuals: 4
   val_ratio: 0.2
-  num_counterfactuals: 100
-  cf_samples_per_factual: 100
+  num_counterfactuals: 32
+  cf_samples_per_factual: 32
   sampling_batch_size: 256
   inference_mask_index: 0
   use_actionability_mask: true
   custom_masks: []
-  neighbor_factual_chunk_size: 512
-  neighbor_target_chunk_size: 1024
   log_prob_quantile: 0.25
-  metrics_conf_path: counterfactuals/pipelines/conf/metrics/default.yaml
+  metrics_conf_path: counterfactuals/pipelines/conf/metrics/dicoflex.yaml
 
 visualization:
   enable_training_batch: true

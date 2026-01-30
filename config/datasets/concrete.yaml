@@ -36,3 +36,6 @@ feature_config:
   "7":
     actionable: true
 target: "8"
+initial_transforms:
+- name: dropna
+- name: reorder_columns

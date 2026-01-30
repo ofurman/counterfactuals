@@ -1,4 +1,3 @@
-import logging
 from time import perf_counter
 
 import numpy as np
@@ -9,15 +8,12 @@ from omlt.neuralnet import FullSpaceNNFormulation
 from pyomo.contrib.iis import write_iis
 from pyomo.opt import SolverStatus, TerminationCondition
 
-from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
-from counterfactuals.cf_methods.local_methods.lice.data.Types import DataLike
-from counterfactuals.cf_methods.local_methods.lice.SPN import SPN
+from counterfactuals.cf_methods.local.lice.data.DataHandler import DataHandler
+from counterfactuals.cf_methods.local.lice.data.Types import DataLike
+from counterfactuals.cf_methods.local.lice.SPN import SPN
 
 from .data_enc import decode_input_change, encode_input_change
 from .spn_enc import encode_spn
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class LiCE:
@@ -28,6 +24,7 @@ class LiCE:
         self.__nn_path = nn_path
         self.__dhandler = data_handler
 
+    # TODO remove the defaults maybe?
     def __build_model(
         self,
         factual: DataLike,
@@ -182,7 +179,7 @@ class LiCE:
                 # Accept solutions within ce_relative_distance*100% of the optimal
                 opt.options["PoolGap"] = ce_relative_distance
         if ce_max_distance != np.inf:
-            logger.info("Limiting max distance by", ce_max_distance)
+            print("Limiting max distance by", ce_max_distance)
             model.max_dist = pyo.Constraint(
                 expr=model.input_encoding.total_cost <= ce_max_distance
             )
@@ -204,7 +201,7 @@ class LiCE:
             opt.options["IntFeasTol"] = self.MIO_EPS / 10
             opt.options["FeasibilityTol"] = self.MIO_EPS / 10
         else:
-            logger.info("Time limit not set! Not implemented for your solver")
+            print("Time limit not set! Not implemented for your solver")
 
         t_prepped = perf_counter()
         result = opt.solve(model, load_solutions=False, tee=verbose)
@@ -218,9 +215,11 @@ class LiCE:
 
         if verbose:
             opt._solver_model.printStats()
-            logger.info(result)
+            print(result)
         if result.solver.status == SolverStatus.ok:
             if result.solver.termination_condition == TerminationCondition.optimal:
+                # print(pyo.value(model.obj))
+                # print(model.spn.node_out[self.__spn.out_node_id].value)
                 model.solutions.load_from(result)
                 CEs = self.__get_CEs(n_counterfactuals, model, factual, opt)
                 self.__t_tot = perf_counter() - t_start
@@ -231,7 +230,7 @@ class LiCE:
             TerminationCondition.infeasibleOrUnbounded,
             # the objective value is always bounded
         ]:
-            logger.info("Infeasible formulation")
+            print("Infeasible formulation")
             if verbose:
                 write_iis(model, "IIS.ilp", solver="gurobi")
             self.__t_tot = perf_counter() - t_start
@@ -241,7 +240,7 @@ class LiCE:
             result.solver.status == SolverStatus.aborted
             and result.solver.termination_condition == TerminationCondition.maxTimeLimit
         ):
-            logger.info("TIME LIMIT")
+            print("TIME LIMIT")
             self.__optimal = False
             try:
                 model.solutions.load_from(result)
@@ -255,8 +254,9 @@ class LiCE:
 
         self.__t_tot = (perf_counter() - t_start,)
         self.__optimal = False
+        # print result if it wasn't printed yet
         if not verbose:
-            logger.info(result)
+            print(result)
         raise ValueError("Unexpected termination condition")
 
     def __get_CEs(
@@ -295,6 +295,7 @@ class LiCE:
                     self.__loglikelihoods.append(
                         self.__model.spn.node_out[self.__spn.out_node_id].value
                     )
+                    # TODO move to spn enc?
                 CEs.append(
                     decode_input_change(
                         self.__dhandler,

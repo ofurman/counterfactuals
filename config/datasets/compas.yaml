@@ -44,3 +44,9 @@ feature_config:
   race:
     actionable: false
 target: class
+initial_transforms:
+- name: dropna
+- name: reorder_columns
+- name: one_hot_encode
+  params:
+    drop_first: false

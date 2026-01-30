@@ -64,7 +64,6 @@ features:
 - pixel_7_5
 - pixel_7_6
 - pixel_7_7
-- target
 continuous_features:
 - pixel_0_0
 - pixel_0_1
