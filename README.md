@@ -9,19 +9,20 @@ See the detailed table in [docs/datasets/classification.md](docs/datasets/classi
 | Dataset                | PPCEF | GLOBE-CE |
 |------------------------|:-----:|:--------:|
 | adult                  |   ✓   |    ✓     |
-| german_credit          |   ✓   |    ✓     |
+| adult_census           |   ✓   |    ✓     |
+| audit                  |   ✓   |    ✓     |
+| bank_marketing         |   ✓   |    ✓     |
+| blobs                  |   ✓   |    ✓     |
+| compas                 |   ✓   |    ✓     |
 | credit_default         |   ✓   |    ✓     |
+| digits                 |   ✓   |    ✓     |
+| german_credit          |   ✓   |    ✓     |
 | give_me_some_credit    |   ✓   |    ✓     |
 | heloc                  |   ✓   |    ✓     |
-| lending_club           |   ✓   |    ✓     |
-| compas                 |   ✓   |    ✓     |
-| bank_marketing         |   ✓   |    ✓     |
-| wine                   |   ✓   |    ✓     |
-| digits                 |   ✓   |    ✓     |
-| moons                  |   ✓   |    ✓     |
-| blobs                  |   ✓   |    ✓     |
 | law                    |   ✓   |    ✓     |
-| audit                  |   ✓   |    ✓     |
+| lending_club           |   ✓   |    ✓     |
+| moons                  |   ✓   |    ✓     |
+| wine                   |   ✓   |    ✓     |
 
 Both PPCEF and GLOBE-CE support all datasets listed above, as long as a YAML config and CSV are present.
 
