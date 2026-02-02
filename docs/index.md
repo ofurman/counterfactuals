@@ -1,10 +1,10 @@
-# Counterfactuals
+# CEL: Counterfactual Explanations Library
 
-A comprehensive Python library for generating and evaluating counterfactual explanations.
+A comprehensive Python framework for generating and evaluating counterfactual explanations in machine learning models.
 
 ---
 
-**Counterfactuals** provides a unified framework for counterfactual explanation methods, datasets, and evaluation metrics. Whether you're researching new methods, benchmarking existing approaches, or building explainable AI systems, this library has you covered.
+**CEL** (Counterfactual Explanations Library) provides a unified framework for counterfactual explanation methods, datasets, and evaluation metrics. Whether you're researching new methods, benchmarking existing approaches, or building explainable AI systems, this library has you covered.
 
 ## Features
 
@@ -13,7 +13,7 @@ A comprehensive Python library for generating and evaluating counterfactual expl
 <div class="feature-item" markdown>
 **17+ Explanation Methods**
 
-Local, global, and group-level counterfactual methods including PPCEF, DICE, GLOBE-CE, and more.
+Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLOBE-CE, and more.
 
 [Explore Methods :material-arrow-right:](methods/index.md)
 </div>
@@ -75,7 +75,7 @@ classifier.fit(train_loader, test_loader, epochs=50)
 flow = MaskedAutoregressiveFlow(input_dim=14, hidden_dims=[64, 64], n_layers=5)
 flow.fit(train_loader, test_loader, epochs=100)
 
-# 4. Generate counterfactual
+# 4. Generate counterfactual (using PPCEF - one of 17+ available methods)
 method = PPCEF(gen_model=flow, disc_model=classifier, ...)
 result = method.explain(X=instance, y_origin=0, y_target=1, ...)
 
@@ -98,7 +98,8 @@ flowchart TD
     B --> B1[PPCEF]
     B --> B2[DICE]
     B --> B3[DiCoFlex]
-    B --> B4[...]
+    B --> B4[WACH]
+    B --> B5[...]
 
     C --> C1[GLOBE-CE]
     C --> C2[AReS]
@@ -201,12 +202,30 @@ Detailed documentation for all modules.
 
 If you use this library in your research, please cite:
 
+### CEL Library
+
 ```bibtex
-@software{counterfactuals,
-  author = {Furman, Oleksii, Łukasz Lenkiewicz, Marcel Musiałek},
-  title = {Counterfactuals: A Python Library for Counterfactual Explanations},
+@software{cel,
+  author = {Furman, Oleksii and Lenkiewicz, Łukasz and Musiałek, Marcel},
+  title = {CEL: Counterfactual Explanations Library},
   url = {https://github.com/ofurman/counterfactuals},
   year = {2026}
+}
+```
+
+### Original PPCEF Research
+
+If you specifically use the PPCEF method, please also cite:
+
+```bibtex
+@inbook{ppcef,
+  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zieba, Maciej},
+  year = {2024},
+  month = {10},
+  pages = {},
+  title = {Probabilistically Plausible Counterfactual Explanations with Normalizing Flows},
+  isbn = {9781643685489},
+  doi = {10.3233/FAIA240584}
 }
 ```
 

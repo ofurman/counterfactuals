@@ -2,6 +2,11 @@
 
 Generate your first counterfactual explanation in just a few steps.
 
+!!! note "Multiple Methods Available"
+    This tutorial demonstrates **PPCEF**, one of 17+ counterfactual methods available in CEL. 
+    The same workflow applies to other methods like DiCE, WACH, and CEM—just import a different class from `counterfactuals.cf_methods.local_methods`.
+    [Explore all methods &rarr;](../methods/index.md)
+
 ## Overview
 
 This tutorial walks you through:
@@ -9,7 +14,7 @@ This tutorial walks you through:
 1. Loading a dataset
 2. Training a classifier
 3. Training a generative model (flow)
-4. Generating counterfactual explanations
+4. Generating counterfactual explanations (using PPCEF)
 5. Evaluating the results
 
 ## Step 1: Load a Dataset
@@ -259,4 +264,24 @@ Here's the full code in one block:
 
 - [Core Concepts](concepts.md) - Understand the theory behind counterfactuals
 - [User Guide](../user-guide/index.md) - Detailed usage instructions
-- [Methods](../methods/index.md) - Explore all available methods
+- [Methods](../methods/index.md) - Explore all 17+ available methods
+
+### Try Other Methods
+
+CEL supports many counterfactual methods. To use a different method, simply change the import:
+
+```python
+# Instead of:
+from counterfactuals.cf_methods.local_methods import PPCEF
+method = PPCEF(...)
+
+# Try:
+from counterfactuals.cf_methods.local_methods import DICE
+method = DICE(...)
+
+# Or:
+from counterfactuals.cf_methods.local_methods import WACH
+method = WACH(...)
+```
+
+Each method has different strengths—experiment to find the best fit for your use case!

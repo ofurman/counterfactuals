@@ -24,13 +24,18 @@ Group methods generate counterfactuals for **clusters or subgroups** of similar 
 
 ## Method Comparison
 
-| Method | Category | Plausibility | Diversity | Actionability | Speed |
-|--------|----------|--------------|-----------|---------------|-------|
-| PPCEF | Local | High | Medium | Yes | Medium |
-| DICE | Local | Medium | High | Yes | Fast |
-| DiCoFlex | Local | High | High | Yes | Medium |
-| GLOBE-CE | Global | Medium | N/A | Yes | Fast |
-| ReViCE | Group | High | Medium | Yes | Medium |
+| Method | Category | Plausibility | Diversity | Actionability | Speed | Best For |
+|--------|----------|--------------|-----------|---------------|-------|----------|
+| PPCEF | Local | High | Medium | Yes | Medium | Normalizing flow-based CF |
+| DiCoFlex | Local | High | High | Yes | Medium | Flexible, diverse CFs |
+| DICE | Local | Medium | High | Yes | Fast | Fast, diverse CFs |
+| WACH | Local | Low | Low | No | Fast | Simple gradient-based CF |
+| CEM | Local | Medium | Low | Yes | Medium | Contrastive explanations |
+| CCHVAE | Local | High | Medium | Yes | Slow | VAE-based CF |
+| GLOBE-CE | Global | Medium | N/A | Yes | Fast | Dataset-wide patterns |
+| AReS | Global | Medium | N/A | Yes | Medium | Actionable rules |
+| ReViCE | Group | High | Medium | Yes | Medium | Subgroup explanations |
+| GLANCE | Group | Medium | High | Yes | Fast | Cluster-level CFs |
 
 ## Choosing a Method
 
@@ -43,8 +48,8 @@ flowchart TD
     D -->|No| F[Group Methods]
 
     C --> G{Need plausibility?}
-    G -->|Yes| H[PPCEF, DiCoFlex]
-    G -->|No| I[DICE, WACH]
+    G -->|Yes| H[PPCEF, DiCoFlex, CCHVAE]
+    G -->|No| I[DICE, WACH, CEM]
 
     E --> J[GLOBE-CE, AReS]
     F --> K[ReViCE, GLANCE]
