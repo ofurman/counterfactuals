@@ -1,14 +1,12 @@
-# PPCEF: Probabilistically Plausible Counterfactual Explanations using Normalizing Flows
+# CEL: Counterfactual Explanations Library
 
-A Python framework for generating and evaluating counterfactual explanations in machine learning models. The main contribution is **PPCEF** (Probabilistically Plausible Counterfactual Explanations using Normalizing Flows), a novel method that uses normalizing flows as density estimators within an optimization framework to generate high-quality, plausible counterfactual explanations.
+A comprehensive Python framework for generating and evaluating counterfactual explanations in machine learning models. **CEL** (Counterfactual Explanations Library) provides a unified interface for multiple state-of-the-art counterfactual methods, including local (instance-level), global (model-level), and group (cohort-level) approaches.
 
-<p align="center">
-<img src="graphic.svg" alt="PPCEF Framework Overview" width="800"/>
-</p>
+## Overview
 
-## Abstract
+Counterfactual explanations offer a way to understand machine learning model decisions by explaining what minimal changes would alter a prediction. This library provides a unified framework for generating, evaluating, and comparing different counterfactual explanation methods across various datasets and model types.
 
-We present **PPCEF**, a novel method specifically tailored for generating probabilistically plausible counterfactual explanations. This approach utilizes normalizing flows as density estimators within an unconstrained optimization framework, effectively balancing distance, validity, and probabilistic plausibility in the produced counterfactuals. Our method is notable for its computational efficiency and ability to process large and high-dimensional datasets, making it particularly applicable in real-world scenarios. A key aspect of **PPCEF** is its focus on the plausibility of counterfactuals, ensuring that the generated explanations are coherent and realistic within the context of the original data. Through comprehensive experiments across various datasets and models, we demonstrate that **PPCEF** can successfully generate high-quality counterfactual explanations, highlighting its potential as a valuable tool in enhancing the interpretability and transparency of machine learning systems.
+The library includes multiple counterfactual methods, from gradient-based approaches like Wachter to advanced methods using normalizing flows for density estimation. It emphasizes plausibility, ensuring that generated explanations are coherent and realistic within the context of the original data.
 
 ## Table of Contents
 
@@ -119,17 +117,6 @@ metrics = evaluate_cf(
 )
 ```
 
-### Jupyter Notebooks
-
-Example notebooks are available in `notebooks/`:
-
-| Notebook | Description |
-|----------|-------------|
-| [`ppcef.ipynb`](notebooks/ppcef.ipynb) | Basic PPCEF usage |
-| [`rppcef.ipynb`](notebooks/rppcef.ipynb) | Regional PPCEF for group explanations |
-| [`categorical_ppcef.ipynb`](notebooks/categorical_ppcef.ipynb) | Handling categorical features |
-| [`toy_example.ipynb`](notebooks/toy_example.ipynb) | Simple visualization examples |
-
 ## Library Structure
 
 ```
@@ -167,7 +154,7 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
-| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows (main contribution) |
+| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows |
 | **PPCEFR** | `PPCEFR` | PPCEF for regression tasks |
 | **DiCE** | `DICE` | Diverse Counterfactual Explanations |
 | **CEM** | `CEM_CF` | Contrastive Explanation Method |
@@ -268,7 +255,7 @@ uv run python counterfactuals/pipelines/run_ppcef_pipeline.py \
 
 | Pipeline | Method |
 |----------|--------|
-| `run_ppcef_pipeline.py` | PPCEF (main) |
+| `run_ppcef_pipeline.py` | PPCEF |
 | `run_ppcefr_pipeline.py` | PPCEF for regression |
 | `run_rppcef_pipeline.py` | Regional PPCEF |
 | `run_dice_pipeline.py` | DiCE |
@@ -284,9 +271,7 @@ uv run python counterfactuals/pipelines/run_ppcef_pipeline.py \
 
 ## Documentation
 
-- [`docs/library_overview.md`](docs/library_overview.md) - Comprehensive package documentation
-- [`docs/ppcef_pipeline.md`](docs/ppcef_pipeline.md) - Detailed PPCEF pipeline guide
-- [`AGENTS.md`](AGENTS.md) - Development guidelines and coding standards
+**Live Docs**: https://ofurman.github.io/counterfactuals/
 
 ## Contributing
 
@@ -310,20 +295,6 @@ Contributions are welcome! Before opening a PR:
 To add new dependencies:
 ```shell
 uv add <package>
-```
-
-## Citation
-
-```bibtex
-@inbook{inbook,
-  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zieba, Maciej},
-  year = {2024},
-  month = {10},
-  pages = {},
-  title = {Probabilistically Plausible Counterfactual Explanations with Normalizing Flows},
-  isbn = {9781643685489},
-  doi = {10.3233/FAIA240584}
-}
 ```
 
 ## Contact
