@@ -132,9 +132,7 @@ class ODEfunc(nn.Module):
     def __init__(self, diffeq, divergence_fn=None):
         super(ODEfunc, self).__init__()
         self.diffeq = diffeq
-        self.divergence_fn = (
-            divergence_approx if divergence_fn is None else divergence_fn
-        )
+        self.divergence_fn = divergence_approx if divergence_fn is None else divergence_fn
         self.register_buffer("_num_evals", torch.tensor(0.0))
 
     def before_odeint(self, e=None):
@@ -143,9 +141,7 @@ class ODEfunc(nn.Module):
 
     def forward(self, t, states):
         y = states[0]
-        t = torch.ones(y.size(0), 1).to(y) * t.clone().detach().requires_grad_(
-            True
-        ).type_as(y)
+        t = torch.ones(y.size(0), 1).to(y) * t.clone().detach().requires_grad_(True).type_as(y)
         self._num_evals += 1
         for state in states:
             state.requires_grad_(True)

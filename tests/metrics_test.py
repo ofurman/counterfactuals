@@ -93,8 +93,7 @@ def test_init(cfmetrics_instance):
     assert cfmetrics_instance.X_test.shape[0] == cfmetrics_instance.y_test.shape[0]
     assert cfmetrics_instance.X_cf.shape[0] == cfmetrics_instance.y_test.shape[0]
     assert (
-        len(cfmetrics_instance.continuous_features)
-        + len(cfmetrics_instance.categorical_features)
+        len(cfmetrics_instance.continuous_features) + len(cfmetrics_instance.categorical_features)
         == cfmetrics_instance.X_cf.shape[1]
     )
 

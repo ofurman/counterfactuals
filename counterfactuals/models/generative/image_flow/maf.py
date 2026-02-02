@@ -8,9 +8,7 @@ from torch import Tensor
 
 
 class MAF(nn.Module):
-    def __init__(
-        self, dim: int, n_layers: int, hidden_dims: List[int], use_reverse: bool = True
-    ):
+    def __init__(self, dim: int, n_layers: int, hidden_dims: List[int], use_reverse: bool = True):
         """
         Args:
             dim: Dimension of input. E.g.: dim = 784 when using MNIST.

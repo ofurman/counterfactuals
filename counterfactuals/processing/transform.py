@@ -134,9 +134,7 @@ class GroupTransformer(BaseEstimator, TransformerMixin):
         X = self._validate_X(X, for_fit=False)
 
         if X.shape[1] != self.n_features_in_:
-            raise ValueError(
-                f"X has {X.shape[1]} features, but fitted with {self.n_features_in_}."
-            )
+            raise ValueError(f"X has {X.shape[1]} features, but fitted with {self.n_features_in_}.")
 
         out = X if inplace else X.copy()
 

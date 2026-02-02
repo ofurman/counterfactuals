@@ -35,18 +35,14 @@ def encode_contiguous(
     mio.var_change = pyo.Var(mio.cont_change, bounds=bounds, initialize=0)
 
     mio.change_constr = pyo.Constraint(
-        expr=mio.var
-        == init_val + mio.var_change["increase"] - mio.var_change["decrease"]
+        expr=mio.var == init_val + mio.var_change["increase"] - mio.var_change["decrease"]
     )
     # Added to avoid duplicate solutions
     mio.exclusivity = pyo.Var(domain=pyo.Binary, initialize=0)
     mio.is_inc = pyo.Constraint(expr=mio.var_change["increase"] <= mio.exclusivity)
-    mio.is_dec = pyo.Constraint(
-        expr=mio.var_change["decrease"] <= (1 - mio.exclusivity)
-    )
+    mio.is_dec = pyo.Constraint(expr=mio.var_change["decrease"] <= (1 - mio.exclusivity))
     mio.fix_to_zero = pyo.Constraint(
-        expr=mio.var_change["decrease"] + mio.var_change["increase"]
-        >= mio_eps * mio.exclusivity
+        expr=mio.var_change["decrease"] + mio.var_change["increase"] >= mio_eps * mio.exclusivity
     )
     # ---end--- Added to avoid duplicate solutions
 
@@ -59,9 +55,7 @@ def encode_contiguous(
     return mio.var, [mio.var_change[v] for v in mio.cont_change]
 
 
-def encode_binary(
-    mio: pyo.Block, init_val: int, feature: Binary
-) -> tuple[pyo.Var, list[pyo.Var]]:
+def encode_binary(mio: pyo.Block, init_val: int, feature: Binary) -> tuple[pyo.Var, list[pyo.Var]]:
     mio.var = pyo.Var(domain=pyo.Binary, initialize=init_val)
     mio.var_change = pyo.Var(domain=pyo.Binary, initialize=0)
     if feature.modifiable:
@@ -91,9 +85,7 @@ def encode_categorical(
         domain=pyo.Binary,
         initialize={v: int(v == init_val) for v in mio.vals},
     )
-    mio.ohe_constr = pyo.Constraint(
-        expr=sum(mio.var[v] for v in mio.vals) + ohe_extra == 1
-    )
+    mio.ohe_constr = pyo.Constraint(expr=sum(mio.var[v] for v in mio.vals) + ohe_extra == 1)
 
     mio.var_change = pyo.Var(mio.vals, domain=pyo.Binary, initialize=0)
     if feature.modifiable:
@@ -107,15 +99,11 @@ def encode_categorical(
             mio.inaccessible, rule=lambda m, v: (m.var_change[v] == 0)
         )
     else:
-        mio.modif_constr = pyo.Constraint(
-            mio.vals, rule=lambda m, v: (m.var_change[v] == 0)
-        )
+        mio.modif_constr = pyo.Constraint(mio.vals, rule=lambda m, v: (m.var_change[v] == 0))
     mio.change_constr = pyo.Constraint(
         mio.vals,
         rule=lambda m, v: (
-            m.var[v] == 1 - m.var_change[v]
-            if v == init_val
-            else m.var[v] == m.var_change[v]
+            m.var[v] == 1 - m.var_change[v] if v == init_val else m.var[v] == m.var_change[v]
         ),
     )
     return mio.var, [mio.var_change[v] for v in mio.vals]
@@ -132,9 +120,7 @@ def encode_mixed(
     cont_res = encode_contiguous(mio.contiguous, cont_val)
 
     mio.categorical = pyo.Block()
-    mio.is_cont = pyo.Var(
-        domain=pyo.Binary, initialize=int(init_val not in feature.numeric_vals)
-    )
+    mio.is_cont = pyo.Var(domain=pyo.Binary, initialize=int(init_val not in feature.numeric_vals))
     categ_res = encode_categorical(
         mio.categorical,
         init_val,
@@ -158,13 +144,10 @@ def encode_causal_increase(
     mio.activated = pyo.Var(domain=pyo.Binary, initialize=0)
     if isinstance(cause, Categorical):
         mio.has_increased = pyo.Constraint(
-            expr=mio.activated
-            == sum([cause_mio.var[i] for i in cause.greater_than(cause_init)])
+            expr=mio.activated == sum([cause_mio.var[i] for i in cause.greater_than(cause_init)])
         )
     elif isinstance(cause, Contiguous):
-        mio.has_increased = pyo.Constraint(
-            expr=mio.activated >= cause_mio.var_change["increase"]
-        )
+        mio.has_increased = pyo.Constraint(expr=mio.activated >= cause_mio.var_change["increase"])
         # Added to avoid duplicate solutions
         mio.fix_to_zero = pyo.Constraint(
             expr=mio.activated * mio_eps <= cause_mio.var_change["increase"]
@@ -174,8 +157,7 @@ def encode_causal_increase(
 
     if isinstance(effect, Categorical):
         mio.must_increase = pyo.Constraint(
-            expr=mio.activated
-            <= sum([effect_mio.var[i] for i in effect.greater_than(effect_init)])
+            expr=mio.activated <= sum([effect_mio.var[i] for i in effect.greater_than(effect_init)])
         )
     elif isinstance(effect, Contiguous):
         mio.must_increase = pyo.Constraint(
@@ -213,18 +195,12 @@ def encode_input_change(
             raise ValueError("Unsupported changed cost specification")
 
     if init_vals.shape[0] != data_handler.n_features:
-        raise ValueError(
-            "The number of initial values is different from the number of features"
-        )
+        raise ValueError("The number of initial values is different from the number of features")
     if len(change_cost) != data_handler.n_features:
-        raise ValueError(
-            "The number of cost vectors is different from the number of features"
-        )
+        raise ValueError("The number of cost vectors is different from the number of features")
 
     for i, feat in enumerate(data_handler.features):
-        if change_cost[i].shape[0] != feat.encoding_width(
-            one_hot=not isinstance(feat, Binary)
-        ):
+        if change_cost[i].shape[0] != feat.encoding_width(one_hot=not isinstance(feat, Binary)):
             raise ValueError(
                 f"The length of cost vectors does not fit encoded width of feature {feat}"
             )
@@ -241,9 +217,7 @@ def encode_input_change(
             )
             cost = [cost[0], cost[0]]
         elif isinstance(feature, Binary):
-            var, changes = encode_binary(
-                mio_block.feature_blocks[feature.name], init_val, feature
-            )
+            var, changes = encode_binary(mio_block.feature_blocks[feature.name], init_val, feature)
         elif isinstance(feature, Categorical):
             var, changes = encode_categorical(
                 mio_block.feature_blocks[feature.name], init_val, feature
@@ -286,9 +260,7 @@ def encode_input_change(
             mio_eps,
         )
 
-    mio_block.gt_set = pyo.Set(
-        initialize=[(i.name, j.name) for i, j in data_handler.greater_than]
-    )
+    mio_block.gt_set = pyo.Set(initialize=[(i.name, j.name) for i, j in data_handler.greater_than])
 
     def ge_constraint(m, greater, smaller):
         # greater, smaller = pair
@@ -391,10 +363,7 @@ def decode_input_change(
             res.append(
                 feature.decode(
                     np.abs(
-                        np.round(
-                            np.array([feature.encode(val, one_hot=False)])
-                            - var_change.value
-                        )
+                        np.round(np.array([feature.encode(val, one_hot=False)]) - var_change.value)
                     ),
                     return_series=False,
                 )[0]
@@ -418,12 +387,8 @@ def decode_input_change(
             categ_ch = mio_block.feature_blocks[feature.name].categorical.var_change
             val_vec = feature.encode(val, normalize=True, one_hot=True)
             cont = val[0] + cont_ch["increase"].value - cont_ch["decrease"].value
-            categ = np.abs(
-                np.round(np.array([ch.value for ch in categ_ch.values()]) - val_vec)
-            )
-            res.append(
-                feature.decode(np.concatenate([cont, categ]), return_series=False)
-            )[0]
+            categ = np.abs(np.round(np.array([ch.value for ch in categ_ch.values()]) - val_vec))
+            res.append(feature.decode(np.concatenate([cont, categ]), return_series=False))[0]
         else:
             raise NotImplementedError(
                 "Encoding of feature type " + str(feature) + " is not handled."

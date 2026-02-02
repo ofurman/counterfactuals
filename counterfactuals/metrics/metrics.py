@@ -65,9 +65,7 @@ class CFMetrics:
         assert len(continuous_features) + len(categorical_features) == X_cf.shape[1], (
             "The sum of continuous and categorical features should equal the number of features in X_cf"
         )
-        assert ratio_cont is None or 0 <= ratio_cont <= 1, (
-            "ratio_cont should be between 0 and 1"
-        )
+        assert ratio_cont is None or 0 <= ratio_cont <= 1, "ratio_cont should be between 0 and 1"
 
         # convert everything to torch tensors if not already
         self.X_cf = self._convert_to_numpy(X_cf)
@@ -216,9 +214,7 @@ class CFMetrics:
         lof_scores = -lof.score_samples(X)
         return lof_scores.mean()
 
-    def isolation_forest_scores(
-        self, cf: bool = True, n_estimators: int = 100
-    ) -> float:
+    def isolation_forest_scores(self, cf: bool = True, n_estimators: int = 100) -> float:
         """
         Compute the Isolation Forest metric.
         This metric is computed as the average Isolation Forest score of the counterfactuals.
@@ -327,18 +323,10 @@ class CFMetrics:
             "actionability": self.actionability(),
             "sparsity": self.sparsity(),
             # "target_distance": self.target_distance(),
-            "proximity_categorical_hamming": self.feature_distance(
-                categorical_metric="hamming"
-            ),
-            "proximity_categorical_jaccard": self.feature_distance(
-                categorical_metric="jaccard"
-            ),
-            "proximity_continuous_manhattan": self.feature_distance(
-                continuous_metric="cityblock"
-            ),
-            "proximity_continuous_euclidean": self.feature_distance(
-                continuous_metric="euclidean"
-            ),
+            "proximity_categorical_hamming": self.feature_distance(categorical_metric="hamming"),
+            "proximity_categorical_jaccard": self.feature_distance(categorical_metric="jaccard"),
+            "proximity_continuous_manhattan": self.feature_distance(continuous_metric="cityblock"),
+            "proximity_continuous_euclidean": self.feature_distance(continuous_metric="euclidean"),
             "proximity_continuous_mad": self.feature_distance(
                 continuous_metric="mad", X_train=self.X_train
             ),
@@ -432,9 +420,7 @@ def evaluate_cf_for_rppcef(
     )
 
     if S_matrix is not None:
-        cf_belongs_to_group = (
-            np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
-        )
+        cf_belongs_to_group = np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
         metrics.update(
             {
                 "cf_belongs_to_group": cf_belongs_to_group,

@@ -164,9 +164,7 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(
-    config_path="./conf", config_name="casebased_sace_config", version_base="1.2"
-)
+@hydra.main(config_path="./conf", config_name="casebased_sace_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     """
     Main pipeline for Case-Based SACE counterfactual generation and evaluation.
@@ -199,8 +197,8 @@ def main(cfg: DictConfig) -> None:
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
 
         metrics = calculate_metrics(

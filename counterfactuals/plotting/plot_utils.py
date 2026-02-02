@@ -60,9 +60,7 @@ def plot_classifier_decision_region(ax, model):
 
 
 def plot_counterfactuals(ax, counterfactuals):
-    ax.scatter(
-        counterfactuals[:, 0], counterfactuals[:, 1], c="orange", s=50, alpha=0.8
-    )
+    ax.scatter(counterfactuals[:, 0], counterfactuals[:, 1], c="orange", s=50, alpha=0.8)
     return ax
 
 
@@ -96,9 +94,7 @@ def plot_arrows(ax, observations, counterfactuals):
 
 
 def plot_metrics_textbox(ax, metrics_series):
-    text_str = "\n".join(
-        f"{metric}: {value:.3f}" for metric, value in metrics_series.items()
-    )
+    text_str = "\n".join(f"{metric}: {value:.3f}" for metric, value in metrics_series.items())
 
     props = dict(boxstyle="round", facecolor="wheat", alpha=0.7)
     ax.text(

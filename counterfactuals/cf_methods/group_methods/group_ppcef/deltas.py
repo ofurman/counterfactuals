@@ -121,9 +121,9 @@ class GCE(torch.nn.Module):
 
         # Add small regularization for numerical stability (ensure positive semi-definite)
         epsilon = 1e-5
-        gram_matrix_regularized = gram_matrix + epsilon * torch.eye(
-            gram_matrix.size(0)
-        ).to(vectors.device)
+        gram_matrix_regularized = gram_matrix + epsilon * torch.eye(gram_matrix.size(0)).to(
+            vectors.device
+        )
 
         # Compute the log-determinant of the Gram matrix
         log_det = torch.logdet(gram_matrix_regularized)

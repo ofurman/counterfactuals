@@ -57,9 +57,7 @@ def train_gen_model(
         shuffle=True,
         noise_lvl=cfg.gen_model.noise_lvl,
     )
-    test_dataloader = dataset.test_dataloader(
-        batch_size=cfg.gen_model.batch_size, shuffle=False
-    )
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
     logger.info("Training generative model")
     gen_model.fit(
         train_loader=train_dataloader,
@@ -98,9 +96,7 @@ def evaluate_gen_model(
         shuffle=True,
         noise_lvl=cfg.gen_model.noise_lvl,
     )
-    test_dataloader = dataset.test_dataloader(
-        batch_size=cfg.gen_model.batch_size, shuffle=False
-    )
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.gen_model.batch_size, shuffle=False)
     gen_model.eval()
     logger.info("Evaluating generative model")
     train_ll = gen_model.predict_log_prob(train_dataloader).mean().item()
@@ -134,9 +130,7 @@ def create_gen_model(
     """
     gen_model = instantiate_gen_model(cfg, dataset)
     if cfg.gen_model.train_model:
-        gen_model = train_gen_model(
-            gen_model, dataset, gen_model_path, cfg, dequantizer
-        )
+        gen_model = train_gen_model(gen_model, dataset, gen_model_path, cfg, dequantizer)
     else:
         logger.info("Loading generative model")
         gen_model.load(gen_model_path)

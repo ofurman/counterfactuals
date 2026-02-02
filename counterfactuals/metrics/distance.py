@@ -147,9 +147,7 @@ class CombinedDistanceMetric(BaseDistanceMetric):
         ratio_categorical = 1.0 - ratio_continuous
 
         # Combined distance
-        dist = ratio_continuous * np.mean(dist_cont) + ratio_categorical * np.mean(
-            dist_cate
-        )
+        dist = ratio_continuous * np.mean(dist_cont) + ratio_categorical * np.mean(dist_cate)
         return dist
 
 

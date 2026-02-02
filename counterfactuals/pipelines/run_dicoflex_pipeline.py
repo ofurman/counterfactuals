@@ -58,9 +58,7 @@ def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
     return masks
 
 
-def instantiate_gen_model(
-    cfg: DictConfig, dataset: MethodDataset, context_dim: int, device: str
-):
+def instantiate_gen_model(cfg: DictConfig, dataset: MethodDataset, context_dim: int, device: str):
     """Instantiate the conditional flow used by DiCoFlex."""
     model = instantiate(
         cfg.gen_model.model,
@@ -89,9 +87,7 @@ def train_dicoflex_generator(
         train_loss = 0.0
         for batch_cf, batch_context in train_loader:
             batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
-                device
-            )
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
             optimizer.zero_grad()
             log_prob = model(
                 batch_cf,
@@ -108,9 +104,7 @@ def train_dicoflex_generator(
         with torch.no_grad():
             for batch_cf, batch_context in val_loader:
                 batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-                batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
-                    device
-                )
+                batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
                 log_prob = model(
                     batch_cf,
                     context=batch_context,
@@ -149,9 +143,7 @@ def compute_log_prob_threshold(
     with torch.no_grad():
         for batch_cf, batch_context in dataloader:
             batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
-                device
-            )
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
             batch_scores = model(
                 batch_cf,
                 context=batch_context,
@@ -177,9 +169,7 @@ def get_full_training_loader(
     )
 
 
-def compute_feature_bounds(
-    data: np.ndarray, padding: float = 0.05
-) -> List[tuple[float, float]]:
+def compute_feature_bounds(data: np.ndarray, padding: float = 0.05) -> List[tuple[float, float]]:
     """Return padded min/max bounds for the first two features."""
     if data.shape[1] < 2:
         raise ValueError("At least two features are required for contour plots.")
@@ -198,11 +188,7 @@ def compute_feature_bounds(
 def main(cfg: DictConfig):
     torch.manual_seed(cfg.experiment.seed)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    device = (
-        "cuda"
-        if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False)
-        else "cpu"
-    )
+    device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 
     file_dataset = instantiate(cfg.dataset)
     preprocessing_pipeline = PreprocessingPipeline(

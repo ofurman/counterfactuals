@@ -88,12 +88,8 @@ class MethodDataset:
             self.X_test = transformed_context.X_test
             self.y_train = transformed_context.y_train
             self.y_test = transformed_context.y_test
-            self.file_dataset.categorical_features_indices = (
-                transformed_context.categorical_indices
-            )
-            self.file_dataset.numerical_features_indices = (
-                transformed_context.continuous_indices
-            )
+            self.file_dataset.categorical_features_indices = transformed_context.categorical_indices
+            self.file_dataset.numerical_features_indices = transformed_context.continuous_indices
         else:
             # No preprocessing, use raw data
             self.X_train = self.X_train_raw
@@ -244,11 +240,7 @@ class MethodDataset:
         feature_indices = {name: idx for idx, name in enumerate(self.features)}
         categorical_lists: list[list[int]] = []
         for columns in groups.values():
-            indices = [
-                feature_indices[column]
-                for column in columns
-                if column in feature_indices
-            ]
+            indices = [feature_indices[column] for column in columns if column in feature_indices]
             if indices:
                 categorical_lists.append(indices)
         return categorical_lists
@@ -276,9 +268,7 @@ class MethodDataset:
 
         if self.file_dataset.task_type == "classification":
             cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=42)
-            for train_idx, test_idx in cv.split(
-                self.file_dataset.X, self.file_dataset.y
-            ):
+            for train_idx, test_idx in cv.split(self.file_dataset.X, self.file_dataset.y):
                 X_train_fold = self.file_dataset.X[train_idx].copy()
                 X_test_fold = self.file_dataset.X[test_idx].copy()
                 y_train_fold = self.file_dataset.y[train_idx].copy()
@@ -378,9 +368,7 @@ class MethodDataset:
                     self.y_test = y_test_fold
                     yield self.X_train, self.X_test, self.y_train, self.y_test
 
-    def train_dataloader(
-        self, batch_size: int, shuffle: bool, noise_lvl=0, **kwargs_dataloader
-    ):
+    def train_dataloader(self, batch_size: int, shuffle: bool, noise_lvl=0, **kwargs_dataloader):
         def collate_fn(batch):
             X, y = zip(*batch)
             X = torch.stack(X)
@@ -388,15 +376,11 @@ class MethodDataset:
 
             # Add Gaussian noise to train features
             noise = torch.randn_like(X[:, self.numerical_features_indices]) * noise_lvl
-            X[:, self.numerical_features_indices] = (
-                X[:, self.numerical_features_indices] + noise
-            )
+            X[:, self.numerical_features_indices] = X[:, self.numerical_features_indices] + noise
             return X, y
 
         return DataLoader(
-            TensorDataset(
-                torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)
-            ),
+            TensorDataset(torch.from_numpy(self.X_train), torch.from_numpy(self.y_train)),
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=collate_fn if noise_lvl else None,

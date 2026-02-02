@@ -28,16 +28,12 @@ def log_parameters(cfg: DictConfig) -> Dict[str, Any]:
         params["gen_model_model_name"] = cfg.gen_model.model._target_.split(".")[-1]
         params["gen_model"] = OmegaConf.to_container(cfg.gen_model, resolve=True)
 
-    params["counterfactuals"] = OmegaConf.to_container(
-        cfg.counterfactuals_params, resolve=True
-    )
-    params["counterfactuals_method_name"] = (
-        cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
-    )
+    params["counterfactuals"] = OmegaConf.to_container(cfg.counterfactuals_params, resolve=True)
+    params["counterfactuals_method_name"] = cfg.counterfactuals_params.cf_method._target_.split(
+        "."
+    )[-1]
 
-    logger.info(
-        "Parameters summary: %s", {k: type(v).__name__ for k, v in params.items()}
-    )
+    logger.info("Parameters summary: %s", {k: type(v).__name__ for k, v in params.items()})
     return params
 
 
@@ -55,9 +51,7 @@ def set_model_paths(cfg: DictConfig, fold: str = None):
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
 
-    output_folder = os.path.join(
-        os.path.abspath(cfg.experiment.output_folder), dataset_name
-    )
+    output_folder = os.path.join(os.path.abspath(cfg.experiment.output_folder), dataset_name)
     save_folder = os.path.join(output_folder, cf_method_name)
     if fold is not None:
         save_folder = os.path.join(save_folder, f"fold_{fold}")

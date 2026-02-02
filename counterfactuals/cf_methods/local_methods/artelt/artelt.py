@@ -57,17 +57,15 @@ class Artelt(BaseCounterfactualMethod, LocalCounterfactualMixin):
             kde = KernelDensity(bandwidth=bandwidth)
             kde.fit(X_)
 
-            de = GaussianMixture(
-                n_components=n_components, covariance_type="full", random_state=42
-            )
+            de = GaussianMixture(n_components=n_components, covariance_type="full", random_state=42)
             de.fit(X_)
 
             self.density_estimators[label] = de
             self.kernel_density_estimators[label] = kde
 
             # Compute densities and ellipsoids
-            densities_training_samples, densities_training_samples_ex = (
-                self._compute_densities(X_, de)
+            densities_training_samples, densities_training_samples_ex = self._compute_densities(
+                X_, de
             )
             cluster_prob_ = de.predict_proba(X_)
             density_threshold = np.median(densities_training_samples)
@@ -83,12 +81,8 @@ class Artelt(BaseCounterfactualMethod, LocalCounterfactualMixin):
             ).compute_ellipsoids()
 
             # Prepare counterfactual generator
-            disc_model_coef_ = (
-                list(self.disc_model.parameters())[0].detach().cpu().numpy()
-            )
-            disc_model_intercept_ = (
-                list(self.disc_model.parameters())[1].detach().cpu().numpy()
-            )
+            disc_model_coef_ = list(self.disc_model.parameters())[0].detach().cpu().numpy()
+            disc_model_intercept_ = list(self.disc_model.parameters())[1].detach().cpu().numpy()
 
             self.cf[label] = PlausibleCounterfactualOfHyperplaneClassifier(
                 disc_model_coef_,
@@ -115,19 +109,13 @@ class Artelt(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 cov = de.covariances_[i]
                 cov = np.linalg.inv(cov)
 
-                b = (
-                    -2.0 * np.log(w_i)
-                    + dim * np.log(2.0 * np.pi)
-                    - np.log(np.linalg.det(cov))
-                )
+                b = -2.0 * np.log(w_i) + dim * np.log(2.0 * np.pi) - np.log(np.linalg.det(cov))
                 z.append(np.dot(x - x_i, np.dot(cov, x - x_i)) + b)  # NLL
 
             densities_training_samples.append(np.min(z))
             densities_training_samples_ex.append(z)
 
-        return np.array(densities_training_samples), np.array(
-            densities_training_samples_ex
-        )
+        return np.array(densities_training_samples), np.array(densities_training_samples_ex)
 
     def explain(
         self,
@@ -159,9 +147,7 @@ class Artelt(BaseCounterfactualMethod, LocalCounterfactualMixin):
             y_origs=np.array([y_origin]),
         )
 
-    def explain_dataloader(
-        self, dataloader: DataLoader, *args, **kwargs
-    ) -> ExplanationResult:
+    def explain_dataloader(self, dataloader: DataLoader, *args, **kwargs) -> ExplanationResult:
         if not self.density_estimators:
             raise ValueError("Density estimators not fitted")
 

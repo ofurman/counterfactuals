@@ -88,9 +88,7 @@ class SACE(ABC):
         pass
 
     @abstractmethod
-    def get_prototypes(
-        self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False
-    ):
+    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False):
         pass
 
     def _predict(self, X):
@@ -115,9 +113,7 @@ class SACE(ABC):
         else:
             self.continuous_features = continuous_features
             self.categorical_features = [
-                i
-                for i in np.arange(self.nbr_variable_features)
-                if i not in continuous_features
+                i for i in np.arange(self.nbr_variable_features) if i not in continuous_features
             ]
             self.cdist = self._cdist
         self.nbr_cont_features = len(self.continuous_features)
@@ -125,9 +121,7 @@ class SACE(ABC):
             self.nbr_cate_features_real = len(self.categorical_features_index_lists)
         else:
             self.nbr_cate_features_real = 0
-        self.nbr_variable_features_real = (
-            self.nbr_cont_features + self.nbr_cate_features_real
-        )
+        self.nbr_variable_features_real = self.nbr_cont_features + self.nbr_cate_features_real
 
     def __detect_ranges(self):
         self.ranges = dict()
@@ -181,9 +175,7 @@ class SACE(ABC):
             w=w,
         )
         ratio_continuous = self.nbr_cont_features / self.nbr_variable_features_real
-        ratio_categorical = (
-            self.nbr_cate_features_real / self.nbr_variable_features_real
-        )
+        ratio_categorical = self.nbr_cate_features_real / self.nbr_variable_features_real
         dist = ratio_continuous * dist_continuous + ratio_categorical * dist_categorical
 
         return dist
@@ -213,9 +205,7 @@ class SACE(ABC):
 
     def _get_closest(self, cf_score, k):
         cf_list = list()
-        for cf_idx, _ in sorted(
-            cf_score.items(), key=lambda cf: cf[1][0], reverse=False
-        )[:k]:
+        for cf_idx, _ in sorted(cf_score.items(), key=lambda cf: cf[1][0], reverse=False)[:k]:
             cf_list.append(cf_score[cf_idx][1])
         cf_list = np.array(cf_list)
         return cf_list

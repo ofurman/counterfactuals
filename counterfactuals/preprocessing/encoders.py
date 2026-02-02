@@ -83,9 +83,7 @@ class OneHotEncodingStep(PreprocessingStep):
         if context.X_test is not None:
             X_test_transformed = self._transform_array(context.X_test)
 
-        categorical_indices = list(range(self.n_features_out))[
-            self._continuous_indices[-1] + 1 :
-        ]
+        categorical_indices = list(range(self.n_features_out))[self._continuous_indices[-1] + 1 :]
 
         return PreprocessingContext(
             X_train=X_train_transformed,
@@ -151,9 +149,7 @@ class OneHotEncodingStep(PreprocessingStep):
             else:
                 cat_in_idx = self._categorical_indices.index(i)
                 n_categories = len(self.encoder.categories_[cat_in_idx])
-                start_idx = sum(
-                    len(self.encoder.categories_[j]) for j in range(cat_in_idx)
-                )
+                start_idx = sum(len(self.encoder.categories_[j]) for j in range(cat_in_idx))
                 result[:, cont_out_idx : cont_out_idx + n_categories] = X_cat_encoded[
                     :, start_idx : start_idx + n_categories
                 ]

@@ -39,9 +39,7 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         # "WineDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
-    num_classes = (
-        1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
-    )
+    num_classes = 1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
     disc_model = instantiate(
@@ -79,9 +77,7 @@ def train_disc_model(
     train_dataloader = dataset.train_dataloader(
         batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
     )
-    test_dataloader = dataset.test_dataloader(
-        batch_size=cfg.disc_model.batch_size, shuffle=False
-    )
+    test_dataloader = dataset.test_dataloader(batch_size=cfg.disc_model.batch_size, shuffle=False)
     disc_model.fit(
         train_dataloader,
         test_dataloader,
@@ -117,9 +113,7 @@ def evaluate_disc_model(disc_model: torch.nn.Module, dataset: DictConfig) -> dic
         )
     except ValueError:
         # evaluate regression model on R1 score
-        report = [
-            {"r2_score": r2_score(dataset.y_test, disc_model.predict(dataset.X_test))}
-        ]
+        report = [{"r2_score": r2_score(dataset.y_test, disc_model.predict(dataset.X_test))}]
         print(report)
 
     return report

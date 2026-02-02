@@ -96,8 +96,7 @@ class ContinuousNormalizingFlow(nn.Module):
         chain = [build_cnf() for _ in range(num_blocks)]
         if batch_norm:
             bn_layers = [
-                MovingBatchNorm1d(input_dim, bn_lag=bn_lag, sync=sync_bn)
-                for _ in range(num_blocks)
+                MovingBatchNorm1d(input_dim, bn_lag=bn_lag, sync=sync_bn) for _ in range(num_blocks)
             ]
             bn_chain = [MovingBatchNorm1d(input_dim, bn_lag=bn_lag, sync=sync_bn)]
             for a, b in zip(chain, bn_layers):
@@ -126,14 +125,8 @@ class ContinuousNormalizingFlow(nn.Module):
             data=context, dtype=torch.float, device=context.device
         )
         context: torch.Tensor = repeat_rows(context, num_reps=num_samples)
-        base_dist_samples: torch.Tensor = self.distribution.sample(
-            num_samples=context.shape[0]
-        )
+        base_dist_samples: torch.Tensor = self.distribution.sample(num_samples=context.shape[0])
 
-        samples: torch.Tensor = self.flow(
-            x=base_dist_samples, context=context, reverse=True
-        )
-        samples: torch.Tensor = split_leading_dim(
-            samples, [context_shape[0], num_samples]
-        )
+        samples: torch.Tensor = self.flow(x=base_dist_samples, context=context, reverse=True)
+        samples: torch.Tensor = split_leading_dim(samples, [context_shape[0], num_samples])
         return samples

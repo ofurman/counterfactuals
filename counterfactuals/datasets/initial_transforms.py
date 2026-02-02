@@ -62,9 +62,7 @@ class InitialTransformPipeline:
     def _validate_steps(self) -> None:
         for name, step in self.steps:
             if not isinstance(step, InitialTransformStep):
-                raise TypeError(
-                    f"Initial transform '{name}' must implement InitialTransformStep."
-                )
+                raise TypeError(f"Initial transform '{name}' must implement InitialTransformStep.")
 
     def fit(self, context: InitialTransformContext) -> "InitialTransformPipeline":
         current = context
@@ -79,9 +77,7 @@ class InitialTransformPipeline:
             current = step.transform(current)
         return current
 
-    def fit_transform(
-        self, context: InitialTransformContext
-    ) -> InitialTransformContext:
+    def fit_transform(self, context: InitialTransformContext) -> InitialTransformContext:
         current = context
         for _, step in self.steps:
             step.fit(current)
@@ -89,9 +85,7 @@ class InitialTransformPipeline:
         return current
 
     def __repr__(self) -> str:
-        steps_repr = "\n  ".join(
-            [f"{name}: {type(step).__name__}" for name, step in self.steps]
-        )
+        steps_repr = "\n  ".join([f"{name}: {type(step).__name__}" for name, step in self.steps])
         return f"InitialTransformPipeline(\n  {steps_repr}\n)"
 
 
@@ -220,9 +214,7 @@ class OneHotEncodingStep(InitialTransformStep):
             base_feature = self._base_feature_name(feature, categorical)
             if base_feature is None:
                 new_feature_config[feature] = copy.deepcopy(
-                    context.feature_config.get(
-                        feature, FeatureParameters(actionable=True)
-                    )
+                    context.feature_config.get(feature, FeatureParameters(actionable=True))
                 )
                 continue
 
@@ -233,9 +225,7 @@ class OneHotEncodingStep(InitialTransformStep):
             categorical_groups.setdefault(base_feature, []).append(feature)
 
         context.feature_config = new_feature_config
-        categorical_columns = {
-            col for cols in categorical_groups.values() for col in cols
-        }
+        categorical_columns = {col for cols in categorical_groups.values() for col in cols}
         context.categorical_features = [
             col for col in encoded.columns if col in categorical_columns
         ]
@@ -245,9 +235,7 @@ class OneHotEncodingStep(InitialTransformStep):
         context.one_hot_feature_groups = categorical_groups
         return context
 
-    def _base_feature_name(
-        self, feature_name: str, candidates: Sequence[str]
-    ) -> Optional[str]:
+    def _base_feature_name(self, feature_name: str, candidates: Sequence[str]) -> Optional[str]:
         for candidate in candidates:
             if feature_name.startswith(f"{candidate}{self.prefix_sep}"):
                 return candidate

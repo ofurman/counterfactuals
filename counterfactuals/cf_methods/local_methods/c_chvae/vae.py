@@ -137,9 +137,7 @@ class VariationalAutoencoder(nn.Module):
         if isinstance(xtrain, pd.DataFrame):
             xtrain = xtrain.values
 
-        train_loader = torch.utils.data.DataLoader(
-            xtrain, batch_size=batch_size, shuffle=True
-        )
+        train_loader = torch.utils.data.DataLoader(xtrain, batch_size=batch_size, shuffle=True)
 
         optimizer = torch.optim.Adam(
             self.parameters(),
@@ -185,9 +183,7 @@ class VariationalAutoencoder(nn.Module):
             ELBO[epoch] = train_loss / train_loss_num
             if epoch % 10 == 0:
                 logger.info(
-                    "[Epoch: {}/{}] [objective: {:.3f}]".format(
-                        epoch, epochs, ELBO[epoch, 0]
-                    )
+                    "[Epoch: {}/{}] [objective: {:.3f}]".format(epoch, epochs, ELBO[epoch, 0])
                 )
 
             ELBO_train = ELBO[epoch, 0].round(2)

@@ -68,9 +68,7 @@ class CCHVAE:
         """
         supported_backends = ["pytorch"]
         if mlmodel.backend not in supported_backends:
-            raise ValueError(
-                f"{mlmodel.backend} is not in supported backends {supported_backends}"
-            )
+            raise ValueError(f"{mlmodel.backend} is not in supported backends {supported_backends}")
 
         self._mlmodel = mlmodel
         self._params = hyperparams
@@ -123,9 +121,7 @@ class CCHVAE:
             try:
                 generative_model.load(vae_params["layers"][0])
             except FileNotFoundError as exc:
-                raise FileNotFoundError(
-                    "Loading of Autoencoder failed. {}".format(str(exc))
-                )
+                raise FileNotFoundError("Loading of Autoencoder failed. {}".format(str(exc)))
 
         return generative_model
 
@@ -152,9 +148,7 @@ class CCHVAE:
           ValueError: If the configured `p_norm` is not 1 or 2.
         """
         delta_instance = np.random.randn(self._n_search_samples, instance.shape[1])
-        dist = (
-            np.random.rand(self._n_search_samples) * (high - low) + low
-        )  # length range [l, h)
+        dist = np.random.rand(self._n_search_samples) * (high - low) + low  # length range [l, h)
         norm_p = LA.norm(delta_instance, ord=self._p_norm, axis=1)
         d_norm = np.divide(dist, norm_p).reshape(-1, 1)  # rescale/normalize factor
         delta_instance = np.multiply(delta_instance, d_norm)
@@ -209,9 +203,7 @@ class CCHVAE:
         z_rep = np.repeat(z.reshape(1, -1), self._n_search_samples, axis=0)
 
         # make copy such that we later easily combine the immutables and the reconstructed mutables
-        fact_rep = torch_fact.reshape(1, -1).repeat_interleave(
-            self._n_search_samples, dim=0
-        )
+        fact_rep = torch_fact.reshape(1, -1).repeat_interleave(self._n_search_samples, dim=0)
 
         candidate_dist: List = []
         x_ce: Union[np.ndarray, torch.Tensor] = np.array([])
@@ -223,9 +215,7 @@ class CCHVAE:
 
             # STEP 1 -- SAMPLE POINTS on hyper sphere around instance
             latent_neighbourhood, _ = self._hyper_sphere_coordindates(z_rep, high, low)
-            torch_latent_neighbourhood = (
-                torch.from_numpy(latent_neighbourhood).to(device).float()
-            )
+            torch_latent_neighbourhood = torch.from_numpy(latent_neighbourhood).to(device).float()
             x_ce = self._generative_model.decode(torch_latent_neighbourhood)
 
             # add the immutable features to the reconstruction
@@ -241,9 +231,7 @@ class CCHVAE:
 
             # STEP 2 -- COMPUTE l1 & l2 norms
             if self._p_norm == 1:
-                distances = np.abs((x_ce - torch_fact.cpu().detach().numpy())).sum(
-                    axis=1
-                )
+                distances = np.abs((x_ce - torch_fact.cpu().detach().numpy())).sum(axis=1)
             elif self._p_norm == 2:
                 distances = LA.norm(x_ce - torch_fact.cpu().detach().numpy(), axis=1)
             else:

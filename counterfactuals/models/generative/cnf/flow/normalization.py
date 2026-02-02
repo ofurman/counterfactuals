@@ -8,9 +8,7 @@ __all__ = ["MovingBatchNorm1d"]
 
 
 class MovingBatchNormNd(nn.Module):
-    def __init__(
-        self, num_features, eps=1e-4, decay=0.1, bn_lag=0.0, affine=True, sync=False
-    ):
+    def __init__(self, num_features, eps=1e-4, decay=0.1, bn_lag=0.0, affine=True, sync=False):
         super(MovingBatchNormNd, self).__init__()
         self.num_features = num_features
         self.sync = sync
@@ -66,13 +64,9 @@ class MovingBatchNormNd(nn.Module):
 
             # moving average
             if self.bn_lag > 0:
-                used_mean = batch_mean - (1 - self.bn_lag) * (
-                    batch_mean - used_mean.detach()
-                )
+                used_mean = batch_mean - (1 - self.bn_lag) * (batch_mean - used_mean.detach())
                 used_mean /= 1.0 - self.bn_lag ** (self.step[0] + 1)
-                used_var = batch_var - (1 - self.bn_lag) * (
-                    batch_var - used_var.detach()
-                )
+                used_var = batch_var - (1 - self.bn_lag) * (batch_var - used_var.detach())
                 used_var /= 1.0 - self.bn_lag ** (self.step[0] + 1)
 
             # update running estimates
@@ -146,10 +140,6 @@ class MovingBatchNorm1d(MovingBatchNormNd):
     def shape(self):
         return [1, -1]
 
-    def forward(
-        self, x, context=None, logpx=None, integration_times=None, reverse=False
-    ):
-        ret = super(MovingBatchNorm1d, self).forward(
-            x, context, logpx=logpx, reverse=reverse
-        )
+    def forward(self, x, context=None, logpx=None, integration_times=None, reverse=False):
+        ret = super(MovingBatchNorm1d, self).forward(x, context, logpx=logpx, reverse=reverse)
         return ret

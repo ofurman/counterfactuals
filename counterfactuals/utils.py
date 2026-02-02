@@ -13,12 +13,8 @@ def plot_x_point(x, x_origin, model):
     dist = np.linalg.norm(x_res - x_origin)
 
     with torch.no_grad():
-        samples_zero, log_probs = model.sample_and_log_prob(
-            512, context=torch.Tensor([[0]])
-        )
-        samples_one, log_probs = model.sample_and_log_prob(
-            512, context=torch.ones(1, 1)
-        )
+        samples_zero, log_probs = model.sample_and_log_prob(512, context=torch.Tensor([[0]]))
+        samples_one, log_probs = model.sample_and_log_prob(512, context=torch.ones(1, 1))
 
     ax.set_title(f"{x.detach().numpy()}, dist: {dist}")
     ax.scatter(samples_zero.squeeze()[:, 0], samples_zero.squeeze()[:, 1], c="g")
@@ -128,9 +124,7 @@ def plot_distributions(x, x_orig, model, optim_function, alpha):
 
     # zgrid1 = ma.masked_where(zgrid1 <= 0, zgrid1)
     # zgrid1[zgrid1 > 2] = 2
-    ax[0].contourf(
-        xgrid.numpy(), ygrid.numpy(), zgrid0.numpy(), levels=20, cmap=cm.PuBu_r
-    )
+    ax[0].contourf(xgrid.numpy(), ygrid.numpy(), zgrid0.numpy(), levels=20, cmap=cm.PuBu_r)
     cs = ax[1].contourf(
         xgrid.numpy(), ygrid.numpy(), zgrid1, levels=50, cmap=cm.PuBu_r
     )  # locator=ticker.LogLocator()
@@ -159,9 +153,7 @@ def plot_distributions(x, x_orig, model, optim_function, alpha):
     log_p = model.log_prob(x, context=torch.Tensor([[1]])).exp().item()
     log_p_origin = model.log_prob(x_orig, context=torch.Tensor([[0]])).exp().item()
     ax[0].set_title(f"log_p_orig: {log_p_origin:.2e}")
-    ax[1].set_title(
-        f"Distance: {np.linalg.norm(x_orig - x_res):0.2f}, log_p: {log_p:.2e}"
-    )
+    ax[1].set_title(f"Distance: {np.linalg.norm(x_orig - x_res):0.2f}, log_p: {log_p:.2e}")
     plt.show()
 
 

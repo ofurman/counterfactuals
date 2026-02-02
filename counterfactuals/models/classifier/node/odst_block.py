@@ -29,9 +29,7 @@ class DenseBlock(nn.Sequential):
                 flatten_output=True,
                 **kwargs,
             )
-            input_dim = min(
-                input_dim + layer_dim * tree_dim, max_features or float("inf")
-            )
+            input_dim = min(input_dim + layer_dim * tree_dim, max_features or float("inf"))
             layers.append(oddt)
 
         super().__init__(*layers)
@@ -44,9 +42,7 @@ class DenseBlock(nn.Sequential):
         for layer in self:
             layer_inp = x
             if self.max_features is not None:
-                tail_features = (
-                    min(self.max_features, layer_inp.shape[-1]) - initial_features
-                )
+                tail_features = min(self.max_features, layer_inp.shape[-1]) - initial_features
                 if tail_features != 0:
                     layer_inp = torch.cat(
                         [

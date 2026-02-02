@@ -68,9 +68,7 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         return x
 
     @torch.no_grad()
-    def _log_prob(
-        self, X: np.ndarray, y: np.ndarray, batch_size: int = 128
-    ) -> np.ndarray:
+    def _log_prob(self, X: np.ndarray, y: np.ndarray, batch_size: int = 128) -> np.ndarray:
         """Calculate the log probability of the model."""
 
         X: torch.Tensor = torch.as_tensor(data=X, dtype=torch.float, device=self.device)
@@ -95,9 +93,7 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         return x
 
     @torch.no_grad()
-    def sample(
-        self, X: np.ndarray, num_samples: int = 10, batch_size: int = 128
-    ) -> np.ndarray:
+    def sample(self, X: np.ndarray, num_samples: int = 10, batch_size: int = 128) -> np.ndarray:
         """Sample from the model."""
         X: np.ndarray = self.feature_scaler.transform(X)
 
@@ -119,13 +115,9 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         # Inverse target transformation
         samples_size = samples.shape
 
-        samples: np.ndarray = samples.reshape(
-            (samples_size[0] * samples_size[1], samples_size[2])
-        )
+        samples: np.ndarray = samples.reshape((samples_size[0] * samples_size[1], samples_size[2]))
         samples: np.ndarray = self.target_scaler.inverse_transform(samples)
-        samples: np.ndarray = samples.reshape(
-            (samples_size[0], samples_size[1], samples_size[2])
-        )
+        samples: np.ndarray = samples.reshape((samples_size[0], samples_size[1], samples_size[2]))
 
         samples: np.ndarray = samples.squeeze()
         return samples
@@ -148,9 +140,7 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         self.optimizer_ = optim.Adam(self.parameters())
 
         patience: int = 0
-        mid: str = str(
-            uuid.uuid4()
-        )  # To be able to run multiple experiments in parallel.
+        mid: str = str(uuid.uuid4())  # To be able to run multiple experiments in parallel.
         loss_best: float = np.inf
 
         with tqdm(range(n_epochs)) as pbar:
@@ -195,9 +185,7 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
         batch_size: int = 128,
         **kwargs,
     ) -> np.ndarray:
-        samples: np.ndarray = self.sample(
-            X=X, num_samples=num_samples, batch_size=batch_size
-        )
+        samples: np.ndarray = self.sample(X=X, num_samples=num_samples, batch_size=batch_size)
 
         if method == "mean":
             y_pred: np.ndarray = samples.mean(axis=1)

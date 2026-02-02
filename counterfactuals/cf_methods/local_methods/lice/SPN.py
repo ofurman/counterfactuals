@@ -92,9 +92,7 @@ class Node:
         # TODO rework this so that the nodes are remembered in the SPN class, and not generated on demand
         self.predecessors = node.children if hasattr(node, "children") else []
 
-    def get_breaks_densities(
-        self, span_all=True
-    ) -> tuple[np.ndarray[float], np.ndarray[float]]:
+    def get_breaks_densities(self, span_all=True) -> tuple[np.ndarray[float], np.ndarray[float]]:
         """Retruns the breakpoints rescaled to 0-1 range
 
         Args:
@@ -173,9 +171,7 @@ class SPN:
             feature_names=[f.name for f in self.__feature_list],
         )
         self.__normalize_data = normalize_data
-        enc_data = data_handler.encode_all(
-            data, normalize=normalize_data, one_hot=False
-        )
+        enc_data = data_handler.encode_all(data, normalize=normalize_data, one_hot=False)
         if len(domains) != data_handler.n_features + 1:
             print("recomputing domains")
             context.add_domains(enc_data)
@@ -192,9 +188,7 @@ class SPN:
             return self.compute_ll(data.reshape(1, -1))[0]
         return log_likelihood(
             self.__mspn,
-            self.__data_handler.encode_all(
-                data, normalize=self.__normalize_data, one_hot=False
-            ),
+            self.__data_handler.encode_all(data, normalize=self.__normalize_data, one_hot=False),
         )
 
     def compute_max_approx(self, data: DataLike, return_all: bool = False):
@@ -229,8 +223,7 @@ class SPN:
             if node.type == NodeType.SUM:
                 # print("Sum", [node_vals[n.id] for n in node.predecessors])
                 value = max(
-                    node_vals[n.id] + np.log(w)
-                    for n, w in zip(node.predecessors, node.weights)
+                    node_vals[n.id] + np.log(w) for n, w in zip(node.predecessors, node.weights)
                 )
                 # node_ex_vals[node.id] = logsumexp(
                 #     np.array([node_ex_vals[p.id] for p in node.predecessors]),

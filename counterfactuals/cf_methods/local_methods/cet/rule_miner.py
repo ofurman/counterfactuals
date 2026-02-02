@@ -29,9 +29,7 @@ class FeatureDiscretizer:
                 for threshold in np.asarray(
                     np.percentile(
                         X[:, d],
-                        np.linspace(
-                            0, 100, self.bins if self.onehot else self.bins + 1
-                        ),
+                        np.linspace(0, 100, self.bins if self.onehot else self.bins + 1),
                     )
                 ):
                     if origin_feature_types[d] == "I":
@@ -71,9 +69,7 @@ class FeatureDiscretizer:
                 else:
                     for i in range(len(self.thresholds[d])):
                         self.feature_names += [
-                            "{}<{}".format(
-                                origin_feature_names[d], self.thresholds[d][i]
-                            )
+                            "{}<{}".format(origin_feature_names[d], self.thresholds[d][i])
                         ]
                         self.feature_types += ["R"]
 
