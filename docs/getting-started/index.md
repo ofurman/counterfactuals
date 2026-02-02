@@ -11,7 +11,7 @@ Welcome to the Counterfactuals library! This section will help you get up and ru
 
 Set up the library and its dependencies in your Python environment.
 
-[Get Started :material-arrow-right:](installation.md)
+[Get Started →](installation.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -19,7 +19,7 @@ Set up the library and its dependencies in your Python environment.
 
 Generate your first counterfactual explanation in minutes.
 
-[Try It :material-arrow-right:](quickstart.md)
+[Try It →](quickstart.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -27,7 +27,7 @@ Generate your first counterfactual explanation in minutes.
 
 Understand the fundamental concepts behind counterfactual explanations.
 
-[Learn More :material-arrow-right:](concepts.md)
+[Learn More →](concepts.md)
 </div>
 
 </div>

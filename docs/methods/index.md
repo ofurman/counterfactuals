@@ -8,19 +8,19 @@ The library implements **17+ counterfactual explanation methods** organized into
 
 Local methods generate counterfactuals for **individual instances**. Given a single input, they find the minimal change needed to alter the model's prediction.
 
-[Explore Local Methods :material-arrow-right:](local/index.md){ .md-button }
+[Explore Local Methods →](local/index.md){ .md-button }
 
 ### Global Methods
 
 Global methods find **universal transformations** that work across an entire dataset or subpopulation, providing insights into systematic patterns.
 
-[Explore Global Methods :material-arrow-right:](global/index.md){ .md-button }
+[Explore Global Methods →](global/index.md){ .md-button }
 
 ### Group Methods
 
 Group methods generate counterfactuals for **clusters or subgroups** of similar instances, balancing individual precision with broader applicability.
 
-[Explore Group Methods :material-arrow-right:](group/index.md){ .md-button }
+[Explore Group Methods →](group/index.md){ .md-button }
 
 ## Method Comparison
 

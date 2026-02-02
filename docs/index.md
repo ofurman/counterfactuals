@@ -15,7 +15,7 @@ A comprehensive Python framework for generating and evaluating counterfactual ex
 
 Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLOBE-CE, and more.
 
-[Explore Methods :material-arrow-right:](methods/index.md)
+[Explore Methods →](methods/index.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -23,7 +23,7 @@ Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLO
 
 Ready-to-use datasets for classification and regression tasks with built-in preprocessing.
 
-[View Datasets :material-arrow-right:](datasets/index.md)
+[View Datasets →](datasets/index.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -31,7 +31,7 @@ Ready-to-use datasets for classification and regression tasks with built-in prep
 
 Comprehensive metrics for validity, proximity, sparsity, plausibility, and diversity.
 
-[See Metrics :material-arrow-right:](benchmarks/metrics.md)
+[See Metrics →](benchmarks/metrics.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -39,7 +39,7 @@ Comprehensive metrics for validity, proximity, sparsity, plausibility, and diver
 
 Hydra-based configuration system for reproducible experiments with MLflow logging.
 
-[Run Pipelines :material-arrow-right:](user-guide/pipelines.md)
+[Run Pipelines →](user-guide/pipelines.md)
 </div>
 
 </div>
@@ -83,7 +83,7 @@ print(f"Original: {instance}")
 print(f"Counterfactual: {result.x_cfs}")
 ```
 
-[Full Quick Start Tutorial :material-arrow-right:](getting-started/quickstart.md){ .md-button .md-button--primary }
+[Full Quick Start Tutorial →](getting-started/quickstart.md){ .md-button .md-button--primary }
 
 ## Method Categories
 
@@ -165,7 +165,7 @@ flowchart LR
 <div class="feature-grid" markdown>
 
 <div class="feature-item" markdown>
-:material-download: **Get Started**
+📥 **Get Started**
 
 Install the library and run your first example.
 
@@ -173,7 +173,7 @@ Install the library and run your first example.
 </div>
 
 <div class="feature-item" markdown>
-:material-book-open-variant: **Learn the Basics**
+📖 **Learn the Basics**
 
 Understand core concepts and workflows.
 
@@ -181,7 +181,7 @@ Understand core concepts and workflows.
 </div>
 
 <div class="feature-item" markdown>
-:material-compare: **Compare Methods**
+📊 **Compare Methods**
 
 See benchmark results across methods.
 
@@ -189,7 +189,7 @@ See benchmark results across methods.
 </div>
 
 <div class="feature-item" markdown>
-:material-api: **API Reference**
+🔌 **API Reference**
 
 Detailed documentation for all modules.
 
