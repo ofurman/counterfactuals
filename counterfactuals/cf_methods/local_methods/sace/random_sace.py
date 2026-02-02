@@ -104,9 +104,7 @@ class RandomSACE(SACE):
 
         return cf_list
 
-    def get_prototypes(
-        self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False
-    ):
+    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False):
         # x = x.reshape(1, -1)
         x = np.expand_dims(x, 0)
         nx = (

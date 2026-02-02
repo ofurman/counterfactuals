@@ -44,9 +44,7 @@ def prune_index(inner_tree, decisions, index=0):
 
 def prune_duplicate_leaves(dt):
     # Remove leaves if both
-    decisions = (
-        dt.tree_.value.argmax(axis=2).flatten().tolist()
-    )  # Decision for each node
+    decisions = dt.tree_.value.argmax(axis=2).flatten().tolist()  # Decision for each node
     prune_index(dt.tree_, decisions)
 
 
@@ -197,9 +195,7 @@ class TreeSACE(SACE):
         # node_indicator = self.dt.decision_path(X_cfc)
         leave_id = self.dt.apply(X_cfc)
 
-        X_cfcm, node_indicator_m, leave_id_m = self.__get_mean_leaf_cf_infos(
-            X_cfc, leave_id
-        )
+        X_cfcm, node_indicator_m, leave_id_m = self.__get_mean_leaf_cf_infos(X_cfc, leave_id)
         if not self.pooler:
             node_index_path_x, leave_id_x = self.__get_x_infos(x)
             feature_lower_upper_x = self.__get_feature_boundaries(x, node_index_path_x)
@@ -215,9 +211,7 @@ class TreeSACE(SACE):
             ]
 
             cfcm = X_cfcm[cf_idx].reshape(1, -1)
-            feature_lower_upper_cf = self.__get_feature_boundaries(
-                cfcm, node_index_path_x
-            )
+            feature_lower_upper_cf = self.__get_feature_boundaries(cfcm, node_index_path_x)
             nvf_changed = False
             for node_id in node_index_path_x:
                 f = self.feature[node_id]
@@ -235,9 +229,7 @@ class TreeSACE(SACE):
             if not nvf_changed:
                 if len(node_index_path_cf) < self.tree_depth:
                     pad = self.tree_depth - len(node_index_path_cf)
-                    node_index_path_cf = np.concatenate(
-                        [node_index_path_cf, np.array([-1] * pad)]
-                    )
+                    node_index_path_cf = np.concatenate([node_index_path_cf, np.array([-1] * pad)])
 
                 dist = hamming(node_index_path_x, node_index_path_cf)
 
@@ -252,14 +244,10 @@ class TreeSACE(SACE):
                         self.cdist(nx, nX_cfc_l, metric=self.metric, w=self.weights)
                     )
                     cfc = X_cfc_l[cfl_idx].copy().reshape(1, -1)
-                    cfc[:, self.non_variable_features] = cfc_o[
-                        :, self.non_variable_features
-                    ]
+                    cfc[:, self.non_variable_features] = cfc_o[:, self.non_variable_features]
                 else:
                     cfc = cfcm.copy()
-                    cfc[:, self.non_variable_features] = cfc_o[
-                        :, self.non_variable_features
-                    ]
+                    cfc[:, self.non_variable_features] = cfc_o[:, self.non_variable_features]
 
                 y_cfc = self._predict(cfc)[0]
 
@@ -368,9 +356,7 @@ class TreeSACE(SACE):
         X_prc = self.X[cond]
         leave_id = self.dt.apply(X_prc)
 
-        X_prcm, node_indicator_m, leave_id_m = self.__get_mean_leaf_cf_infos(
-            X_prc, leave_id
-        )
+        X_prcm, node_indicator_m, leave_id_m = self.__get_mean_leaf_cf_infos(X_prc, leave_id)
         if not self.pooler:
             node_index_path_x, leave_id_x = self.__get_x_infos(x)
             feature_lower_upper_x = self.__get_feature_boundaries(x, node_index_path_x)
@@ -387,9 +373,7 @@ class TreeSACE(SACE):
             ]
 
             prcm = X_prcm[pr_idx].reshape(1, -1)
-            feature_lower_upper_pr = self.__get_feature_boundaries(
-                prcm, node_index_path_x
-            )
+            feature_lower_upper_pr = self.__get_feature_boundaries(prcm, node_index_path_x)
             nvf_changed = False
             for node_id in node_index_path_x:
                 f = self.feature[node_id]
@@ -405,9 +389,7 @@ class TreeSACE(SACE):
             if not nvf_changed:
                 if len(node_index_path_pr) < self.tree_depth:
                     pad = self.tree_depth - len(node_index_path_pr)
-                    node_index_path_pr = np.concatenate(
-                        [node_index_path_pr, np.array([-1] * pad)]
-                    )
+                    node_index_path_pr = np.concatenate([node_index_path_pr, np.array([-1] * pad)])
 
                 dist = hamming(node_index_path_x, node_index_path_pr)
 
@@ -477,9 +459,7 @@ class TreeSACE(SACE):
         # feature_path_x = self.feature[node_index_path_x][:-1]
         if len(node_index_path_x) < self.tree_depth:
             pad = self.tree_depth - len(node_index_path_x)
-            node_index_path_x = np.concatenate(
-                [node_index_path_x, np.array([-2] * pad)]
-            )
+            node_index_path_x = np.concatenate([node_index_path_x, np.array([-2] * pad)])
 
         leave_id_x = self.dt.apply(x)
 

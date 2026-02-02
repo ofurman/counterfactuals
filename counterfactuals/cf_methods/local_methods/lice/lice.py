@@ -42,9 +42,7 @@ class LiCE:
         model = pyo.ConcreteModel()
 
         model.input_encoding = pyo.Block()
-        inputs, distance = encode_input_change(
-            self.__dhandler, model.input_encoding, factual
-        )
+        inputs, distance = encode_input_change(self.__dhandler, model.input_encoding, factual)
 
         model.predictor = OmltBlock()
         onnx_model = onnx.load(self.__nn_path)
@@ -180,9 +178,7 @@ class LiCE:
                 opt.options["PoolGap"] = ce_relative_distance
         if ce_max_distance != np.inf:
             print("Limiting max distance by", ce_max_distance)
-            model.max_dist = pyo.Constraint(
-                expr=model.input_encoding.total_cost <= ce_max_distance
-            )
+            model.max_dist = pyo.Constraint(expr=model.input_encoding.total_cost <= ce_max_distance)
 
         if "cplex" in solver_name:
             opt.options["timelimit"] = time_limit
@@ -259,9 +255,7 @@ class LiCE:
             print(result)
         raise ValueError("Unexpected termination condition")
 
-    def __get_CEs(
-        self, n: int, model: pyo.Model, factual: np.ndarray, opt: pyo.SolverFactory
-    ):
+    def __get_CEs(self, n: int, model: pyo.Model, factual: np.ndarray, opt: pyo.SolverFactory):
         if n > 1:
             # this takes a lot of time for high n (~100 000)
             CEs = []
@@ -286,9 +280,7 @@ class LiCE:
                         pyo.Binary,
                     ]:
                         # value = np.round(value)
-                        value = np.round(
-                            value, -np.log10(self.MIO_EPS / 10).astype(int)
-                        )
+                        value = np.round(value, -np.log10(self.MIO_EPS / 10).astype(int))
                     var.value = value
                 self.__distances.append(self.__model.input_encoding.total_cost.value)
                 if hasattr(self.__model, "spn"):
@@ -304,9 +296,7 @@ class LiCE:
                         # round_cont_to=int(-np.log10(self.MIO_EPS)),
                         mio_eps=self.MIO_EPS,
                         spn=self.__spn,
-                        mio_spn=(
-                            self.__model.spn if hasattr(self.__model, "spn") else None
-                        ),
+                        mio_spn=(self.__model.spn if hasattr(self.__model, "spn") else None),
                     )
                 )
             return CEs

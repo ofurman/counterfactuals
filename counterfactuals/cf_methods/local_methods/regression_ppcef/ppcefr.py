@@ -49,19 +49,13 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
         dist = torch.linalg.norm(x_origin - x_param, axis=1)
 
         disc_logits = self.disc_model.forward(x_param)
-        disc_logits = (
-            disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
-        )
+        disc_logits = disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         context_target = (
-            context_target.reshape(-1)
-            if context_target.shape[0] == 1
-            else context_target
+            context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
         )
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
-        p_x_param_c_target = self.gen_model(
-            x_param, context=context_target.type(torch.float32)
-        )
+        p_x_param_c_target = self.gen_model(x_param, context=context_target.type(torch.float32))
         max_inner = torch.nn.functional.relu(delta - p_x_param_c_target)
 
         loss = dist + alpha * (loss_disc + max_inner)
@@ -139,9 +133,9 @@ class PPCEFR(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 optimizer.step()
 
                 for loss_name, loss in loss_components.items():
-                    loss_components_logging.setdefault(
-                        f"cf_search/{loss_name}", []
-                    ).append(loss.mean().detach().cpu().item())
+                    loss_components_logging.setdefault(f"cf_search/{loss_name}", []).append(
+                        loss.mean().detach().cpu().item()
+                    )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 prob_loss = loss_components["max_inner"].detach().cpu().mean().item()

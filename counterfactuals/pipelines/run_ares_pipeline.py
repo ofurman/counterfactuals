@@ -61,9 +61,7 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             data_encode[x] = label_encoder.fit_transform(data_encode[x])
             cols = label_encoder.classes_
         elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(
-                data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins
-            )
+            data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins)
             cols = data_encode[x].cat.categories
             dataset.bins_tree[x] = {}
         else:
@@ -268,8 +266,8 @@ def main(cfg: DictConfig) -> None:
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
 
         metrics = calculate_metrics(

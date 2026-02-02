@@ -34,9 +34,7 @@ class PreprocessingContext:
 
         if self.continuous_indices is None:
             all_indices = set(range(n_features))
-            self.continuous_indices = sorted(
-                list(all_indices - set(self.categorical_indices))
-            )
+            self.continuous_indices = sorted(list(all_indices - set(self.categorical_indices)))
 
 
 class PreprocessingStep(ABC):

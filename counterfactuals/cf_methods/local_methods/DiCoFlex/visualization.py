@@ -158,9 +158,7 @@ def visualize_flow_contours(
         label="Factual",
     )
     x_label = feature_names[0] if feature_names else "feature_0"
-    y_label = (
-        feature_names[1] if feature_names and len(feature_names) > 1 else "feature_1"
-    )
+    y_label = feature_names[1] if feature_names and len(feature_names) > 1 else "feature_1"
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title("DiCoFlex flow log-density contour")
@@ -186,9 +184,7 @@ def visualize_counterfactual_samples(
 
     total_points = factual_points.shape[0]
     if total_points > max_points:
-        idx = np.random.default_rng(0).choice(
-            total_points, size=max_points, replace=False
-        )
+        idx = np.random.default_rng(0).choice(total_points, size=max_points, replace=False)
         factual_points = factual_points[idx]
         counterfactual_points = counterfactual_points[idx]
 

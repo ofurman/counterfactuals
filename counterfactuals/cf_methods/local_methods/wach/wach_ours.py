@@ -43,13 +43,9 @@ class WACH_OURS(BaseCounterfactualMethod, LocalCounterfactualMixin):
         dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
 
         disc_logits = self.disc_model.forward(x_origin + delta)
-        disc_logits = (
-            disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
-        )
+        disc_logits = disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         context_target = (
-            context_target.reshape(-1)
-            if context_target.shape[0] == 1
-            else context_target
+            context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
         )
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
@@ -121,9 +117,9 @@ class WACH_OURS(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 optimizer.step()
 
                 for loss_name, loss in loss_components.items():
-                    loss_components_logging.setdefault(
-                        f"cf_search/{loss_name}", []
-                    ).append(loss.mean().detach().cpu().item())
+                    loss_components_logging.setdefault(f"cf_search/{loss_name}", []).append(
+                        loss.mean().detach().cpu().item()
+                    )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 epoch_pbar.set_description(f"Discriminator loss: {disc_loss:.4f}")

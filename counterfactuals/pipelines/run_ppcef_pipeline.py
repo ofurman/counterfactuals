@@ -129,9 +129,7 @@ def search_counterfactuals(
     )
 
     if cfg.counterfactuals_params.use_categorical:
-        Xs_cfs = apply_categorical_discretization(
-            dataset.categorical_features_lists, Xs_cfs
-        )
+        Xs_cfs = apply_categorical_discretization(dataset.categorical_features_lists, Xs_cfs)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
@@ -271,8 +269,8 @@ def main(cfg: DictConfig):
         )  # dequantization for log prob threshold
         dataset.X_test = dequantizer.transform(dataset.X_test)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
 
         Xs = dequantizer.inverse_transform(Xs)

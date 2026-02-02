@@ -107,7 +107,5 @@ class PreprocessingPipeline(PreprocessingStep):
 
     def __repr__(self) -> str:
         """String representation of the pipeline."""
-        steps_repr = "\n  ".join(
-            [f"{name}: {type(s).__name__}" for name, s in self.steps]
-        )
+        steps_repr = "\n  ".join([f"{name}: {type(s).__name__}" for name, s in self.steps])
         return f"PreprocessingPipeline(\n  {steps_repr}\n)"

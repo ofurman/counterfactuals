@@ -125,13 +125,11 @@ def interaction_matrix(
         return np.corrcoef(X.T) - np.eye(X.shape[1])
     elif interaction_type == "covariance":
         if estimator == "ML":
-            est = EmpiricalCovariance(store_precision=True, assume_centered=False).fit(
+            est = EmpiricalCovariance(store_precision=True, assume_centered=False).fit(X)
+        elif estimator == "MCD":
+            est = MinCovDet(store_precision=True, assume_centered=False, support_fraction=None).fit(
                 X
             )
-        elif estimator == "MCD":
-            est = MinCovDet(
-                store_precision=True, assume_centered=False, support_fraction=None
-            ).fit(X)
         cov = est.covariance_
         if np.linalg.matrix_rank(cov) != X.shape[1]:
             cov += 1e-6 * np.eye(X.shape[1])
@@ -163,16 +161,12 @@ class LimeEstimator:
         self.std_ = X.std(axis=0)
 
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == self.D_
-            else ["C" for d in range(self.D_)]
+            feature_types if len(feature_types) == self.D_ else ["C" for d in range(self.D_)]
         )
         self.feature_category_ = feature_categories
         self.feature_category_flatten_ = flatten(feature_categories)
         self.feature_ordered_ = [
-            d
-            for d in range(self.D_)
-            if feature_types[d] == "C" or feature_types[d] == "I"
+            d for d in range(self.D_) if feature_types[d] == "C" or feature_types[d] == "I"
         ]
         self.feature_binary_ = [
             d
@@ -184,15 +178,11 @@ class LimeEstimator:
         N_x = np.zeros([self.n_samples_, self.D_])
         for d in self.feature_ordered_:
             if self.feature_types_[d] == "I":
-                N_x[:, d] = np.random.normal(
-                    x[d], self.std_[d], self.n_samples_
-                ).astype(int)
+                N_x[:, d] = np.random.normal(x[d], self.std_[d], self.n_samples_).astype(int)
             else:
                 N_x[:, d] = np.random.normal(x[d], self.std_[d], self.n_samples_)
         for d in self.feature_binary_:
-            N_x[:, d] = (
-                np.random.uniform(0, 1, self.n_samples_) <= self.mean_[d]
-            ).astype(int)
+            N_x[:, d] = (np.random.uniform(0, 1, self.n_samples_) <= self.mean_[d]).astype(int)
         for G in self.feature_category_:
             cats = np.random.choice(G, self.n_samples_, p=self.mean_[G])
             for n, d in enumerate(cats):
@@ -201,9 +191,7 @@ class LimeEstimator:
         return N_x
 
     def getWeights(self, x, N_x):
-        distance = pairwise_distances(
-            N_x / self.std_, (x / self.std_).reshape(1, -1)
-        ).reshape(-1)
+        distance = pairwise_distances(N_x / self.std_, (x / self.std_).reshape(1, -1)).reshape(-1)
         kernel_width = np.sqrt(self.D_) * 0.75
         weights = np.sqrt(np.exp(-(distance**2) / kernel_width**2))
         return weights
@@ -351,9 +339,7 @@ class Cost:
         self.Y_ = Y
         self.N_, self.D_ = X.shape
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == self.D_
-            else ["C" for d in range(self.D_)]
+            feature_types if len(feature_types) == self.D_ else ["C" for d in range(self.D_)]
         )
         self.feature_categories_ = feature_categories
         self.feature_constraints_ = (
@@ -365,9 +351,7 @@ class Cost:
 
         self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
         self.steps_ = [
-            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
-            if self.feature_types_[d] == "C"
-            else 1
+            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates if self.feature_types_[d] == "C" else 1
             for d in range(self.D_)
         ]
         self.grids_ = [
@@ -457,9 +441,7 @@ class Action:
             else ["x_{}".format(d) for d in range(len(x))]
         )
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == len(x)
-            else ["C" for d in range(len(x))]
+            feature_types if len(feature_types) == len(x) else ["C" for d in range(len(x))]
         )
         self.feature_categories_ = feature_categories
         self.print_instance = print_instance
@@ -528,9 +510,7 @@ class Action:
                     continue
                 cat_name, nxt = self.feature_names_[d].split(":")
                 cat = self.feature_categories_[g]
-                prv = self.feature_names_[cat[np.where(self.x_[cat])[0][0]]].split(":")[
-                    1
-                ]
+                prv = self.feature_names_[cat[np.where(self.x_[cat])[0][0]]].split(":")[1]
                 s += "\t{} {}: {} -> {}\n".format(num, cat_name, prv, nxt)
 
         if len(self.scores_) > 0:
@@ -582,9 +562,7 @@ class ActionCandidates:
             else ["x_{}".format(d) for d in range(self.D_)]
         )
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == self.D_
-            else ["C" for d in range(self.D_)]
+            feature_types if len(feature_types) == self.D_ else ["C" for d in range(self.D_)]
         )
         self.feature_categories_ = feature_categories
         self.feature_constraints_ = (
@@ -597,9 +575,7 @@ class ActionCandidates:
 
         self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
         self.steps_ = [
-            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
-            if self.feature_types_[d] == "C"
-            else 1
+            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates if self.feature_types_[d] == "C" else 1
             for d in range(self.D_)
         ]
         self.grids_ = [
@@ -662,9 +638,7 @@ class ActionCandidates:
                 A_d = np.arange(start, stop, self.steps_[d]) - x[d]
                 A_d = np.extract(abs(A_d) > self.tol_, A_d)
                 if len(A_d) > self.max_candidates:
-                    A_d = A_d[
-                        np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-                    ]
+                    A_d = A_d[np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)]
                 A_d = np.append(A_d, 0)
                 self.actions_.append(A_d)
         return self
@@ -751,9 +725,7 @@ class ActionCandidates:
                 A_d = np.arange(start, stop, self.steps_[d])
                 A_d = np.extract(abs(A_d) > self.tol_, A_d)
                 if len(A_d) > self.max_candidates:
-                    A_d = A_d[
-                        np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-                    ]
+                    A_d = A_d[np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)]
                 A_d = np.append(A_d, 0)
                 self.actions_.append(A_d)
         return self
@@ -767,9 +739,7 @@ class ActionCandidates:
                     self.Q_ = [
                         None
                         if self.feature_constraints_[d] == "FIX"
-                        else CumulativeDistributionFunction(
-                            self.grids_[d], self.X_[:, d]
-                        )
+                        else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
                         for d in range(self.D_)
                     ]
                 for d in range(self.D_):
@@ -925,9 +895,7 @@ class ForestActionCandidates:
             else ["x_{}".format(d) for d in range(self.D_)]
         )
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == self.D_
-            else ["C" for d in range(self.D_)]
+            feature_types if len(feature_types) == self.D_ else ["C" for d in range(self.D_)]
         )
         self.feature_categories_ = feature_categories
         self.feature_constraints_ = (
@@ -952,9 +920,7 @@ class ForestActionCandidates:
         self.X_lb_, self.X_ub_ = X.min(axis=0), X.max(axis=0)
         self.max_candidates = max_candidates
         self.steps_ = [
-            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates
-            if self.feature_types_[d] == "C"
-            else 1
+            (self.X_ub_[d] - self.X_lb_[d]) / max_candidates if self.feature_types_[d] == "C" else 1
             for d in range(self.D_)
         ]
         self.grids_ = [
@@ -1036,9 +1002,7 @@ class ForestActionCandidates:
                     A_d = np.arange(start, stop, self.steps_[d]) - x[d]
                     A_d = np.extract(abs(A_d) > self.tol_, A_d)
                     if len(A_d) > self.max_candidates:
-                        A_d = A_d[
-                            np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-                        ]
+                        A_d = A_d[np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)]
                     A_d = np.append(A_d, 0)
                 self.actions_.append(A_d)
         self = self.setForestIntervals(x)
@@ -1156,9 +1120,7 @@ class ForestActionCandidates:
                     A_d = np.arange(start, stop, self.steps_[d])
                     A_d = np.extract(abs(A_d) > self.tol_, A_d)
                     if len(A_d) > self.max_candidates:
-                        A_d = A_d[
-                            np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)
-                        ]
+                        A_d = A_d[np.linspace(0, len(A_d) - 1, self.max_candidates, dtype=int)]
                     A_d = np.append(A_d, 0)
                 self.actions_.append(A_d)
         return self
@@ -1172,9 +1134,7 @@ class ForestActionCandidates:
                     self.Q_ = [
                         None
                         if self.feature_constraints_[d] == "FIX"
-                        else CumulativeDistributionFunction(
-                            self.grids_[d], self.X_[:, d]
-                        )
+                        else CumulativeDistributionFunction(self.grids_[d], self.X_[:, d])
                         for d in range(self.D_)
                     ]
                 for d in range(self.D_):
@@ -1265,8 +1225,7 @@ class ForestActionCandidates:
                     I_t_l.append(
                         list(
                             (
-                                (xa > self.regions_[t][l][d][0])
-                                & (xa <= self.regions_[t][l][d][1])
+                                (xa > self.regions_[t][l][d][0]) & (xa <= self.regions_[t][l][d][1])
                             ).astype(int)
                         )
                     )
@@ -1486,14 +1445,7 @@ FEATURE_TYPES = {
     "c": ["I"] * 5 + ["B"] * 9,
     "a": ["I"] * 6 + ["B"] * 102,
     "d": ["I"] + ["C"] * 6 + ["I"],
-    "n": ["I"] * 3
-    + ["C"]
-    + ["I"] * 4
-    + ["C"] * 2
-    + ["I"] * 2
-    + ["C"] * 3
-    + ["I"]
-    + ["B"],
+    "n": ["I"] * 3 + ["C"] + ["I"] * 4 + ["C"] * 2 + ["I"] * 2 + ["C"] * 3 + ["I"] + ["B"],
     "s": ["I"] * 6 + ["B"] * 8 + ["I"] * 7 + ["B"] * 27,
     "b": ["I"] * 6 + ["B"] * 29,
     "i": ["I"] * 5 + ["B"] + ["I"] * 5 + ["B", "I", "B"] + ["I"] * 9 + ["B"] * 21,
@@ -1563,12 +1515,7 @@ FEATURE_CONSTRAINTS = {
     + ["FIX"] * 6
     + [""] * 9
     + ["FIX"] * 3,
-    "t": ["FIX", "", "FIX", "FIX"]
-    + [""] * 3
-    + ["FIX"] * 3
-    + [""]
-    + ["FIX"] * 4
-    + [""] * 12,
+    "t": ["FIX", "", "FIX", "FIX"] + [""] * 3 + ["FIX"] * 3 + [""] + ["FIX"] * 4 + [""] * 12,
 }
 
 

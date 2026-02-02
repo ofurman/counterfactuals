@@ -77,14 +77,10 @@ def search_counterfactuals(
 
     wrapped_model = CustomMLModel(disc_model, custom_dataset)
 
-    hyperparams = OmegaConf.to_container(
-        cfg.counterfactuals_params.hyperparams, resolve=True
-    )
+    hyperparams = OmegaConf.to_container(cfg.counterfactuals_params.hyperparams, resolve=True)
 
     input_size = dataset.X_train.shape[1]
-    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"][
-        "layers"
-    ]
+    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"]["layers"]
 
     exp = CCHVAE(wrapped_model, hyperparams)
 
@@ -120,9 +116,7 @@ def get_log_prob_threshold(
     log_prob_quantile: float,
 ) -> float:
     logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=batch_size, shuffle=False
-    )
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=batch_size, shuffle=False)
     log_prob_threshold = torch.quantile(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         log_prob_quantile,

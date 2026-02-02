@@ -198,9 +198,7 @@ def main(cfg: DictConfig) -> None:
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_search_time
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-    df_metrics.to_csv(
-        os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
-    )
+    df_metrics.to_csv(os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False)
 
 
 if __name__ == "__main__":

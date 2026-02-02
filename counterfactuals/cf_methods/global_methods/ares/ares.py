@@ -133,9 +133,7 @@ class AReS:
         self.features_tree_dropped = copy.deepcopy(self.features_tree)
         for feature in self.dropped_features:
             del self.features_tree_dropped[feature]
-        self.features = (
-            self.dataset.features
-        )  # list of feature values (includes class label)
+        self.features = self.dataset.features  # list of feature values (includes class label)
         # list of categorical features (not values)
         # if a continuous feature was binned before model training, then it's treated as categorical (though ordinal)
         self.categorical_features = self.dataset.categorical_features
@@ -178,9 +176,7 @@ class AReS:
         self.any_ordinal = self.ordinal_categories_idx.any()
 
         # Drop features
-        self.X_drop = (
-            self.X.copy()
-        )  # self.X_drop is used just for apriori itemset generation
+        self.X_drop = self.X.copy()  # self.X_drop is used just for apriori itemset generation
         for feature in self.dropped_features:
             print("Dropping Feature:", feature)
             for feature_value in self.features_tree[feature]:
@@ -199,9 +195,7 @@ class AReS:
         self.U4 = self.n_bins * self.e1 * self.e2  # featurechange
 
         # Assign features to feature values, used when computing if rules are valid
-        self.feature_values_tree = create_feature_values_tree(
-            self.features_tree, use_values=False
-        )
+        self.feature_values_tree = create_feature_values_tree(self.features_tree, use_values=False)
 
         # The following are updated using
         # self.compute_SD_RL and self.compute_V
@@ -321,21 +315,13 @@ class AReS:
 
         # Update affected inputs
         self.X_aff_original = (
-            self.X_original.iloc[(self.preds == 0) & self.SD.sub_idx]
-            .copy()
-            .reset_index(drop=True)
+            self.X_original.iloc[(self.preds == 0) & self.SD.sub_idx].copy().reset_index(drop=True)
         )  # original data
         self.X_aff = (
-            self.X.iloc[(self.preds == 0) & self.SD.sub_idx]
-            .copy()
-            .reset_index(drop=True)
+            self.X.iloc[(self.preds == 0) & self.SD.sub_idx].copy().reset_index(drop=True)
         )  # data with continuous variables binned
 
-        print(
-            "SD and RL Computed with Lengths {} and {}".format(
-                self.SD.length, self.RL.length
-            )
-        )
+        print("SD and RL Computed with Lengths {} and {}".format(self.SD.length, self.RL.length))
 
         if save_copy:
             print("Saving Copies of SD and RL as SD_copy and RL_copy")
@@ -375,9 +361,7 @@ class AReS:
             print("Saving Copy of Ground Set as V_copy")
             self.V_copy = copy.deepcopy(self.V)
 
-    def evaluate_groundset(
-        self, lams, r=None, save_mode=0, disable_tqdm=False, plot_accuracy=True
-    ):
+    def evaluate_groundset(self, lams, r=None, save_mode=0, disable_tqdm=False, plot_accuracy=True):
         self.V.evaluate_triples(
             self,
             r=r,
@@ -490,9 +474,7 @@ class AReS:
                         f_add = self.f(self.V_opt, lams, bounds, idx=R_idx)
                         if f_add > f_thresh:
                             if print_updates:
-                                print(
-                                    "Adding Element ({} >= {})".format(f_add, f_thresh)
-                                )
+                                print("Adding Element ({} >= {})".format(f_add, f_thresh))
                             if print_terms:
                                 self.f(
                                     self.V_opt,
@@ -523,11 +505,7 @@ class AReS:
                         f_exchange = self.f(self.V_opt, lams, bounds, idx=R_idx)
                         if f_exchange > f_thresh:
                             if print_updates:
-                                print(
-                                    "Exchanging Element ({} >= {})".format(
-                                        f_exchange, f_thresh
-                                    )
-                                )
+                                print("Exchanging Element ({} >= {})".format(f_exchange, f_thresh))
                             if print_terms:
                                 self.f(
                                     self.V_opt,
@@ -603,9 +581,7 @@ class AReS:
     ):  # , plot_f=False):
         # tlrs = two level recourse set
         if singleton and print_terms:
-            raise ValueError(
-                "Cannot use parameters singleton and print_terms simultaneously"
-            )
+            raise ValueError("Cannot use parameters singleton and print_terms simultaneously")
         if idx is None:
             idx = np.ones(tlrs.correct_matrix.shape[0], dtype=bool)
         elif not idx.any():
@@ -630,9 +606,7 @@ class AReS:
         if print_terms:
             n = tlrs.correct_matrix.shape[1]
             print(
-                "Accuracy: {}/{} = {}%".format(
-                    int(correct * n / 100), n, round(correct, 2)
-                ),
+                "Accuracy: {}/{} = {}%".format(int(correct * n / 100), n, round(correct, 2)),
                 "\nAverage Cost: {}".format(round(cost, 4)),
             )
             # "{}/{}".format(round(np.average(objectives[objectives!=0]),2), self.lams[1]*self.U))
@@ -719,18 +693,14 @@ class Apriori:
         self.affected_subgroup = affected_subgroup
         self.feature_values_tree = feature_values_tree
         if self.feature_values_tree is None:
-            self.feature_values_tree = create_feature_values_tree(
-                x.columns.values, use_values=True
-            )
+            self.feature_values_tree = create_feature_values_tree(x.columns.values, use_values=True)
 
         if (self.apriori_threshold is not None) ^ (self.affected_subgroup is None):
             raise ValueError(
                 "Please specify either an affected subgroup or an apriori threshold (and not both)"
             )
 
-        if (self.affected_subgroup is not None) and (
-            self.apriori_threshold is not None
-        ):
+        if (self.affected_subgroup is not None) and (self.apriori_threshold is not None):
             # Store indices of affected subgroup matches
             self.sub_idx = (self.x[affected_subgroup] == 1).values
             # Drop affected subgroup's feature so
@@ -844,9 +814,7 @@ class TwoLevelRecourseSet:
         self.featurecost = None
         self.featurechange = None
 
-    def generate_triples(
-        self, SD, RL, max_width, RL_reduction=False, then_generation=None
-    ):
+    def generate_triples(self, SD, RL, max_width, RL_reduction=False, then_generation=None):
         """
         Stores SD, RL, triples and length
         """
@@ -864,9 +832,7 @@ class TwoLevelRecourseSet:
         disable_tqdm = False if self.SD.length > 1 else True
         for i in tqdm(range(self.SD.length), disable=disable_tqdm):
             for j in tqdm(range(self.RL.length), disable=(not disable_tqdm)):
-                no_matching_features = self.SD.features[i].isdisjoint(
-                    self.RL.features[j]
-                )
+                no_matching_features = self.SD.features[i].isdisjoint(self.RL.features[j])
                 width_constraint = (self.SD.widths[i] + self.RL.widths[j]) <= max_width
                 if width_constraint and no_matching_features:
                     width = self.RL.widths[j]
@@ -908,9 +874,7 @@ class TwoLevelRecourseSet:
                                 if then_generation == np.inf
                                 else self.RL.features[j] == RL2_features[k]
                             )
-                            identical_feature_values = (
-                                self.RL.values[j] == RL2_values[k]
-                            )
+                            identical_feature_values = self.RL.values[j] == RL2_values[k]
                             if identical_features and not identical_feature_values:
                                 rule = (
                                     self.SD.values[i],
@@ -920,9 +884,7 @@ class TwoLevelRecourseSet:
                                 self.triples.add(rule)
         self.length = len(self.triples)
 
-    def evaluate_triples(
-        self, ares, r=None, save_mode=0, disable_tqdm=False, plot_accuracy=True
-    ):
+    def evaluate_triples(self, ares, r=None, save_mode=0, disable_tqdm=False, plot_accuracy=True):
         """
         Implement objective function parameter
         Method for evaluation of two level recourse sets. This needs a massive refactor with:
@@ -980,9 +942,7 @@ class TwoLevelRecourseSet:
                 self.max_idxs[i] = True
             self.correct_max[i] = cor_max
 
-            self.correct_cumulative[i] = np.maximum(
-                cor_cumulative, self.correct_matrix[i]
-            )
+            self.correct_cumulative[i] = np.maximum(cor_cumulative, self.correct_matrix[i])
             if self.correct_cumulative[i].sum() > cor_cumulative.sum():
                 self.cumulative_idxs[i] = True
             cor_cumulative = self.correct_cumulative[i]
@@ -1078,21 +1038,15 @@ class TwoLevelRecourseSet:
         # currently the features are not guaranteed to be in the same order
         # hence the search through inner_ifs (would also make reading triples easier)
         for then in thens:
-            if (
-                then not in triple[1]
-            ):  # retain r[1] as opposed to inner-ifs for fast set retrieval
+            if then not in triple[1]:  # retain r[1] as opposed to inner-ifs for fast set retrieval
                 # continuous variables
                 then_feature = ares.feature_values_tree[then]
                 for inner_if in inner_ifs:
                     if ares.feature_values_tree[inner_if] == then_feature:
                         if then in ares.binned_features_continuous:
-                            then_idx = ares.features.index(
-                                ares.feature_values_tree[then]
-                            )
+                            then_idx = ares.features.index(ares.feature_values_tree[then])
                             d = ares.bin_mids[then] - ares.bin_mids[inner_if]
-                            featurechange += np.rint(
-                                abs(d * ares.feature_costs_vector[then_idx])
-                            )
+                            featurechange += np.rint(abs(d * ares.feature_costs_vector[then_idx]))
                             x_aff[then_feature] += d
                         else:
                             then_idx = ares.features.index(then)

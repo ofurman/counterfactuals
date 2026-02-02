@@ -270,9 +270,7 @@ class TsPooler(Pooler):
                 X_p.append(x.flatten())
         else:
             for x in X:
-                x_v = view_as_windows(
-                    x.reshape(self.w), window_shape=self.w1, step=self.w1
-                )
+                x_v = view_as_windows(x.reshape(self.w), window_shape=self.w1, step=self.w1)
                 x_p = np.zeros(len(x_v))
                 for i, v in enumerate(x_v):
                     x_p[i] = agg(v)

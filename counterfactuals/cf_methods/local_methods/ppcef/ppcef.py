@@ -64,13 +64,9 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 )
 
         disc_logits = self.disc_model.forward(cf)
-        disc_logits = (
-            disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
-        )
+        disc_logits = disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         context_target = (
-            context_target.reshape(-1)
-            if context_target.shape[0] == 1
-            else context_target
+            context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
         )
         loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
 
@@ -78,9 +74,7 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             x_origin + delta, context=context_target.type(torch.float32)
         )
 
-        max_inner = torch.nn.functional.relu(
-            log_prob_threshold * 0.5 - p_x_param_c_target + 20
-        )
+        max_inner = torch.nn.functional.relu(log_prob_threshold * 0.5 - p_x_param_c_target + 20)
 
         # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)
 
@@ -92,9 +86,7 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             "loss_disc": loss_disc,
         }
 
-    def compute_regularization_loss(
-        self, cf: torch.Tensor, categorical_intervals
-    ) -> torch.Tensor:
+    def compute_regularization_loss(self, cf: torch.Tensor, categorical_intervals) -> torch.Tensor:
         # deprecated, categorical_intervals follow different implementation now.
         regularization_loss = 0.0
         for v in categorical_intervals:
@@ -171,9 +163,9 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 optimizer.step()
 
                 for loss_name, loss in loss_components.items():
-                    loss_components_logging.setdefault(
-                        f"cf_search/{loss_name}", []
-                    ).append(loss.mean().detach().cpu().item())
+                    loss_components_logging.setdefault(f"cf_search/{loss_name}", []).append(
+                        loss.mean().detach().cpu().item()
+                    )
 
                 disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
                 prob_loss = loss_components["max_inner"].detach().cpu().mean().item()

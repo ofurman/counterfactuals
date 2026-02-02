@@ -43,9 +43,7 @@ class RPPCEF(BaseCounterfactualMethod, GroupCounterfactualMixin):
 
         self.actionable_features = actionable_features
         # initialize delta after we know device/other attributes
-        self.delta = self._init_cf_method(
-            cf_method_type, K, init_cf_method_from_kmeans, X
-        )
+        self.delta = self._init_cf_method(cf_method_type, K, init_cf_method_from_kmeans, X)
         self.loss_components_logs = {}
 
     def _init_cf_method(
@@ -110,9 +108,7 @@ class RPPCEF(BaseCounterfactualMethod, GroupCounterfactualMixin):
         dist = torch.linalg.vector_norm(delta(), dim=1, ord=1)
 
         disc_logits = self.disc_model(x_origin + delta())
-        disc_logits = (
-            disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
-        )
+        disc_logits = disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         context_target = (
             context_target.reshape(-1).float()
             if context_target.shape[0] == 1

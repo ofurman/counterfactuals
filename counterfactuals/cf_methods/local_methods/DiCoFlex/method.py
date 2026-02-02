@@ -181,9 +181,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             flat_x_orig.append(np.repeat(X_batch, k, axis=0))
             flat_y_target.append(np.repeat(y_target_batch, k, axis=0))
             flat_y_origin.append(np.repeat(y_origin_batch, k, axis=0))
-            group_ids.extend(
-                np.repeat(np.arange(global_idx, global_idx + batch_size_current), k)
-            )
+            group_ids.extend(np.repeat(np.arange(global_idx, global_idx + batch_size_current), k))
             global_idx += batch_size_current
 
         return (
@@ -200,17 +198,15 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def _build_context(self, X: np.ndarray, y_target: np.ndarray) -> np.ndarray:
         mask = self.mask_vectors[self.params.mask_index]
         mask_matrix = np.repeat(mask[None, :], repeats=len(X), axis=0)
-        p_value_column = np.full(
-            (len(X), 1), fill_value=self.params.p_value, dtype=np.float32
-        )
+        p_value_column = np.full((len(X), 1), fill_value=self.params.p_value, dtype=np.float32)
         class_one_hot = np.zeros((len(X), len(self.class_to_index)), dtype=np.float32)
         target_indices = np.vectorize(self.class_to_index.get, otypes=[int])(
             y_target.reshape(-1).astype(int)
         )
         class_one_hot[np.arange(len(X)), target_indices] = 1.0
-        return np.concatenate(
-            [X, class_one_hot, mask_matrix, p_value_column], axis=1
-        ).astype(np.float32)
+        return np.concatenate([X, class_one_hot, mask_matrix, p_value_column], axis=1).astype(
+            np.float32
+        )
 
     def _select_topk_candidates(
         self,
@@ -221,9 +217,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         batch_size, num_samples, _ = candidates.shape
         flat_candidates = candidates.reshape(batch_size * num_samples, -1)
-        probs = self.disc_model.predict_proba(flat_candidates).reshape(
-            batch_size, num_samples, -1
-        )
+        probs = self.disc_model.predict_proba(flat_candidates).reshape(batch_size, num_samples, -1)
         num_classes = probs.shape[-1]
         target_indices = np.vectorize(self.class_to_index.get, otypes=[int])(
             y_target_batch.reshape(-1).astype(int)
@@ -231,9 +225,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         if np.any(target_indices >= num_classes):
             raise ValueError("Target class index exceeds discriminator outputs.")
         expanded_targets = np.repeat(target_indices[:, None], num_samples, axis=1)
-        target_probs = np.take_along_axis(
-            probs, expanded_targets[..., None], axis=2
-        ).squeeze(2)
+        target_probs = np.take_along_axis(probs, expanded_targets[..., None], axis=2).squeeze(2)
         predicted_class = np.argmax(probs, axis=2)
         valid_mask_matrix = predicted_class == target_indices[:, None]
 

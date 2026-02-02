@@ -149,9 +149,7 @@ class GLOBE_CE:
         # or we don't (non-ordinal categories)
         self.ordinal_categories_idx = ~self.non_ordinal_categories_idx
         self.feature_costs_vector_no_ordinal = copy.deepcopy(self.feature_costs_vector)
-        self.feature_costs_vector_no_ordinal[self.ordinal_categories_idx] = (
-            0.5  # for sampling
-        )
+        self.feature_costs_vector_no_ordinal[self.ordinal_categories_idx] = 0.5  # for sampling
         self.any_non_ordinal = self.non_ordinal_categories_idx.any()
         self.any_ordinal = self.ordinal_categories_idx.any()
         self.n_categorical = sum(self.categorical_idx)
@@ -185,9 +183,7 @@ class GLOBE_CE:
                 i += 1
             else:
                 n = len(self.features_tree[feature])
-                ret[
-                    np.arange(ret.shape[0]), i + np.argmax(cf[:, i : i + n], axis=1)
-                ] = 1
+                ret[np.arange(ret.shape[0]), i + np.argmax(cf[:, i : i + n], axis=1)] = 1
                 i += n
         return ret
 
@@ -241,11 +237,7 @@ class GLOBE_CE:
 
         # Evaluate CEs
         cost = np.zeros(x_aff.shape[0])
-        ces = (
-            self.round_categorical(x_aff + delta)
-            if self.n_categorical
-            else x_aff + delta
-        )
+        ces = self.round_categorical(x_aff + delta) if self.n_categorical else x_aff + delta
         if self.normalise:
             correct = self.predict_fn((ces - self.means) / self.stds)
         else:
@@ -254,9 +246,7 @@ class GLOBE_CE:
             if self.n_categorical:
                 cost = self.compute_costs(counterfactuals=ces, x_aff=x_aff)
             else:
-                cost = np.linalg.norm(
-                    delta * self.feature_costs_vector, ord=self.p
-                ).item()
+                cost = np.linalg.norm(delta * self.feature_costs_vector, ord=self.p).item()
         else:
             if correct.any():
                 if self.n_categorical:
@@ -310,9 +300,7 @@ class GLOBE_CE:
                     x_f = x_aff[:, i : i + n]
                     if r_idx.any() and x_f[:, r_idx].any():
                         use_not = sum(r_idx) > len(r_idx) / 2
-                        use_bracket = (
-                            sum(~r_idx) > 1 if use_not else False
-                        )  # sum(r_idx) > 1
+                        use_bracket = sum(~r_idx) > 1 if use_not else False  # sum(r_idx) > 1
                         if_vals = [
                             u.split("= ")[-1]
                             for (u, v) in zip(feature_values, r_idx)
@@ -370,9 +358,7 @@ class GLOBE_CE:
                         delta_f += 1
                         delta_f_max += 1
                     delta_f[i_max] = 0
-                    k_f = 1 / (
-                        delta_f_max - delta_f
-                    )  # Compute lower_bounds_k for this feature
+                    k_f = 1 / (delta_f_max - delta_f)  # Compute lower_bounds_k for this feature
                     k_f[i_max] = np.nan  # Resolve division by zero prevention code
                     # translation is 0 (almost certainly because that feature was dropped)
                     ks[i : i + n] = k_f
@@ -470,9 +456,7 @@ class GLOBE_CE:
 
     def cluster_continuous(self, costs, n_bins, thresh=np.inf, return_bins=False):
         """Clusters the continuous features according to the costs, returns scalar_idxs"""
-        min_costs, min_costs_idxs = self.min_scalar_costs(
-            costs, return_idxs=True, remove_nan=True
-        )
+        min_costs, min_costs_idxs = self.min_scalar_costs(costs, return_idxs=True, remove_nan=True)
         min_costs = min_costs[min_costs <= thresh]
         min_costs_idxs = min_costs_idxs[min_costs <= thresh]
         bins = pd.cut(min_costs, bins=n_bins, precision=32)
@@ -494,9 +478,7 @@ class GLOBE_CE:
             if (costs[i] <= thresh).any():
                 max_costs[i] = costs[i][costs[i] <= thresh].max()
 
-        bins = pd.cut(
-            max_costs, bins=n_bins, precision=32
-        )  # can replace with min_costs
+        bins = pd.cut(max_costs, bins=n_bins, precision=32)  # can replace with min_costs
         code, count = np.unique(bins.codes, return_counts=True)
         rights = bins.categories.values.right
 
@@ -554,9 +536,7 @@ class GLOBE_CE:
                 scalar_idx = int(scalar_idx)
                 scalar_cost = costs[scalar_idx].copy()
                 scalar_cost[scalar_cost == 0] = np.inf
-                x_idx = (
-                    scalar_cost < max_scalar_costs
-                )  # input indexes of new or better costs
+                x_idx = scalar_cost < max_scalar_costs  # input indexes of new or better costs
                 if x_idx.any():
                     max_scalar_costs[x_idx] = scalar_cost[x_idx]
                     new_cor = cor + x_idx.sum()
@@ -575,9 +555,7 @@ class GLOBE_CE:
                             round(new_cor / x_aff.shape[0] * 100, 2),
                             round(costs_c[i], 2),
                         )
-                        if (
-                            not latex_table
-                        ):  # latex_table assumes purely categorical delta
+                        if not latex_table:  # latex_table assumes purely categorical delta
                             print(
                                 "\033[1m\n New Inputs:\t+{}%\t".format(new_accs)
                                 + "New Inputs Cost:\t{})".format(new_costs)
@@ -601,9 +579,7 @@ class GLOBE_CE:
                                 )
                             else:
                                 if latex_table:
-                                    if (rule not in last_rules) or (
-                                        r not in last_rules[rule]
-                                    ):
+                                    if (rule not in last_rules) or (r not in last_rules[rule]):
                                         prefix = "\n" if multiple_rules else ""
                                         multiple_rules = True
                                         print(prefix + rule + ": " + r)
@@ -625,9 +601,7 @@ class GLOBE_CE:
                     cor = new_cor
                     avg_cost = max_scalar_costs[max_scalar_costs != np.inf].mean()
         if print_outputs and not latex_table:
-            print(
-                "\n\033[1mCoverage:\t{}%".format(round(cor / x_aff.shape[0] * 100, 4))
-            )
+            print("\n\033[1mCoverage:\t{}%".format(round(cor / x_aff.shape[0] * 100, 4)))
             print("Average Cost:\t{}".format(round(avg_cost, 4)))
         if vector:
             return costs_c, corrects_c
@@ -645,11 +619,7 @@ class GLOBE_CE:
                 # query if accuracies of scaled deltas are monotonic (not necessarily true)
                 # assert not (correctsc[:, i]-np.sort(correctsc[:, i])).any()
         n = np.sum(min_costs == 0)
-        print(
-            "\033[1mUnable to find recourse for {}/{} inputs\033[0m".format(
-                n, costs.shape[1]
-            )
-        )
+        print("\033[1mUnable to find recourse for {}/{} inputs\033[0m".format(n, costs.shape[1]))
         if remove_nan:
             i = ~np.isnan(min_costs_idxs)
             min_costs, min_costs_idxs = min_costs[i], min_costs_idxs[i]
@@ -804,9 +774,7 @@ class GLOBE_CE:
             if self.monotonicity is not None:
                 delta *= self.monotonicity
             if self.n_continuous:
-                delta[self.continuous_idx] *= (
-                    np.random.choice(2, self.n_continuous) * 2 - 1
-                )
+                delta[self.continuous_idx] *= np.random.choice(2, self.n_continuous) * 2 - 1
             delta = (
                 delta
                 / np.linalg.norm(delta, ord=1)
@@ -816,13 +784,9 @@ class GLOBE_CE:
 
         elif scheme == "features":  # n, highest feature, random,  (m, s)
             delta = np.zeros(self.x_dim)
-            features_scoring = self.model.get_booster().get_score(
-                importance_type="gain"
-            )
+            features_scoring = self.model.get_booster().get_score(importance_type="gain")
             scores = np.array(list(features_scoring.values()))
-            idxs = np.random.choice(
-                len(scores), size=n_features, p=scores / sum(scores)
-            )
+            idxs = np.random.choice(len(scores), size=n_features, p=scores / sum(scores))
             f_idxs = np.array([int(i.split("f")[-1]) for i in features_scoring.keys()])
             delta[f_idxs[idxs]] = np.random.rand(n_features) ** sparsity_power
             if self.monotonicity is not None:
@@ -862,17 +826,11 @@ class GLOBE_CE:
             else:
                 feature_values = self.features_tree[r]
                 r_split = rules[r].split()
-                ifs = [
-                    i.strip(",").strip("(").strip(")")
-                    for i in r_split
-                    if i not in exclude
-                ]
+                ifs = [i.strip(",").strip("(").strip(")") for i in r_split if i not in exclude]
                 then, ifs = ifs[-1], ifs[:-1]
                 if ifs[0] == "Not":
                     idxs = [
-                        self.feature_values.index(i)
-                        for i in feature_values
-                        if i.split()[-1] in ifs
+                        self.feature_values.index(i) for i in feature_values if i.split()[-1] in ifs
                     ]
                 else:
                     idxs = [

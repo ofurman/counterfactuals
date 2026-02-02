@@ -194,9 +194,7 @@ def get_log_prob_threshold(
     log_prob_quantile: float,
 ) -> float:
     logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=batch_size, shuffle=False
-    )
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=batch_size, shuffle=False)
     log_prob_threshold = torch.quantile(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         log_prob_quantile,

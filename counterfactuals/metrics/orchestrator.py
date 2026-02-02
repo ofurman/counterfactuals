@@ -58,9 +58,7 @@ class MetricsOrchestrator:
         self.y_train = convert_to_numpy(y_train)
         self.X_test = convert_to_numpy(X_test)
         self.y_test = convert_to_numpy(y_test)
-        self.cf_group_ids = (
-            None if cf_group_ids is None else convert_to_numpy(cf_group_ids)
-        )
+        self.cf_group_ids = None if cf_group_ids is None else convert_to_numpy(cf_group_ids)
 
         # Validate all inputs once at initialization
         validate_metric_inputs(
@@ -160,9 +158,7 @@ class MetricsOrchestrator:
             # Check if all required inputs are available
             missing = [inp for inp in required_inputs if inp not in available_inputs]
             if missing:
-                logger.warning(
-                    f"Skipping metric '{metric_name}': missing inputs {missing}"
-                )
+                logger.warning(f"Skipping metric '{metric_name}': missing inputs {missing}")
                 continue
 
             # Prepare kwargs for this metric

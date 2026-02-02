@@ -106,9 +106,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
                 with torch.no_grad():
                     for examples, labels in test_loader:
                         outputs = self.forward(examples)
-                        test_loss = criterion(
-                            outputs, labels.view(outputs.shape).float()
-                        )
+                        test_loss = criterion(outputs, labels.view(outputs.shape).float())
                         test_losses.append(test_loss.item())
 
                 avg_test_loss = np.mean(test_losses)
@@ -129,9 +127,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
                     f"Test Loss: {avg_test_loss:.4f}, Patience: {patience_counter}"
                 )
             else:
-                pbar.set_description(
-                    f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}"
-                )
+                pbar.set_description(f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}")
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         """
@@ -161,6 +157,4 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
         Raises:
             NotImplementedError: This method is not applicable for regression
         """
-        raise NotImplementedError(
-            "predict_proba is not applicable for regression models"
-        )
+        raise NotImplementedError("predict_proba is not applicable for regression models")

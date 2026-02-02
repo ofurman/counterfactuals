@@ -127,9 +127,7 @@ class GLANCE:
         if isinstance(query_instance, pd.DataFrame):
             query_instance = query_instance.values
 
-        assert isinstance(query_instance, np.ndarray), (
-            "Query instance must be a numpy array"
-        )
+        assert isinstance(query_instance, np.ndarray), "Query instance must be a numpy array"
 
         if len(query_instance.shape) == 2:
             query_instance = query_instance.squeeze(0)
@@ -214,9 +212,7 @@ class GLANCE:
         # Add the new cluster
         actions[(tuple(new_centroid), new_label)] = merged_actions
 
-    def __calculate_average_vector_dissimilarity(
-        self, set1: set[list], set2: set[list]
-    ) -> float:
+    def __calculate_average_vector_dissimilarity(self, set1: set[list], set2: set[list]) -> float:
         avg_vect_set1 = np.mean([np.array(action) for action in set1], axis=0)
         avg_vect_set2 = np.mean([np.array(action) for action in set2], axis=0)
 
@@ -226,9 +222,7 @@ class GLANCE:
 
         return 1 - cosine_sim
 
-    def __calculate_centroid_distance(
-        self, _c1: list, _c2: list, type: str = "euclidean"
-    ) -> float:
+    def __calculate_centroid_distance(self, _c1: list, _c2: list, type: str = "euclidean") -> float:
         c1 = np.array(_c1)
         c2 = np.array(_c2)
         if type == "euclidean":

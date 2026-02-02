@@ -23,9 +23,7 @@ class PairwiseDistanceDiversity(Metric):
         X_cf: np.ndarray = inputs["X_cf"]
         cf_group_ids = inputs["cf_group_ids"]
         if cf_group_ids is None:
-            raise ValueError(
-                "cf_group_ids are required to compute pairwise distance diversity."
-            )
+            raise ValueError("cf_group_ids are required to compute pairwise distance diversity.")
 
         cf_group_ids = np.asarray(cf_group_ids)
         if cf_group_ids.shape[0] != X_cf.shape[0]:
