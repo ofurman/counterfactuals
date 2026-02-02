@@ -1,54 +1,92 @@
 [project]
-name = "counterfactuals"
+name = "ce-library"
 version = "0.1.0"
-description = "A package for demonstrating counterfactuals"
+description = "CEL: Counterfactual Explanations Library - A framework for generating probabilistically plausible counterfactual explanations using normalizing flows"
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Patryk Wielopolski" },
+    { name = "Oleksii Furman" },
+    { name = "Jerzy Stefanowski" },
+    { name = "Maciej Zieba" },
+]
+maintainers = [
+    { name = "Oleksii Furman" },
+]
+keywords = [
+    "counterfactual-explanations",
+    "explainable-ai",
+    "xai",
+    "machine-learning",
+    "normalizing-flows",
+    "interpretability",
+    "ppcef",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
 
 dependencies = [
-  "torchdiffeq",
-  "numpy",
-  "scipy",
-  "cvxpy",
-  "scikit-learn",
-  "hydra-core",
-  "mlflow",
-  "umap-learn",
-  "nflows @ git+https://github.com/pfilo8/nflows.git",
-  "UMNN",
-  "pandas",
-  "torch",
-  "tqdm",
-  "matplotlib",
-  "plotly",
-  "ipykernel",
-  "dice-ml>=0.12",
-  "mlxtend>=0.23.4",
-  "pulp>=3.3.0",
-  "lingam>=1.11.0",
-  "networkx>=2.8,<3.0",
-  "pytorch-tabnet",
-  "pyfpgrowth",
-  "scikit-image",
-  "requests",
-  "attrs",
-  "dill",
-  "transformers>=4.7.0,<5.0.0",
-  "onnx<1.16.0",
-  "ml-dtypes<0.5.0",
-  "pyomo",
-  "omlt",
-  "tensorflow>=2.18.1",
-  "alibi>=0.9.6",
+    "torchdiffeq",
+    "numpy",
+    "scipy",
+    "cvxpy",
+    "scikit-learn",
+    "hydra-core",
+    "mlflow",
+    "umap-learn",
+    "cel-nflows>=0.14.1",
+    "UMNN",
+    "pandas",
+    "torch",
+    "tqdm",
+    "matplotlib",
+    "plotly",
+    "dice-ml>=0.12",
+    "mlxtend>=0.23.4",
+    "pulp>=3.3.0",
+    "lingam>=1.11.0",
+    "networkx>=2.8,<3.0",
+    "pytorch-tabnet",
+    "pyfpgrowth",
+    "scikit-image",
+    "requests",
+    "attrs",
+    "dill",
+    "transformers>=4.7.0,<5.0.0",
+    "onnx<1.16.0",
+    "ml-dtypes<0.5.0",
+    "pyomo",
+    "omlt",
+    "tensorflow>=2.18.1",
+    "alibi>=0.9.6",
 ]
 
-# Tooling and test libs should be installed as an extra (dev) instead of runtime deps
 [project.optional-dependencies]
 dev = [
-  "ruff",
-  "pre-commit",
-  "pytest",
+    "ruff",
+    "pre-commit",
+    "pytest",
+    "ipykernel",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ofurman/counterfactuals"
+Repository = "https://github.com/ofurman/counterfactuals"
+Documentation = "https://github.com/ofurman/counterfactuals"
+Issues = "https://github.com/ofurman/counterfactuals/issues"
 
 [build-system]
 requires = ["setuptools >= 77.0.3", "wheel"]
@@ -56,13 +94,21 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv]
 dev-dependencies = [
-  "ruff",
-  "pre-commit",
-  "pytest",
+    "ruff",
+    "pre-commit",
+    "pytest",
+    "ipykernel",
 ]
 
-[tool.setuptools]
-packages = ["counterfactuals"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["counterfactuals*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml"]
+
+[tool.ruff]
+line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -77,4 +123,5 @@ dev = [
     "pre-commit>=4.3.0",
     "pytest>=8.4.2",
     "ruff>=0.13.3",
+    "ipykernel>=6.29.0",
 ]

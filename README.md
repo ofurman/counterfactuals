@@ -1,10 +1,9 @@
-
 # PPCEF: Probabilistically Plausible Counterfactual Explanations using Normalizing Flows
 
-This repository is dedicated to the research and development of **PPCEF** (Probabilistically Plausible Counterfactual Explanations using Normalizing Flows), a novel method designed for generating and evaluating counterfactual explanations in machine learning models. The project aims to enhance model interpretability and fairness by providing insights into alternative scenarios that change a model's decision.
+A Python framework for generating and evaluating counterfactual explanations in machine learning models. The main contribution is **PPCEF** (Probabilistically Plausible Counterfactual Explanations using Normalizing Flows), a novel method that uses normalizing flows as density estimators within an optimization framework to generate high-quality, plausible counterfactual explanations.
 
 <p align="center">
-<img src="graphic.svg" alt="drawing" width="800"/>
+<img src="graphic.svg" alt="PPCEF Framework Overview" width="800"/>
 </p>
 
 ## Abstract
@@ -13,25 +12,35 @@ We present **PPCEF**, a novel method specifically tailored for generating probab
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Code Structure](#code-structure)
-- [Data](#data)
-- [Experiments](#experiments)
-- [Pipeline Guide](#pipeline-guide)
-- [Library Guide](#library-guide)
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Library Structure](#library-structure)
+- [Counterfactual Methods](#counterfactual-methods)
+- [Datasets](#datasets)
+- [Models](#models)
+- [Metrics](#metrics)
+- [Running Experiments](#running-experiments)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citation](#citation)
 - [Contact](#contact)
 
-## Introduction
+## Key Features
 
-Counterfactual explanations offer a way to understand machine learning model decisions by explaining what minimal changes would alter a prediction. This project introduces **PPCEF**, a method that leverages optimization and machine learning techniques to generate plausible counterfactuals. Our approach ensures that the generated counterfactuals are not only close to the original data points but also adhere to domain-specific constraints, making them realistic and actionable for decision-makers.
+- **Multiple CF Method Families**: Local, global, and group counterfactual methods
+- **Normalizing Flow Integration**: State-of-the-art density estimation for plausibility
+- **Comprehensive Metrics**: 17+ evaluation metrics for counterfactual quality
+- **Hydra Configuration**: Flexible experiment management with YAML configs
+- **21 Built-in Datasets**: Classification and regression tasks
+- **Extensible Architecture**: Easy to add new methods, models, and metrics
+- **PyTorch-based**: Modern deep learning framework
+- **Cross-validation Support**: Robust evaluation with k-fold CV
+- **Preprocessing Pipeline**: Composable feature transformations
 
-## Prerequisites
+## Installation
 
-This section details the environment setup, including necessary libraries and frameworks. To clone the repository and set up the environment, use the following commands:
+Clone the repository and set up the environment:
 
 ```shell
 git clone git@github.com:ofurman/counterfactuals.git
@@ -39,145 +48,275 @@ cd counterfactuals
 ./setup_env.sh
 ```
 
-## Getting Started
-The following Python code snippet demonstrates how to use the PPCEF framework for generating counterfactual explanations:
+Or install dependencies manually with [uv](https://github.com/astral-sh/uv):
+
+```shell
+uv sync
+```
+
+**Requirements**: Python >= 3.10
+
+## Quick Start
 
 ```python
-import numpy as np
 import torch
-
-from counterfactuals.datasets import MoonsDataset
-from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.generative_models import MaskedAutoregressiveFlow
-from counterfactuals.discriminative_models import MultilayerPerceptron
+from counterfactuals.datasets import MethodDataset
+from counterfactuals.cf_methods import PPCEF
+from counterfactuals.models import MaskedAutoregressiveFlow, MLPClassifier
 from counterfactuals.losses import BinaryDiscLoss
 from counterfactuals.metrics import evaluate_cf
 
+# Load dataset with preprocessing
+dataset = MethodDataset.from_config("config/datasets/moons.yaml")
+train_loader = dataset.train_dataloader(batch_size=128, shuffle=True)
+test_loader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
-dataset = MoonsDataset("../data/moons.csv")
-train_dataloader = dataset.train_dataloader(batch_size=128, shuffle=True)
-test_dataloader = dataset.test_dataloader(batch_size=128, shuffle=False)
-
-disc_model = MultilayerPerceptron(
-    input_size=2, hidden_layer_sizes=[256, 256], target_size=1, dropout=0.2
+# Train discriminative model (classifier)
+disc_model = MLPClassifier(
+    input_size=dataset.input_size,
+    hidden_layer_sizes=[256, 256],
+    target_size=1,
+    dropout=0.2,
 )
-disc_model.fit(
-    train_dataloader,
-    test_dataloader,
-    epochs=5000,
-    patience=300,
-    lr=1e-3,
-)
+disc_model.fit(train_loader, test_loader, epochs=5000, patience=300, lr=1e-3)
 
+# Train generative model (normalizing flow)
 gen_model = MaskedAutoregressiveFlow(
-    features=dataset.X_train.shape[1], hidden_features=8, context_features=1
+    features=dataset.input_size,
+    hidden_features=8,
+    context_features=1,
 )
-gen_model.fit(train_dataloader, test_dataloader, num_epochs=1000)
+gen_model.fit(train_loader, test_loader, num_epochs=1000)
 
-cf = PPCEF(
+# Generate counterfactuals
+cf_method = PPCEF(
     gen_model=gen_model,
     disc_model=disc_model,
     disc_model_criterion=BinaryDiscLoss(),
 )
-cf_dataloader = dataset.test_dataloader(batch_size=1024, shuffle=False)
-log_prob_threshold = torch.quantile(gen_model.predict_log_prob(cf_dataloader), 0.25)
-deltas, X_orig, y_orig, y_target, logs = cf.explain_dataloader(
-    cf_dataloader, alpha=100, log_prob_threshold=log_prob_threshold, epochs=4000
+log_prob_threshold = torch.quantile(gen_model.predict_log_prob(test_loader), 0.25)
+result = cf_method.explain_dataloader(
+    test_loader,
+    alpha=100,
+    log_prob_threshold=log_prob_threshold,
+    epochs=4000,
 )
-X_cf = X_orig + deltas
-print(X_cf)
-evaluate_cf(
+
+# Evaluate results
+X_cf = result.x_origs + result.x_cfs
+metrics = evaluate_cf(
     disc_model=disc_model,
     gen_model=gen_model,
     X_cf=X_cf,
-    model_returned=np.ones(X_cf.shape[0]),
-    continuous_features=dataset.numerical_features,
-    categorical_features=dataset.categorical_features,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
-    X_test=X_orig,
-    y_test=y_orig,
+    X_test=result.x_origs,
+    y_test=result.y_origs,
+    y_target=result.y_cf_targets,
+    continuous_features=dataset.numerical_features,
+    categorical_features=dataset.categorical_features,
     median_log_prob=log_prob_threshold,
-    y_target=y_target,
 )
 ```
-### Jupyter notebook
-You can find the example of running algorithm in the jupyter notebook at: [here](notebooks/ppcef.ipynb)
 
-### Pre-trained Models
+### Jupyter Notebooks
 
-We publish pre-trained models in the `./models/` directory for immediate use and experimentation.
+Example notebooks are available in `notebooks/`:
 
-## Code Structure
+| Notebook | Description |
+|----------|-------------|
+| [`ppcef.ipynb`](notebooks/ppcef.ipynb) | Basic PPCEF usage |
+| [`rppcef.ipynb`](notebooks/rppcef.ipynb) | Regional PPCEF for group explanations |
+| [`categorical_ppcef.ipynb`](notebooks/categorical_ppcef.ipynb) | Handling categorical features |
+| [`toy_example.ipynb`](notebooks/toy_example.ipynb) | Simple visualization examples |
 
-The repository is organized as follows to facilitate ease of use and contribution:
+## Library Structure
 
 ```
-|── conf/                  # Configuration files
-|── data/                  # Datasets
-|── models/                # Trained models
-|── notebooks/             # Jupyter notebooks for analysis and examples
-|── counterfactuals/       # Source code for the framework
-|   ├── cf_methods/        # Counterfactual methods
-|   ├── discriminative_models/  # Discriminative models for analysis
-|   ├── generative_models/      # Generative models for analysis
-|   ├── losses/            # Loss functions
-|   ├── metrics/           # Evaluation metrics
-|   └── pipelines/         # Data and model pipelines
-|── README.md              # This document
-└── ...
+counterfactuals/
+├── cf_methods/           # Counterfactual explanation methods
+│   ├── local/            # Instance-level methods (PPCEF, DiCE, WACH, etc.)
+│   ├── global_/          # Model-level methods (GLOBE-CE, AReS)
+│   └── group/            # Cohort-level methods (RPPCEF, GLANCE)
+├── models/               # ML models
+│   ├── discriminative/   # Classifiers (MLP, LogisticRegression, NODE)
+│   ├── generative/       # Density estimators (MAF, RealNVP, NICE, KDE)
+│   └── regression/       # Regressors (MLP, LinearRegression)
+├── datasets/             # Dataset loading and configuration
+├── preprocessing/        # Feature transformation pipeline
+├── dequantization/       # Categorical feature handling for flows
+├── losses/               # Loss functions for CF optimization
+├── metrics/              # Evaluation metrics
+├── pipelines/            # Experiment orchestration
+│   ├── nodes/            # Pipeline components
+│   └── conf/             # Hydra configuration files
+├── plotting/             # Visualization utilities
+└── utils.py              # Helper functions
+
+config/
+└── datasets/             # Dataset YAML configurations (21 datasets)
+
+docs/
+├── library_overview.md   # Comprehensive package documentation
+└── ppcef_pipeline.md     # Pipeline guide
 ```
 
-## Data
+## Counterfactual Methods
 
-The full data folder can be found under the following link: [Link](data). More details regarding the datasets can be found in the paper in the appendix directory.
+### Local Methods (Instance-level)
 
-## Experiments
+| Method | Class | Description |
+|--------|-------|-------------|
+| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows (main contribution) |
+| **PPCEFR** | `PPCEFR` | PPCEF for regression tasks |
+| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
+| **CEM** | `CEM_CF` | Contrastive Explanation Method |
+| **CET** | `CET` | Counterfactual Explanation Tree |
+| **WACH** | `WACH` | Wachter-style gradient-based CF |
+| **Artelt** | `Artelt` | Artelt's CF method |
+| **SACE** | `SACE`, `CaseBasedSACE` | (Case-based) SACE methods |
+| **CEGP** | `CEGP` | CF with Gaussian Processes |
+| **C-CHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
+| **DiCoFlex** | `DiCoFlex` | Diverse Counterfactual Flex |
+| **LiCE** | `LiCE` | LIME-style CF (requires pyomo/onnx/omlt) |
 
-To run experiments, prepare the configuration files located in the `counterfactuals/pipelines/conf/` directory:
+### Global Methods (Model-level)
 
-Execute the following scripts to train models and run experiments:
+| Method | Class | Description |
+|--------|-------|-------------|
+| **GLOBE-CE** | `GLOBE_CE` | Global Counterfactual Explanations |
+| **AReS** | `AReS` | Actionable Recourse Summaries |
+
+### Group Methods (Cohort-level)
+
+| Method | Class | Description |
+|--------|-------|-------------|
+| **RPPCEF** | `RPPCEF` | Regional PPCEF with shared interventions |
+| **GLANCE** | `GLANCE` | Group-level CF method |
+
+## Datasets
+
+The library includes 21 pre-configured datasets:
+
+**Classification:**
+`adult`, `adult_census`, `audit`, `bank_marketing`, `compas`, `credit_default`, `diabetes`, `digits`, `german_credit`, `give_me_some_credit`, `heloc`, `law`, `lending_club`, `mnist`, `moons`, `wine`, `blobs`
+
+**Regression:**
+`concrete`, `toy_regression`, `wine_quality_regression`, `yacht`
+
+Dataset configurations are in `config/datasets/*.yaml` and support:
+- Automatic feature type detection (continuous/categorical)
+- Actionability flags for features
+- Cross-validation splits
+- Train/test split configuration
+
+## Models
+
+### Discriminative Models
+
+| Model | Class | Use Case |
+|-------|-------|----------|
+| MLP Classifier | `MLPClassifier` | General classification |
+| Logistic Regression | `LogisticRegression` | Binary classification |
+| Multinomial LR | `MultinomialLogisticRegression` | Multiclass |
+| NODE | `NODE` | Neural Oblivious Decision Ensembles |
+
+### Generative Models
+
+| Model | Class | Description |
+|-------|-------|-------------|
+| MAF | `MaskedAutoregressiveFlow` | Primary normalizing flow |
+| RealNVP | `RealNVP` | Real-valued Non-Volume Preserving |
+| NICE | `NICE` | Non-linear Independent Components |
+| KDE | `KDE` | Kernel Density Estimation baseline |
+
+### Regression Models
+
+| Model | Class |
+|-------|-------|
+| MLP Regressor | `MLPRegressor` |
+| Linear Regression | `LinearRegression` |
+
+## Metrics
+
+The library provides comprehensive evaluation metrics:
+
+| Category | Metrics |
+|----------|---------|
+| **Validity** | `coverage`, `validity`, `actionability` |
+| **Sparsity** | `sparsity` |
+| **Distance** | `proximity_continuous_euclidean`, `proximity_continuous_manhattan`, `proximity_continuous_mad`, `proximity_categorical_hamming`, `proximity_categorical_jaccard`, `proximity_l2_jaccard`, `proximity_mad_hamming` |
+| **Plausibility** | `prob_plausibility`, `log_density_cf`, `log_density_test` |
+| **Outlier Detection** | `lof_scores_cf`, `lof_scores_test`, `isolation_forest_scores_cf`, `isolation_forest_scores_test` |
+
+## Running Experiments
+
+### Using Hydra Pipelines
 
 ```shell
+# Run PPCEF pipeline
 uv run python counterfactuals/pipelines/run_ppcef_pipeline.py
+
+# With custom configuration
+uv run python counterfactuals/pipelines/run_ppcef_pipeline.py \
+  dataset.config_path=config/datasets/heloc.yaml \
+  disc_model.model=disc_model/mlp_large \
+  counterfactuals_params.target_class=1
 ```
 
-## Library Guide
+### Available Pipelines
 
-Need a broader tour of everything inside `counterfactuals/`? Check `docs/library_overview.md` for:
+| Pipeline | Method |
+|----------|--------|
+| `run_ppcef_pipeline.py` | PPCEF (main) |
+| `run_ppcefr_pipeline.py` | PPCEF for regression |
+| `run_rppcef_pipeline.py` | Regional PPCEF |
+| `run_dice_pipeline.py` | DiCE |
+| `run_cem_pipeline.py` | CEM |
+| `run_cet_pipeline.py` | CET |
+| `run_cchvae_pipeline.py` | C-CHVAE |
+| `run_wach_pipeline.py` | WACH |
+| `run_artelt_pipeline.py` | Artelt |
+| `run_cegp_pipeline.py` | CEGP |
+| `run_globe_ce_pipeline.py` | GLOBE-CE |
+| `run_ares_pipeline.py` | AReS |
+| `run_glance_pipeline.py` | GLANCE |
 
-- high-level descriptions of each subpackage (datasets, preprocessing, models, cf methods, metrics, pipelines),
-- explanations of how Hydra configs map to implementations,
-- extension playbooks for adding datasets, models, metrics, or new pipelines, and
-- reminders about the development conventions enforced in `AGENTS.md`.
+## Documentation
 
-## Pipeline Guide
-
-Looking for a deeper explanation of how `run_ppcef_pipeline.py` wires datasets, models, and
-counterfactual search together? See `docs/ppcef_pipeline.md` for:
-
-- a fold-by-fold walkthrough of the orchestration logic,
-- a reference for the Hydra configuration tree and common overrides,
-- practical tips for running or extending the PPCEF pipeline, and
-- contribution rules for future development.
+- [`docs/library_overview.md`](docs/library_overview.md) - Comprehensive package documentation
+- [`docs/ppcef_pipeline.md`](docs/ppcef_pipeline.md) - Detailed PPCEF pipeline guide
+- [`AGENTS.md`](AGENTS.md) - Development guidelines and coding standards
 
 ## Contributing
 
 Contributions are welcome! Before opening a PR:
 
-- Read `AGENTS.md` and `docs/ppcef_pipeline.md` to understand the workflow, required typing,
-  docstrings, and logging conventions.
-- Use `uv` for everything (`uv sync`, `uv run ruff check --fix`, `uv run pytest`).
-- Keep patches small, fully type-hinted, and Ruff-clean (line length 100, Google docstrings).
-- Update or add documentation/tests whenever behavior or configuration changes.
+1. Read [`AGENTS.md`](AGENTS.md) and [`docs/ppcef_pipeline.md`](docs/ppcef_pipeline.md) to understand the workflow
+2. Use `uv` for all operations:
+   ```shell
+   uv sync                     # Install dependencies
+   uv run ruff check --fix     # Lint and fix
+   uv run pytest               # Run tests
+   ```
+3. Follow the coding standards:
+   - Python 3.10+, PEP 8 compliant
+   - Full type hints everywhere
+   - Google-style docstrings
+   - Line length: 100 characters
+4. Keep patches small and well-documented
+5. Update or add tests when behavior changes
 
-If you introduce new dependencies, apply them via `uv add` so `pyproject.toml` and `uv.lock`
-stay consistent.
+To add new dependencies:
+```shell
+uv add <package>
+```
 
 ## Citation
-```
+
+```bibtex
 @inbook{inbook,
-  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zięba, Maciej},
+  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zieba, Maciej},
   year = {2024},
   month = {10},
   pages = {},
@@ -186,6 +325,7 @@ stay consistent.
   doi = {10.3233/FAIA240584}
 }
 ```
+
 ## Contact
 
-In case of questions or comments please contact using LinkedIn: TBA
+For questions or comments, please contact via LinkedIn: TBA
