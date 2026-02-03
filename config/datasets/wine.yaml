@@ -55,4 +55,16 @@ feature_config:
     actionable: true
   Proline:
     actionable: true
-target: Target
+target_mapping:
+  2: 0
+  3: 1
+initial_transforms:
+  - name: reorder_columns
+  - name: dropna
+  - name: filter_classes
+    params:
+      include_values:
+        - 2
+        - 3
+      target_column: Target
+target: "Target"

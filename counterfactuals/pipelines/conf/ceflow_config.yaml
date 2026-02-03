@@ -32,7 +32,7 @@ gen_model:
   noise_lvl: 0.02
 
 flow_model:
-  train_model: false
+  train_model: true
   context_features: null
   batch_size: 1024
   epochs: 2000

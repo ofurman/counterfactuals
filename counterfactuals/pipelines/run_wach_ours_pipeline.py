@@ -101,6 +101,8 @@ def search_counterfactuals(
     ys_orig = results.y_origs
     ys_target = results.y_cf_targets
 
+    model_returned = (np.ones(Xs_cfs.shape[0]),)
+
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
     counterfactuals_path = os.path.join(
@@ -109,7 +111,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactual deltas saved to %s", counterfactuals_path)
-    return Xs_cfs, Xs, ys_orig, ys_target, cf_search_time
+    return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
 def calculate_metrics(

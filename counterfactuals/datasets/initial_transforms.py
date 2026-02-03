@@ -300,6 +300,44 @@ class ConvertToNumericStep(InitialTransformStep):
         return context
 
 
+class FilterClassesStep(InitialTransformStep):
+    """Filter dataset rows to selected target values."""
+
+    def __init__(
+        self,
+        include_values: Optional[Sequence[Any]] = None,
+        target_column: Optional[str] = None,
+    ):
+        """Initialize class filtering.
+
+        Args:
+            include_values: Target values to keep in the dataset.
+            target_column: Optional target column name override.
+        """
+        self.include_values = (
+            list(include_values) if include_values is not None else None
+        )
+        self.target_column = target_column
+
+    def fit(self, context: InitialTransformContext) -> "FilterClassesStep":
+        return self
+
+    def transform(self, context: InitialTransformContext) -> InitialTransformContext:
+        if not self.include_values:
+            raise ValueError("FilterClassesStep requires non-empty include_values.")
+
+        target = self.target_column or context.target
+        if target not in context.data.columns:
+            raise ValueError("Target column missing for FilterClassesStep.")
+
+        filtered = context.data[context.data[target].isin(self.include_values)]
+        if filtered.empty:
+            raise ValueError("FilterClassesStep removed all rows from the dataset.")
+
+        context.data = filtered.reset_index(drop=True)
+        return context
+
+
 INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
     "dropna": DropNaStep,
     "drop_na": DropNaStep,
@@ -310,6 +348,7 @@ INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
     "one_hot_encoding": OneHotEncodingStep,
     "convert_to_numeric": ConvertToNumericStep,
     "cast_to_numeric": ConvertToNumericStep,
+    "filter_classes": FilterClassesStep,
 }
 
 
