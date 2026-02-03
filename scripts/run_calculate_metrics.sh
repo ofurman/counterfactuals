@@ -7,12 +7,23 @@ MODELS_ROOT="${3:-models}"
 METRICS_CONF_PATH="${5:-counterfactuals/pipelines/conf/metrics/default.yaml}"
 
 DATASETS=(
-  "lending_club"
-  "adult_census"
-  "credit_default"
-  "give_me_some_credit"
-  "bank_marketing"
+  "moons"
+  # "heloc"
+  "audit"
 )
+
+# DATASETS=(
+#   "moons"
+#   "law"
+#   "heloc"
+#   "german_credit"
+#   "audit"
+#   "lending_club"
+#   "adult_census"
+#   "credit_default"
+#   "give_me_some_credit"
+#   "bank_marketing"
+# )
 
 DISC_MODELS=(
   "MLPClassifier"

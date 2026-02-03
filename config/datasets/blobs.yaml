@@ -7,4 +7,11 @@ feature_config:
     actionable: true
   "1":
     actionable: true
+initial_transforms:
+  - name: filter_classes
+    params:
+      include_values:
+        - 0
+        - 1
+      target_column: "2"
 target: "2"
