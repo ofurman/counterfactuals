@@ -1,0 +1,55 @@
+/* Custom styles for Counterfactuals documentation */
+
+/* Method cards styling */
+.method-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.method-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Feature grid */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.feature-item {
+  padding: 1rem;
+  background: var(--md-code-bg-color);
+  border-radius: 0.5rem;
+}
+
+/* Dataset table enhancements */
+.md-typeset table:not([class]) th {
+  background-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+
+/* Code block improvements */
+.md-typeset pre > code {
+  font-size: 0.85em;
+}
+
+/* Admonition custom colors for methods */
+.md-typeset .admonition.method,
+.md-typeset details.method {
+  border-color: #7c4dff;
+}
+
+.md-typeset .method > .admonition-title,
+.md-typeset .method > summary {
+  background-color: rgba(124, 77, 255, 0.1);
+}
+
+.md-typeset .method > .admonition-title::before,
+.md-typeset .method > summary::before {
+  background-color: #7c4dff;
+}
