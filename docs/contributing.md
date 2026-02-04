@@ -62,12 +62,10 @@ Write tests for:
 
 ## Adding New Metrics
 
-1. Add a metric class under `counterfactuals/metrics/` inheriting from `Metric`
-2. Register it with `@register_metric("your_metric_name")`
+1. Create metric class inheriting from `Metric`
+2. Use `@register_metric` decorator
 3. Implement `required_inputs()` and `__call__()`
-4. Import the module in `counterfactuals/metrics/__init__.py` so it registers
-5. Add the metric name to a metrics config file in `counterfactuals/pipelines/conf/metrics/`
-6. Add tests
+4. Add tests
 
 ## Development Setup
 
