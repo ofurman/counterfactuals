@@ -8,8 +8,11 @@ METRICS_CONF_PATH="${5:-counterfactuals/pipelines/conf/metrics/default.yaml}"
 
 DATASETS=(
   "moons"
-  # "heloc"
+  "blobs"
+  "heloc"
   "audit"
+  "digits"
+  "wine"
 )
 
 # DATASETS=(

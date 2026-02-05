@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import os
 from time import time
@@ -31,8 +32,94 @@ logging.basicConfig(
 )
 
 
+def _set_dataset_attribute(dataset: Any, attribute: str, value: Any) -> None:
+    """Set an attribute on a dataset or its underlying file dataset (MethodDataset)."""
+    try:
+        setattr(dataset, attribute, value)
+        return
+    except AttributeError:
+        pass
+
+    if hasattr(dataset, "file_dataset"):
+        setattr(dataset.file_dataset, attribute, value)
+        return
+
+    raise
+
+
+def _infer_one_hot_category(base_feature: str, column: str) -> str:
+    """Infer the category label from a one-hot column name."""
+    if not column.startswith(base_feature):
+        return column
+
+    suffix = column[len(base_feature) :]
+    for sep in (" = ", "__", "=", "_"):
+        if suffix.startswith(sep):
+            return suffix[len(sep) :]
+    return suffix.lstrip(" _=")
+
+
+def _build_features_tree_from_one_hot(
+    dataset: Any, data: pd.DataFrame
+) -> Tuple[pd.DataFrame, List[str]]:
+    """Build a features tree when data is already one-hot encoded.
+
+    Uses ``one_hot_feature_groups`` (produced by initial transforms) to group one-hot columns
+    under their original base categorical feature. Columns are renamed to follow
+    the ``"<feature> = <value>"`` convention used by AReS.
+    """
+    groups = getattr(dataset, "one_hot_feature_groups", None)
+    if groups is None and hasattr(dataset, "file_dataset"):
+        groups = getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+
+    dataset.bins = {}
+    dataset.bins_tree = {}
+    dataset.features_tree = {}
+    dataset.n_bins = None
+
+    columns = list(data.columns)
+    if not groups:
+        dataset.features_tree = {col: [] for col in columns}
+        return data.copy(), columns
+
+    group_lookup = {
+        column: base_feature
+        for base_feature, group_columns in groups.items()
+        for column in group_columns
+    }
+
+    data_transformed = data.copy()
+    transformed_columns: list[str] = []
+    for column in columns:
+        base_feature = group_lookup.get(column)
+        if base_feature is None:
+            dataset.features_tree[column] = []
+            transformed_columns.append(column)
+            continue
+
+        category = _infer_one_hot_category(base_feature, column)
+        feature_value = f"{base_feature} = {category}" if category else column
+        dataset.features_tree.setdefault(base_feature, []).append(feature_value)
+        transformed_columns.append(feature_value)
+
+    data_transformed.columns = transformed_columns
+    _set_dataset_attribute(dataset, "features", transformed_columns)
+    _set_dataset_attribute(
+        dataset,
+        "categorical_features",
+        [feature for feature, values in dataset.features_tree.items() if values],
+    )
+    return data_transformed, transformed_columns
+
+
 def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     """One-hot encode categorical features and record metadata on ``dataset``."""
+    if getattr(dataset, "one_hot_feature_groups", None) or (
+        hasattr(dataset, "file_dataset")
+        and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+    ):
+        return _build_features_tree_from_one_hot(dataset, data)
+
     label_encoder = LabelEncoder()
     data_encode = data.copy()
     dataset.bins = {}
@@ -71,6 +158,7 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
     data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
     data_oh.columns = features
+    _set_dataset_attribute(dataset, "features", features)
     return data_oh, features
 
 
@@ -165,8 +253,9 @@ def search_counterfactuals(
         else:
             X_test_unscaled = feature_transformer.inverse_transform(dataset.X_test)
     feature_columns = _feature_columns(dataset)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
+    ares_dataset = copy.deepcopy(dataset)
+    X_test_for_ares, _ = one_hot(
+        ares_dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
     )
 
     def predict_fn_raw(x: pd.DataFrame | np.ndarray) -> np.ndarray:
@@ -185,7 +274,7 @@ def search_counterfactuals(
     target_class = getattr(cfg.counterfactuals_params, "target_class", 1)
     ys_pred = predict_fn_raw(X_test_unscaled)
     mask = ys_pred != target_class
-    Xs_unscaled = X_test_unscaled[mask]
+    Xs_for_ares = X_test_for_ares.loc[mask].reset_index(drop=True)
     Xs = dataset.X_test[mask]
     ys_orig = ys_pred[mask]
 
@@ -197,8 +286,8 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     cf_method = AReS(
         predict_fn=predict_fn_for_cf,
-        dataset=dataset,
-        X=pd.DataFrame(Xs_unscaled, columns=feature_columns),
+        dataset=ares_dataset,
+        X=Xs_for_ares,
         dropped_features=[],
         n_bins=10,
         ordinal_features=[],

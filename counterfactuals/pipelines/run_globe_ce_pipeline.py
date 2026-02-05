@@ -29,6 +29,43 @@ logging.basicConfig(
 )
 
 
+def _build_features_tree_from_one_hot(
+    dataset: Any, data: pd.DataFrame
+) -> Tuple[pd.DataFrame, List[str]]:
+    """Build a features tree when data is already one-hot encoded."""
+    groups = getattr(dataset, "one_hot_feature_groups", None)
+    if groups is None and hasattr(dataset, "file_dataset"):
+        groups = getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+
+    dataset.bins = {}
+    dataset.bins_tree = {}
+    dataset.features_tree = {}
+    dataset.n_bins = None
+
+    columns = list(data.columns)
+    if not groups:
+        return data.copy(), columns
+
+    group_lookup = {
+        column: base for base, group_cols in groups.items() for column in group_cols
+    }
+    added_groups = set()
+    for column in columns:
+        base = group_lookup.get(column)
+        if base is None:
+            dataset.features_tree[column] = []
+            continue
+        if base in added_groups:
+            continue
+        grouped_columns = [
+            feature for feature in columns if group_lookup.get(feature) == base
+        ]
+        dataset.features_tree[base] = grouped_columns
+        added_groups.add(base)
+
+    return data.copy(), columns
+
+
 def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     """
     Apply one-hot encoding to categorical features in the dataset.
@@ -45,6 +82,12 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             - data_oh: One-hot encoded DataFrame
             - features: List of feature names after encoding
     """
+    if getattr(dataset, "one_hot_feature_groups", None) or (
+        hasattr(dataset, "file_dataset")
+        and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+    ):
+        return _build_features_tree_from_one_hot(dataset, data)
+
     label_encoder = LabelEncoder()
     data_encode = data.copy()
     dataset.bins = {}
