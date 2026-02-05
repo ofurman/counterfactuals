@@ -1,4 +1,5 @@
 from itertools import product
+from typing import Any
 
 import numpy as np
 import torch
@@ -65,6 +66,32 @@ class TCREx(BaseCounterfactualMethod):
 
         return self
 
+    def _coerce_predictions_to_1d_labels(self, y_pred: Any) -> np.ndarray:
+        """Convert `target_model.predict` output into a 1D numpy array of labels.
+
+        Handles common cases where `predict` returns:
+        - a scalar / 0-d numpy array for a single sample
+        - a torch Tensor (on CPU/GPU)
+        - a 2D array of probabilities/logits
+        """
+
+        if isinstance(y_pred, torch.Tensor):
+            y_pred = y_pred.detach().cpu().numpy()
+
+        y_pred_arr = np.asarray(y_pred)
+        if y_pred_arr.ndim == 0:
+            return y_pred_arr.reshape(1)
+        if y_pred_arr.ndim == 1:
+            return y_pred_arr.reshape(-1)
+        if y_pred_arr.ndim == 2:
+            if y_pred_arr.shape[1] == 1:
+                return y_pred_arr.reshape(-1)
+            return np.argmax(y_pred_arr, axis=1).reshape(-1)
+
+        raise ValueError(
+            f"Unsupported prediction shape from target_model.predict: {y_pred_arr.shape}"
+        )
+
     def _extract_rules(self, surrogate):
         # Extract all nodes' hyperrectangles from the surrogate tree
         rules = []
@@ -74,10 +101,16 @@ class TCREx(BaseCounterfactualMethod):
                 bounds = self._get_node_bounds(surrogate, node_id)
                 feasibility = surrogate.tree_.n_node_samples[node_id] / len(self.X_)
                 node_indices = surrogate.apply(self.X_) == node_id
+                if not np.any(node_indices):
+                    continue
                 y_true = self.y_[node_indices]
-                y_pred = self.target_model.predict(self.X_[node_indices])
-                if isinstance(y_pred, torch.Tensor):
-                    y_pred = y_pred.numpy().reshape(-1)
+                y_pred_raw = self.target_model.predict(self.X_[node_indices])
+                y_pred = self._coerce_predictions_to_1d_labels(y_pred_raw)
+                if y_pred.shape[0] != y_true.shape[0]:
+                    raise ValueError(
+                        "target_model.predict returned an unexpected number of predictions "
+                        f"(got {y_pred.shape[0]}, expected {y_true.shape[0]})."
+                    )
                 accuracy = accuracy_score(y_true, y_pred)
                 rules.append(
                     CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility)
