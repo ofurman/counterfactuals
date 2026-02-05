@@ -43,7 +43,7 @@ counterfactuals_params:
     # _target_: counterfactuals.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
-  target_class: 0
+  target_class: 1
   epochs: 20000
   batch_size: 4096
   lr: 0.001
@@ -52,5 +52,3 @@ counterfactuals_params:
   alpha_k: 100
   beta: 0.01
   patience: 1000
-  
-    
