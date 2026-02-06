@@ -7,7 +7,6 @@ hydra:
   sweeper:
     max_batch_size: 1
 
-
 experiment:
   output_folder: models/
   relabel_with_disc_model: true
@@ -34,8 +33,11 @@ gen_model:
 counterfactuals_params:
   cf_method:
     _target_: counterfactuals.cf_methods.ares.AReS
-  
-  # General parameters
+
   target_class: 0
   batch_size: 4096
   log_prob_quantile: 0.25
+
+  apriori_threshold: 0.6
+  n_bins: 10
+  max_triples_eval: 10000

@@ -284,12 +284,19 @@ def search_counterfactuals(
     )
 
     logger.info("Creating counterfactual model")
+    apriori_threshold = float(
+        getattr(cfg.counterfactuals_params, "apriori_threshold", 0.6)
+    )
+    n_bins = int(getattr(cfg.counterfactuals_params, "n_bins", 10))
+    max_triples_eval = int(
+        getattr(cfg.counterfactuals_params, "max_triples_eval", 5000)
+    )
     cf_method = AReS(
         predict_fn=predict_fn_for_cf,
         dataset=ares_dataset,
         X=Xs_for_ares,
         dropped_features=[],
-        n_bins=10,
+        n_bins=n_bins,
         ordinal_features=[],
         normalise=False,
         constraints=[20, 7, 10],
@@ -308,6 +315,8 @@ def search_counterfactuals(
     time_start = time()
     ys_target = np.full_like(ys_orig, target_class)
     explanation_result = cf_method.explain(
+        apriori_threshold=apriori_threshold,
+        max_triples_eval=max_triples_eval,
         y_origin=ys_orig,
         y_target=ys_target,
     )

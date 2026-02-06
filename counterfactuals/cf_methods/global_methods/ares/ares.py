@@ -222,7 +222,15 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         apriori_threshold: float = 0.6,
         y_origin: Optional[np.ndarray] = None,
         y_target: Optional[np.ndarray] = None,
+        max_triples_eval: int = 5000,
+        max_triples_select: int = 5000,
+        disable_tqdm: bool = False,
     ) -> ExplanationResult:
+        if max_triples_eval < 0:
+            raise ValueError("max_triples_eval must be >= 0")
+        if max_triples_select < 0:
+            raise ValueError("max_triples_select must be >= 0")
+
         self.generate_itemsets(
             apriori_threshold=apriori_threshold,
             max_width=None,  # defaults to e2-1
@@ -234,11 +242,39 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         self.generate_groundset(
             max_width=None, RL_reduction=False, then_generation=q, save_copy=False
         )
+        if self.V.length == 0 or self.X_aff_original.shape[0] == 0:
+            x_origs = self.X_aff_original.to_numpy()
+            if y_origin is None:
+                y_origin = np.zeros(x_origs.shape[0], dtype=int)
+            if y_target is None:
+                y_target = np.ones(x_origs.shape[0], dtype=int)
+            return ExplanationResult(
+                x_cfs=x_origs.copy(),
+                y_cf_targets=np.asarray(y_target).reshape(-1),
+                x_origs=x_origs,
+                y_origs=np.asarray(y_origin).reshape(-1),
+                logs=None,
+            )
+
         lams = [1, 10]  # can play around with these lambda values
-        self.evaluate_groundset(
-            lams=lams, r=5000, save_mode=1, disable_tqdm=False, plot_accuracy=False
+        r = (
+            self.V.length
+            if max_triples_eval == 0
+            else min(int(max_triples_eval), self.V.length)
         )
-        self.select_groundset(s=5000)
+        self.evaluate_groundset(
+            lams=lams,
+            r=r,
+            save_mode=1,
+            disable_tqdm=disable_tqdm,
+            plot_accuracy=False,
+        )
+        s = (
+            len(self.V.triples_array)
+            if max_triples_select == 0
+            else min(int(max_triples_select), len(self.V.triples_array))
+        )
+        self.select_groundset(s=s)
         self.optimise_groundset(
             lams=lams,
             factor=1,
@@ -1003,15 +1039,17 @@ class TwoLevelRecourseSet:
                  member of X_aff (affected inputs requiring recourse)
                  vector of final counterfactuals for each member of X_aff
         """
-        r = self.length if r is None else int(r)  # number of triples to evaluate
-        if r > self.length:
-            if len(self.triples_array) >= r:
-                self.select_triples(r)
-            else:
-                raise ValueError(
-                    "Number of elements for evaluation ({}) greater than number "
-                    "of triples in set ({})".format(r, len(self.triples_array))
-                )
+        requested_r = self.length if r is None else int(r)
+        if requested_r < 0:
+            raise ValueError("r must be >= 0")
+        if requested_r > self.length:
+            warnings.warn(
+                f"Requested r={requested_r} exceeds available triples ({self.length}); "
+                "clamping to available length.",
+                category=RuntimeWarning,
+                stacklevel=2,
+            )
+        r = min(requested_r, self.length)  # number of triples to evaluate
         self.ares = ares  # originally sized input data
         n = self.ares.X_aff_original.shape[0]  # number of affected inputs
         self.correct_matrix = np.zeros((r, n), dtype=int)
@@ -1209,6 +1247,10 @@ class TwoLevelRecourseSet:
 
         Input: size of final candidate set, s
         """
+        if self.triples_array is None:
+            raise ValueError(
+                "triples_array is not initialised; run evaluate_triples() first"
+            )
         # Check for valid n_prefilter
         s = int(s)
         if s > len(self.triples_array):

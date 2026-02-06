@@ -73,6 +73,9 @@ def search_counterfactuals(
         c_steps=cfg.counterfactuals_params.c_steps,
         max_iterations=cfg.counterfactuals_params.max_iterations,
         learning_rate_init=cfg.counterfactuals_params.learning_rate_init,
+        no_info_type=cfg.counterfactuals_params.fit_no_info_type,
+        feature_range=tuple(cfg.counterfactuals_params.feature_range),
+        clip=tuple(cfg.counterfactuals_params.clip_range),
     )
 
     logger.info("Handling counterfactual generation")
@@ -89,6 +92,7 @@ def search_counterfactuals(
     explanation_result = cf_method.explain_dataloader(
         dataloader=cf_dataloader,
         target_class=target_class,
+        X_train=np.asarray(dataset.X_train),
     )
 
     cf_search_time = time() - time_start

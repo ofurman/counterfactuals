@@ -48,24 +48,16 @@ dependencies = [
   "mkdocs-section-index>=0.3.10",
 ]
 
-# Tooling and test libs should be installed as an extra (dev) instead of runtime deps
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-  "ruff",
-  "pre-commit",
-  "pytest",
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.3",
 ]
 
 [build-system]
 requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.uv]
-dev-dependencies = [
-  "ruff",
-  "pre-commit",
-  "pytest",
-]
 
 [tool.setuptools]
 packages = ["counterfactuals"]
@@ -77,10 +69,3 @@ packages = ["counterfactuals"]
 "counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
 "counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
 "counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
-
-[dependency-groups]
-dev = [
-    "pre-commit>=4.3.0",
-    "pytest>=8.4.2",
-    "ruff>=0.13.3",
-]

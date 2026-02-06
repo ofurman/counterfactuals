@@ -38,6 +38,9 @@ counterfactuals_params:
   c_init: 1.0
   c_steps: 5
   max_iterations: 500
+  feature_range: [0.0, 1.0]
+  fit_d_type: "abdm"
+  fit_disc_perc: [25, 50, 75]
   # General parameters
   target_class: 0
   batch_size: 4096

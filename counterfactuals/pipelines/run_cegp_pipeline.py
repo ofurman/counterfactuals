@@ -70,6 +70,9 @@ def search_counterfactuals(
         c_init=cfg.counterfactuals_params.c_init,
         c_steps=cfg.counterfactuals_params.c_steps,
         max_iterations=cfg.counterfactuals_params.max_iterations,
+        feature_range=tuple(cfg.counterfactuals_params.feature_range),
+        d_type=cfg.counterfactuals_params.fit_d_type,
+        disc_perc=list(cfg.counterfactuals_params.fit_disc_perc),
     )
 
     logger.info("Calculating log_prob_threshold")
@@ -94,13 +97,18 @@ def search_counterfactuals(
 
     time_start = time()
     explanation_result = cf_method.explain_dataloader(
-        dataloader=cf_dataloader, target_class=target_class
+        dataloader=cf_dataloader,
+        target_class=target_class,
+        X_train=np.asarray(dataset.X_train),
     )
     Xs_cfs = explanation_result.x_cfs
     Xs = explanation_result.x_origs
     ys_orig = explanation_result.y_origs
     ys_target = explanation_result.y_cf_targets
-    model_returned = explanation_result.logs["model_returned"]
+    logs = explanation_result.logs or {}
+    model_returned = np.asarray(
+        logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool))
+    )
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")

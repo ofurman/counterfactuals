@@ -88,9 +88,9 @@ def load_and_aggregate_metrics(
         if total_weight > 0:
             weighted_means: dict[str, float] = {}
             for col in merged_df.columns:
-                if col == "cf_search_time":
-                    weighted_means[col] = merged_df[col].mean()
-                elif col == "number_of_instances":
+                # if col == "cf_search_time":
+                #     weighted_means[col] = merged_df[col].mean()
+                if col == "number_of_instances":
                     weighted_means[col] = float(total_weight)
                 else:
                     weighted_means[col] = float(
