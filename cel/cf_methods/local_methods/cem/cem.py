@@ -26,6 +26,9 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         c_steps: int = 5,
         max_iterations: int = 200,
         learning_rate_init: float = 1e-2,
+        no_info_type: str = "median",
+        feature_range: tuple[float, float] = (0.0, 1.0),
+        clip: tuple[float, float] = (-1000.0, 1000.0),
         device: str | None = None,
         **kwargs,  # ignore other arguments
     ) -> None:
@@ -38,11 +41,7 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         num_features = disc_model.num_inputs
         shape = (1, num_features)
 
-        # Set gradient clipping
-        clip = (-1000.0, 1000.0)
-
-        # Get feature ranges from model
-        feature_range = (0, 1)  # Default range, should be adjusted based on data
+        self.no_info_type = no_info_type
 
         self.cf = CEM(
             predict_proba,
@@ -60,7 +59,7 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
 
     def fit(self, X_train: np.ndarray) -> None:
         """Fit the CEM model on training data"""
-        self.cf.fit(X_train, no_info_type="median")
+        self.cf.fit(X_train, no_info_type=self.no_info_type)
 
     def explain(
         self,
@@ -83,7 +82,7 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
             x_cfs = np.array(explanation.PN)
         except Exception as e:
             print(e)
-            x_cfs = np.full_like(X.reshape(1, -1), np.nan).squeeze()
+            x_cfs = X.reshape(1, -1)
 
         return ExplanationResult(
             x_cfs=np.array(x_cfs),
@@ -100,7 +99,9 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
 
         # Fit on all training data if not already fitted
         if not hasattr(self.cf, "X_train"):
-            self.fit(Xs.numpy())
+            X_train = kwargs.get("X_train")
+            fit_data = np.asarray(X_train) if X_train is not None else Xs.numpy()
+            self.fit(fit_data)
 
         # Create target labels array
         ys_target = np.full(ys.shape, target_class)
@@ -109,23 +110,21 @@ class CEM_CF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         model_returned = []
 
         for X, y in tqdm(zip(Xs, ys), total=len(Xs)):
+            x_input = X.numpy().reshape(1, -1)
             try:
-                X = X.reshape((1,) + X.shape)
-                explanation = self.cf.explain(X, verbose=False)
+                explanation = self.cf.explain(x_input, verbose=False)
                 if explanation.PN is None:
                     raise ValueError("No counterfactual found")
-                Xs_cfs.append(explanation.PN)
+                Xs_cfs.append(np.asarray(explanation.PN).reshape(-1))
                 model_returned.append(True)
             except Exception as e:
                 print(e)
-                explanation = np.empty_like(X.reshape(1, -1))
-                explanation[:] = np.nan
-                Xs_cfs.append(explanation)
+                Xs_cfs.append(x_input.reshape(-1))
                 model_returned.append(False)
 
-        Xs_cfs = np.array(Xs_cfs).squeeze()
-        Xs = np.array(Xs)
-        ys = np.array(ys)
+        Xs_cfs = np.stack(Xs_cfs, axis=0)
+        Xs = Xs.numpy()
+        ys = ys.numpy()
         ys_target = np.array(ys_target)
 
         return ExplanationResult(
