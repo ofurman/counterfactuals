@@ -4,8 +4,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.datasets.file_dataset import FileDataset
-from counterfactuals.models import (
+from cel.datasets.file_dataset import FileDataset
+from cel.models import (
     NODE,
     LogisticRegression,
     MLPClassifier,

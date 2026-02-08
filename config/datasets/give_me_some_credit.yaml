@@ -43,4 +43,12 @@ feature_config:
     actionable: true
   NumberOfDependents:
     actionable: true
+initial_transforms:
+- name: dropna
+- name: reorder_columns
+- name: downsample
+- name: one_hot_encode
+  params:
+    drop_first: false
+
 target: SeriousDlqin2yrs

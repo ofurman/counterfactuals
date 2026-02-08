@@ -15,10 +15,10 @@ Pipelines automate the complete workflow:
 
 ```bash
 # Run PPCEF pipeline
-python -m counterfactuals.pipelines.run_ppcef_pipeline
+python -m cel.pipelines.run_ppcef_pipeline
 
 # Override configuration
-python -m counterfactuals.pipelines.run_ppcef_pipeline \
+python -m cel.pipelines.run_ppcef_pipeline \
     dataset.config_path=config/datasets/compas.yaml \
     counterfactuals_params.epochs=200
 ```

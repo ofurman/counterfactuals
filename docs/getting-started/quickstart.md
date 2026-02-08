@@ -3,7 +3,7 @@
 Generate your first counterfactual explanation in just a few steps.
 
 !!! note "Multiple Methods Available"
-    This tutorial demonstrates **PPCEF**, one of 17+ counterfactual methods available in CEL. 
+    This tutorial demonstrates **PPCEF**, one of 14 counterfactual methods available in CEL. 
     The same workflow applies to other methods like DiCE, WACH, and CEM—just import a different class from `counterfactuals.cf_methods.local_methods`.
     [Explore all methods &rarr;](../methods/index.md)
 
@@ -20,7 +20,7 @@ This tutorial walks you through:
 ## Step 1: Load a Dataset
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 import torch
 
 # Load the Adult income dataset
@@ -57,7 +57,7 @@ test_loader = DataLoader(test_dataset, batch_size=256)
 ## Step 3: Train a Classifier
 
 ```python
-from counterfactuals.models.classifiers import MLPClassifier
+from cel.models.classifiers import MLPClassifier
 
 # Get dimensions
 n_features = X_train.shape[1]
@@ -85,7 +85,7 @@ print(f"Test accuracy: {accuracy:.2%}")
 ## Step 4: Train a Generative Model
 
 ```python
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
+from cel.models.generators import MaskedAutoregressiveFlow
 
 # Create and train flow model
 flow = MaskedAutoregressiveFlow(
@@ -105,12 +105,12 @@ flow.fit(
 ## Step 5: Generate Counterfactuals
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
 import torch.nn as nn
 
 # Select an instance to explain (someone denied a loan)
 idx = (y_test == 0).nonzero()[0][0]  # First instance with class 0
-instance = X_test_t[idx:idx+1]
+instance = X_test_t[idx:idx + 1]
 original_class = y_test[idx]
 target_class = 1  # We want to find what would get approval
 
@@ -160,7 +160,7 @@ for i, (feat, change) in enumerate(zip(dataset.features, changes)):
 ## Step 7: Evaluate Quality
 
 ```python
-from counterfactuals.metrics import MetricsOrchestrator
+from cel.metrics import MetricsOrchestrator
 
 # Compute metrics
 orchestrator = MetricsOrchestrator(
@@ -272,15 +272,18 @@ CEL supports many counterfactual methods. To use a different method, simply chan
 
 ```python
 # Instead of:
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
+
 method = PPCEF(...)
 
 # Try:
-from counterfactuals.cf_methods.local_methods import DICE
+from cel.cf_methods.local_methods import DICE
+
 method = DICE(...)
 
 # Or:
-from counterfactuals.cf_methods.local_methods import WACH
+from cel.cf_methods.local_methods import WACH
+
 method = WACH(...)
 ```
 

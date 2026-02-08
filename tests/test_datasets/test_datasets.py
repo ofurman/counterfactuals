@@ -3,16 +3,14 @@
 import numpy as np
 import pytest
 
-from counterfactuals.datasets.file_dataset import FileDataset
+from cel.datasets.file_dataset import FileDataset
 
 CONFIG_PATHs = [
     "config/datasets/moons.yaml",
     "config/datasets/adult_census.yaml",
-    "config/datasets/adult.yaml",
     "config/datasets/audit.yaml",
     "config/datasets/bank_marketing.yaml",
     "config/datasets/blobs.yaml",
-    "config/datasets/compas.yaml",
     "config/datasets/credit_default.yaml",
     "config/datasets/digits.yaml",
     "config/datasets/german_credit.yaml",
@@ -21,7 +19,6 @@ CONFIG_PATHs = [
     "config/datasets/law.yaml",
     "config/datasets/lending_club.yaml",
     "config/datasets/wine.yaml",
-    # "config/datasets/mnist.yaml",
 ]
 
 

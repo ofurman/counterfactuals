@@ -1,0 +1,67 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/lending_club.yaml
+
+disc_model:
+  train_model: false
+  epochs: 5000
+  batch_size: 128
+  patience: 300
+  lr: 0.001
+
+gen_model:
+  train_model: false
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    # specific parameters besides standard ones should be passed here
+    _target_: counterfactuals.cf_methods.CCHVAE
+
+  disc_model_criterion:
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+    # _target_: counterfactuals.losses.BinaryDiscLoss
+
+  log_prob_quantile: 0.25
+  target_class: 0
+  epochs: 20000
+  batch_size: 4096
+  lr: 0.001
+  num_counterfactuals: 10
+
+  # CCHVAE hyperparameters dictionary
+  hyperparams:
+    data_name: null
+    n_search_samples: 300
+    p_norm: 1
+    step: 0.1
+    max_iter: 2000
+    clamp: true
+    binary_cat_features: true
+    vae_params:
+      # layers: first element will be set to input_size automatically
+      # remaining layers: [64, 32, 16]
+      layers: [64, 32, 16]
+      train: true
+      kl_weight: 0.3
+      lambda_reg: 1e-6
+      epochs: 10
+      lr: 1e-3
+      batch_size: 32

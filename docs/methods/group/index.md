@@ -6,9 +6,8 @@ Group counterfactual methods generate explanations for **clusters or subgroups**
 
 | Method | Description | Key Feature |
 |--------|-------------|-------------|
-| [ReViCE](revice.md) | Regional variant of PPCEF | Flow-based group CFs |
 | [GLANCE](glance.md) | Group-level anchor counterfactuals | Anchor-based grouping |
-| [Group GLOBE-CE](group-globe-ce.md) | Group variant of GLOBE-CE | Subpopulation focus |
+| [T-CREx](tcrex.md) | Temporal counterfactual rule extraction | Rule-based group explanations |
 
 ## When to Use Group Methods
 
@@ -42,10 +41,10 @@ flowchart LR
 ## Example Usage
 
 ```python
-from counterfactuals.cf_methods.group_methods import GroupPPCEF
+from cel.cf_methods.group_methods import GLANCE
 
 # Initialize method
-method = GroupPPCEF(
+method = GLANCE(
     gen_model=flow_model,
     disc_model=classifier,
     disc_model_criterion=criterion,

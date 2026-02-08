@@ -11,7 +11,7 @@ GLOBE-CE identifies a single transformation direction that, when applied to inst
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
+from cel.cf_methods.global_methods.globe_ce import GLOBE_CE
 
 method = GLOBE_CE(
     disc_model=classifier,

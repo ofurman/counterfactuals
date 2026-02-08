@@ -4,8 +4,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.datasets.regression_file_dataset import RegressionFileDataset
-from counterfactuals.models import (
+from cel.datasets.regression_file_dataset import RegressionFileDataset
+from cel.models import (
     LinearRegression,
     MLPRegressor,
 )
@@ -25,7 +25,7 @@ def test_linear_regression():
 
 @pytest.mark.parametrize("model_class", [MLPRegressor, LinearRegression])
 def test_model_fit_binary(model_class: type[MLPRegressor | LinearRegression]):
-    dataset = RegressionFileDataset(config_path="config/datasets/toy_regression.yaml")
+    dataset = RegressionFileDataset(config_path="config/datasets/synthetic.yaml")
     feature_transformer = ColumnTransformer(
         [
             ("MinMaxScaler", MinMaxScaler(), dataset.numerical_features_indices),

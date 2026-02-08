@@ -27,9 +27,9 @@ Where:
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
-from counterfactuals.models.classifiers import MLPClassifier
+from cel.cf_methods.local_methods import PPCEF
+from cel.models.generators import MaskedAutoregressiveFlow
+from cel.models.classifiers import MLPClassifier
 
 # Initialize models
 gen_model = MaskedAutoregressiveFlow(...)

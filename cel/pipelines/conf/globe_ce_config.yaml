@@ -1,0 +1,40 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlr
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+
+dataset:
+  _target_: counterfactuals.datasets.FileDataset
+  config_path: config/datasets/heloc.yaml
+
+disc_model:
+  train_model: false
+  epochs: 5000
+  batch_size: 128
+  patience: 300
+  lr: 0.001
+
+gen_model:
+  train_model: false
+  batch_size: 1024
+  epochs: 2000
+  patience: 50
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.globe_ce.GLOBE_CE
+  
+  # General parameters
+  target_class: 1
+  batch_size: 4096
+  log_prob_quantile: 0.25

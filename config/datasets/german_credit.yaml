@@ -1,43 +1,43 @@
 raw_data_path: data/german_credit.csv
 features:
-- duration_in_month
-- credit_amount
-- installment_as_income_perc
-- present_res_since
-- age
-- credits_this_bank
-- people_under_maintenance
-- account_check_status
-- credit_history
-- purpose
-- savings
-- present_emp_since
-- personal_status_sex
-- other_debtors
-- property
-- other_installment_plans
-- housing
-- job
+  - duration_in_month
+  - credit_amount
+  - installment_as_income_perc
+  - present_res_since
+  - age
+  - credits_this_bank
+  - people_under_maintenance
+  - account_check_status
+  - credit_history
+  - purpose
+  - savings
+  - present_emp_since
+  - personal_status_sex
+  - other_debtors
+  - property
+  - other_installment_plans
+  - housing
+  - job
 continuous_features:
-- duration_in_month
-- credit_amount
-- installment_as_income_perc
-- present_res_since
-- age
-- credits_this_bank
-- people_under_maintenance
+  - duration_in_month
+  - credit_amount
+  - installment_as_income_perc
+  - present_res_since
+  - age
+  - credits_this_bank
+  - people_under_maintenance
 categorical_features:
-- account_check_status
-- credit_history
-- purpose
-- savings
-- present_emp_since
-- personal_status_sex
-- other_debtors
-- property
-- other_installment_plans
-- housing
-- job
+  - account_check_status
+  - credit_history
+  - purpose
+  - savings
+  - present_emp_since
+  - personal_status_sex
+  - other_debtors
+  - property
+  - other_installment_plans
+  - housing
+  - job
 feature_config:
   duration_in_month:
     actionable: true
@@ -75,4 +75,12 @@ feature_config:
     actionable: true
   job:
     actionable: true
+initial_transforms:
+  - name: dropna
+  - name: reorder_columns
+  - name: downsample
+  - name: one_hot_encode
+    params:
+      drop_first: false
+
 target: default

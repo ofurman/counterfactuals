@@ -11,7 +11,7 @@ GLANCE identifies anchor points that define natural groupings and generates coun
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.group_methods import GLANCE
+from cel.cf_methods.group_methods import GLANCE
 
 method = GLANCE(
     gen_model=gen_model,

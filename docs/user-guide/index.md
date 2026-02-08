@@ -29,10 +29,10 @@ flowchart LR
 ### Basic Workflow
 
 ```python
-from counterfactuals.datasets import FileDataset
-from counterfactuals.models.classifiers import MLPClassifier
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.datasets import FileDataset
+from cel.models.classifiers import MLPClassifier
+from cel.models.generators import MaskedAutoregressiveFlow
+from cel.cf_methods.local_methods import PPCEF
 
 # 1. Load dataset
 dataset = FileDataset(config_path="config/datasets/adult.yaml")
@@ -46,7 +46,8 @@ method = PPCEF(gen_model, classifier, ...)
 result = method.explain(X, y_origin, y_target, ...)
 
 # 4. Evaluate
-from counterfactuals.metrics import MetricsOrchestrator
+from cel.metrics import MetricsOrchestrator
+
 metrics = MetricsOrchestrator(...)
 scores = metrics.compute(result)
 ```

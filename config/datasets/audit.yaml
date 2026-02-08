@@ -4,11 +4,11 @@ features:
 - Score_A
 - Risk_A
 - PARA_B
-- Score_B
+- Score_B_1
 - Risk_B
 - TOTAL
 - numbers
-- Score_B
+- Score_B_2
 - Risk_C
 - Money_Value
 - Score_MV
@@ -28,11 +28,11 @@ continuous_features:
 - Score_A
 - Risk_A
 - PARA_B
-- Score_B
+- Score_B_1
 - Risk_B
 - TOTAL
 - numbers
-- Score_B
+- Score_B_2
 - Risk_C
 - Money_Value
 - Score_MV
@@ -94,3 +94,9 @@ feature_config:
   Audit_Risk:
     actionable: true
 target: Risk
+initial_transforms:
+- name: dropna
+- name: reorder_columns
+- name: one_hot_encode
+  params:
+    drop_first: false

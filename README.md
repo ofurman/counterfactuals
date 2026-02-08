@@ -30,7 +30,7 @@ The library includes multiple counterfactual methods, from gradient-based approa
 - **Normalizing Flow Integration**: State-of-the-art density estimation for plausibility
 - **Comprehensive Metrics**: 17+ evaluation metrics for counterfactual quality
 - **Hydra Configuration**: Flexible experiment management with YAML configs
-- **21 Built-in Datasets**: Classification and regression tasks
+- **18 Built-in Datasets**: Classification and regression tasks
 - **Extensible Architecture**: Easy to add new methods, models, and metrics
 - **PyTorch-based**: Modern deep learning framework
 - **Cross-validation Support**: Robust evaluation with k-fold CV
@@ -41,8 +41,8 @@ The library includes multiple counterfactual methods, from gradient-based approa
 Clone the repository and set up the environment:
 
 ```shell
-git clone git@github.com:ofurman/counterfactuals.git
-cd counterfactuals
+git clone git@github.com:ofurman/cel.git
+cd cel
 ./setup_env.sh
 ```
 
@@ -58,33 +58,39 @@ uv sync
 
 ```python
 import torch
-from counterfactuals.datasets import MethodDataset
-from counterfactuals.cf_methods import PPCEF
-from counterfactuals.models import MaskedAutoregressiveFlow, MLPClassifier
-from counterfactuals.losses import BinaryDiscLoss
-from counterfactuals.metrics import evaluate_cf
+from cel.datasets import FileDataset, MethodDataset
+from cel.cf_methods import PPCEF
+from cel.models import MaskedAutoregressiveFlow, MLPClassifier
+from cel.losses import BinaryDiscLoss
+from cel.metrics.orchestrator import MetricsOrchestrator
+import numpy as np
+
+# Note: You may need to convert data to float32 for PyTorch compatibility
+# X_train = dataset.X_train.astype(np.float32)
+# y_train = dataset.y_train.astype(np.float32)
 
 # Load dataset with preprocessing
-dataset = MethodDataset.from_config("config/datasets/moons.yaml")
+file_dataset = FileDataset(config_path="config/datasets/moons.yaml")
+dataset = MethodDataset(file_dataset=file_dataset)
 train_loader = dataset.train_dataloader(batch_size=128, shuffle=True)
 test_loader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
 # Train discriminative model (classifier)
 disc_model = MLPClassifier(
-    input_size=dataset.input_size,
+    num_inputs=dataset.X_train.shape[1],
+    num_targets=1,
     hidden_layer_sizes=[256, 256],
-    target_size=1,
     dropout=0.2,
 )
 disc_model.fit(train_loader, test_loader, epochs=5000, patience=300, lr=1e-3)
 
 # Train generative model (normalizing flow)
 gen_model = MaskedAutoregressiveFlow(
-    features=dataset.input_size,
+    features=dataset.X_train.shape[1],
     hidden_features=8,
     context_features=1,
 )
-gen_model.fit(train_loader, test_loader, num_epochs=1000)
+gen_model.fit(train_loader, test_loader, epochs=1000)
 
 # Generate counterfactuals
 cf_method = PPCEF(
@@ -100,21 +106,22 @@ result = cf_method.explain_dataloader(
     epochs=4000,
 )
 
-# Evaluate results
-X_cf = result.x_origs + result.x_cfs
-metrics = evaluate_cf(
-    disc_model=disc_model,
-    gen_model=gen_model,
-    X_cf=X_cf,
+# Evaluate results using MetricsOrchestrator
+orchestrator = MetricsOrchestrator(
+    X_cf=result.x_cfs,
+    y_target=result.y_cf_targets,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
     X_test=result.x_origs,
     y_test=result.y_origs,
-    y_target=result.y_cf_targets,
-    continuous_features=dataset.numerical_features,
-    categorical_features=dataset.categorical_features,
-    median_log_prob=log_prob_threshold,
+    gen_model=gen_model,
+    disc_model=disc_model,
+    continuous_features=dataset.numerical_features_indices,
+    categorical_features=dataset.categorical_features_indices,
+    prob_plausibility_threshold=log_prob_threshold,
+    metrics_conf_path="cel/pipelines/conf/metrics/default.yaml",
 )
+metrics = orchestrator.calculate_all_metrics()
 ```
 
 ## Library Structure
@@ -124,7 +131,7 @@ counterfactuals/
 ├── cf_methods/           # Counterfactual explanation methods
 │   ├── local/            # Instance-level methods (PPCEF, DiCE, WACH, etc.)
 │   ├── global_/          # Model-level methods (GLOBE-CE, AReS)
-│   └── group/            # Cohort-level methods (RPPCEF, GLANCE)
+│   └── group/            # Cohort-level methods (GLANCE, T-CREx)
 ├── models/               # ML models
 │   ├── discriminative/   # Classifiers (MLP, LogisticRegression, NODE)
 │   ├── generative/       # Density estimators (MAF, RealNVP, NICE, KDE)
@@ -141,7 +148,7 @@ counterfactuals/
 └── utils.py              # Helper functions
 
 config/
-└── datasets/             # Dataset YAML configurations (21 datasets)
+└── datasets/             # Dataset YAML configurations (18 datasets)
 
 docs/
 ├── library_overview.md   # Comprehensive package documentation
@@ -154,18 +161,16 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
-| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows |
-| **PPCEFR** | `PPCEFR` | PPCEF for regression tasks |
-| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
-| **CEM** | `CEM_CF` | Contrastive Explanation Method |
-| **CET** | `CET` | Counterfactual Explanation Tree |
 | **WACH** | `WACH` | Wachter-style gradient-based CF |
-| **Artelt** | `Artelt` | Artelt's CF method |
-| **SACE** | `SACE`, `CaseBasedSACE` | (Case-based) SACE methods |
-| **CEGP** | `CEGP` | CF with Gaussian Processes |
-| **C-CHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
-| **DiCoFlex** | `DiCoFlex` | Diverse Counterfactual Flex |
-| **LiCE** | `LiCE` | LIME-style CF (requires pyomo/onnx/omlt) |
+| **Artelt** | `Artelt` | Heuristic-based CF method |
+| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
+| **CCHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
+| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows |
+| **CEM** | `CEM_CF` | Contrastive Explanation Method |
+| **CEGP** | `CEGP` | Counterfactual with Gaussian Processes |
+| **CADEX** | `CADEX` | Counterfactual explanations via optimization |
+| **SACE** | `SACE` | Several SACE variants |
+| **CEARM** | `CEARM` | Counterfactual explanation through association rule mining |
 
 ### Global Methods (Model-level)
 
@@ -178,18 +183,18 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
-| **RPPCEF** | `RPPCEF` | Regional PPCEF with shared interventions |
 | **GLANCE** | `GLANCE` | Group-level CF method |
+| **T-CREx** | `TCREx` | Temporal Counterfactual Rule Extraction |
 
 ## Datasets
 
-The library includes 21 pre-configured datasets:
+The library includes 18 pre-configured datasets:
 
-**Classification:**
-`adult`, `adult_census`, `audit`, `bank_marketing`, `compas`, `credit_default`, `diabetes`, `digits`, `german_credit`, `give_me_some_credit`, `heloc`, `law`, `lending_club`, `mnist`, `moons`, `wine`, `blobs`
+**Classification (13):**
+`adult_census`, `audit`, `bank_marketing`, `blobs`, `credit_default`, `digits`, `german_credit`, `give_me_some_credit` (GMC), `heloc`, `law`, `lending_club`, `moons`, `wine`
 
-**Regression:**
-`concrete`, `toy_regression`, `wine_quality_regression`, `yacht`
+**Regression (5):**
+`concrete`, `diabetes`, `yacht`, `synthetic`, `scm20d`
 
 Dataset configurations are in `config/datasets/*.yaml` and support:
 - Automatic feature type detection (continuous/categorical)
@@ -242,10 +247,10 @@ The library provides comprehensive evaluation metrics:
 
 ```shell
 # Run PPCEF pipeline
-uv run python counterfactuals/pipelines/run_ppcef_pipeline.py
+uv run python cel/pipelines/run_ppcef_pipeline.py
 
 # With custom configuration
-uv run python counterfactuals/pipelines/run_ppcef_pipeline.py \
+uv run python cel/pipelines/run_ppcef_pipeline.py \
   dataset.config_path=config/datasets/heloc.yaml \
   disc_model.model=disc_model/mlp_large \
   counterfactuals_params.target_class=1
@@ -256,18 +261,19 @@ uv run python counterfactuals/pipelines/run_ppcef_pipeline.py \
 | Pipeline | Method |
 |----------|--------|
 | `run_ppcef_pipeline.py` | PPCEF |
-| `run_ppcefr_pipeline.py` | PPCEF for regression |
-| `run_rppcef_pipeline.py` | Regional PPCEF |
 | `run_dice_pipeline.py` | DiCE |
 | `run_cem_pipeline.py` | CEM |
-| `run_cet_pipeline.py` | CET |
 | `run_cchvae_pipeline.py` | C-CHVAE |
 | `run_wach_pipeline.py` | WACH |
 | `run_artelt_pipeline.py` | Artelt |
 | `run_cegp_pipeline.py` | CEGP |
+| `run_cadex_pipeline.py` | CADEX |
+| `run_sace_pipeline.py` | SACE |
+| `run_cearm_pipeline.py` | CEARM |
 | `run_globe_ce_pipeline.py` | GLOBE-CE |
 | `run_ares_pipeline.py` | AReS |
 | `run_glance_pipeline.py` | GLANCE |
+| `run_tcrex_pipeline.py` | T-CREx |
 
 ## Documentation
 
