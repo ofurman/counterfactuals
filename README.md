@@ -58,33 +58,39 @@ uv sync
 
 ```python
 import torch
-from cel.datasets import MethodDataset
+from cel.datasets import FileDataset, MethodDataset
 from cel.cf_methods import PPCEF
 from cel.models import MaskedAutoregressiveFlow, MLPClassifier
 from cel.losses import BinaryDiscLoss
 from cel.metrics import evaluate_cf
+import numpy as np
+
+# Note: You may need to convert data to float32 for PyTorch compatibility
+# X_train = dataset.X_train.astype(np.float32)
+# y_train = dataset.y_train.astype(np.float32)
 
 # Load dataset with preprocessing
-dataset = MethodDataset.from_config("config/datasets/moons.yaml")
+file_dataset = FileDataset(config_path="config/datasets/moons.yaml")
+dataset = MethodDataset(file_dataset=file_dataset)
 train_loader = dataset.train_dataloader(batch_size=128, shuffle=True)
 test_loader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
 # Train discriminative model (classifier)
 disc_model = MLPClassifier(
-    input_size=dataset.input_size,
+    num_inputs=dataset.X_train.shape[1],
+    num_targets=1,
     hidden_layer_sizes=[256, 256],
-    target_size=1,
     dropout=0.2,
 )
 disc_model.fit(train_loader, test_loader, epochs=5000, patience=300, lr=1e-3)
 
 # Train generative model (normalizing flow)
 gen_model = MaskedAutoregressiveFlow(
-    features=dataset.input_size,
+    features=dataset.X_train.shape[1],
     hidden_features=8,
     context_features=1,
 )
-gen_model.fit(train_loader, test_loader, num_epochs=1000)
+gen_model.fit(train_loader, test_loader, epochs=1000)
 
 # Generate counterfactuals
 cf_method = PPCEF(
@@ -101,11 +107,13 @@ result = cf_method.explain_dataloader(
 )
 
 # Evaluate results
-X_cf = result.x_origs + result.x_cfs
+# Create model_returned array indicating which CFs were successfully generated
+model_returned = np.ones(len(result.x_cfs), dtype=bool)
 metrics = evaluate_cf(
     disc_model=disc_model,
     gen_model=gen_model,
-    X_cf=X_cf,
+    X_cf=result.x_cfs,
+    model_returned=model_returned,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
     X_test=result.x_origs,
@@ -114,6 +122,7 @@ metrics = evaluate_cf(
     continuous_features=dataset.numerical_features,
     categorical_features=dataset.categorical_features,
     median_log_prob=log_prob_threshold,
+    metrics_conf_path="cel/pipelines/conf/metrics/default.yaml",
 )
 ```
 
