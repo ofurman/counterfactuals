@@ -3,7 +3,7 @@
 Generate your first counterfactual explanation in just a few steps.
 
 !!! note "Multiple Methods Available"
-    This tutorial demonstrates **PPCEF**, one of 17+ counterfactual methods available in CEL. 
+    This tutorial demonstrates **PPCEF**, one of 14 counterfactual methods available in CEL. 
     The same workflow applies to other methods like DiCE, WACH, and CEM—just import a different class from `counterfactuals.cf_methods.local_methods`.
     [Explore all methods &rarr;](../methods/index.md)
 

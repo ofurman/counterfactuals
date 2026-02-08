@@ -11,7 +11,7 @@ A comprehensive Python framework for generating and evaluating counterfactual ex
 <div class="feature-grid" markdown>
 
 <div class="feature-item" markdown>
-**17+ Explanation Methods**
+**14 Explanation Methods**
 
 Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLOBE-CE, and more.
 
@@ -19,9 +19,9 @@ Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLO
 </div>
 
 <div class="feature-item" markdown>
-**22 Pre-configured Datasets**
+**18 Pre-configured Datasets**
 
-Ready-to-use datasets for classification and regression tasks with built-in preprocessing.
+Ready-to-use datasets for classification (13) and regression (5) tasks with built-in preprocessing.
 
 [View Datasets →](datasets/index.md)
 </div>
@@ -97,16 +97,15 @@ flowchart TD
 
     B --> B1[PPCEF]
     B --> B2[DICE]
-    B --> B3[DiCoFlex]
+    B --> B3[CCHVAE]
     B --> B4[WACH]
     B --> B5[...]
 
     C --> C1[GLOBE-CE]
     C --> C2[AReS]
 
-    D --> D1[ReViCE]
-    D --> D2[GLANCE]
-    D --> D3[Group GLOBE-CE]
+    D --> D1[GLANCE]
+    D --> D2[T-CREx]
 ```
 
 | Category | Scope | Best For |

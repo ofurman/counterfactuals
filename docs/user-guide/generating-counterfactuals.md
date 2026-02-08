@@ -3,7 +3,7 @@
 The core workflow for generating counterfactual explanations.
 
 !!! note "Multiple Methods Available"
-    CEL provides 17+ counterfactual methods. The example below demonstrates PPCEF, 
+    CEL provides 14 counterfactual methods. The example below demonstrates PPCEF, 
     but the same `explain()` interface works for all local methods. See [Local Methods](../methods/local/index.md) 
     for a complete list and comparison.
 
