@@ -12,6 +12,7 @@ from .local_counterfactual_mixin import LocalCounterfactualMixin
 from .local_methods import (
     CADEX,
     CCHVAE,
+    CEARM,
     CEGP,
     CEM_CF,
     DICE,
@@ -32,6 +33,7 @@ __all__ = [
     "GroupCounterfactualMixin",
     # Local methods
     "CADEX",
+    "CEARM",
     "PPCEF",
     "DICE",
     "WACH",
