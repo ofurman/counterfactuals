@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from counterfactuals.datasets.file_dataset import FileDataset
+from cel.datasets.file_dataset import FileDataset
 
 CONFIG_PATHs = [
     "config/datasets/moons.yaml",

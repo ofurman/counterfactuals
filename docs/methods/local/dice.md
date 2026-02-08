@@ -11,7 +11,7 @@ DICE generates multiple diverse counterfactuals by optimizing for both validity 
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import DICE
+from cel.cf_methods.local_methods import DICE
 
 method = DICE(
     gen_model=gen_model,

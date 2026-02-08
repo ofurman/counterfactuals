@@ -35,7 +35,7 @@ Add your own datasets with YAML configuration.
 ## Quick Start
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 
 # Load a pre-configured dataset
 dataset = FileDataset(config_path="config/datasets/adult.yaml")

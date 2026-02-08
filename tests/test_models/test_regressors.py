@@ -4,8 +4,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from torch.utils.data import DataLoader, TensorDataset
 
-from counterfactuals.datasets.regression_file_dataset import RegressionFileDataset
-from counterfactuals.models import (
+from cel.datasets.regression_file_dataset import RegressionFileDataset
+from cel.models import (
     LinearRegression,
     MLPRegressor,
 )

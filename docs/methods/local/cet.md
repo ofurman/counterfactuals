@@ -11,7 +11,7 @@ CET builds decision trees that guide the counterfactual generation process.
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods.cet import CounterfactualExplanationTree
+from cel.cf_methods.local_methods.cet import CounterfactualExplanationTree
 
 method = CounterfactualExplanationTree(
     gen_model=gen_model,

@@ -15,7 +15,7 @@ DiCoFlex extends standard counterfactual generation by:
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods.DiCoFlex import DiCoFlex
+from cel.cf_methods.local_methods.DiCoFlex import DiCoFlex
 
 method = DiCoFlex(
     gen_model=gen_model,

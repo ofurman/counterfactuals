@@ -60,7 +60,8 @@ flowchart TD
 All methods inherit from `BaseCounterfactualMethod` and share a common interface:
 
 ```python
-from counterfactuals.cf_methods import BaseCounterfactualMethod
+from cel.cf_methods import BaseCounterfactualMethod
+
 
 class YourMethod(BaseCounterfactualMethod):
     def fit(self, X_train, y_train, **kwargs):

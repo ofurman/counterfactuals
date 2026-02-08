@@ -42,7 +42,7 @@ flowchart LR
 ## Example Usage
 
 ```python
-from counterfactuals.cf_methods.group_methods import GroupPPCEF
+from cel.cf_methods.group_methods import GroupPPCEF
 
 # Initialize method
 method = GroupPPCEF(

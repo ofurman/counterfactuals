@@ -31,7 +31,7 @@ Local methods are ideal when you need to:
 This example demonstrates PPCEF, but the same pattern applies to all local methods:
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
 
 # Initialize method
 method = PPCEF(
@@ -43,9 +43,9 @@ method = PPCEF(
 
 # Generate counterfactual for a single instance
 result = method.explain(
-    X=instance,           # Shape: (1, n_features)
-    y_origin=0,           # Current prediction
-    y_target=1,           # Desired prediction
+    X=instance,  # Shape: (1, n_features)
+    y_origin=0,  # Current prediction
+    y_target=1,  # Desired prediction
     X_train=X_train,
     y_train=y_train,
     epochs=100,

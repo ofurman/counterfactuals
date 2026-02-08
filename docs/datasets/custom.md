@@ -56,7 +56,7 @@ random_state: 42
 ## Loading Custom Dataset
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 
 dataset = FileDataset(config_path="config/datasets/my_dataset.yaml")
 ```

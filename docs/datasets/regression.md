@@ -15,7 +15,7 @@ Pre-configured datasets for regression tasks.
 ## Usage Example
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 
 # Load Concrete dataset
 dataset = FileDataset(config_path="config/datasets/concrete.yaml")

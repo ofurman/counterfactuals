@@ -72,7 +72,7 @@ Write tests for:
 ```bash
 # Clone repository
 git clone https://github.com/ofurman/counterfactuals.git
-cd counterfactuals
+cd cel
 
 # Install with dev dependencies
 uv sync

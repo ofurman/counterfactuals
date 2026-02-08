@@ -12,7 +12,7 @@ Artelt's method uses heuristics for fast counterfactual generation.
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import Artelt
+from cel.cf_methods.local_methods import Artelt
 
 method = Artelt(
     gen_model=gen_model,

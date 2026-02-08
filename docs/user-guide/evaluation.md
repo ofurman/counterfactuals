@@ -5,7 +5,7 @@ Assess the quality of generated counterfactuals using built-in metrics.
 ## Using MetricsOrchestrator
 
 ```python
-from counterfactuals.metrics import MetricsOrchestrator
+from cel.metrics import MetricsOrchestrator
 
 # Initialize with desired metrics
 orchestrator = MetricsOrchestrator(
@@ -55,7 +55,8 @@ for metric, value in scores.items():
 ## Custom Metrics
 
 ```python
-from counterfactuals.metrics import Metric, register_metric
+from cel.metrics import Metric, register_metric
+
 
 @register_metric
 class MyMetric(Metric):

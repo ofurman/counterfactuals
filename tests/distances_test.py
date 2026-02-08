@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from counterfactuals.metrics.distance import (
+from cel.metrics.distance import (
     _mad_cityblock,
     _median_abs_deviation,
 )
-from counterfactuals.metrics.distances import (
+from cel.metrics.distances import (
     categorical_distance,
     continuous_distance,
     distance_combined,

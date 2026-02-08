@@ -6,12 +6,12 @@ How to reproduce and extend benchmark experiments.
 
 ```bash
 # Run single method benchmark
-python -m counterfactuals.pipelines.run_ppcef_pipeline \
+python -m cel.pipelines.run_ppcef_pipeline \
     dataset.config_path=config/datasets/adult.yaml
 
 # Run with multiple seeds
 for seed in 0 1 2 3 4; do
-    python -m counterfactuals.pipelines.run_ppcef_pipeline \
+    python -m cel.pipelines.run_ppcef_pipeline \
         random_state=$seed
 done
 ```
@@ -21,7 +21,7 @@ done
 ```bash
 # Run across all classification datasets
 for dataset in adult compas german_credit heloc; do
-    python -m counterfactuals.pipelines.run_ppcef_pipeline \
+    python -m cel.pipelines.run_ppcef_pipeline \
         dataset.config_path=config/datasets/${dataset}.yaml
 done
 ```
@@ -30,9 +30,9 @@ done
 
 ```bash
 # Run multiple methods on same dataset
-python -m counterfactuals.pipelines.run_ppcef_pipeline
-python -m counterfactuals.pipelines.run_dice_pipeline
-python -m counterfactuals.pipelines.run_globe_ce_pipeline
+python -m cel.pipelines.run_ppcef_pipeline
+python -m cel.pipelines.run_dice_pipeline
+python -m cel.pipelines.run_globe_ce_pipeline
 ```
 
 ## Viewing Results
@@ -70,7 +70,7 @@ hydra:
 Run sweep:
 
 ```bash
-python -m counterfactuals.pipelines.run_ppcef_pipeline \
+python -m cel.pipelines.run_ppcef_pipeline \
     --multirun \
     --config-name=benchmark
 ```

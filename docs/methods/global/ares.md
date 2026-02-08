@@ -11,7 +11,7 @@ AReS identifies interpretable rules that describe when and how predictions can b
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.global_methods import AReS
+from cel.cf_methods.global_methods import AReS
 
 method = AReS(
     gen_model=gen_model,
