@@ -62,7 +62,7 @@ from cel.datasets import FileDataset, MethodDataset
 from cel.cf_methods import PPCEF
 from cel.models import MaskedAutoregressiveFlow, MLPClassifier
 from cel.losses import BinaryDiscLoss
-from cel.metrics import evaluate_cf
+from cel.metrics.orchestrator import MetricsOrchestrator
 import numpy as np
 
 # Note: You may need to convert data to float32 for PyTorch compatibility
@@ -106,24 +106,22 @@ result = cf_method.explain_dataloader(
     epochs=4000,
 )
 
-# Evaluate results
-# Create model_returned array indicating which CFs were successfully generated
-model_returned = np.ones(len(result.x_cfs), dtype=bool)
-metrics = evaluate_cf(
-    disc_model=disc_model,
-    gen_model=gen_model,
+# Evaluate results using MetricsOrchestrator
+orchestrator = MetricsOrchestrator(
     X_cf=result.x_cfs,
-    model_returned=model_returned,
+    y_target=result.y_cf_targets,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
     X_test=result.x_origs,
     y_test=result.y_origs,
-    y_target=result.y_cf_targets,
-    continuous_features=dataset.numerical_features,
-    categorical_features=dataset.categorical_features,
-    median_log_prob=log_prob_threshold,
+    gen_model=gen_model,
+    disc_model=disc_model,
+    continuous_features=dataset.numerical_features_indices,
+    categorical_features=dataset.categorical_features_indices,
+    prob_plausibility_threshold=log_prob_threshold,
     metrics_conf_path="cel/pipelines/conf/metrics/default.yaml",
 )
+metrics = orchestrator.calculate_all_metrics()
 ```
 
 ## Library Structure
