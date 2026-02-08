@@ -1,5 +1,5 @@
 [project]
-name = "cel"
+name = "ce-library"
 version = "0.1.0"
 description = "CEL: Counterfactual Explanations Library"
 readme = "README.md"
@@ -108,7 +108,7 @@ dev-dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["counterfactuals*"]
+include = ["cel*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml"]
@@ -118,11 +118,8 @@ line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"counterfactuals/cf_methods/cet/*.py" = ["E741", "E711", "F841"]
-"counterfactuals/cf_methods/ares/ares.py" = ["F841"]
-"counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
-"counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
-"counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
+"cel/cf_methods/ares/ares.py" = ["F841"]
+"cel/cf_methods/globe_ce/globe_ce.py" = ["F841"]
 
 [dependency-groups]
 dev = [
