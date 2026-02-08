@@ -6,7 +6,6 @@ import cel.metrics.plausibility  # noqa: F401
 from .metrics import (  # noqa: F401
     CFMetrics,
     evaluate_cf,
-    evaluate_cf_for_rppcef,
 )
 from .regression_metrics import (
     RegressionCFMetrics,  # noqa: F401

@@ -9,7 +9,6 @@ CONFIG_PATHs = [
     "config/datasets/toy_regression.yaml",
     "config/datasets/concrete.yaml",
     "config/datasets/diabetes.yaml",
-    "config/datasets/wine_quality_regression.yaml",
     "config/datasets/yacht.yaml",
 ]
 

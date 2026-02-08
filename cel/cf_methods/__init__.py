@@ -4,22 +4,21 @@ from .counterfactual_base import BaseCounterfactualMethod, ExplanationResult
 from .global_counterfactual_mixin import GlobalCounterfactualMixin
 from .global_methods import GLOBE_CE, AReS
 from .group_counterfactual_mixin import GroupCounterfactualMixin
-from .group_methods import GLANCE, RPPCEF
+from .group_methods import GLANCE
 from .group_methods.tcrex import TCREx
 from .local_counterfactual_mixin import LocalCounterfactualMixin
 
 # Import from subpackages
 from .local_methods import (
+    CADEX,
     CCHVAE,
+    CEGP,
+    CEM_CF,
     DICE,
     PPCEF,
-    PPCEFR,
+    SACE,
     WACH,
-    WACH_OURS,
     Artelt,
-    CeFlow,
-    DiCoFlex,
-    TabDCE,
 )
 
 # Import from subpackages
@@ -32,21 +31,19 @@ __all__ = [
     "GlobalCounterfactualMixin",
     "GroupCounterfactualMixin",
     # Local methods
+    "CADEX",
     "PPCEF",
-    "DiCoFlex",
     "DICE",
     "WACH",
-    "WACH_OURS",
     "Artelt",
-    "PPCEFR",
+    "CEM_CF",
     "CCHVAE",
-    "TabDCE",
-    "CeFlow",
+    "CEGP",
+    "SACE",
     # Global methods
     "AReS",
     "GLOBE_CE",
     # Group methods
-    "RPPCEF",
     "GLANCE",
     "TCREx",
 ]
