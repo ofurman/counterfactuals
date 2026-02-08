@@ -10,6 +10,7 @@ Pre-configured datasets for regression tasks.
 | `diabetes.yaml` | 10 | 442 | Diabetes progression |
 | `yacht.yaml` | 6 | 308 | Yacht hydrodynamics |
 | `synthetic.yaml` | 2 | 1,000 | Synthetic regression dataset |
+| `scm20d.yaml` | 61 | 8,966 | SCM20D multi-target regression |
 
 ## Usage Example
 

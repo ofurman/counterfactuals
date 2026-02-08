@@ -1,0 +1,266 @@
+raw_data_path: data/regression/scm20d.csv
+features:
+- "0"
+- "1"
+- "2"
+- "3"
+- "4"
+- "5"
+- "6"
+- "7"
+- "8"
+- "9"
+- "10"
+- "11"
+- "12"
+- "13"
+- "14"
+- "15"
+- "16"
+- "17"
+- "18"
+- "19"
+- "20"
+- "21"
+- "22"
+- "23"
+- "24"
+- "25"
+- "26"
+- "27"
+- "28"
+- "29"
+- "30"
+- "31"
+- "32"
+- "33"
+- "34"
+- "35"
+- "36"
+- "37"
+- "38"
+- "39"
+- "40"
+- "41"
+- "42"
+- "43"
+- "44"
+- "45"
+- "46"
+- "47"
+- "48"
+- "49"
+- "50"
+- "51"
+- "52"
+- "53"
+- "54"
+- "55"
+- "56"
+- "57"
+- "58"
+- "59"
+- "60"
+continuous_features:
+- "0"
+- "1"
+- "2"
+- "3"
+- "4"
+- "5"
+- "6"
+- "7"
+- "8"
+- "9"
+- "10"
+- "11"
+- "12"
+- "13"
+- "14"
+- "15"
+- "16"
+- "17"
+- "18"
+- "19"
+- "20"
+- "21"
+- "22"
+- "23"
+- "24"
+- "25"
+- "26"
+- "27"
+- "28"
+- "29"
+- "30"
+- "31"
+- "32"
+- "33"
+- "34"
+- "35"
+- "36"
+- "37"
+- "38"
+- "39"
+- "40"
+- "41"
+- "42"
+- "43"
+- "44"
+- "45"
+- "46"
+- "47"
+- "48"
+- "49"
+- "50"
+- "51"
+- "52"
+- "53"
+- "54"
+- "55"
+- "56"
+- "57"
+- "58"
+- "59"
+- "60"
+categorical_features: []
+feature_config:
+  "0":
+    actionable: true
+  "1":
+    actionable: true
+  "2":
+    actionable: true
+  "3":
+    actionable: true
+  "4":
+    actionable: true
+  "5":
+    actionable: true
+  "6":
+    actionable: true
+  "7":
+    actionable: true
+  "8":
+    actionable: true
+  "9":
+    actionable: true
+  "10":
+    actionable: true
+  "11":
+    actionable: true
+  "12":
+    actionable: true
+  "13":
+    actionable: true
+  "14":
+    actionable: true
+  "15":
+    actionable: true
+  "16":
+    actionable: true
+  "17":
+    actionable: true
+  "18":
+    actionable: true
+  "19":
+    actionable: true
+  "20":
+    actionable: true
+  "21":
+    actionable: true
+  "22":
+    actionable: true
+  "23":
+    actionable: true
+  "24":
+    actionable: true
+  "25":
+    actionable: true
+  "26":
+    actionable: true
+  "27":
+    actionable: true
+  "28":
+    actionable: true
+  "29":
+    actionable: true
+  "30":
+    actionable: true
+  "31":
+    actionable: true
+  "32":
+    actionable: true
+  "33":
+    actionable: true
+  "34":
+    actionable: true
+  "35":
+    actionable: true
+  "36":
+    actionable: true
+  "37":
+    actionable: true
+  "38":
+    actionable: true
+  "39":
+    actionable: true
+  "40":
+    actionable: true
+  "41":
+    actionable: true
+  "42":
+    actionable: true
+  "43":
+    actionable: true
+  "44":
+    actionable: true
+  "45":
+    actionable: true
+  "46":
+    actionable: true
+  "47":
+    actionable: true
+  "48":
+    actionable: true
+  "49":
+    actionable: true
+  "50":
+    actionable: true
+  "51":
+    actionable: true
+  "52":
+    actionable: true
+  "53":
+    actionable: true
+  "54":
+    actionable: true
+  "55":
+    actionable: true
+  "56":
+    actionable: true
+  "57":
+    actionable: true
+  "58":
+    actionable: true
+  "59":
+    actionable: true
+  "60":
+    actionable: true
+targets:
+- "61"
+- "62"
+- "63"
+- "64"
+- "65"
+- "66"
+- "67"
+- "68"
+- "69"
+- "70"
+- "71"
+- "72"
+- "73"
+- "74"
+- "75"
+- "76"
