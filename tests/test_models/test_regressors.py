@@ -25,7 +25,7 @@ def test_linear_regression():
 
 @pytest.mark.parametrize("model_class", [MLPRegressor, LinearRegression])
 def test_model_fit_binary(model_class: type[MLPRegressor | LinearRegression]):
-    dataset = RegressionFileDataset(config_path="config/datasets/toy_regression.yaml")
+    dataset = RegressionFileDataset(config_path="config/datasets/synthetic.yaml")
     feature_transformer = ColumnTransformer(
         [
             ("MinMaxScaler", MinMaxScaler(), dataset.numerical_features_indices),

@@ -6,7 +6,7 @@ import pytest
 from cel.datasets.regression_file_dataset import RegressionFileDataset
 
 CONFIG_PATHs = [
-    "config/datasets/toy_regression.yaml",
+    "config/datasets/synthetic.yaml",
     "config/datasets/concrete.yaml",
     "config/datasets/diabetes.yaml",
     "config/datasets/yacht.yaml",

@@ -1,4 +1,4 @@
-raw_data_path: data/regression/toy_regression.csv
+raw_data_path: data/regression/synthetic.csv
 features:
 - "0"
 - "1"
