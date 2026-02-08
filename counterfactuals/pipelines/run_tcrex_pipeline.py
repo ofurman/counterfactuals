@@ -15,6 +15,7 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.utils import align_counterfactuals_with_factuals
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -67,6 +68,7 @@ def search_counterfactuals(
     # Generate counterfactuals for the test instances
     logger.info("Generating counterfactuals")
     Xs_cfs = cf_method.explain(X_test_origin)
+    Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, X_test_origin)
 
     cf_search_time = np.mean(time() - time_start)
 
@@ -95,6 +97,7 @@ def search_counterfactuals(
         log_prob_threshold,
         y_test_origin,
         np.full_like(y_test_origin, target_class),
+        model_returned,
         cf_search_time,
         n_groups,
     )
@@ -116,7 +119,6 @@ def main(cfg: DictConfig):
 
     file_dataset = instantiate(cfg.dataset)
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    label_onehot_encoder = dataset.preprocessing_pipeline.get_step("label_onehot")
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
         disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
@@ -128,16 +130,23 @@ def main(cfg: DictConfig):
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, cf_search_time, n_groups = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
-        )
+        (
+            Xs_cfs,
+            Xs,
+            log_prob_threshold,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+            n_groups,
+        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
 
         logger.info("Calculating metrics")
         metrics = evaluate_cf(
             gen_model=gen_model,
             disc_model=disc_model,
             X_cf=Xs_cfs,
-            model_returned=np.ones(Xs_cfs.shape[0]).astype(bool),
+            model_returned=model_returned,
             categorical_features=dataset.categorical_features_indices,
             continuous_features=dataset.numerical_features_indices,
             X_train=dataset.X_train,
@@ -149,7 +158,7 @@ def main(cfg: DictConfig):
         )
         df_metrics = pd.DataFrame(metrics, index=[0])
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-        df_metrics["time"] = cf_search_time
+        df_metrics["cf_search_time"] = cf_search_time
         df_metrics["n_groups"] = n_groups
         logger.info(f"Metrics:\n{metrics}")
         df_metrics.to_csv(

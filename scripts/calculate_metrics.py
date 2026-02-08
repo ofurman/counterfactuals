@@ -6,6 +6,7 @@ import argparse
 import logging
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from omegaconf import OmegaConf
 
@@ -63,12 +64,31 @@ def load_and_aggregate_metrics(
     root = models_root / dataset / method
     metrics: list[pd.DataFrame] = []
 
+    skipped_zero_validity_folds = 0
+
     for i in range(num_folds):
         path = root / f"fold_{i}" / f"cf_metrics_{model_name}.csv"
         if not path.exists():
             logging.warning("Metrics file missing: %s", path)
             continue
         df = pd.read_csv(path)
+
+        if "validity" in df.columns:
+            # Exclude folds/rows with 0% validity from aggregation.
+            # This keeps failed folds from forcing aggregate values to 0.00
+            # and allows NaN-only metrics to remain NaN.
+            df = df[df["validity"] > 0]
+            if df.empty:
+                skipped_zero_validity_folds += 1
+                logging.info(
+                    "Skipping fold %s for dataset=%s method=%s model=%s due to zero validity",
+                    i,
+                    dataset,
+                    method,
+                    model_name,
+                )
+                continue
+
         metrics.append(df)
 
     if not metrics:
@@ -80,6 +100,15 @@ def load_and_aggregate_metrics(
         )
         return pd.DataFrame()
 
+    if skipped_zero_validity_folds > 0:
+        logging.info(
+            "Skipped %s fold(s) with zero validity for dataset=%s method=%s model=%s",
+            skipped_zero_validity_folds,
+            dataset,
+            method,
+            model_name,
+        )
+
     merged_df = pd.concat(metrics, axis=0, ignore_index=True)
     mean_ = merged_df.mean(axis=0)
     if "number_of_instances" in merged_df.columns:
@@ -88,19 +117,50 @@ def load_and_aggregate_metrics(
         if total_weight > 0:
             weighted_means: dict[str, float] = {}
             for col in merged_df.columns:
-                # if col == "cf_search_time":
-                #     weighted_means[col] = merged_df[col].mean()
                 if col == "number_of_instances":
                     weighted_means[col] = float(total_weight)
                 else:
-                    weighted_means[col] = float(
-                        (merged_df[col] * weights).sum() / total_weight
-                    )
+                    valid_mask = merged_df[col].notna() & weights.notna()
+                    if not valid_mask.any():
+                        weighted_means[col] = float(np.nan)
+                    else:
+                        col_weights = weights[valid_mask]
+                        weighted_means[col] = float(
+                            np.average(
+                                merged_df.loc[valid_mask, col], weights=col_weights
+                            )
+                        )
             mean_ = pd.Series(weighted_means)
     std_ = merged_df.std(axis=0)
 
+    defined_columns: list[str] = []
+    undefined_columns: list[str] = []
+    for col in merged_df.columns:
+        if np.isfinite(mean_[col]) and np.isfinite(std_[col]):
+            defined_columns.append(col)
+        else:
+            undefined_columns.append(col)
+
+    if undefined_columns:
+        logging.info(
+            "Skipping undefined aggregated metrics for dataset=%s method=%s model=%s: %s",
+            dataset,
+            method,
+            model_name,
+            ", ".join(undefined_columns),
+        )
+
+    if not defined_columns:
+        logging.warning(
+            "All aggregated metrics are undefined for dataset=%s method=%s model=%s",
+            dataset,
+            method,
+            model_name,
+        )
+        return pd.DataFrame()
+
     formatted = pd.DataFrame(
-        {col: [format_mean_std(mean_[col], std_[col])] for col in merged_df.columns}
+        {col: [format_mean_std(mean_[col], std_[col])] for col in defined_columns}
     ).T
 
     return formatted.T
@@ -138,6 +198,9 @@ def calculate_metrics_table(
         logging.warning("Missing metrics in data: %s", ", ".join(missing_metrics))
 
     available_metrics = [m for m in used_metrics if m in df.columns]
+    # cf_search_time is recorded by the pipeline independently of the metrics config.
+    if "cf_search_time" in df.columns and "cf_search_time" not in available_metrics:
+        available_metrics.append("cf_search_time")
     if not available_metrics:
         raise ValueError("No requested metrics found in data.")
 

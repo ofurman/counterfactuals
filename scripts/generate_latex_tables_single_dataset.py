@@ -350,7 +350,11 @@ def load_metrics_config(path: Path) -> list[str]:
     """Load metric keys (ordered) from a metrics config YAML."""
     conf = OmegaConf.load(path)
     metrics = list(conf.metrics_to_compute)
-    metrics = [metric for metric in metrics if metric != "number_of_instances"]
+    metrics = [
+        metric
+        for metric in metrics
+        if metric not in ("number_of_instances", "actionability")
+    ]
     return [m for m in metrics if not str(m).endswith("_test")]
 
 
@@ -593,7 +597,7 @@ def build_latex_table(
         return rendered if not escape_names else _escape_latex(rendered)
 
     lines: list[str] = []
-    lines.append(r"\begin{table*}[ht]")
+    lines.append(r"\begin{table}[h]")
     lines.append(r"\centering")
     lines.append(rf"\caption{{{caption}}}")
     lines.append(rf"\label{{{label}}}")
@@ -637,7 +641,7 @@ def build_latex_table(
     lines.append(r"\end{scriptsize}")
     lines.append(r"\end{sc}")
     lines.append(r"\end{center}")
-    lines.append(r"\end{table*}")
+    lines.append(r"\end{table}")
     return "\n".join(lines) + "\n"
 
 
@@ -731,7 +735,7 @@ def _parse_args() -> argparse.Namespace:
         default="MLR",
         help=(
             "Discriminative model to include: MultinomialLogisticRegression or "
-            "MultilayerPecreptron (aliases accepted). Default: MLR."
+            "MLPClassifier (aliases accepted). Default: MLR."
         ),
     )
     parser.add_argument(
@@ -773,14 +777,15 @@ def _resolve_discriminative_model(model_name: str) -> str:
     aliases = {
         "mlr": "MultinomialLogisticRegression",
         "multinomiallogisticregression": "MultinomialLogisticRegression",
-        "mlp": "MultilayerPecreptron",
-        "multilayerpecreptron": "MultilayerPecreptron",
+        "mlp": "MLPClassifier",
+        "mlpclassifier": "MLPClassifier",
+        "multilayerpecreptron": "MLPClassifier",
     }
     if normalized in aliases:
         return aliases[normalized]
     raise SystemExit(
         "Unsupported --discriminative-model. Use one of: MLR, MultinomialLogisticRegression, "
-        "MLP, MultilayerPecreptron."
+        "MLP, MLPClassifier."
     )
 
 
@@ -801,7 +806,7 @@ def main() -> None:
 
     # Helpful defaults for common classifier names.
     model_aliases = {
-        "MultilayerPecreptron": "MLP",
+        "MLPClassifier": "MLP",
         "MultinomialLogisticRegression": "LR",
         **model_aliases,
     }
