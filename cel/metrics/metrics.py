@@ -3,8 +3,6 @@ from typing import List, Optional, Union
 
 import numpy as np
 import torch
-from scipy.spatial.distance import pdist
-from scipy.stats import wasserstein_distance
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 

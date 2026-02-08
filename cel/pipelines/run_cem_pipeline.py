@@ -12,12 +12,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from cel.cf_methods.local_methods.cem.cem import CEM_CF
 from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.full_pipeline.full_pipeline import full_pipeline
-from cel.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from cel.pipelines.nodes.disc_model_nodes import create_disc_model
+from cel.pipelines.nodes.gen_model_nodes import create_gen_model
+from cel.pipelines.nodes.helper_nodes import set_model_paths
+from hydra.utils import instantiate
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -99,9 +97,7 @@ def search_counterfactuals(
     ys_orig = np.asarray(explanation_result.y_origs)
     ys_target = np.asarray(explanation_result.y_cf_targets)
     logs = explanation_result.logs or {}
-    model_returned = np.asarray(
-        logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool))
-    )
+    model_returned = np.asarray(logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool)))
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"

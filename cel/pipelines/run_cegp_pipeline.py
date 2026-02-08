@@ -12,12 +12,10 @@ from omegaconf import DictConfig
 
 from cel.cf_methods.local_methods.cegp.cegp import CEGP
 from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.full_pipeline.full_pipeline import full_pipeline
-from cel.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from cel.pipelines.nodes.disc_model_nodes import create_disc_model
+from cel.pipelines.nodes.gen_model_nodes import create_gen_model
+from cel.pipelines.nodes.helper_nodes import set_model_paths
+from hydra.utils import instantiate
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

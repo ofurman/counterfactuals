@@ -1,6 +1,4 @@
 import numpy as np
-import torch
-import torch.optim as optim
 import GPyOpt
 from torch.utils.data import DataLoader
 from time import time

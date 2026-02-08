@@ -13,13 +13,17 @@ from omegaconf import DictConfig
 
 from cel.cf_methods.local_methods.ppcef import PPCEF
 from cel.metrics.metrics import evaluate_cf
-from cel.pipelines.full_pipeline.full_pipeline import full_pipeline
+from cel.pipelines.nodes.disc_model_nodes import create_disc_model
+from cel.pipelines.nodes.gen_model_nodes import create_gen_model, DequantizationWrapper
+from cel.pipelines.nodes.helper_nodes import set_model_paths
 from cel.pipelines.utils import apply_categorical_discretization
 from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
+from cel.datasets import MethodDataset, FileDataset
+from cel.dequantization.group_dequantizer import GroupDequantizer
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -126,6 +130,7 @@ def search_counterfactuals(
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
+    model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
     return Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time
 
 
@@ -212,6 +217,7 @@ def main(cfg: DictConfig):
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
+    file_dataset = FileDataset(config_path=cfg.dataset.config_path)
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):

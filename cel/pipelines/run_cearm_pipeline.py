@@ -23,12 +23,6 @@ from cel.preprocessing import (
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
-from cel.plotting.plot_utils import (
-    plot_2d_regression_dataset,
-    plot_3d_regression_cfs,
-    plot_conditional_density_contours,
-    plot_plausibility_comparison,
-)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
