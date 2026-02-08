@@ -1,6 +1,6 @@
 # Counterfactual Methods
 
-The library implements **17+ counterfactual explanation methods** organized into three categories based on their scope.
+The library implements **14 counterfactual explanation methods** organized into three categories based on their scope.
 
 ## Method Categories
 
@@ -26,16 +26,20 @@ Group methods generate counterfactuals for **clusters or subgroups** of similar 
 
 | Method | Category | Plausibility | Diversity | Actionability | Speed | Best For |
 |--------|----------|--------------|-----------|---------------|-------|----------|
-| PPCEF | Local | High | Medium | Yes | Medium | Normalizing flow-based CF |
-| DiCoFlex | Local | High | High | Yes | Medium | Flexible, diverse CFs |
-| DICE | Local | Medium | High | Yes | Fast | Fast, diverse CFs |
 | WACH | Local | Low | Low | No | Fast | Simple gradient-based CF |
-| CEM | Local | Medium | Low | Yes | Medium | Contrastive explanations |
+| Artelt | Local | Medium | Low | Yes | Fast | Heuristic-based CF |
+| DICE | Local | Medium | High | Yes | Fast | Fast, diverse CFs |
 | CCHVAE | Local | High | Medium | Yes | Slow | VAE-based CF |
+| PPCEF | Local | High | Medium | Yes | Medium | Normalizing flow-based CF |
+| CEM | Local | Medium | Low | Yes | Medium | Contrastive explanations |
+| CEGP | Local | Medium | Low | Yes | Medium | Genetic programming CF |
+| CADEX | Local | High | Low | Yes | Medium | Optimization-based CF |
+| SACE | Local | Medium | Medium | Yes | Medium | Strategy-based CF |
+| CEARM | Local | Medium | Low | Yes | Medium | Rule-based CF |
 | GLOBE-CE | Global | Medium | N/A | Yes | Fast | Dataset-wide patterns |
 | AReS | Global | Medium | N/A | Yes | Medium | Actionable rules |
-| ReViCE | Group | High | Medium | Yes | Medium | Subgroup explanations |
 | GLANCE | Group | Medium | High | Yes | Fast | Cluster-level CFs |
+| T-CREx | Group | Medium | High | Yes | Medium | Rule-based group CFs |
 
 ## Choosing a Method
 
@@ -48,11 +52,11 @@ flowchart TD
     D -->|No| F[Group Methods]
 
     C --> G{Need plausibility?}
-    G -->|Yes| H[PPCEF, DiCoFlex, CCHVAE]
-    G -->|No| I[DICE, WACH, CEM]
+    G -->|Yes| H[CCHVAE, PPCEF, CADEX]
+    G -->|No| I[DICE, WACH, CEM, Artelt]
 
     E --> J[GLOBE-CE, AReS]
-    F --> K[ReViCE, GLANCE]
+    F --> K[GLANCE, T-CREx]
 ```
 
 ## Common Interface

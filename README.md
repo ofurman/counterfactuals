@@ -30,7 +30,7 @@ The library includes multiple counterfactual methods, from gradient-based approa
 - **Normalizing Flow Integration**: State-of-the-art density estimation for plausibility
 - **Comprehensive Metrics**: 17+ evaluation metrics for counterfactual quality
 - **Hydra Configuration**: Flexible experiment management with YAML configs
-- **21 Built-in Datasets**: Classification and regression tasks
+- **16 Built-in Datasets**: Classification and regression tasks
 - **Extensible Architecture**: Easy to add new methods, models, and metrics
 - **PyTorch-based**: Modern deep learning framework
 - **Cross-validation Support**: Robust evaluation with k-fold CV
@@ -124,7 +124,7 @@ counterfactuals/
 ├── cf_methods/           # Counterfactual explanation methods
 │   ├── local/            # Instance-level methods (PPCEF, DiCE, WACH, etc.)
 │   ├── global_/          # Model-level methods (GLOBE-CE, AReS)
-│   └── group/            # Cohort-level methods (RPPCEF, GLANCE)
+│   └── group/            # Cohort-level methods (GLANCE, T-CREx)
 ├── models/               # ML models
 │   ├── discriminative/   # Classifiers (MLP, LogisticRegression, NODE)
 │   ├── generative/       # Density estimators (MAF, RealNVP, NICE, KDE)
@@ -141,7 +141,7 @@ counterfactuals/
 └── utils.py              # Helper functions
 
 config/
-└── datasets/             # Dataset YAML configurations (21 datasets)
+└── datasets/             # Dataset YAML configurations (16 datasets)
 
 docs/
 ├── library_overview.md   # Comprehensive package documentation
@@ -154,18 +154,16 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
-| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows |
-| **PPCEFR** | `PPCEFR` | PPCEF for regression tasks |
-| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
-| **CEM** | `CEM_CF` | Contrastive Explanation Method |
-| **CET** | `CET` | Counterfactual Explanation Tree |
 | **WACH** | `WACH` | Wachter-style gradient-based CF |
-| **Artelt** | `Artelt` | Artelt's CF method |
-| **SACE** | `SACE`, `CaseBasedSACE` | (Case-based) SACE methods |
-| **CEGP** | `CEGP` | CF with Gaussian Processes |
-| **C-CHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
-| **DiCoFlex** | `DiCoFlex` | Diverse Counterfactual Flex |
-| **LiCE** | `LiCE` | LIME-style CF (requires pyomo/onnx/omlt) |
+| **Artelt** | `Artelt` | Heuristic-based CF method |
+| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
+| **CCHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
+| **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows |
+| **CEM** | `CEM_CF` | Contrastive Explanation Method |
+| **CEGP** | `CEGP` | Counterfactual with Gaussian Processes |
+| **CADEX** | `CADEX` | Counterfactual explanations via optimization |
+| **SACE** | `SACE` | Several SACE variants |
+| **CEARM** | `CEARM` | Counterfactual explanation through association rule mining |
 
 ### Global Methods (Model-level)
 
@@ -178,18 +176,18 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
-| **RPPCEF** | `RPPCEF` | Regional PPCEF with shared interventions |
 | **GLANCE** | `GLANCE` | Group-level CF method |
+| **T-CREx** | `TCREx` | Temporal Counterfactual Rule Extraction |
 
 ## Datasets
 
-The library includes 21 pre-configured datasets:
+The library includes 16 pre-configured datasets:
 
-**Classification:**
-`adult`, `adult_census`, `audit`, `bank_marketing`, `compas`, `credit_default`, `diabetes`, `digits`, `german_credit`, `give_me_some_credit`, `heloc`, `law`, `lending_club`, `mnist`, `moons`, `wine`, `blobs`
+**Classification (13):**
+`adult_census`, `audit`, `bank_marketing`, `blobs`, `credit_default`, `digits`, `german_credit`, `give_me_some_credit` (GMC), `heloc`, `law`, `lending_club`, `moons`, `wine`
 
-**Regression:**
-`concrete`, `toy_regression`, `wine_quality_regression`, `yacht`
+**Regression (3):**
+`concrete`, `diabetes`, `yacht`
 
 Dataset configurations are in `config/datasets/*.yaml` and support:
 - Automatic feature type detection (continuous/categorical)
@@ -256,18 +254,19 @@ uv run python cel/pipelines/run_ppcef_pipeline.py \
 | Pipeline | Method |
 |----------|--------|
 | `run_ppcef_pipeline.py` | PPCEF |
-| `run_ppcefr_pipeline.py` | PPCEF for regression |
-| `run_rppcef_pipeline.py` | Regional PPCEF |
 | `run_dice_pipeline.py` | DiCE |
 | `run_cem_pipeline.py` | CEM |
-| `run_cet_pipeline.py` | CET |
 | `run_cchvae_pipeline.py` | C-CHVAE |
 | `run_wach_pipeline.py` | WACH |
 | `run_artelt_pipeline.py` | Artelt |
 | `run_cegp_pipeline.py` | CEGP |
+| `run_cadex_pipeline.py` | CADEX |
+| `run_sace_pipeline.py` | SACE |
+| `run_cearm_pipeline.py` | CEARM |
 | `run_globe_ce_pipeline.py` | GLOBE-CE |
 | `run_ares_pipeline.py` | AReS |
 | `run_glance_pipeline.py` | GLANCE |
+| `run_tcrex_pipeline.py` | T-CREx |
 
 ## Documentation
 
