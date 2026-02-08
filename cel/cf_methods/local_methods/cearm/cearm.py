@@ -1,7 +1,8 @@
-import numpy as np
-import GPyOpt
-from torch.utils.data import DataLoader
 from time import time
+
+import GPyOpt
+import numpy as np
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from cel.cf_methods.counterfactual_base import BaseCounterfactualMethod

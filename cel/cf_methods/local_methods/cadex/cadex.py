@@ -44,9 +44,7 @@ class CadexEngine:
         device: Optional[str] = None,
     ) -> None:
         if ordinal_attributes is not None and (scale is None or unscale is None):
-            raise ValueError(
-                "scale and unscale must be provided for ordinal attributes."
-            )
+            raise ValueError("scale and unscale must be provided for ordinal attributes.")
 
         self.original_model = model
         self.original_model.eval()
@@ -115,9 +113,7 @@ class CadexEngine:
                 first_grad[0, ind[0, -skip_attributes:]] = 0
 
             if direction_constraints is not None:
-                mask = mask * np.sign(
-                    np.sign(first_grad * (-direction_constraints)) + 1
-                )
+                mask = mask * np.sign(np.sign(first_grad * (-direction_constraints)) + 1)
 
             if num_changed_attributes is not None:
                 ind = np.argsort(np.abs(first_grad * mask))
@@ -146,9 +142,7 @@ class CadexEngine:
             self._train_on_instance(inputs, target, num_classes)
 
             if categorical_attrs is not None:
-                self._adjust_categorical(
-                    inputs, categorical_attrs, threshold=categorical_threshold
-                )
+                self._adjust_categorical(inputs, categorical_attrs, threshold=categorical_threshold)
 
             preds = self._predict_proba(inputs)
             if preds[0, target] > pred_threshold:
@@ -171,9 +165,7 @@ class CadexEngine:
 
         return result, epoch
 
-    def _train_on_instance(
-        self, inputs: np.ndarray, target: int, num_classes: int
-    ) -> None:
+    def _train_on_instance(self, inputs: np.ndarray, target: int, num_classes: int) -> None:
         if self._optimizer is None or self._mask is None or self._input_layer is None:
             raise ValueError("CadexEngine must be initialized before training.")
 
@@ -244,9 +236,7 @@ class CadexEngine:
         grads = torch.autograd.grad(loss, inputs_tensor)[0]
         return grads.detach().cpu().numpy()
 
-    def _predict_proba(
-        self, inputs: np.ndarray, use_input_layer: bool = True
-    ) -> np.ndarray:
+    def _predict_proba(self, inputs: np.ndarray, use_input_layer: bool = True) -> np.ndarray:
         inputs_tensor = torch.tensor(inputs, dtype=torch.float32, device=self.device)
         if use_input_layer:
             inputs_tensor = self._input_layer(inputs_tensor)
@@ -260,15 +250,11 @@ class CadexEngine:
         return probs.detach().cpu().numpy()
 
     @staticmethod
-    def _classification_loss(
-        logits: torch.Tensor, target: int, num_classes: int
-    ) -> torch.Tensor:
+    def _classification_loss(logits: torch.Tensor, target: int, num_classes: int) -> torch.Tensor:
         if logits.ndim == 1 or logits.shape[1] == 1:
             target_value = torch.tensor([float(target == 1)], device=logits.device)
             logits = logits.view(-1)
-            return torch.nn.functional.binary_cross_entropy_with_logits(
-                logits, target_value
-            )
+            return torch.nn.functional.binary_cross_entropy_with_logits(logits, target_value)
         target_tensor = torch.tensor([target], dtype=torch.long, device=logits.device)
         return torch.nn.functional.cross_entropy(logits, target_tensor)
 

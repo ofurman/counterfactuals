@@ -157,15 +157,11 @@ def search_counterfactuals(
         X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
     else:
         if hasattr(feature_transformer, "_inverse_transform_array"):
-            X_test_unscaled = feature_transformer._inverse_transform_array(
-                dataset.X_test
-            )
+            X_test_unscaled = feature_transformer._inverse_transform_array(dataset.X_test)
         else:
             X_test_unscaled = feature_transformer.inverse_transform(dataset.X_test)
     feature_columns = _feature_columns(dataset)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
-    )
+    data_oh, features = one_hot(dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns))
 
     def predict_fn_raw(x: pd.DataFrame | np.ndarray) -> np.ndarray:
         x_array = x.values if isinstance(x, pd.DataFrame) else x
@@ -188,9 +184,7 @@ def search_counterfactuals(
     ys_orig = ys_pred[mask]
 
     # Align AReS expectation (negative class == 0) with configurable target class
-    predict_fn_for_cf = (
-        (lambda x: 1 - predict_fn_raw(x)) if target_class == 0 else predict_fn_raw
-    )
+    predict_fn_for_cf = (lambda x: 1 - predict_fn_raw(x)) if target_class == 0 else predict_fn_raw
 
     logger.info("Creating counterfactual model")
     cf_method = AReS(

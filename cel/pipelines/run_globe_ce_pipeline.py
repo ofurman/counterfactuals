@@ -105,9 +105,7 @@ def compute_bin_widths(
         try:
             categories = pd.cut(data[feature].astype(float), bins=n_bins).cat.categories
         except ValueError as err:
-            logger.warning(
-                "Skipping bin width computation for feature %s: %s", feature, err
-            )
+            logger.warning("Skipping bin width computation for feature %s: %s", feature, err)
             continue
 
         if len(categories) == 0:
@@ -160,9 +158,7 @@ def search_counterfactuals(
     minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
 
     X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
-    )
+    data_oh, features = one_hot(dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features))
 
     def predict_fn(x: pd.DataFrame | np.ndarray) -> np.ndarray:
         # Convert pandas DataFrame to numpy array if needed

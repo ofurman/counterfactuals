@@ -85,9 +85,7 @@ def get_log_prob_threshold(
 ) -> float:
     """Calculate log probability threshold from training data."""
     logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=batch_size, shuffle=False
-    )
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=batch_size, shuffle=False)
     log_prob_threshold = torch.quantile(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         log_prob_quantile,
@@ -102,9 +100,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[
-    Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float
-]:
+) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """Generate counterfactuals with DiCE and expand to fixed cf_per_instance per factual.
 
     Returns:
@@ -194,9 +190,7 @@ def search_counterfactuals(
 
     Xs_cfs_first = np.array(Xs_cfs_first_list)
     model_returned_first = np.array(model_returned_first_list)
-    Xs_cfs_all = np.stack(
-        Xs_cfs_all_list
-    )  # Shape: (n_instances, cf_per_instance, n_features)
+    Xs_cfs_all = np.stack(Xs_cfs_all_list)  # Shape: (n_instances, cf_per_instance, n_features)
     ys_target = np.abs(1 - y_test_origin)
 
     # Save all CFs to file (flatten for CSV)
@@ -296,8 +290,8 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset):
     )
     dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
 
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
-        search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+    Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = search_counterfactuals(
+        cfg, dataset, gen_model, disc_model, save_folder
     )
 
     gen_model = DequantizationWrapper(gen_model, dequantizer)
@@ -325,9 +319,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset):
     logger.info("Saved metrics to %s", metrics_path)
 
 
-@hydra.main(
-    config_path="./conf", config_name="dice_traintest_config", version_base="1.2"
-)
+@hydra.main(config_path="./conf", config_name="dice_traintest_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     """Run DiCE pipeline on pre-split train/test data."""
     torch.manual_seed(cfg.experiment.get("seed", 42))

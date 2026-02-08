@@ -25,15 +25,11 @@ class GMMBaseDistribution(nn.Module):
         self.learn_covariance = learn_covariance
         self.means = nn.Parameter(torch.randn(n_classes, features) * 0.1)
         if learn_covariance:
-            self.log_stds = nn.Parameter(
-                torch.full((n_classes, features), np.log(init_std))
-            )
+            self.log_stds = nn.Parameter(torch.full((n_classes, features), np.log(init_std)))
         else:
             self.register_buffer("log_stds", torch.zeros(n_classes, features))
 
-    def log_prob(
-        self, z: torch.Tensor, y: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+    def log_prob(self, z: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Compute log probabilities under the GMM."""
         if y is not None:
             return self._log_prob_conditional(z, y)

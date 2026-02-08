@@ -13,9 +13,7 @@ from cel.pipelines.nodes.gen_model_nodes import create_gen_model
 from cel.pipelines.nodes.helper_nodes import set_model_paths
 
 
-def full_pipeline(
-    cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-):
+def full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics):
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     logger.info("Loading dataset")
     file_dataset = instantiate(cfg.dataset)
@@ -42,8 +40,8 @@ def full_pipeline(
             logger,
         )
         dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
-        Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = search_counterfactuals(
+            cfg, dataset, gen_model, disc_model, save_folder
         )
 
         gen_model = DequantizationWrapper(gen_model, dequantizer)
@@ -78,9 +76,7 @@ def get_log_prob_threshold(
     logger,
 ) -> float:
     logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=batch_size, shuffle=False
-    )
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=batch_size, shuffle=False)
     log_prob_threshold = torch.quantile(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         log_prob_quantile,

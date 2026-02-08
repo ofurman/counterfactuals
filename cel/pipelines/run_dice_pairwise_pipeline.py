@@ -65,9 +65,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[
-    Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float
-]:
+) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """Generate counterfactuals with DiCE and expand to fixed cf_per_instance per factual.
 
     Returns:
@@ -157,9 +155,7 @@ def search_counterfactuals(
 
     Xs_cfs_first = np.array(Xs_cfs_first_list)
     model_returned_first = np.array(model_returned_first_list)
-    Xs_cfs_all = np.stack(
-        Xs_cfs_all_list
-    )  # Shape: (n_instances, cf_per_instance, n_features)
+    Xs_cfs_all = np.stack(Xs_cfs_all_list)  # Shape: (n_instances, cf_per_instance, n_features)
     ys_target = np.abs(1 - y_test_origin)
 
     # Save all CFs to file (flatten for CSV)
@@ -246,9 +242,7 @@ def main(cfg: DictConfig) -> None:
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

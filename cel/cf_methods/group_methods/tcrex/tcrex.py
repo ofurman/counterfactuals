@@ -79,9 +79,7 @@ class TCREx(BaseCounterfactualMethod):
                 if isinstance(y_pred, torch.Tensor):
                     y_pred = y_pred.numpy().reshape(-1)
                 accuracy = accuracy_score(y_true, y_pred)
-                rules.append(
-                    CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility)
-                )
+                rules.append(CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility))
         return rules
 
     def _get_node_bounds(self, tree, node_id):
@@ -113,17 +111,13 @@ class TCREx(BaseCounterfactualMethod):
     def _filter_maximal_rules(self):
         # Filter rules by tau and rho, then remove non-maximal
         valid_rules = [
-            r
-            for r in self.rules_
-            if r.accuracy >= self.tau and r.feasibility >= self.rho
+            r for r in self.rules_ if r.accuracy >= self.tau and r.feasibility >= self.rho
         ]
         maximal_rules = []
         for rule in valid_rules:
             is_maximal = True
             for other in valid_rules:
-                if rule != other and self._is_subset(
-                    rule.hyperrectangle, other.hyperrectangle
-                ):
+                if rule != other and self._is_subset(rule.hyperrectangle, other.hyperrectangle):
                     is_maximal = False
                     break
             if is_maximal:
@@ -132,15 +126,11 @@ class TCREx(BaseCounterfactualMethod):
 
     def _is_subset(self, hr1, hr2):
         # Check if hr1 is a subset of hr2
-        return all(
-            l2 <= l1 and u1 <= u2 for (l1, u1), (l2, u2) in zip(hr1.bounds, hr2.bounds)
-        )
+        return all(l2 <= l1 and u1 <= u2 for (l1, u1), (l2, u2) in zip(hr1.bounds, hr2.bounds))
 
     def _partition_grid(self):
         # Create grid cells based on maximal rules' bounds
-        if (
-            not self.maximal_rules_
-        ):  # If there are no maximal rules, create at least one grid cell
+        if not self.maximal_rules_:  # If there are no maximal rules, create at least one grid cell
             return [Hyperrectangle([(-np.inf, np.inf)] * self.n_features_)]
 
         # Extract all unique bound values per feature
@@ -265,9 +255,7 @@ class TCREx(BaseCounterfactualMethod):
         cf_points = np.zeros_like(X)
 
         # Map each leaf to a rule
-        prototype_points = np.array(
-            [self._get_prototype(cell) for cell in self.grid_cells_]
-        )
+        prototype_points = np.array([self._get_prototype(cell) for cell in self.grid_cells_])
         prototype_leaf_ids = self.metarule_tree_.apply(prototype_points)
 
         leaf_to_rule = {}

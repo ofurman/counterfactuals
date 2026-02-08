@@ -6,9 +6,7 @@ import torch
 from matplotlib import cm
 
 
-def plot_x_point(
-    x: torch.Tensor, x_origin: torch.Tensor, model: torch.nn.Module
-) -> None:
+def plot_x_point(x: torch.Tensor, x_origin: torch.Tensor, model: torch.nn.Module) -> None:
     """Plot a point and its origin over model samples.
 
     Args:
@@ -206,9 +204,7 @@ def plot_distributions(
     plt.show()
 
 
-def flatten_dict(
-    dd: dict[str, Any], separator: str = "_", prefix: str = ""
-) -> dict[str, Any]:
+def flatten_dict(dd: dict[str, Any], separator: str = "_", prefix: str = "") -> dict[str, Any]:
     """Flatten a nested dictionary.
 
     Args:

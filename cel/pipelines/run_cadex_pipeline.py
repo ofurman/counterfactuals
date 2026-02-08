@@ -60,9 +60,7 @@ def search_counterfactuals(
     cadex_params = cfg.counterfactuals_params.get("cadex", {})
     ordinal_attributes = cadex_params.get("ordinal_attributes")
     if ordinal_attributes:
-        raise ValueError(
-            "cadex.ordinal_attributes requires scale/unscale hooks in CADEX."
-        )
+        raise ValueError("cadex.ordinal_attributes requires scale/unscale hooks in CADEX.")
 
     cf_method = CADEX(
         disc_model=disc_model,
@@ -96,9 +94,7 @@ def search_counterfactuals(
     )
 
     if cfg.counterfactuals_params.use_categorical:
-        Xs_cfs = apply_categorical_discretization(
-            dataset.categorical_features_lists, Xs_cfs
-        )
+        Xs_cfs = apply_categorical_discretization(dataset.categorical_features_lists, Xs_cfs)
     model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
@@ -167,9 +163,7 @@ def main(cfg: DictConfig):
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

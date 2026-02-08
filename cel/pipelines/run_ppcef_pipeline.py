@@ -12,9 +12,11 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from cel.cf_methods.local_methods.ppcef import PPCEF
+from cel.datasets import FileDataset, MethodDataset
+from cel.dequantization.group_dequantizer import GroupDequantizer
 from cel.metrics.metrics import evaluate_cf
 from cel.pipelines.nodes.disc_model_nodes import create_disc_model
-from cel.pipelines.nodes.gen_model_nodes import create_gen_model, DequantizationWrapper
+from cel.pipelines.nodes.gen_model_nodes import DequantizationWrapper, create_gen_model
 from cel.pipelines.nodes.helper_nodes import set_model_paths
 from cel.pipelines.utils import apply_categorical_discretization
 from cel.preprocessing import (
@@ -22,8 +24,6 @@ from cel.preprocessing import (
     PreprocessingPipeline,
     TorchDataTypeStep,
 )
-from cel.datasets import MethodDataset, FileDataset
-from cel.dequantization.group_dequantizer import GroupDequantizer
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

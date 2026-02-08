@@ -118,9 +118,7 @@ def search_counterfactuals(
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     time_start = time()
 
-    generation_params = OmegaConf.to_container(
-        cfg.counterfactuals_params.generation_params
-    )
+    generation_params = OmegaConf.to_container(cfg.counterfactuals_params.generation_params)
 
     cfs = exp.generate_counterfactuals(query_instance, **generation_params)
 
@@ -276,9 +274,7 @@ def main(cfg: DictConfig) -> None:
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

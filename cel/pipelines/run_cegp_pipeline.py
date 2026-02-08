@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.utils
+from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from cel.cf_methods.local_methods.cegp.cegp import CEGP
@@ -15,7 +16,6 @@ from cel.metrics.metrics import evaluate_cf
 from cel.pipelines.nodes.disc_model_nodes import create_disc_model
 from cel.pipelines.nodes.gen_model_nodes import create_gen_model
 from cel.pipelines.nodes.helper_nodes import set_model_paths
-from hydra.utils import instantiate
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

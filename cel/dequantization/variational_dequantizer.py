@@ -35,12 +35,8 @@ class VariationalDequantizer(nn.Module):
         self.total_features = total_features
         self.hidden_dim = hidden_dim
 
-        self.cat_indices = sorted(
-            {idx for group in categorical_groups for idx in group}
-        )
-        self.con_indices = [
-            idx for idx in range(total_features) if idx not in self.cat_indices
-        ]
+        self.cat_indices = sorted({idx for group in categorical_groups for idx in group})
+        self.con_indices = [idx for idx in range(total_features) if idx not in self.cat_indices]
         self.dividers: Optional[list[int]] = None
 
         n_cat_features = len(self.cat_indices)
@@ -78,9 +74,7 @@ class VariationalDequantizer(nn.Module):
     ) -> DequantizerOutput:
         """Apply variational dequantization."""
         if not self.cat_indices:
-            log_q = (
-                torch.zeros(x.shape[0], device=x.device) if return_log_prob else None
-            )
+            log_q = torch.zeros(x.shape[0], device=x.device) if return_log_prob else None
             return DequantizerOutput(values=x, log_q=log_q)
 
         x_cat = x[:, self.cat_indices]
@@ -129,9 +123,7 @@ class VariationalDequantizer(nn.Module):
         if self.dividers is not None:
             for idx, divider in enumerate(self.dividers):
                 scaled = z_cat[:, idx] * divider
-                x[:, self.cat_indices[idx]] = torch.clamp(
-                    torch.round(scaled), 0, divider - 1
-                )
+                x[:, self.cat_indices[idx]] = torch.clamp(torch.round(scaled), 0, divider - 1)
         else:
             x[:, self.cat_indices] = torch.round(z_cat)
 

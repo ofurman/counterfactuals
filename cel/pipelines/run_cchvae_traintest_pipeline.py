@@ -97,16 +97,12 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     wrapped_model = CustomMLModel(disc_model, custom_dataset)
 
-    hyperparams = OmegaConf.to_container(
-        cfg.counterfactuals_params.hyperparams, resolve=True
-    )
+    hyperparams = OmegaConf.to_container(cfg.counterfactuals_params.hyperparams, resolve=True)
     if not hyperparams.get("data_name"):
         hyperparams["data_name"] = cfg.dataset.config_path.split("/")[-1].split(".")[0]
 
     input_size = dataset.X_train.shape[1]
-    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"][
-        "layers"
-    ]
+    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"]["layers"]
 
     exp = CCHVAE(wrapped_model, hyperparams)
 
@@ -153,9 +149,7 @@ def get_log_prob_threshold(
     log_prob_quantile: float,
 ) -> float:
     logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=batch_size, shuffle=False
-    )
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=batch_size, shuffle=False)
     log_prob_threshold = torch.quantile(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         log_prob_quantile,
@@ -232,8 +226,8 @@ def run_pipeline(cfg: DictConfig) -> None:
     )
     dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
 
-    Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
-        search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+    Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = search_counterfactuals(
+        cfg, dataset, gen_model, disc_model, save_folder
     )
 
     gen_model = DequantizationWrapper(gen_model, dequantizer)
@@ -254,14 +248,10 @@ def run_pipeline(cfg: DictConfig) -> None:
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_search_time
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
-    df_metrics.to_csv(
-        os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
-    )
+    df_metrics.to_csv(os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False)
 
 
-@hydra.main(
-    config_path="./conf", config_name="cchvae_traintest_config", version_base="1.2"
-)
+@hydra.main(config_path="./conf", config_name="cchvae_traintest_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     torch.manual_seed(cfg.experiment.seed)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

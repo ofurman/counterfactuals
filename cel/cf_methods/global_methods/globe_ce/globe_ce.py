@@ -122,9 +122,7 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             getattr(self.dataset, "numerical_features_indices", []),
         )
         # list of categorical features (not values)
-        self.categorical_features = [
-            self.dataset.features[i] for i in categorical_columns
-        ]
+        self.categorical_features = [self.dataset.features[i] for i in categorical_columns]
         # list of continuous features
         self.continuous_features = [self.dataset.features[i] for i in numerical_columns]
         # Number of categorical or continuous features

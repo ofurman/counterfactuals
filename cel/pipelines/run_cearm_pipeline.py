@@ -13,11 +13,11 @@ from omegaconf import DictConfig
 from sklearn.preprocessing import MinMaxScaler
 
 from cel.cf_methods.local_methods.cearm import CEARM
+from cel.datasets.method_dataset import MethodDataset
 from cel.metrics import evaluate_cf_regression
 from cel.pipelines.nodes.disc_model_nodes import create_disc_model
 from cel.pipelines.nodes.gen_model_nodes import create_gen_model
 from cel.pipelines.nodes.helper_nodes import set_model_paths
-from cel.datasets.method_dataset import MethodDataset
 from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -179,9 +179,7 @@ def main(cfg: DictConfig) -> None:
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     cv_splits = (
-        dataset.get_cv_splits(cfg.experiment.num_folds)
-        if cfg.experiment.num_folds > 1
-        else [None]
+        dataset.get_cv_splits(cfg.experiment.num_folds) if cfg.experiment.num_folds > 1 else [None]
     )
     for fold_n, split in enumerate(cv_splits):
         if split is not None:
@@ -192,9 +190,7 @@ def main(cfg: DictConfig) -> None:
         if dataset.y_test.ndim == 1:
             dataset.y_test = dataset.y_test.reshape(-1, 1)
         target_scaler = MinMaxScaler()
-        dataset.y_train = target_scaler.fit_transform(dataset.y_train).astype(
-            np.float32
-        )
+        dataset.y_train = target_scaler.fit_transform(dataset.y_train).astype(np.float32)
         dataset.y_test = target_scaler.transform(dataset.y_test).astype(np.float32)
         dataset.y_train = np.clip(dataset.y_train, 0.0, 1.0)
         dataset.y_test = np.clip(dataset.y_test, 0.0, 1.0)
@@ -305,6 +301,7 @@ def main(cfg: DictConfig) -> None:
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False
         )
+
 
 if __name__ == "__main__":
     main()
