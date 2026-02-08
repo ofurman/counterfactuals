@@ -37,8 +37,8 @@ METRIC_TEX_MAP: dict[str, str] = {
     "validity": "Valid.",
     "actionability": "Act.",
     "sparsity": "Sparse.",
-    "proximity_euclidean_hamming": "Euc.-Ham.",
-    "proximity_euclidean_jaccard": "Euc.-Jac.",
+    "proximity_euclidean_hamming": "L2-Ham.",
+    "proximity_euclidean_jaccard": "L2-Jac.",
     "proximity_l1_jaccard": "L1-Jac.",
     "proximity_mad_jaccard": "MAD-Jac.",
     "proximity_l2_jaccard": "L2-Jac.",
@@ -47,7 +47,6 @@ METRIC_TEX_MAP: dict[str, str] = {
     "log_density_cf": "Log Dens.",
     "lof_scores_cf": "LOF",
     "isolation_forest_scores_cf": "IsoForest",
-    "search_time": "Time(s)",
     "cf_search_time": "Time(s)",
     "number_of_instances": "N",
 }
@@ -204,6 +203,50 @@ def _try_parse_float(value: str) -> float | None:
         return None
 
 
+def _cell_numeric_value(cell: Cell) -> float | None:
+    """Extract a numeric value from a parsed cell when possible.
+
+    Args:
+        cell: Parsed markdown cell.
+
+    Returns:
+        Numeric value if present and finite, otherwise ``None``.
+    """
+    if cell.kind == "stat" and cell.stat is not None:
+        return cell.stat.mean
+    if cell.kind == "number" and cell.number is not None:
+        return cell.number
+    return None
+
+
+def _mask_metrics_for_zero_validity(
+    headers: list[str], metrics: dict[str, Cell]
+) -> dict[str, Cell]:
+    """Replace metrics with missing markers when validity is zero.
+
+    Args:
+        headers: Ordered metric headers from the markdown table.
+        metrics: Parsed metric cells keyed by header.
+
+    Returns:
+        Possibly modified metrics dictionary.
+    """
+    validity_cell = metrics.get("validity")
+    validity_value = (
+        None if validity_cell is None else _cell_numeric_value(validity_cell)
+    )
+    if validity_value is None or not math.isclose(validity_value, 0.0, abs_tol=1e-12):
+        return metrics
+
+    masked: dict[str, Cell] = {}
+    for header in headers:
+        if header in {"validity", "cf_search_time"}:
+            masked[header] = metrics.get(header, Cell(raw="--", kind="missing"))
+        else:
+            masked[header] = Cell(raw="--", kind="missing")
+    return masked
+
+
 def parse_cell(raw: str) -> Cell:
     """Parse a markdown cell to a structured representation.
 
@@ -347,7 +390,6 @@ def load_metrics_config(path: Path) -> list[str]:
         for metric in metrics
         if metric not in ["number_of_instances", "actionability"]
     ]
-    metrics.append("cf_search_time")
     return [m for m in metrics if not str(m).endswith("_test")]
 
 
@@ -441,6 +483,7 @@ def load_records(
 
         row = rows[0]
         metrics = {headers[i]: parse_cell(row[i]) for i in range(len(headers))}
+        metrics = _mask_metrics_for_zero_validity(headers, metrics)
         records[key] = metrics
         for metric in headers:
             if not metric.endswith("_test"):
@@ -849,7 +892,7 @@ def main() -> None:
         for m in metric_keys
         if m not in exclude_metrics
         and not m.endswith("_test")
-        and m != "number_of_instances"
+        and m not in ("number_of_instances", "actionability")
     ]
 
     proximity_metrics = [m for m in metric_keys if m.startswith(args.proximity_prefix)]

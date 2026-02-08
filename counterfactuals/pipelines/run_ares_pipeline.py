@@ -20,6 +20,7 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.utils import align_counterfactuals_with_factuals
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -213,7 +214,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the AReS method.
 
@@ -235,6 +236,7 @@ def search_counterfactuals(
             - ys_orig (np.ndarray): Original predicted labels
             - ys_target (np.ndarray): Target labels for counterfactuals
             - model_returned (np.ndarray): Boolean array indicating successful generation
+            - cf_search_time (float): Time taken for counterfactual search in seconds
     """
     cf_method_name = "ARES"
     disc_model.eval()
@@ -329,7 +331,7 @@ def search_counterfactuals(
                 Xs_cfs = feature_transformer.transform(Xs_cfs)
         else:
             Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-    model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
+    Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search time: {cf_search_time:.2f} seconds")
 
@@ -339,7 +341,15 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return (
+        Xs_cfs,
+        Xs,
+        log_prob_threshold,
+        ys_orig,
+        ys_target,
+        model_returned,
+        cf_search_time,
+    )
 
 
 def calculate_metrics(
@@ -434,8 +444,17 @@ def main(cfg: DictConfig) -> None:
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = (
-            search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        (
+            Xs_cfs,
+            Xs,
+            log_prob_threshold,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        logger.info(
+            "Fold %s counterfactual search time: %.4f seconds", fold_n, cf_search_time
         )
 
         metrics = calculate_metrics(
@@ -455,6 +474,7 @@ def main(cfg: DictConfig) -> None:
 
         logger.info(f"Metrics for fold {fold_n}: {metrics}")
         df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False

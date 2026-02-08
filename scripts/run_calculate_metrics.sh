@@ -25,28 +25,27 @@ SMALL_DATASETS=(
 )
 
 FULL_DATASETS=(
-  "audit"
   "lending_club"
   "adult_census"
-  "credit_default"
   "give_me_some_credit"
   "bank_marketing"
   "heloc"
   "wine"
-  "digits"
   "law"
   "german_credit"
   "blobs"
   "moons"
+  "credit_default"
+  "audit"
+  "digits"
 )
 
-# --- Methods that should use FULL_DATASETS ---
-# Fill this with your "heavy / stable / official" methods.
 FULL_METHODS=(
   "DiceExplainerWrapper"
   "CADEX"
   "GlobalGLANCE"
   "GroupGLANCE"
+  "GLOBE_CE"
   "DiCE"
   "PPCEF"
   "AReS"
@@ -55,14 +54,11 @@ FULL_METHODS=(
   "CaseBasedSACE"
 )
 
-# --- Discriminative models ---
-# Default list (used if DISC_MODELS_CSV is empty)
 DISC_MODELS_DEFAULT=(
   "MLPClassifier"
   "MultinomialLogisticRegression"
 )
 
-# --- Helpers ---
 is_in_array() {
   local needle="$1"
   shift
@@ -73,7 +69,6 @@ is_in_array() {
   return 1
 }
 
-# Build DISC_MODELS from CSV if provided, else default
 DISC_MODELS=()
 if [[ -n "$DISC_MODELS_CSV" ]]; then
   IFS=',' read -r -a DISC_MODELS <<< "$DISC_MODELS_CSV"

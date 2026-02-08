@@ -34,7 +34,7 @@ counterfactuals_params:
   cf_method:
     _target_: counterfactuals.cf_methods.ares.AReS
 
-  target_class: 0
+  target_class: 1
   batch_size: 4096
   log_prob_quantile: 0.25
 
