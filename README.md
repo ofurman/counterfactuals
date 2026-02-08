@@ -30,7 +30,7 @@ The library includes multiple counterfactual methods, from gradient-based approa
 - **Normalizing Flow Integration**: State-of-the-art density estimation for plausibility
 - **Comprehensive Metrics**: 17+ evaluation metrics for counterfactual quality
 - **Hydra Configuration**: Flexible experiment management with YAML configs
-- **16 Built-in Datasets**: Classification and regression tasks
+- **18 Built-in Datasets**: Classification and regression tasks
 - **Extensible Architecture**: Easy to add new methods, models, and metrics
 - **PyTorch-based**: Modern deep learning framework
 - **Cross-validation Support**: Robust evaluation with k-fold CV
@@ -148,7 +148,7 @@ counterfactuals/
 └── utils.py              # Helper functions
 
 config/
-└── datasets/             # Dataset YAML configurations (16 datasets)
+└── datasets/             # Dataset YAML configurations (18 datasets)
 
 docs/
 ├── library_overview.md   # Comprehensive package documentation
