@@ -9,6 +9,7 @@ Pre-configured datasets for regression tasks.
 | `concrete.yaml` | 8 | 1,030 | Concrete compressive strength |
 | `diabetes.yaml` | 10 | 442 | Diabetes progression |
 | `yacht.yaml` | 6 | 308 | Yacht hydrodynamics |
+| `synthetic.yaml` | 2 | 1,000 | Synthetic regression dataset |
 
 ## Usage Example
 

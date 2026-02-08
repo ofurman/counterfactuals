@@ -181,13 +181,13 @@ docs/
 
 ## Datasets
 
-The library includes 16 pre-configured datasets:
+The library includes 17 pre-configured datasets:
 
 **Classification (13):**
 `adult_census`, `audit`, `bank_marketing`, `blobs`, `credit_default`, `digits`, `german_credit`, `give_me_some_credit` (GMC), `heloc`, `law`, `lending_club`, `moons`, `wine`
 
-**Regression (3):**
-`concrete`, `diabetes`, `yacht`
+**Regression (4):**
+`concrete`, `diabetes`, `yacht`, `synthetic`
 
 Dataset configurations are in `config/datasets/*.yaml` and support:
 - Automatic feature type detection (continuous/categorical)

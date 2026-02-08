@@ -1,6 +1,6 @@
 # Datasets
 
-The library includes **16 pre-configured datasets** for counterfactual explanation research, covering both classification and regression tasks.
+The library includes **17 pre-configured datasets** for counterfactual explanation research, covering both classification and regression tasks.
 
 ## Dataset Categories
 
@@ -17,7 +17,7 @@ The library includes **16 pre-configured datasets** for counterfactual explanati
 <div class="feature-item" markdown>
 **Regression Datasets**
 
-3 datasets for continuous prediction tasks.
+4 datasets for continuous prediction tasks.
 
 [View Datasets →](regression.md)
 </div>
@@ -90,5 +90,6 @@ All datasets support:
 | Concrete | 8 | 1,030 | Engineering |
 | Diabetes | 10 | 442 | Health |
 | Yacht | 6 | 308 | Engineering |
+| Synthetic | 2 | 1,000 | Synthetic |
 
 See the full list in [Classification Datasets](classification.md) and [Regression Datasets](regression.md).
