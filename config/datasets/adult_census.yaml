@@ -72,5 +72,3 @@ initial_transforms:
 - name: one_hot_encode
   params:
     drop_first: false
-
-samples_keep: 30000

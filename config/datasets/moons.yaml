@@ -8,4 +8,3 @@ feature_config:
   "1":
     actionable: true
 target: "2"
-samples_keep: 1000
