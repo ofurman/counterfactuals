@@ -1,27 +1,27 @@
-import os
-import shutil
 import tempfile
-import pytest
+import traceback
 from pathlib import Path
 from unittest.mock import patch
-import traceback
 
+import pytest
 from hydra import compose, initialize
 from hydra.core.global_hydra import GlobalHydra
 
 from counterfactuals.datasets.file_dataset import FileDataset
-from counterfactuals.pipelines.run_ppcef_pipeline import (
-    search_counterfactuals,
-    calculate_metrics,
+from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.pipelines.run_globe_ce_pipeline import (
+    calculate_metrics as calculate_metrics_globe_ce,
 )
 from counterfactuals.pipelines.run_globe_ce_pipeline import (
     search_counterfactuals as search_counterfactuals_globe_ce,
-    calculate_metrics as calculate_metrics_globe_ce,
 )
-from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.pipelines.run_ppcef_pipeline import (
+    calculate_metrics,
+    search_counterfactuals,
+)
 from counterfactuals.preprocessing import (
-    PreprocessingPipeline,
     MinMaxScalingStep,
+    PreprocessingPipeline,
     TorchDataTypeStep,
 )
 
@@ -31,17 +31,17 @@ def test_adult_census_initialization():
     # This file is located at tests/test_datasets/test_adult_census.py
     project_root = Path(__file__).parent.parent.parent
     config_path = project_root / "config/datasets/adult_census.yaml"
-    
+
     # Initialize the dataset
     dataset = FileDataset(config_path=config_path)
-    
+
     # Assertions to verify initialization
     assert dataset.X is not None
     assert dataset.y is not None
     assert len(dataset.X) > 0
     assert len(dataset.y) > 0
     assert dataset.X.shape[0] == dataset.y.shape[0]
-    
+
     # Verify features are loaded
     assert len(dataset.features) > 0
     assert dataset.X.shape[1] == len(dataset.features)
@@ -56,10 +56,10 @@ def test_adult_census_ppcef_execution():
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Clear any existing Hydra instance
         GlobalHydra.instance().clear()
-        
+
         # Calculate relative path to config directory
         config_dir = "../../counterfactuals/pipelines/conf"
-        
+
         try:
             with initialize(version_base="1.2", config_path=config_dir):
                 cfg = compose(
@@ -78,35 +78,36 @@ def test_adult_census_ppcef_execution():
                         "counterfactuals_params.epochs=3",
                         "counterfactuals_params.batch_size=16",
                         f"experiment.output_folder={tmp_dir}",
-                    ]
+                    ],
                 )
         except ValueError as e:
             # Handle the case where Hydra is already initialized
             # This shouldn't happen with GlobalHydra.clear() but good for safety
-             pytest.skip(f"Hydra initialization failed: {e}")
+            pytest.skip(f"Hydra initialization failed: {e}")
 
         # Mock logging to clean up output
         with patch("logging.getLogger"):
-             # Define preprocessing pipeline
+            # Define preprocessing pipeline
             preprocessing_pipeline = PreprocessingPipeline(
                 [
                     ("minmax", MinMaxScalingStep()),
                     ("torch_dtype", TorchDataTypeStep()),
                 ]
             )
-            
+
             # Run the full pipeline
             try:
                 # We also need to mock logger passing if full_pipeline expects it
                 from logging import getLogger
+
                 test_logger = getLogger("test_logger")
-                
+
                 full_pipeline(
                     cfg,
                     preprocessing_pipeline,
                     test_logger,
                     search_counterfactuals,
-                    calculate_metrics
+                    calculate_metrics,
                 )
             except Exception as e:
                 # Fail if it's not the environment issue
@@ -116,17 +117,21 @@ def test_adult_census_ppcef_execution():
                 else:
                     traceback.print_exc()
                     pytest.fail(f"PPCEF pipeline execution failed with error: {e}")
-            
+
             # Verify that output files were created in the temp directory
             output_path = Path(tmp_dir)
-            files = list(output_path.glob("**/*.csv")) + list(output_path.glob("**/*.pt")) + list(output_path.glob("**/*.pth"))
-            
+            files = (
+                list(output_path.glob("**/*.csv"))
+                + list(output_path.glob("**/*.pt"))
+                + list(output_path.glob("**/*.pth"))
+            )
+
             # We expect at least some model checkpoints or result csvs
             # If the pipeline ran successfully, files should exist.
             # However, if we skipped or failed, this assertion won't be reached or will fail.
             if len(files) == 0:
-                 # Check if we should have failed earlier
-                 pass
+                # Check if we should have failed earlier
+                pass
             assert len(files) > 0, "No output files were generated by the pipeline"
 
 
@@ -158,10 +163,10 @@ def test_adult_census_globe_ce_execution():
                         "gen_model.epochs=3",
                         "gen_model.batch_size=16",
                         "gen_model.patience=1",
-                        "++counterfactuals_params.limit_samples=2",                        
+                        "++counterfactuals_params.limit_samples=2",
                         "counterfactuals_params.batch_size=16",
                         f"experiment.output_folder={tmp_dir}",
-                    ]
+                    ],
                 )
         except ValueError as e:
             pytest.skip(f"Hydra initialization failed: {e}")
@@ -170,7 +175,7 @@ def test_adult_census_globe_ce_execution():
         # It needs torch_dtype first, then minmax for some reason related to how data is handled?
         # Let's match run_globe_ce_pipeline.py which uses:
         # ("torch_dtype", TorchDataTypeStep()), ("minmax", MinMaxScalingStep())
-        
+
         preprocessing_pipeline = PreprocessingPipeline(
             [
                 ("torch_dtype", TorchDataTypeStep()),
@@ -181,6 +186,7 @@ def test_adult_census_globe_ce_execution():
         with patch("logging.getLogger"):
             try:
                 from logging import getLogger
+
                 test_logger = getLogger("test_logger")
 
                 full_pipeline(
@@ -188,17 +194,20 @@ def test_adult_census_globe_ce_execution():
                     preprocessing_pipeline,
                     test_logger,
                     search_counterfactuals_globe_ce,
-                    calculate_metrics_globe_ce
+                    calculate_metrics_globe_ce,
                 )
             except Exception as e:
-                 if "tensorflow" in str(e).lower() or "dll" in str(e).lower():
+                if "tensorflow" in str(e).lower() or "dll" in str(e).lower():
                     pytest.skip(f"Skipping due to environment issue: {e}")
-                 else:
+                else:
                     traceback.print_exc()
                     pytest.fail(f"GLOBE-CE pipeline execution failed with error: {e}")
 
             # Verify outputs
             output_path = Path(tmp_dir)
-            files = list(output_path.glob("**/*.csv")) + list(output_path.glob("**/*.pt")) + list(output_path.glob("**/*.pth"))
+            files = (
+                list(output_path.glob("**/*.csv"))
+                + list(output_path.glob("**/*.pt"))
+                + list(output_path.glob("**/*.pth"))
+            )
             assert len(files) > 0, "No output files were generated by the pipeline"
-
