@@ -32,9 +32,7 @@ class Binary(Feature):
                     Values {np.unique(training_vals[~valid_vals])} are not one of {value_names}"""
                 )
         self.__negative_val, self.__positive_val = value_names
-        self._MAD = np.asarray(
-            [1.48 * np.nanstd(self.encode(training_vals, one_hot=False))]
-        )
+        self._MAD = np.asarray([1.48 * np.nanstd(self.encode(training_vals, one_hot=False))])
 
     @Feature._check_dims_on_encode
     def encode(
@@ -84,9 +82,7 @@ class Binary(Feature):
         # return 2 if one_hot else 1
         return 1
 
-    def allowed_change(
-        self, pre_val: CategValue, post_val: CategValue, encoded=True
-    ) -> bool:
+    def allowed_change(self, pre_val: CategValue, post_val: CategValue, encoded=True) -> bool:
         if not encoded:
             pre_val = self.encode([pre_val], one_hot=False)[0]
             post_val = self.encode([post_val], one_hot=False)[0]

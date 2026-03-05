@@ -32,9 +32,7 @@ class PlausibleCounterfactualOfHyperplaneClassifier:
             np.eye(self.n_dims) if projection_matrix is None else projection_matrix
         )
         self.projection_mean_sub = (
-            np.zeros(self.n_dims)
-            if projection_mean_sub is None
-            else projection_mean_sub
+            np.zeros(self.n_dims) if projection_mean_sub is None else projection_mean_sub
         )
         self.density_constraint = density_constraint
 
@@ -130,9 +128,7 @@ class PlausibleCounterfactualOfHyperplaneClassifier:
             constraints += [cp.quad_form((self.projection_matrix @ (x - self.projection_mean_sub)) - x_i, cov) + b <= self.min_density]
             """
             constraints += [
-                cp.quad_form(
-                    self.projection_matrix @ (x - self.projection_mean_sub) - x_i, cov
-                )
+                cp.quad_form(self.projection_matrix @ (x - self.projection_mean_sub) - x_i, cov)
                 - self.ellipsoids_r[i]
                 <= 0
             ]  # Numerically much more stable than the explicit density component constraint
@@ -153,9 +149,7 @@ class PlausibleCounterfactualOfHyperplaneClassifier:
                 I @ beta >= z,
             ]
         else:
-            f = cp.Minimize(
-                (1 / 2) * cp.quad_form(x, I) - x_orig.T @ x
-            )  # Minimize L2 distance
+            f = cp.Minimize((1 / 2) * cp.quad_form(x, I) - x_orig.T @ x)  # Minimize L2 distance
 
         prob = cp.Problem(f, constraints)
 
@@ -190,9 +184,7 @@ class PlausibleCounterfactualOfDecisionTree:
             np.eye(self.n_dims) if projection_matrix is None else projection_matrix
         )
         self.projection_mean_sub = (
-            np.zeros(self.n_dims)
-            if projection_mean_sub is None
-            else projection_mean_sub
+            np.zeros(self.n_dims) if projection_mean_sub is None else projection_mean_sub
         )
         self.density_constraint = density_constraint
 
@@ -213,13 +205,9 @@ class PlausibleCounterfactualOfDecisionTree:
             direction = path_to_leaf[j][3]
 
             if direction == "<":
-                constraints.append(
-                    (self.projection_matrix @ var_x)[feature_id] + eps <= threshold
-                )
+                constraints.append((self.projection_matrix @ var_x)[feature_id] + eps <= threshold)
             elif direction == ">":
-                constraints.append(
-                    (self.projection_matrix @ var_x)[feature_id] - eps >= threshold
-                )
+                constraints.append((self.projection_matrix @ var_x)[feature_id] - eps >= threshold)
 
         return constraints
 
@@ -250,9 +238,7 @@ class PlausibleCounterfactualOfDecisionTree:
             constraints += [cp.quad_form(self.projection_matrix @ (x - self.projection_mean_sub) - x_i, cov) + b <= self.min_density]
             """
             constraints += [
-                cp.quad_form(
-                    self.projection_matrix @ (x - self.projection_mean_sub) - x_i, cov
-                )
+                cp.quad_form(self.projection_matrix @ (x - self.projection_mean_sub) - x_i, cov)
                 - self.ellipsoids_r[i]
                 <= 0
             ]
@@ -273,9 +259,7 @@ class PlausibleCounterfactualOfDecisionTree:
                 I @ beta >= z,
             ]
         else:
-            f = cp.Minimize(
-                (1 / 2) * cp.quad_form(x, I) - x_orig.T @ x
-            )  # Minimize L2 distance
+            f = cp.Minimize((1 / 2) * cp.quad_form(x, I) - x_orig.T @ x)  # Minimize L2 distance
 
         prob = cp.Problem(f, constraints)
 
@@ -329,9 +313,7 @@ class PlausibleCounterfactualOfDecisionTree:
 
 
 class HighDensityEllipsoids:
-    def __init__(
-        self, X, X_densities, cluster_probs, means, covariances, density_threshold=None
-    ):
+    def __init__(self, X, X_densities, cluster_probs, means, covariances, density_threshold=None):
         self.X = X
         self.X_densities = X_densities
         self.density_threshold = (

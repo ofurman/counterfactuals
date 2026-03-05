@@ -126,9 +126,7 @@ def load_and_aggregate_metrics(
                     else:
                         col_weights = weights[valid_mask]
                         weighted_means[col] = float(
-                            np.average(
-                                merged_df.loc[valid_mask, col], weights=col_weights
-                            )
+                            np.average(merged_df.loc[valid_mask, col], weights=col_weights)
                         )
             mean_ = pd.Series(weighted_means)
     std_ = merged_df.std(axis=0)
@@ -208,9 +206,7 @@ def calculate_metrics_table(
     return dataframe_to_markdown(df_filtered)
 
 
-def _build_table_name(
-    dataset: str, method: str, model_name: str, table_name: str | None
-) -> str:
+def _build_table_name(dataset: str, method: str, model_name: str, table_name: str | None) -> str:
     """Build a default markdown filename from the inputs."""
     if table_name:
         return table_name if table_name.endswith(".md") else f"{table_name}.md"
@@ -219,15 +215,11 @@ def _build_table_name(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Calculate aggregated counterfactual metrics and save a markdown table."
-        )
+        description=("Calculate aggregated counterfactual metrics and save a markdown table.")
     )
     parser.add_argument("--dataset", required=True, help="Dataset name.")
     parser.add_argument("--method", required=True, help="Method name.")
-    parser.add_argument(
-        "--model-name", required=True, help="Discriminative model name."
-    )
+    parser.add_argument("--model-name", required=True, help="Discriminative model name.")
     parser.add_argument(
         "--output-dir",
         required=True,

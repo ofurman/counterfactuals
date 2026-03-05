@@ -55,9 +55,7 @@ class CFMetrics:
         if X_cf.shape[1] != X_train.shape[1] or X_cf.shape[1] != X_test.shape[1]:
             raise ValueError("All input data should have the same number of features")
         if X_train.shape[0] != y_train.shape[0]:
-            raise ValueError(
-                "X_train and y_train should have the same number of samples"
-            )
+            raise ValueError("X_train and y_train should have the same number of samples")
         if X_test.shape[0] != y_test.shape[0]:
             raise ValueError("X_test and y_test should have the same number of samples")
         if X_cf.shape[0] != y_test.shape[0]:
@@ -216,9 +214,7 @@ class CFMetrics:
         lof_scores = -lof.score_samples(X)
         return lof_scores.mean()
 
-    def isolation_forest_scores(
-        self, cf: bool = True, n_estimators: int = 100
-    ) -> float:
+    def isolation_forest_scores(self, cf: bool = True, n_estimators: int = 100) -> float:
         """
         Compute the Isolation Forest metric.
         This metric is computed as the average Isolation Forest score of the counterfactuals.
@@ -327,18 +323,10 @@ class CFMetrics:
             "actionability": self.actionability(),
             "sparsity": self.sparsity(),
             # "target_distance": self.target_distance(),
-            "proximity_categorical_hamming": self.feature_distance(
-                categorical_metric="hamming"
-            ),
-            "proximity_categorical_jaccard": self.feature_distance(
-                categorical_metric="jaccard"
-            ),
-            "proximity_continuous_manhattan": self.feature_distance(
-                continuous_metric="cityblock"
-            ),
-            "proximity_continuous_euclidean": self.feature_distance(
-                continuous_metric="euclidean"
-            ),
+            "proximity_categorical_hamming": self.feature_distance(categorical_metric="hamming"),
+            "proximity_categorical_jaccard": self.feature_distance(categorical_metric="jaccard"),
+            "proximity_continuous_manhattan": self.feature_distance(continuous_metric="cityblock"),
+            "proximity_continuous_euclidean": self.feature_distance(continuous_metric="euclidean"),
             "proximity_continuous_mad": self.feature_distance(
                 continuous_metric="mad", X_train=self.X_train
             ),
@@ -432,9 +420,7 @@ def evaluate_cf_for_rppcef(
     )
 
     if S_matrix is not None:
-        cf_belongs_to_group = (
-            np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
-        )
+        cf_belongs_to_group = np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
         metrics.update(
             {
                 "cf_belongs_to_group": cf_belongs_to_group,
@@ -484,9 +470,7 @@ def evaluate_cf_for_pumal(
     )
 
     if S_matrix is not None:
-        cf_belongs_to_group = (
-            np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
-        )
+        cf_belongs_to_group = np.sum(np.any(S_matrix == 1.0, axis=1)) / S_matrix.shape[0]
         metrics.update(
             {
                 "cf_belongs_to_group": cf_belongs_to_group,
@@ -505,18 +489,10 @@ def evaluate_cf_for_pumal(
                 "pairwise_euclidean_dist_std": pdist(D_matrix, "cosine").std(),
                 "pairwise_euclidean_dist_min": pdist(D_matrix, "cosine").min(),
                 "pairwise_euclidean_dist_max": pdist(D_matrix, "cosine").max(),
-                "pairwise_wasserstein_dist_mean": pdist(
-                    D_matrix, wasserstein_distance
-                ).mean(),
-                "pairwise_wasserstein_dist_std": pdist(
-                    D_matrix, wasserstein_distance
-                ).std(),
-                "pairwise_wasserstein_dist_min": pdist(
-                    D_matrix, wasserstein_distance
-                ).min(),
-                "pairwise_wasserstein_dist_max": pdist(
-                    D_matrix, wasserstein_distance
-                ).max(),
+                "pairwise_wasserstein_dist_mean": pdist(D_matrix, wasserstein_distance).mean(),
+                "pairwise_wasserstein_dist_std": pdist(D_matrix, wasserstein_distance).std(),
+                "pairwise_wasserstein_dist_min": pdist(D_matrix, wasserstein_distance).min(),
+                "pairwise_wasserstein_dist_max": pdist(D_matrix, wasserstein_distance).max(),
                 "distance_to_centroid_mean": np.linalg.norm(
                     D_matrix - np.mean(D_matrix, axis=0), axis=1
                 ).mean(),

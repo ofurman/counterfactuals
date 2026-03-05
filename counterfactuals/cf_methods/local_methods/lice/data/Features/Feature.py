@@ -28,9 +28,7 @@ class Feature(ABC):
             if isinstance(training_vals, pd.Series):
                 name = str(training_vals.name)
             else:
-                raise ValueError(
-                    "Name of the feature must be specified in pd.Series or directly"
-                )
+                raise ValueError("Name of the feature must be specified in pd.Series or directly")
         if training_vals.shape[0] == 0:
             raise ValueError(f"No data provided to feature {name}")
         self.__name = name

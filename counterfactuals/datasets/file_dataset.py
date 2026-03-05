@@ -28,9 +28,7 @@ class FileDataset(DatasetBase):
             dataset_name: Optional name for the dataset (used for model paths).
         """
         super().__init__(config_path=config_path)
-        self.samples_keep = (
-            samples_keep if samples_keep is not None else self.config.samples_keep
-        )
+        self.samples_keep = samples_keep if samples_keep is not None else self.config.samples_keep
         self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
             build_initial_transform_pipeline(self.config.initial_transforms)
         )
@@ -40,9 +38,9 @@ class FileDataset(DatasetBase):
         context = self._apply_initial_transforms(raw_data)
 
         if self.samples_keep > 0 and len(context.data) > self.samples_keep:
-            context.data = context.data.sample(
-                self.samples_keep, random_state=42
-            ).reset_index(drop=True)
+            context.data = context.data.sample(self.samples_keep, random_state=42).reset_index(
+                drop=True
+            )
 
         self.raw_data = context.data
         self._update_metadata_from_context(context)
@@ -77,18 +75,14 @@ class FileDataset(DatasetBase):
         """
         data = raw_data.copy()
         if self.config.target_mapping:
-            data[self.config.target] = data[self.config.target].replace(
-                self.config.target_mapping
-            )
+            data[self.config.target] = data[self.config.target].replace(self.config.target_mapping)
 
         X = data[self.features].to_numpy()
         y = data[self.config.target].to_numpy()
         self.X, self.y = X, y
         return X, y
 
-    def _apply_initial_transforms(
-        self, raw_data: pd.DataFrame
-    ) -> InitialTransformContext:
+    def _apply_initial_transforms(self, raw_data: pd.DataFrame) -> InitialTransformContext:
         """Apply configured initial transforms to the raw dataframe."""
         context = InitialTransformContext(
             data=raw_data.copy(),
@@ -114,9 +108,7 @@ class FileDataset(DatasetBase):
         self.features = list(context.features)
         self.numerical_features = list(context.continuous_features)
         self.categorical_features = list(context.categorical_features)
-        self.numerical_features_indices = [
-            self.features.index(f) for f in self.numerical_features
-        ]
+        self.numerical_features_indices = [self.features.index(f) for f in self.numerical_features]
         self.categorical_features_indices = [
             self.features.index(f) for f in self.categorical_features
         ]

@@ -30,9 +30,7 @@ class Categorical(Feature):
             map_to = list(range(len(value_names)))
         self.__value_names = value_names
         self.__mapped_to = map_to
-        self._MAD = np.asarray(
-            1.48 * np.nanstd(self.encode(training_vals, one_hot=True), axis=0)
-        )
+        self._MAD = np.asarray(1.48 * np.nanstd(self.encode(training_vals, one_hot=True), axis=0))
         if ordering is not None and len(ordering) != len(value_names):
             raise ValueError("Ordering is not complete")
         self.__ordering = ordering
@@ -109,9 +107,7 @@ class Categorical(Feature):
 
     @property
     def value_mapping(self):
-        return {
-            val: mapped for val, mapped in zip(self.__value_names, self.__mapped_to)
-        }
+        return {val: mapped for val, mapped in zip(self.__value_names, self.__mapped_to)}
 
     def lower_than(self, num_val: int) -> list[int]:
         lower = []
@@ -131,9 +127,7 @@ class Categorical(Feature):
                 adding = True
         return greater
 
-    def allowed_change(
-        self, pre_val: CategValue, post_val: CategValue, encoded=True
-    ) -> bool:
+    def allowed_change(self, pre_val: CategValue, post_val: CategValue, encoded=True) -> bool:
         if not encoded:
             pre_val = self.encode([pre_val], one_hot=False)[0]
             post_val = self.encode([post_val], one_hot=False)[0]

@@ -47,9 +47,7 @@ def _build_features_tree_from_one_hot(
     if not groups:
         return data.copy(), columns
 
-    group_lookup = {
-        column: base for base, group_cols in groups.items() for column in group_cols
-    }
+    group_lookup = {column: base for base, group_cols in groups.items() for column in group_cols}
     added_groups = set()
     for column in columns:
         base = group_lookup.get(column)
@@ -58,9 +56,7 @@ def _build_features_tree_from_one_hot(
             continue
         if base in added_groups:
             continue
-        grouped_columns = [
-            feature for feature in columns if group_lookup.get(feature) == base
-        ]
+        grouped_columns = [feature for feature in columns if group_lookup.get(feature) == base]
         dataset.features_tree[base] = grouped_columns
         added_groups.add(base)
 
@@ -105,9 +101,7 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             data_encode[x] = label_encoder.fit_transform(data_encode[x])
             cols = label_encoder.classes_
         elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(
-                data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins
-            )
+            data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins)
             cols = data_encode[x].cat.categories
             dataset.bins_tree[x] = {}
         else:
@@ -151,9 +145,7 @@ def compute_bin_widths(
         try:
             categories = pd.cut(data[feature].astype(float), bins=n_bins).cat.categories
         except ValueError as err:
-            logger.warning(
-                "Skipping bin width computation for feature %s: %s", feature, err
-            )
+            logger.warning("Skipping bin width computation for feature %s: %s", feature, err)
             continue
 
         if len(categories) == 0:
@@ -207,9 +199,7 @@ def search_counterfactuals(
     minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
 
     X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
-    )
+    data_oh, features = one_hot(dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features))
 
     def predict_fn(x: pd.DataFrame | np.ndarray) -> np.ndarray:
         # Convert pandas DataFrame to numpy array if needed
@@ -362,9 +352,7 @@ def main(cfg: DictConfig) -> None:
             model_returned,
             cf_search_time,
         ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
-        logger.info(
-            "Fold %s counterfactual search time: %.4f seconds", fold_n, cf_search_time
-        )
+        logger.info("Fold %s counterfactual search time: %.4f seconds", fold_n, cf_search_time)
 
         metrics = calculate_metrics(
             gen_model=gen_model,

@@ -137,9 +137,7 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             data_encode[x] = label_encoder.fit_transform(data_encode[x])
             cols = label_encoder.classes_
         elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(
-                data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins
-            )
+            data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins)
             cols = data_encode[x].cat.categories
             dataset.bins_tree[x] = {}
         else:
@@ -249,9 +247,7 @@ def search_counterfactuals(
         X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
     else:
         if hasattr(feature_transformer, "_inverse_transform_array"):
-            X_test_unscaled = feature_transformer._inverse_transform_array(
-                dataset.X_test
-            )
+            X_test_unscaled = feature_transformer._inverse_transform_array(dataset.X_test)
         else:
             X_test_unscaled = feature_transformer.inverse_transform(dataset.X_test)
     feature_columns = _feature_columns(dataset)
@@ -281,18 +277,12 @@ def search_counterfactuals(
     ys_orig = ys_pred[mask]
 
     # Align AReS expectation (negative class == 0) with configurable target class
-    predict_fn_for_cf = (
-        (lambda x: 1 - predict_fn_raw(x)) if target_class == 0 else predict_fn_raw
-    )
+    predict_fn_for_cf = (lambda x: 1 - predict_fn_raw(x)) if target_class == 0 else predict_fn_raw
 
     logger.info("Creating counterfactual model")
-    apriori_threshold = float(
-        getattr(cfg.counterfactuals_params, "apriori_threshold", 0.6)
-    )
+    apriori_threshold = float(getattr(cfg.counterfactuals_params, "apriori_threshold", 0.6))
     n_bins = int(getattr(cfg.counterfactuals_params, "n_bins", 10))
-    max_triples_eval = int(
-        getattr(cfg.counterfactuals_params, "max_triples_eval", 5000)
-    )
+    max_triples_eval = int(getattr(cfg.counterfactuals_params, "max_triples_eval", 5000))
     cf_method = AReS(
         predict_fn=predict_fn_for_cf,
         dataset=ares_dataset,
@@ -453,9 +443,7 @@ def main(cfg: DictConfig) -> None:
             model_returned,
             cf_search_time,
         ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
-        logger.info(
-            "Fold %s counterfactual search time: %.4f seconds", fold_n, cf_search_time
-        )
+        logger.info("Fold %s counterfactual search time: %.4f seconds", fold_n, cf_search_time)
 
         metrics = calculate_metrics(
             gen_model=gen_model,

@@ -13,9 +13,7 @@ class SequentialFlow(nn.Module):
         super(SequentialFlow, self).__init__()
         self.chain = nn.ModuleList(layer_list)
 
-    def forward(
-        self, x, context, logpx=None, reverse=False, inds=None, integration_times=None
-    ):
+    def forward(self, x, context, logpx=None, reverse=False, inds=None, integration_times=None):
         if inds is None:
             if reverse:
                 inds = range(len(self.chain) - 1, -1, -1)
@@ -49,9 +47,7 @@ class CNF(nn.Module):
         self.train_T = train_T
         self.T = T
         if train_T:
-            self.register_parameter(
-                "sqrt_end_time", nn.Parameter(torch.sqrt(torch.tensor(T)))
-            )
+            self.register_parameter("sqrt_end_time", nn.Parameter(torch.sqrt(torch.tensor(T))))
 
         if regularization_fns is not None and len(regularization_fns) > 0:
             raise NotImplementedError("Regularization not supported")
@@ -66,9 +62,7 @@ class CNF(nn.Module):
         self.solver_options = {}
         self.conditional = conditional
 
-    def forward(
-        self, x, context=None, logpx=None, integration_times=None, reverse=False
-    ):
+    def forward(self, x, context=None, logpx=None, integration_times=None, reverse=False):
         if logpx is None:
             _logpx = torch.zeros(*x.shape[:-1], 1).to(x)
         else:
@@ -90,9 +84,7 @@ class CNF(nn.Module):
                     [torch.tensor(0.0).to(x), self.sqrt_end_time * self.sqrt_end_time]
                 ).to(x)
             else:
-                integration_times = torch.tensor([0.0, self.T], requires_grad=False).to(
-                    x
-                )
+                integration_times = torch.tensor([0.0, self.T], requires_grad=False).to(x)
 
         if reverse:
             integration_times = _flip(integration_times, 0)
@@ -136,7 +128,5 @@ class CNF(nn.Module):
 
 def _flip(x, dim):
     indices = [slice(None)] * x.dim()
-    indices[dim] = torch.arange(
-        x.size(dim) - 1, -1, -1, dtype=torch.long, device=x.device
-    )
+    indices[dim] = torch.arange(x.size(dim) - 1, -1, -1, dtype=torch.long, device=x.device)
     return x[tuple(indices)]

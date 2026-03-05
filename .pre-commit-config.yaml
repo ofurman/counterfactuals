@@ -6,8 +6,11 @@ repos:
       - id: ruff
         types_or: [ python, pyi, jupyter ]
         args: [ --fix, "--ignore", "F841,E741,E711" ]
+        exclude: ^notebooks/
       - id: ruff
         types_or: [ python, pyi, jupyter ]
         args: ["check", "--select", "I", "--fix"]
+        exclude: ^notebooks/
       - id: ruff-format
         types_or: [ python, pyi, jupyter ]
+        exclude: ^notebooks/

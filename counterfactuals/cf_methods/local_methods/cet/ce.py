@@ -132,9 +132,7 @@ class ActionExtractor:
             else ["x_{}".format(d) for d in range(X.shape[1])]
         )
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == X.shape[1]
-            else ["C" for d in range(X.shape[1])]
+            feature_types if len(feature_types) == X.shape[1] else ["C" for d in range(X.shape[1])]
         )
         self.feature_categories_ = feature_categories
         self.feature_categories_flatten_ = flatten(feature_categories)
@@ -219,10 +217,7 @@ class ActionExtractor:
             ]
             self.variables_["omega"] = omega
         else:
-            omega = [
-                pulp.LpVariable("omg_{:04d}".format(n), cat="Binary")
-                for n in range(self.N_)
-            ]
+            omega = [pulp.LpVariable("omg_{:04d}".format(n), cat="Binary") for n in range(self.N_)]
             self.variables_["omega"] = omega
 
         # variables and constants: base learner
@@ -258,9 +253,7 @@ class ActionExtractor:
             phi = [
                 [
                     [
-                        pulp.LpVariable(
-                            "phi_{:04d}_{:04d}_{:04d}".format(n, t, l), cat="Binary"
-                        )
+                        pulp.LpVariable("phi_{:04d}_{:04d}_{:04d}".format(n, t, l), cat="Binary")
                         for l in range(self.L_[t])
                     ]
                     for t in range(self.T_)
@@ -273,9 +266,7 @@ class ActionExtractor:
         elif isinstance(self.mdl_, MLPClassifier):
             xi = [
                 [
-                    pulp.LpVariable(
-                        "xi_{:04d}_{:04d}".format(n, t), cat="Continuous", lowBound=0
-                    )
+                    pulp.LpVariable("xi_{:04d}_{:04d}".format(n, t), cat="Continuous", lowBound=0)
                     for t in range(self.T_)
                 ]
                 for n in range(self.N_)
@@ -283,9 +274,7 @@ class ActionExtractor:
             self.variables_["xi"] = xi
             bxi = [
                 [
-                    pulp.LpVariable(
-                        "bxi_{:04d}_{:04d}".format(n, t), cat="Continuous", lowBound=0
-                    )
+                    pulp.LpVariable("bxi_{:04d}_{:04d}".format(n, t), cat="Continuous", lowBound=0)
                     for t in range(self.T_)
                 ]
                 for n in range(self.N_)
@@ -302,16 +291,10 @@ class ActionExtractor:
             M_bar, M = np.zeros(self.T_), np.zeros(self.T_)
             for t, w in enumerate(self.hidden_coef_.T):
                 M_bar[t] += np.sum(
-                    [
-                        min(w[d] * self.ub_[d], w[d] * self.lb_[d])
-                        for d in range(self.D_)
-                    ]
+                    [min(w[d] * self.ub_[d], w[d] * self.lb_[d]) for d in range(self.D_)]
                 )
                 M[t] += np.sum(
-                    [
-                        max(w[d] * self.ub_[d], w[d] * self.lb_[d])
-                        for d in range(self.D_)
-                    ]
+                    [max(w[d] * self.ub_[d], w[d] * self.lb_[d]) for d in range(self.D_)]
                 )
 
         # objective function: sum_{x \in X} C(a | x) + gamma * omega_x
@@ -320,9 +303,7 @@ class ActionExtractor:
 
         # constraint: sum_{i} pi_{d,i} == 1
         for d in range(self.D_):
-            prob.addConstraint(
-                pulp.lpSum(pi[d]) == 1, name="C_basic_pi_{:04d}".format(d)
-            )
+            prob.addConstraint(pulp.lpSum(pi[d]) == 1, name="C_basic_pi_{:04d}".format(d))
 
         # constraint: a_d = sum_{i} a_{d,i} pi_{d,i}
         for d in range(self.D_):
@@ -480,9 +461,7 @@ class ActionExtractor:
                                 flatten([pi[d] for d in p]),
                             )
                             <= 0,
-                            name="C_{:04d}_forest_decision_{:04d}_{:04d}".format(
-                                n, t, l
-                            ),
+                            name="C_{:04d}_forest_decision_{:04d}_{:04d}".format(n, t, l),
                         )
                         self.constraints_[n] += [
                             "C_{:04d}_forest_decision_{:04d}_{:04d}".format(n, t, l)
@@ -490,9 +469,7 @@ class ActionExtractor:
 
             # constraints (Multi-Layer Perceptoron):
             elif isinstance(self.mdl_, MLPClassifier):
-                M_bar_n = -1 * (
-                    X[n].dot(self.hidden_coef_) + self.hidden_intercept_ + M_bar
-                )
+                M_bar_n = -1 * (X[n].dot(self.hidden_coef_) + self.hidden_intercept_ + M_bar)
                 M_n = X[n].dot(self.hidden_coef_) + self.hidden_intercept_ + M
                 M_bar_n[M_bar_n < 0] = 0.0
                 M_n[M_n < 0] = 0.0
@@ -574,9 +551,7 @@ class ActionExtractor:
 
         if prob.status != 1:
             prob.writeLP("infeasible.lp")
-            prob.solve(
-                solver=pulp.CPLEX_PY(msg=True, options=["set output clonelog -1"])
-            )
+            prob.solve(solver=pulp.CPLEX_PY(msg=True, options=["set output clonelog -1"]))
             return {
                 "feasible": False,
                 "sample": X.shape[0],
@@ -599,8 +574,7 @@ class ActionExtractor:
                 [
                     np.sum(
                         [
-                            self.actions_[d][i]
-                            * round(self.variables_["pi"][d][i].value())
+                            self.actions_[d][i] * round(self.variables_["pi"][d][i].value())
                             for i in range(len(self.actions_[d]))
                         ]
                     )
@@ -616,9 +590,7 @@ class ActionExtractor:
                 "active": self.mdl_.predict(X + a) == target_label,
                 "instance": X,
                 # 'objective': prob.objective.value(),
-                "objective": np.array(
-                    [c.value() for c in self.variables_["cost"]]
-                ).sum()
+                "objective": np.array([c.value() for c in self.variables_["cost"]]).sum()
                 + tradeoff_parameter * (self.mdl_.predict(X + a) != target_label).sum(),
                 "time": t,
             }
@@ -663,9 +635,7 @@ def _check_ce(N=1, dataset="h", model="L", hinge_relax=False):
     elif model == "F":
         from sklearn.ensemble import RandomForestClassifier
 
-        mdl = RandomForestClassifier(
-            n_estimators=100, max_leaf_nodes=16, class_weight="balanced"
-        )
+        mdl = RandomForestClassifier(n_estimators=100, max_leaf_nodes=16, class_weight="balanced")
     elif model == "M":
         from sklearn.neural_network import MLPClassifier
 
@@ -747,17 +717,13 @@ def _check_sens(N=1, dataset="h"):
 
     res = {"gamma": np.arange(0.1, 1.1, 0.1), "cost": [], "loss": []}
     for gamma in res["gamma"]:
-        action = ce.extract(
-            denied[:N], max_change_num=4, cost_type="MPS", tradeoff_parameter=gamma
-        )
+        action = ce.extract(denied[:N], max_change_num=4, cost_type="MPS", tradeoff_parameter=gamma)
         c = action["cost"].mean()
         a = (1 - action["active"]).mean()
         res["cost"].append(c)
         res["loss"].append(a)
         print(
-            "\t* Obj. = {:.3} + {:.3} * {:.3} = {:.3}".format(
-                c, gamma, a, action["objective"] / N
-            )
+            "\t* Obj. = {:.3} + {:.3} * {:.3} = {:.3}".format(c, gamma, a, action["objective"] / N)
         )
 
     if False:
@@ -779,15 +745,11 @@ def _check_lime(N=1, dataset="h", model="L", compare=False):
     if model == "L":
         from sklearn.linear_model import LogisticRegression
 
-        mdl = LogisticRegression(
-            penalty="l2", C=1.0, solver="liblinear", class_weight="balanced"
-        )
+        mdl = LogisticRegression(penalty="l2", C=1.0, solver="liblinear", class_weight="balanced")
     elif model == "F":
         from sklearn.ensemble import RandomForestClassifier
 
-        mdl = RandomForestClassifier(
-            n_estimators=100, max_leaf_nodes=16, class_weight="balanced"
-        )
+        mdl = RandomForestClassifier(n_estimators=100, max_leaf_nodes=16, class_weight="balanced")
     elif model == "M":
         from sklearn.neural_network import MLPClassifier
 
@@ -815,9 +777,7 @@ def _check_lime(N=1, dataset="h", model="L", compare=False):
             target_labels=D.target_labels,
             lime_approximation=False,
         )
-        action = ce.extract(
-            denied[:N], max_change_num=4, cost_type="MPS", tradeoff_parameter=0.75
-        )
+        action = ce.extract(denied[:N], max_change_num=4, cost_type="MPS", tradeoff_parameter=0.75)
         if action["feasible"]:
             print("## Summary:")
             print("* Perturbation:")
@@ -852,9 +812,7 @@ def _check_lime(N=1, dataset="h", model="L", compare=False):
         n_samples=10000,
         alpha=1.0,
     )
-    action = ce.extract(
-        denied[:N], max_change_num=3, cost_type="MPS", tradeoff_parameter=0.75
-    )
+    action = ce.extract(denied[:N], max_change_num=3, cost_type="MPS", tradeoff_parameter=0.75)
     if action["feasible"]:
         if not compare:
             for n, r in enumerate(ce.getActionObject(action)):
@@ -885,15 +843,11 @@ def __check_lime(dataset="i", model="F", compare=False):
     if model == "L":
         from sklearn.linear_model import LogisticRegression
 
-        mdl = LogisticRegression(
-            penalty="l2", C=1.0, solver="liblinear", class_weight="balanced"
-        )
+        mdl = LogisticRegression(penalty="l2", C=1.0, solver="liblinear", class_weight="balanced")
     elif model == "F":
         from sklearn.ensemble import RandomForestClassifier
 
-        mdl = RandomForestClassifier(
-            n_estimators=100, max_leaf_nodes=16, class_weight="balanced"
-        )
+        mdl = RandomForestClassifier(n_estimators=100, max_leaf_nodes=16, class_weight="balanced")
     elif model == "M":
         from sklearn.neural_network import MLPClassifier
 
@@ -922,9 +876,7 @@ def __check_lime(dataset="i", model="F", compare=False):
             target_labels=D.target_labels,
             lime_approximation=False,
         )
-        action = ce.extract(
-            denied, max_change_num=3, cost_type="MPS", tradeoff_parameter=0.75
-        )
+        action = ce.extract(denied, max_change_num=3, cost_type="MPS", tradeoff_parameter=0.75)
         if action["feasible"]:
             print("## Summary:")
             print("* Perturbation:")
@@ -959,9 +911,7 @@ def __check_lime(dataset="i", model="F", compare=False):
         n_samples=10000,
         alpha=1.0,
     )
-    action = ce.extract(
-        denied, max_change_num=3, cost_type="MPS", tradeoff_parameter=1.0
-    )
+    action = ce.extract(denied, max_change_num=3, cost_type="MPS", tradeoff_parameter=1.0)
     if action["feasible"]:
         if not compare:
             for n, r in enumerate(ce.getActionObject(action)):

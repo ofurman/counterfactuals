@@ -78,9 +78,7 @@ class Node:
         if self.is_leaf():
             return self.objective / self.sample.shape[0]
         else:
-            return (
-                self.left.getObjective() + self.left.getObjective()
-            ) / self.sample.shape[0]
+            return (self.left.getObjective() + self.left.getObjective()) / self.sample.shape[0]
 
     def getLoss(self):
         if self.is_leaf():
@@ -104,9 +102,7 @@ class Node:
         self.sample_indices = X_index
         return self
 
-    def setAction(
-        self, action=None, cost=0, active=0, objective=0, is_infeasible=False
-    ):
+    def setAction(self, action=None, cost=0, active=0, objective=0, is_infeasible=False):
         self.action = action
         self.cost = cost
         self.active = active
@@ -216,9 +212,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
             else ["x_{}".format(d) for d in range(X.shape[1])]
         )
         self.feature_types_ = (
-            feature_types
-            if len(feature_types) == X.shape[1]
-            else ["C" for d in range(X.shape[1])]
+            feature_types if len(feature_types) == X.shape[1] else ["C" for d in range(X.shape[1])]
         )
         self.feature_categories_ = feature_categories
         self.feature_categories_flatten_ = flatten(feature_categories)
@@ -253,9 +247,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
             self.R_ = len(self.rule_names_)
             self.rule_length_ = self.discretizer_.L_
         else:
-            self.discretizer_ = FeatureDiscretizer(
-                bins=discretization_bins, onehot=False
-            )
+            self.discretizer_ = FeatureDiscretizer(bins=discretization_bins, onehot=False)
             self.discretizer_ = self.discretizer_.fit(
                 X, feature_names=feature_names, feature_types=feature_types
             )
@@ -283,14 +275,10 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
 
         x_cfs = self.get_counterfactuals(X)
         y_target_arr = (
-            np.array(y_target)
-            if y_target is not None
-            else np.zeros((X.shape[0],), dtype=int)
+            np.array(y_target) if y_target is not None else np.zeros((X.shape[0],), dtype=int)
         )
         y_origin_arr = (
-            np.array(y_origin)
-            if y_origin is not None
-            else np.zeros((X.shape[0],), dtype=int)
+            np.array(y_origin) if y_origin is not None else np.zeros((X.shape[0],), dtype=int)
         )
 
         return ExplanationResult(
@@ -324,12 +312,8 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
     def extractAction(self, X, X_indices):
         action_dict = self.extractor_.extract(
             X,
-            lime_coefs=self.lime_coefs_[X_indices]
-            if self.lime_approximation_
-            else None,
-            lime_intercepts=self.lime_intercepts_[X_indices]
-            if self.lime_approximation_
-            else None,
+            lime_coefs=self.lime_coefs_[X_indices] if self.lime_approximation_ else None,
+            lime_intercepts=self.lime_intercepts_[X_indices] if self.lime_approximation_ else None,
             max_change_num=self.max_change_num_,
             cost_type=self.cost_type_,
             tradeoff_parameter=self.gamma_,
@@ -512,9 +496,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
         self.gamma_ = gamma
         self.lambda_ = C
         self.leaf_size_bound_ = int((self.gamma_ + self.lambda_) / self.lambda_)
-        self.max_leaf_size_ = (
-            self.leaf_size_bound_ if max_leaf_size < 1 else max_leaf_size
-        )
+        self.max_leaf_size_ = self.leaf_size_bound_ if max_leaf_size < 1 else max_leaf_size
         self.time_limit_ = time_limit
         self.X_rule_ = self.discretizer_.transform(X)
         if self.lime_approximation_:
@@ -523,9 +505,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
                 np.zeros(self.N_),
             )
             for n, x in enumerate(X):
-                self.lime_coefs_[n], self.lime_intercepts_[n] = self.lime_.approximate(
-                    x
-                )
+                self.lime_coefs_[n], self.lime_intercepts_[n] = self.lime_.approximate(x)
 
         # Initialization
         self.dummy_ = DummyNode()
@@ -602,10 +582,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
         return self
 
     def selectEditOperation(self):
-        if (
-            self.leaf_size >= self.leaf_size_bound_
-            or self.leaf_size >= self.max_leaf_size_
-        ):
+        if self.leaf_size >= self.leaf_size_bound_ or self.leaf_size >= self.max_leaf_size_:
             p = np.array([0, 1, 1])
         elif self.internal_size < 1:
             p = np.array([1, 0, 0])
@@ -704,8 +681,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
             R_candidates = [
                 r
                 for r in range(self.R_)
-                if node.sample_rule[:, r].mean() > 0
-                and node.sample_rule[:, r].mean() < 1
+                if node.sample_rule[:, r].mean() > 0 and node.sample_rule[:, r].mean() < 1
             ]
             if len(R_candidates) == 0:
                 return np.random.choice(range(self.R_), p=self.rule_probability_)
@@ -773,9 +749,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
                             if self.feature_types_[d] == "C":
                                 print(
                                     "\t" * (depth + 1)
-                                    + "* {}: {:+.4f}".format(
-                                        self.feature_names_[d], node.action[d]
-                                    )
+                                    + "* {}: {:+.4f}".format(self.feature_names_[d], node.action[d])
                                 )
                             elif self.feature_types_[d] == "B":
                                 if node.action[d] == -1:
@@ -809,8 +783,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
                                 cat[np.where(node.action[cat] == -1)[0][0]]
                             ].split(":")[1]
                             print(
-                                "\t" * (depth + 1)
-                                + '* {}: "{}" -> "{}"'.format(cat_name, prv, nxt)
+                                "\t" * (depth + 1) + '* {}: "{}" -> "{}"'.format(cat_name, prv, nxt)
                             )
             else:
                 print(
@@ -853,10 +826,7 @@ class CounterfactualExplanationTree(BaseCounterfactualMethod, LocalCounterfactua
         if return_costs:
             # Compute costs for each counterfactual
             costs = np.array(
-                [
-                    self.cost_.compute(x, a, cost_type=self.cost_type_)
-                    for x, a in zip(X, actions)
-                ]
+                [self.cost_.compute(x, a, cost_type=self.cost_type_) for x, a in zip(X, actions)]
             )
             return counterfactuals, costs
 
@@ -883,27 +853,21 @@ def _check(
         print("* Classifier: LogisticRegression")
         from sklearn.linear_model import LogisticRegression
 
-        mdl = LogisticRegression(
-            penalty="l2", C=1.0, solver="liblinear", class_weight="balanced"
-        )
+        mdl = LogisticRegression(penalty="l2", C=1.0, solver="liblinear", class_weight="balanced")
         print("\t* C: {}".format(mdl.C))
         print("\t* penalty: {}".format(mdl.penalty))
     elif model == "F":
         print("* Classifier: RandomForest")
         from sklearn.ensemble import RandomForestClassifier
 
-        mdl = RandomForestClassifier(
-            n_estimators=100, max_leaf_nodes=16, class_weight="balanced"
-        )
+        mdl = RandomForestClassifier(n_estimators=100, max_leaf_nodes=16, class_weight="balanced")
         print("\t* n_estimators: {}".format(mdl.n_estimators))
         print("\t* max_leaf_nodes: {}".format(mdl.max_leaf_nodes))
     elif model == "M":
         print("* Classifier: MultiLayerPerceptron")
         from sklearn.neural_network import MLPClassifier
 
-        mdl = MLPClassifier(
-            hidden_layer_sizes=(50,), max_iter=500, activation="relu", alpha=0.0001
-        )
+        mdl = MLPClassifier(hidden_layer_sizes=(50,), max_iter=500, activation="relu", alpha=0.0001)
         print("\t* hidden_layer_size: {}".format(mdl.hidden_layer_sizes[0]))
         print("\t* activation: {}".format(mdl.activation))
     elif model == "X":
@@ -928,9 +892,7 @@ def _check(
                 d + 1,
                 D.feature_names[d],
                 D.feature_types[d],
-                ":" + D.feature_constraints[d]
-                if D.feature_constraints[d] != ""
-                else "",
+                ":" + D.feature_constraints[d] if D.feature_constraints[d] != "" else "",
             )
         )
 

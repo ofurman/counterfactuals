@@ -106,9 +106,7 @@ def search_counterfactuals(
     ys_orig = explanation_result.y_origs
     ys_target = explanation_result.y_cf_targets
     logs = explanation_result.logs or {}
-    model_returned = np.asarray(
-        logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool))
-    )
+    model_returned = np.asarray(logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool)))
 
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
@@ -186,9 +184,7 @@ def main(cfg: DictConfig) -> None:
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

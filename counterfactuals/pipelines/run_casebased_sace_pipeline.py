@@ -70,8 +70,7 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     cf_method = CaseBasedSACE(
         disc_model=disc_model,
-        variable_features=dataset.numerical_features_indices
-        + dataset.categorical_features_indices,
+        variable_features=dataset.numerical_features_indices + dataset.categorical_features_indices,
         continuous_features=dataset.numerical_features_indices,
         categorical_features_lists=dataset.categorical_features_lists,
         **cfg.counterfactuals_params.cf_method,
@@ -166,9 +165,7 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(
-    config_path="./conf", config_name="casebased_sace_config", version_base="1.2"
-)
+@hydra.main(config_path="./conf", config_name="casebased_sace_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     preprocessing_pipeline = PreprocessingPipeline(
         [

@@ -125,9 +125,7 @@ class NICE(PytorchBase, GenerativePytorchMixin):
 
         return torch.hstack(log_probs)
 
-    def sample_and_log_proba(
-        self, n_samples: int, context: Optional[np.ndarray] = None
-    ):
+    def sample_and_log_proba(self, n_samples: int, context: Optional[np.ndarray] = None):
         """Sample from the model and return (samples, log_probs) as numpy arrays."""
         if context is not None and self.context_features is not None:
             if isinstance(context, np.ndarray):

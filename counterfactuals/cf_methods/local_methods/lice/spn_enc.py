@@ -91,13 +91,11 @@ def encode_histogram(
     )
     mio_block.upper = pyo.Constraint(
         mio_block.bins,
-        rule=lambda b, bin_i: b.not_in_bin[bin_i] * M
-        >= in_var - breaks[bin_i + 1] + mio_epsilon,
+        rule=lambda b, bin_i: b.not_in_bin[bin_i] * M >= in_var - breaks[bin_i + 1] + mio_epsilon,
     )
 
     mio_block.output = pyo.Constraint(
-        expr=sum((1 - mio_block.not_in_bin[i]) * vals[i] for i in range(n_bins))
-        == out_var
+        expr=sum((1 - mio_block.not_in_bin[i]) * vals[i] for i in range(n_bins)) == out_var
     )
 
 
@@ -205,8 +203,7 @@ def encode_spn(
 
             constr = pyo.Constraint(
                 rule=lambda b: (
-                    b.node_out[node.id]
-                    == sum(var * dens for var, dens in zip(in_vars, dens_ll))
+                    b.node_out[node.id] == sum(var * dens for var, dens in zip(in_vars, dens_ll))
                 )
             )
             mio_spn.add_component(f"CategLeaf{node.id}", constr)
@@ -222,8 +219,7 @@ def encode_spn(
         elif node.type == NodeType.PRODUCT:
             constr = pyo.Constraint(
                 rule=lambda b: (
-                    b.node_out[node.id]
-                    == sum(b.node_out[ch.id] for ch in node.predecessors)
+                    b.node_out[node.id] == sum(b.node_out[ch.id] for ch in node.predecessors)
                 )
             )
             mio_spn.add_component(f"ProdConstr{node.id}", constr)
@@ -242,9 +238,7 @@ def encode_spn(
                     preds_set,
                     rule=lambda b, pre_id: (
                         b.node_out[node.id]
-                        <= b.node_out[pre_id]
-                        + np.log(weights[pre_id])
-                        + M_sum * slack_inds[pre_id]
+                        <= b.node_out[pre_id] + np.log(weights[pre_id]) + M_sum * slack_inds[pre_id]
                     ),
                 )
             elif sum_approx == "upper":
@@ -264,9 +258,7 @@ def encode_spn(
             else:
                 raise ValueError('sum_approx must be one of ["upper", "lower"]')
             mio_spn.add_component(f"SumSlackConstr{node.id}", slacking)
-            one_tight = pyo.Constraint(
-                expr=sum(slack_inds[i] for i in preds_set) == n_preds - 1
-            )
+            one_tight = pyo.Constraint(expr=sum(slack_inds[i] for i in preds_set) == n_preds - 1)
             mio_spn.add_component(f"SumTightConstr{node.id}", one_tight)
 
             # implemented using SOS1 constraints, see here: https://www.gurobi.com/documentation/current/refman/general_constraints.html

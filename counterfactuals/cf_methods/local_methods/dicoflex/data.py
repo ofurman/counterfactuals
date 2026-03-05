@@ -50,9 +50,7 @@ def build_actionability_mask(dataset: MethodDataset) -> np.ndarray:
             cat_groups_iter = categorical_groups
         else:
             cat_groups_iter = [
-                [int(index)]
-                if isinstance(index, (int, np.integer))
-                else [int(i) for i in index]
+                [int(index)] if isinstance(index, (int, np.integer)) else [int(i) for i in index]
                 for index in categorical_groups
             ]
 
@@ -107,9 +105,7 @@ class DiCoFlexTrainingDataset(Dataset):
         self.classes = np.unique(self.y)
         if len(self.classes) < 2:
             raise ValueError("DiCoFlex requires at least two classes.")
-        self.class_to_index: Dict[int, int] = {
-            cls: idx for idx, cls in enumerate(self.classes)
-        }
+        self.class_to_index: Dict[int, int] = {cls: idx for idx, cls in enumerate(self.classes)}
         self.total_candidates = max(
             self.n_neighbors * max(len(self.classes) - 1, 1), self.n_neighbors
         )
@@ -170,9 +166,7 @@ class DiCoFlexTrainingDataset(Dataset):
             ).astype(np.float32)
             contexts.append(context_vec)
 
-        return torch.from_numpy(np.stack(cf_samples)), torch.from_numpy(
-            np.stack(contexts)
-        )
+        return torch.from_numpy(np.stack(cf_samples)), torch.from_numpy(np.stack(contexts))
 
     def _prepare_mask(self, mask: np.ndarray) -> np.ndarray:
         vector = np.asarray(mask, dtype=np.float32).reshape(-1)
@@ -213,9 +207,9 @@ class DiCoFlexTrainingDataset(Dataset):
                             mask=mask,
                             p_value=p_value,
                         )
-                        neighbor_map[
-                            (mask_idx, p_value, factual_class, target_class)
-                        ] = neighbor_global_ids
+                        neighbor_map[(mask_idx, p_value, factual_class, target_class)] = (
+                            neighbor_global_ids
+                        )
 
         return neighbor_map
 
@@ -252,10 +246,7 @@ class DiCoFlexTrainingDataset(Dataset):
             for t_start in range(0, X_target.shape[0], target_chunk):
                 t_end = min(t_start + target_chunk, X_target.shape[0])
                 target_block = X_target[t_start:t_end]
-                diff = (
-                    np.abs(factual_block[:, None, :] - target_block[None, :, :])
-                    ** p_value
-                )
+                diff = np.abs(factual_block[:, None, :] - target_block[None, :, :]) ** p_value
                 diff *= mask_weight
                 distances = np.sum(diff, axis=2) ** (1.0 / p_value)
 
@@ -275,9 +266,7 @@ class DiCoFlexTrainingDataset(Dataset):
                 best_indices = np.take_along_axis(combined_indices, partition, axis=1)
 
             order = np.argsort(best_dists, axis=1)
-            neighbor_global_ids[start:end] = np.take_along_axis(
-                best_indices, order, axis=1
-            )
+            neighbor_global_ids[start:end] = np.take_along_axis(best_indices, order, axis=1)
 
         return neighbor_global_ids
 
@@ -308,9 +297,7 @@ class DiCoFlexTrainingDataset(Dataset):
                                 continue
 
                             # Use local index to access the neighbor map
-                            neighbor_indices = self._neighbor_map[key][
-                                local_factual_idx
-                            ]
+                            neighbor_indices = self._neighbor_map[key][local_factual_idx]
                             neighbor_records.extend(
                                 [(cf_idx, target_class) for cf_idx in neighbor_indices]
                             )
@@ -319,18 +306,12 @@ class DiCoFlexTrainingDataset(Dataset):
                             continue
 
                         if len(neighbor_records) < self.n_neighbors:
-                            repeats = math.ceil(
-                                self.n_neighbors / len(neighbor_records)
-                            )
-                            neighbor_records = (neighbor_records * repeats)[
-                                : self.n_neighbors
-                            ]
+                            repeats = math.ceil(self.n_neighbors / len(neighbor_records))
+                            neighbor_records = (neighbor_records * repeats)[: self.n_neighbors]
                         else:
                             neighbor_records = neighbor_records[: self.n_neighbors]
 
-                        entries.append(
-                            (mask_idx, p_value, factual_idx, neighbor_records)
-                        )
+                        entries.append((mask_idx, p_value, factual_idx, neighbor_records))
 
         return entries
 
@@ -394,13 +375,9 @@ def create_dicoflex_dataloaders(
         val_size = max(1, len(dataset) // 5)
     train_size = len(dataset) - val_size
     if train_size <= 0:
-        raise ValueError(
-            "Validation split is too large for the available DiCoFlex training pairs."
-        )
+        raise ValueError("Validation split is too large for the available DiCoFlex training pairs.")
     generator = torch.Generator().manual_seed(seed)
-    train_subset, val_subset = random_split(
-        dataset, [train_size, val_size], generator=generator
-    )
+    train_subset, val_subset = random_split(dataset, [train_size, val_size], generator=generator)
     train_loader = DataLoader(
         train_subset,
         batch_size=factual_batch_size,

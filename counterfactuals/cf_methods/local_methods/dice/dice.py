@@ -101,19 +101,13 @@ class DICE(BaseCounterfactualMethod, LocalCounterfactualMixin):
             verbose=verbose,
             **kwargs,
         )
-        coverage_mask = np.array(
-            [cf.final_cfs_df.shape[0] > 0 for cf in dice_exp.cf_examples_list]
-        )
+        coverage_mask = np.array([cf.final_cfs_df.shape[0] > 0 for cf in dice_exp.cf_examples_list])
         Xs_cfs = self.get_counterfactual(dice_exp)
         Xs_cfs = np.array(Xs_cfs).squeeze()
         Xs = np.array(Xs)[coverage_mask]
         ys = np.array(ys)[coverage_mask]
-        ys_target = (
-            [desired_class] * len(Xs) if desired_class != "opposite" else np.abs(1 - ys)
-        )
-        return ExplanationResult(
-            x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs, y_origs=ys
-        )
+        ys_target = [desired_class] * len(Xs) if desired_class != "opposite" else np.abs(1 - ys)
+        return ExplanationResult(x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs, y_origs=ys)
 
     def explain_dataloader(
         self,
@@ -183,19 +177,13 @@ class DICE(BaseCounterfactualMethod, LocalCounterfactualMixin):
             verbose=verbose,
             **kwargs,
         )
-        coverage_mask = np.array(
-            [cf.final_cfs_df.shape[0] > 0 for cf in dice_exp.cf_examples_list]
-        )
+        coverage_mask = np.array([cf.final_cfs_df.shape[0] > 0 for cf in dice_exp.cf_examples_list])
         Xs_cfs = self.get_counterfactual(dice_exp)
         Xs_cfs = np.array(Xs_cfs).squeeze()
         Xs = np.array(Xs)[coverage_mask]
         ys = np.array(ys)[coverage_mask]
-        ys_target = (
-            [desired_class] * len(Xs) if desired_class != "opposite" else np.abs(1 - ys)
-        )
-        return ExplanationResult(
-            x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs, y_origs=ys
-        )
+        ys_target = [desired_class] * len(Xs) if desired_class != "opposite" else np.abs(1 - ys)
+        return ExplanationResult(x_cfs=Xs_cfs, y_cf_targets=ys_target, x_origs=Xs, y_origs=ys)
 
     def get_counterfactual(self, dice_exp):
         return [

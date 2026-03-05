@@ -87,9 +87,7 @@ if __name__ == "__main__":
             X_test = np.dot(X_test - projection_mean_sub, projection_matrix.T)
 
         # Fit classifier
-        model = LogisticRegression(
-            multi_class="multinomial", solver="lbfgs", random_state=42
-        )
+        model = LogisticRegression(multi_class="multinomial", solver="lbfgs", random_state=42)
         if use_decision_tree is True:
             model = DecisionTreeClassifier(max_depth=7, random_state=42)
         model.fit(X_train, y_train)
@@ -133,9 +131,7 @@ if __name__ == "__main__":
             kde = KernelDensity(bandwidth=bandwidth)
             kde.fit(X_)
 
-            de = GaussianMixture(
-                n_components=n_components, covariance_type="full", random_state=42
-            )
+            de = GaussianMixture(n_components=n_components, covariance_type="full", random_state=42)
             de.fit(X_)
 
             density_estimators[label] = de
@@ -150,9 +146,7 @@ if __name__ == "__main__":
             y_orig = y_test[i]
             y_target = y_test_target[i]
 
-            if (
-                model.predict([x_orig]) == y_target
-            ):  # Model already predicts target label!
+            if model.predict([x_orig]) == y_target:  # Model already predicts target label!
                 print("Requested prediction already satisfied")
                 continue
 
@@ -178,11 +172,7 @@ if __name__ == "__main__":
                     cov = de.covariances_[i]
                     cov = np.linalg.inv(cov)
 
-                    b = (
-                        -2.0 * np.log(w_i)
-                        + dim * np.log(2.0 * np.pi)
-                        - np.log(np.linalg.det(cov))
-                    )
+                    b = -2.0 * np.log(w_i) + dim * np.log(2.0 * np.pi) - np.log(np.linalg.det(cov))
                     z.append(np.dot(x - x_i, np.dot(cov, x - x_i)) + b)  # NLL
 
                 densities_training_samples.append(np.min(z))
@@ -280,9 +270,7 @@ if __name__ == "__main__":
             computation_time_without_density_constraint.append(xcf_t1)
             computation_time_with_density_constraint.append(xcf_t2)
             distances_with_density_constraint.append(np.sum(np.abs(x_orig_orig - xcf2)))
-            distances_without_density_constraint.append(
-                np.sum(np.abs(x_orig_orig - xcf))
-            )
+            distances_without_density_constraint.append(np.sum(np.abs(x_orig_orig - xcf)))
 
             if (
                 pca is not None
@@ -291,12 +279,8 @@ if __name__ == "__main__":
                 xcf2 = pca.transform([xcf2])
 
             # Evaluate
-            scores_without_density_constraint.append(
-                kde.score_samples(xcf.reshape(1, -1))
-            )
-            scores_with_density_constraint.append(
-                kde.score_samples(xcf2.reshape(1, -1))
-            )
+            scores_without_density_constraint.append(kde.score_samples(xcf.reshape(1, -1)))
+            scores_with_density_constraint.append(kde.score_samples(xcf2.reshape(1, -1)))
 
     # Final evaluation
     print(

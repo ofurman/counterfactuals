@@ -55,9 +55,7 @@ class FeatureSACE(SACE):
                     self.min_val[y_val][fi] = np.min(X_cfc[:, fi])
                     self.max_val[y_val][fi] = np.max(X_cfc[:, fi])
                     if len(np.unique(X_cfc[:, fi])) <= 2:
-                        self.gap[y_val][fi] = (
-                            self.max_val[y_val][fi] - self.min_val[y_val][fi]
-                        )
+                        self.gap[y_val][fi] = self.max_val[y_val][fi] - self.min_val[y_val][fi]
                     else:
                         self.gap[y_val][fi] = (
                             self.max_val[y_val][fi] - self.min_val[y_val][fi]
@@ -206,11 +204,7 @@ class FeatureSACE(SACE):
                     return
 
                 # nx = self.scaler.transform(x)
-                nx = (
-                    self.scaler.transform(x)
-                    if not self.pooler
-                    else self.pooler.transform(x)
-                )
+                nx = self.scaler.transform(x) if not self.pooler else self.pooler.transform(x)
                 ncfc = self.scaler.transform(cfc)
                 score = self.cdist(ncfc, nx, metric=self.metric, w=self.weights)
                 cf_score[len(cf_score)] = (score, cfc.copy().flatten())

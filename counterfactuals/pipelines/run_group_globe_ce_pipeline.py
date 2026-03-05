@@ -57,9 +57,7 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             data_encode[x] = label_encoder.fit_transform(data_encode[x])
             cols = label_encoder.classes_
         elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(
-                data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins
-            )
+            data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins)
             cols = data_encode[x].cat.categories
             dataset.bins_tree[x] = {}
         else:
@@ -168,9 +166,7 @@ def search_counterfactuals(
         ares_helper = AReS(
             predict_fn=predict_fn,
             dataset=dataset,
-            X=pd.DataFrame(
-                X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]
-            ),
+            X=pd.DataFrame(X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]),
             dropped_features=[],
             n_bins=10,
             ordinal_features=[],
@@ -182,9 +178,7 @@ def search_counterfactuals(
         cf_method = GLOBE_CE(
             predict_fn=predict_fn,
             dataset=dataset,
-            X=pd.DataFrame(
-                X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]
-            ),
+            X=pd.DataFrame(X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]),
             bin_widths=bin_widths,
         )
 
@@ -253,9 +247,7 @@ def calculate_metrics(
     return metrics
 
 
-@hydra.main(
-    config_path="./conf", config_name="group_globe_ce_config", version_base="1.2"
-)
+@hydra.main(config_path="./conf", config_name="group_globe_ce_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     """
     Main pipeline for Group GLOBE-CE counterfactual generation and evaluation.

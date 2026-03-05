@@ -98,9 +98,7 @@ def create_counterfactuals(
     logger.info("Filtering out target class data for counterfactual generation")
     target_class = cfg.counterfactuals_params.target_class
     _, _, X_test_target, y_test_target = dataset.get_target_class_splits(target_class)
-    _, _, X_test_origin, y_test_origin = dataset.get_non_target_class_splits(
-        target_class
-    )
+    _, _, X_test_origin, y_test_origin = dataset.get_non_target_class_splits(target_class)
 
     logger.info("Creating counterfactual model")
     cf_method = create_counterfactual_method(

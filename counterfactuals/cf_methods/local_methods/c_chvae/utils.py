@@ -76,9 +76,7 @@ def merge_default_parameters(hyperparams: Optional[Dict], default: Dict) -> Dict
 
     for key in keys:
         if isinstance(default[key], dict):
-            hyperparams[key] = (
-                dict() if key not in hyperparams.keys() else hyperparams[key]
-            )
+            hyperparams[key] = dict() if key not in hyperparams.keys() else hyperparams[key]
             sub_dict = merge_default_parameters(hyperparams[key], default[key])
             dict_output[key] = sub_dict
             continue

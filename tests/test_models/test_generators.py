@@ -123,9 +123,7 @@ def test_model_fit_binary_with_context(
     train_dataloader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
 
-    model = model_class(
-        features=dataset.X_train.shape[1], hidden_features=10, context_features=1
-    )
+    model = model_class(features=dataset.X_train.shape[1], hidden_features=10, context_features=1)
     model.fit(train_dataloader, test_dataloader, epochs=10, lr=0.001)
 
     predictions = model.predict_log_proba(dataset.X_test, context=dataset.y_test)

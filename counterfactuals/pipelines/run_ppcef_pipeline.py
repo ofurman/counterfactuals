@@ -122,9 +122,7 @@ def search_counterfactuals(
     )
 
     if cfg.counterfactuals_params.use_categorical:
-        Xs_cfs = apply_categorical_discretization(
-            dataset.categorical_features_lists, Xs_cfs
-        )
+        Xs_cfs = apply_categorical_discretization(dataset.categorical_features_lists, Xs_cfs)
     model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
@@ -215,9 +213,7 @@ def main(cfg: DictConfig):
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

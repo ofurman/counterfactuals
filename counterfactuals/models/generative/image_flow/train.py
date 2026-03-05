@@ -64,9 +64,7 @@ for epoch in range(1, max_epochs):
     if val_loss < max_loss:
         i = 0
         max_loss = val_loss
-        torch.save(
-            model, "model_saves/" + save_name
-        )  # Will print a UserWarning 1st epoch.
+        torch.save(model, "model_saves/" + save_name)  # Will print a UserWarning 1st epoch.
     else:
         i += 1
 

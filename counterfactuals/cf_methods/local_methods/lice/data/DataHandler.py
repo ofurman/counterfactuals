@@ -204,9 +204,7 @@ class DataHandler:
                         data, name=feat_name, monotone=monotone, modifiable=modifiable
                     )
                 else:
-                    return Binary(
-                        data, name=feat_name, monotone=monotone, modifiable=modifiable
-                    )
+                    return Binary(data, name=feat_name, monotone=monotone, modifiable=modifiable)
 
     @property
     def n_features(self) -> int:
@@ -259,9 +257,7 @@ class DataHandler:
 
         enc = []
         for feat_i, feature in enumerate(self.__input_features):
-            enc.append(
-                feature.encode(X[:, feat_i], normalize, one_hot).reshape(X.shape[0], -1)
-            )
+            enc.append(feature.encode(X[:, feat_i], normalize, one_hot).reshape(X.shape[0], -1))
 
         return np.concatenate(enc, axis=1).astype(np.float64)
 
@@ -331,9 +327,7 @@ class DataHandler:
         curr_col = 0
         for feature in self.__input_features:
             w = feature.encoding_width(encoded_one_hot)
-            dec.append(
-                feature.decode(X[:, curr_col : curr_col + w], denormalize, as_dataframe)
-            )
+            dec.append(feature.decode(X[:, curr_col : curr_col + w], denormalize, as_dataframe))
             curr_col += w
         if as_dataframe:
             return pd.concat(dec, axis=1)
@@ -385,12 +379,8 @@ class DataHandler:
                 raise ValueError("invalid feature type")
             if applied:
                 effect_i = self.features.index(effect)
-                pre_effect = effect.encode(
-                    pre_vals[effect_i], normalize=False, one_hot=False
-                )
-                pos_effect = effect.encode(
-                    post_vals[effect_i], normalize=False, one_hot=False
-                )
+                pre_effect = effect.encode(pre_vals[effect_i], normalize=False, one_hot=False)
+                pos_effect = effect.encode(post_vals[effect_i], normalize=False, one_hot=False)
                 if isinstance(effect, Categorical):
                     if pos_effect not in effect.greater_than(pre_effect):
                         return False
@@ -401,10 +391,7 @@ class DataHandler:
                     raise ValueError("invalid feature type")
 
         for greater, smaller in self.__greater_than:
-            if (
-                post_vals[self.features.index(smaller)]
-                > post_vals[self.features.index(greater)]
-            ):
+            if post_vals[self.features.index(smaller)] > post_vals[self.features.index(greater)]:
                 return False
         return True
 

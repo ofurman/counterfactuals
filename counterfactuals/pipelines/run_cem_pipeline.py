@@ -103,9 +103,7 @@ def search_counterfactuals(
     ys_orig = np.asarray(explanation_result.y_origs)
     ys_target = np.asarray(explanation_result.y_cf_targets)
     logs = explanation_result.logs or {}
-    model_returned = np.asarray(
-        logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool))
-    )
+    model_returned = np.asarray(logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool)))
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"

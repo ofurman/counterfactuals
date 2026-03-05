@@ -151,9 +151,7 @@ class MLModel(ABC):
         if isinstance(x, pd.DataFrame):
             return order_data(self.feature_input_order, x)
         else:
-            warnings.warn(
-                f"cannot re-order features for non dataframe input: {type(x)}"
-            )
+            warnings.warn(f"cannot re-order features for non dataframe input: {type(x)}")
             return x
 
     def get_mutable_mask(self):

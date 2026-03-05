@@ -13,9 +13,7 @@ ALPHA = 1e-6
 class GroupDequantizer(GroupTransformer):
     """Group dequantizer for categorical features."""
 
-    def __init__(
-        self, groups: List[List[int]], transformer_factory=lambda: Dequantizer()
-    ):
+    def __init__(self, groups: List[List[int]], transformer_factory=lambda: Dequantizer()):
         super().__init__(groups, transformer_factory)
 
 

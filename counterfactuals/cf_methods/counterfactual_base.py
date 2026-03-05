@@ -169,6 +169,4 @@ class BaseCounterfactualMethod(ABC):
         Raises:
             NotImplementedError: If the method is not implemented by the subclass.
         """
-        raise NotImplementedError(
-            "Subclasses must implement the explain_dataloader method"
-        )
+        raise NotImplementedError("Subclasses must implement the explain_dataloader method")

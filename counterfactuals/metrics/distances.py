@@ -80,15 +80,11 @@ def continuous_distance(
     assert X_test.ndim in [1, 2], "X_test should be a 1D or 2D array"
     assert metric in allowed_metrics, f"Metric should be one of: {allowed_metrics}"
     assert agg in agg_funcs.keys(), f"Param agg should be one of: {agg_funcs.keys()}"
-    assert X_test.shape == X_cf.shape, (
-        f"Shapes should be the same: {X_test.shape} - {X_cf.shape}"
-    )
+    assert X_test.shape == X_cf.shape, f"Shapes should be the same: {X_test.shape} - {X_cf.shape}"
 
     # used if distance is calculated for regression target
     if X_cf.ndim == 1:
-        logger.warning(
-            "X_cf is 1D array, reshaping to 2D and continuous_features would be ignored"
-        )
+        logger.warning("X_cf is 1D array, reshaping to 2D and continuous_features would be ignored")
         X_cf = X_cf.reshape(1, -1)
         X_test = X_test.reshape(1, -1)
         continuous_features = [0]
@@ -137,9 +133,7 @@ def categorical_distance(
     assert isinstance(X_cf, np.ndarray), "X_cf should be a numpy array"
     assert metric in allowed_metrics, f"Metric should be one of: {allowed_metrics}"
     assert agg in agg_funcs.keys(), f"Param agg should be one of: {agg_funcs.keys()}"
-    assert X_test.shape == X_cf.shape, (
-        f"Shapes should be the same: {X_test.shape} - {X_cf.shape}"
-    )
+    assert X_test.shape == X_cf.shape, f"Shapes should be the same: {X_test.shape} - {X_cf.shape}"
 
     dist = cdist(
         X_test[:, categorical_features], X_cf[:, categorical_features], metric=metric
@@ -214,9 +208,7 @@ if __name__ == "__main__":
         )
     )
     logger.info(
-        categorical_distance(
-            X_test, X_cf, categorical_features, metric="jaccard", agg="mean"
-        )
+        categorical_distance(X_test, X_cf, categorical_features, metric="jaccard", agg="mean")
     )
     logger.info(
         distance_combined(

@@ -1,9 +1,42 @@
 [project]
-name = "counterfactuals"
+name = "ce-library"
 version = "0.1.0"
-description = "A package for demonstrating counterfactuals"
+description = "CEL: Counterfactual Explanations Library - A framework for generating probabilistically plausible counterfactual explanations using normalizing flows"
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Patryk Wielopolski" },
+    { name = "Oleksii Furman" },
+    { name = "Jerzy Stefanowski" },
+    { name = "Maciej Zieba" },
+]
+maintainers = [
+    { name = "Oleksii Furman" },
+]
+keywords = [
+    "counterfactual-explanations",
+    "explainable-ai",
+    "xai",
+    "machine-learning",
+    "normalizing-flows",
+    "interpretability",
+    "ppcef",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
 
 dependencies = [
   "torchdiffeq",
@@ -40,27 +73,46 @@ dependencies = [
   "omlt",
   "tensorflow>=2.18.1",
   "alibi>=0.9.6",
-  "mkdocs>=1.6.1",
-  "mkdocs-material>=9.7.1",
-  "mkdocstrings[python]>=1.0.0",
-  "mkdocs-gen-files>=0.6.0",
-  "mkdocs-literate-nav>=0.6.2",
-  "mkdocs-section-index>=0.3.10",
 ]
 
-[dependency-groups]
-dev = [
-    "pre-commit>=4.3.0",
-    "pytest>=8.4.2",
-    "ruff>=0.13.3",
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocs-material-extensions",
+    "mkdocstrings[python]>=1.0.0",
+    "mkdocs-gen-files>=0.6.0",
+    "mkdocs-literate-nav>=0.6.2",
+    "mkdocs-section-index>=0.3.10",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ofurman/counterfactuals"
+Repository = "https://github.com/ofurman/counterfactuals"
+Documentation = "https://github.com/ofurman/counterfactuals"
+Issues = "https://github.com/ofurman/counterfactuals/issues"
 
 [build-system]
 requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["counterfactuals"]
+[tool.uv]
+dev-dependencies = [
+    "ruff",
+    "pre-commit",
+    "pytest",
+    "ipykernel",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["counterfactuals*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml"]
+
+[tool.ruff]
+line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -69,3 +121,20 @@ packages = ["counterfactuals"]
 "counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
 "counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
 "counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.3",
+    "ipykernel>=6.29.0",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocs-material-extensions",
+    "mkdocstrings[python]>=1.0.0",
+    "mkdocs-gen-files>=0.6.0",
+    "mkdocs-literate-nav>=0.6.2",
+    "mkdocs-section-index>=0.3.10",
+]

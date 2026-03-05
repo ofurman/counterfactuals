@@ -47,9 +47,7 @@ class LinearRegression(PytorchBase, RegressionPytorchMixin):
                     for i, (examples, labels) in enumerate(test_loader):
                         outputs = self.forward(examples)
                         labels = labels.reshape(-1, 1)
-                        test_loss = criterion(
-                            outputs, labels.view(outputs.shape).float()
-                        )
+                        test_loss = criterion(outputs, labels.view(outputs.shape).float())
                         test_losses.append(test_loss.item())
                 if np.mean(test_losses) < min_loss:
                     min_loss = np.mean(test_losses)

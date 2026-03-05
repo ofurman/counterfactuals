@@ -71,9 +71,7 @@ def test_model_fit_binary(model_class: type[MLPClassifier | LogisticRegression |
     model.load("test_model.pth")
 
 
-@pytest.mark.parametrize(
-    "model_class", [MLPClassifier, MultinomialLogisticRegression, NODE]
-)
+@pytest.mark.parametrize("model_class", [MLPClassifier, MultinomialLogisticRegression, NODE])
 def test_model_fit_multiclass(
     model_class: type[MLPClassifier | MultinomialLogisticRegression | NODE],
 ):

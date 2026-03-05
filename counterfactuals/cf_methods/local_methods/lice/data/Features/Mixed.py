@@ -41,9 +41,7 @@ class Mixed(Feature):
             monotone,
             modifiable,
         )
-        self.__cont_feat = Contiguous(
-            training_vals[~categ_mask], name, monotone, modifiable
-        )
+        self.__cont_feat = Contiguous(training_vals[~categ_mask], name, monotone, modifiable)
         self.__default_val = default_val
 
         self._MAD = np.concatenate([self.__cont_feat.MAD, self.__categ_feat.MAD])
@@ -63,18 +61,12 @@ class Mixed(Feature):
         )
 
         categ_mask = np.isin(vals, self.__categ_value_names)
-        res[~categ_mask, 0] = self.__cont_feat.encode(
-            vals[~categ_mask], normalize, one_hot
-        )
+        res[~categ_mask, 0] = self.__cont_feat.encode(vals[~categ_mask], normalize, one_hot)
         if one_hot:
             res[categ_mask, 0] = self.__default_val
-            res[categ_mask, 1:] = self.__categ_feat.encode(
-                vals[categ_mask], normalize, one_hot
-            )
+            res[categ_mask, 1:] = self.__categ_feat.encode(vals[categ_mask], normalize, one_hot)
         else:
-            res[categ_mask, 0] = self.__categ_feat.encode(
-                vals[categ_mask], normalize, one_hot
-            )
+            res[categ_mask, 0] = self.__categ_feat.encode(vals[categ_mask], normalize, one_hot)
         return res.astype(np.float64)
 
     def decode(

@@ -59,9 +59,7 @@ for data_name in data_names:
         results_sample = {}
         results_nospn = {}
         for i, sample in X_test.iterrows():
-            sample_ll = spn.compute_ll(
-                np.concatenate([sample.values, y_test.loc[i].values])
-            )[0]
+            sample_ll = spn.compute_ll(np.concatenate([sample.values, y_test.loc[i].values]))[0]
             enc_sample = dhandler.encode(X_test.loc[[i]])
             prediction = nn.predict(enc_sample) > 0
 

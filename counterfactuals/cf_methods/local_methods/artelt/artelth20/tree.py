@@ -11,12 +11,8 @@ def get_leafs_from_tree(tree_, classifier=False):
             feature_id = tree_.feature[node]
             threshold = tree_.threshold[node]
 
-            traversal(
-                tree_.children_left[node], path + [(node, feature_id, threshold, "<")]
-            )
-            traversal(
-                tree_.children_right[node], path + [(node, feature_id, threshold, ">")]
-            )
+            traversal(tree_.children_left[node], path + [(node, feature_id, threshold, "<")])
+            traversal(tree_.children_right[node], path + [(node, feature_id, threshold, ">")])
         else:
             if classifier is False:
                 path += [(node, -1, tree_.value[node].flatten()[0])]

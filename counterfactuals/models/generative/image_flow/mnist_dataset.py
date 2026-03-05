@@ -21,9 +21,7 @@ class MNISTDataset:
         """
 
         def __init__(self, data, logit, dequantize, rng):
-            x = (
-                self._dequantize(data[0], rng) if dequantize else data[0]
-            )  # dequantize pixels
+            x = self._dequantize(data[0], rng) if dequantize else data[0]  # dequantize pixels
             self.x = self._logit_transform(x) if logit else x  # logit
             self.N = self.x.shape[0]  # number of datapoints
 

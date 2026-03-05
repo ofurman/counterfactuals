@@ -4,9 +4,7 @@ from counterfactuals.sace.sace import SACE
 
 
 def gaussian_matched_vicinity_sampling(x, epsilon, num_points=1):
-    return gaussian_vicinity_sampling(x, epsilon, num_points) / np.sqrt(
-        1 + (epsilon**2)
-    )
+    return gaussian_vicinity_sampling(x, epsilon, num_points) / np.sqrt(1 + (epsilon**2))
 
 
 def gaussian_vicinity_sampling(x, epsilon, num_points=1):
@@ -131,9 +129,7 @@ def correct_categorical(Z, categorical_features_lists):
     return Z
 
 
-def update_with_unmutable_feature(
-    x, Z, variable_features, pooler=None, round_value=None
-):
+def update_with_unmutable_feature(x, Z, variable_features, pooler=None, round_value=None):
     Z_updated = list()
     for cf_idx in range(len(Z)):
         cfc = x.copy() if not pooler else pooler.transform(x)
@@ -413,9 +409,7 @@ class DistrSACE(SACE):
 
         return cf_list
 
-    def get_prototypes(
-        self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False
-    ):
+    def get_prototypes(self, x, k=5, beta=0.5, constrain_into_ranges=True, search_diversity=False):
         x = np.expand_dims(x, 0)
         nx = (
             self.scaler.transform(x)

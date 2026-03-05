@@ -125,9 +125,7 @@ def search_counterfactuals(
     for i, sample in enumerate(Xs):
         try:
             sample_ll = spn.compute_ll(np.concatenate([sample, y_test[i : i + 1]]))[0]
-            enc_sample = dhandler.encode(
-                pd.DataFrame([sample], columns=dataset.features[:-1])
-            )
+            enc_sample = dhandler.encode(pd.DataFrame([sample], columns=dataset.features[:-1]))
             prediction = disc_model.predict(enc_sample) > 0
 
             # Generate counterfactual
@@ -171,9 +169,7 @@ def search_counterfactuals(
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
-    pd.DataFrame(Xs_cfs, columns=dataset.features[:-1]).to_csv(
-        counterfactuals_path, index=False
-    )
+    pd.DataFrame(Xs_cfs, columns=dataset.features[:-1]).to_csv(counterfactuals_path, index=False)
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
     return (
         Xs_cfs,

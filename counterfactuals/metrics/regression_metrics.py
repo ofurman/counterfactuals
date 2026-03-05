@@ -51,9 +51,7 @@ class RegressionCFMetrics(CFMetrics):
         assert len(continuous_features) + len(categorical_features) == X_cf.shape[1], (
             "The sum of continuous and categorical features should equal the number of features in X_cf"
         )
-        assert ratio_cont is None or 0 <= ratio_cont <= 1, (
-            "ratio_cont should be between 0 and 1"
-        )
+        assert ratio_cont is None or 0 <= ratio_cont <= 1, "ratio_cont should be between 0 and 1"
 
         # convert everything to torch tensors if not already
         self.X_cf = self._convert_to_numpy(X_cf)
@@ -125,18 +123,10 @@ class RegressionCFMetrics(CFMetrics):
             "actionability": self.actionability(),
             "sparsity": self.sparsity(),
             # "target_distance": self.target_distance(),
-            "proximity_categorical_hamming": self.feature_distance(
-                categorical_metric="hamming"
-            ),
-            "proximity_categorical_jaccard": self.feature_distance(
-                categorical_metric="jaccard"
-            ),
-            "proximity_continuous_manhattan": self.feature_distance(
-                continuous_metric="cityblock"
-            ),
-            "proximity_continuous_euclidean": self.feature_distance(
-                continuous_metric="euclidean"
-            ),
+            "proximity_categorical_hamming": self.feature_distance(categorical_metric="hamming"),
+            "proximity_categorical_jaccard": self.feature_distance(categorical_metric="jaccard"),
+            "proximity_continuous_manhattan": self.feature_distance(continuous_metric="cityblock"),
+            "proximity_continuous_euclidean": self.feature_distance(continuous_metric="euclidean"),
             "proximity_continuous_mad": self.feature_distance(
                 continuous_metric="mad", X_train=self.X_train
             ),

@@ -27,9 +27,7 @@ def apply_categorical_discretization(
         if not interval:
             continue
         max_indices = np.argmax(discretized[:, interval], axis=1)
-        one_hot = np.zeros(
-            (discretized.shape[0], len(interval)), dtype=discretized.dtype
-        )
+        one_hot = np.zeros((discretized.shape[0], len(interval)), dtype=discretized.dtype)
         one_hot[np.arange(discretized.shape[0]), max_indices] = 1.0
         discretized[:, interval] = one_hot
 

@@ -88,18 +88,12 @@ def validate_metric_inputs(
 
     # Ratio validation
     if ratio_cont is not None:
-        assert 0 <= ratio_cont <= 1, (
-            f"ratio_cont should be between 0 and 1, got {ratio_cont}"
-        )
+        assert 0 <= ratio_cont <= 1, f"ratio_cont should be between 0 and 1, got {ratio_cont}"
 
     # Type validations
     assert isinstance(X_cf, np.ndarray), f"X_cf should be numpy array, got {type(X_cf)}"
-    assert isinstance(X_train, np.ndarray), (
-        f"X_train should be numpy array, got {type(X_train)}"
-    )
-    assert isinstance(X_test, np.ndarray), (
-        f"X_test should be numpy array, got {type(X_test)}"
-    )
+    assert isinstance(X_train, np.ndarray), f"X_train should be numpy array, got {type(X_train)}"
+    assert isinstance(X_test, np.ndarray), f"X_test should be numpy array, got {type(X_test)}"
 
     # Dimensionality validations
     assert X_cf.ndim == 2, f"X_cf should be 2D array, got {X_cf.ndim}D"
@@ -127,6 +121,4 @@ def convert_to_numpy(X: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
     elif isinstance(X, torch.Tensor):
         return X.detach().cpu().numpy()
     else:
-        raise ValueError(
-            f"X should be either a numpy array or a torch tensor, got {type(X)}"
-        )
+        raise ValueError(f"X should be either a numpy array or a torch tensor, got {type(X)}")
