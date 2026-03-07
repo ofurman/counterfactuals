@@ -232,9 +232,7 @@ def _mask_metrics_for_zero_validity(
         Possibly modified metrics dictionary.
     """
     validity_cell = metrics.get("validity")
-    validity_value = (
-        None if validity_cell is None else _cell_numeric_value(validity_cell)
-    )
+    validity_value = None if validity_cell is None else _cell_numeric_value(validity_cell)
     if validity_value is None or not math.isclose(validity_value, 0.0, abs_tol=1e-12):
         return metrics
 
@@ -386,9 +384,7 @@ def load_metrics_config(path: Path) -> list[str]:
     conf = OmegaConf.load(path)
     metrics = list(conf.metrics_to_compute)
     metrics = [
-        metric
-        for metric in metrics
-        if metric not in ["number_of_instances", "actionability"]
+        metric for metric in metrics if metric not in ["number_of_instances", "actionability"]
     ]
     return [m for m in metrics if not str(m).endswith("_test")]
 
@@ -867,9 +863,7 @@ def main() -> None:
     base_metrics = load_metrics_config(Path(args.metrics_conf_path))
     records, discovered = load_records(results_dir, file_glob=args.file_glob)
     if not records:
-        raise SystemExit(
-            f"No records found under {results_dir} matching {args.file_glob}"
-        )
+        raise SystemExit(f"No records found under {results_dir} matching {args.file_glob}")
 
     # Prefer config ordering, but include any discovered (non-test) metrics too.
     all_metrics = _unique_in_order([*base_metrics, *sorted(discovered)])
@@ -899,9 +893,7 @@ def main() -> None:
     other_metrics = [m for m in metric_keys if m not in proximity_metrics]
 
     if not proximity_metrics:
-        logging.warning(
-            "No proximity metrics detected (prefix=%s).", args.proximity_prefix
-        )
+        logging.warning("No proximity metrics detected (prefix=%s).", args.proximity_prefix)
     if not other_metrics:
         logging.warning("No non-proximity metrics detected.")
 
@@ -928,9 +920,7 @@ def main() -> None:
                 m for m in include_methods_ordered if m in methods_by_model[model]
             ]
     for model in models:
-        methods_by_model[model] = [
-            m for m in methods_by_model[model] if m not in exclude_methods
-        ]
+        methods_by_model[model] = [m for m in methods_by_model[model] if m not in exclude_methods]
 
     # Apply dataset include/exclude filters (preserve order where possible).
     if include_datasets:
@@ -949,9 +939,7 @@ def main() -> None:
     for model in models:
         for dataset in datasets_by_model[model]:
             for method in methods_by_model[model]:
-                expanded_row_keys.append(
-                    RecordKey(model=model, dataset=dataset, method=method)
-                )
+                expanded_row_keys.append(RecordKey(model=model, dataset=dataset, method=method))
     row_keys = expanded_row_keys
     if args.drop_empty_rows:
         filtered: list[RecordKey] = []

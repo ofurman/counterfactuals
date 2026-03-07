@@ -163,9 +163,7 @@ def search_counterfactuals(
         )
 
     tab_dataset = prepare_tabular_dataset(dataset, cfg, device)
-    train_loader = DataLoader(
-        tab_dataset, batch_size=cfg.tabdce.batch_size, shuffle=True
-    )
+    train_loader = DataLoader(tab_dataset, batch_size=cfg.tabdce.batch_size, shuffle=True)
     diffusion_model = create_diffusion_model(tab_dataset, cfg, device)
     diffusion_path = Path(save_folder) / "tabdce_diffusion.pt"
     train_tabdce_diffusion(
@@ -258,9 +256,7 @@ def main(cfg: DictConfig) -> None:
     seed = cfg.experiment.get("seed", 0)
     torch.manual_seed(seed)
     preprocessing_pipeline = build_preprocessing_pipeline()
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

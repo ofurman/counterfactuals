@@ -72,9 +72,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self._alpha_values = self._resolve_alpha_grid(self.params)
 
         if self._decode_fn is None and not hasattr(self.flow_model, "inverse"):
-            raise ValueError(
-                "CeFlow requires decode_fn or a flow model with .inverse()."
-            )
+            raise ValueError("CeFlow requires decode_fn or a flow model with .inverse().")
 
         if hasattr(self.flow_model, "to"):
             self.flow_model.to(self.device)
@@ -83,9 +81,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self.disc_model.to(self.device)
         self.disc_model.eval()
 
-    def fit(
-        self, X_train: np.ndarray, y_train: np.ndarray | None = None, **kwargs
-    ) -> None:
+    def fit(self, X_train: np.ndarray, y_train: np.ndarray | None = None, **kwargs) -> None:
         """Compute class means in the latent space.
 
         Args:
@@ -141,9 +137,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             batch_targets = y_target_vec[start:end]
             batch_origins = y_origin_vec[start:end]
             try:
-                batch_cfs, batch_logs = self._search_batch(
-                    batch_x, batch_origins, batch_targets
-                )
+                batch_cfs, batch_logs = self._search_batch(batch_x, batch_origins, batch_targets)
                 cfs.extend(batch_cfs)
                 logs.extend(batch_logs)
             except Exception as exc:
@@ -154,9 +148,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
                     exc,
                 )
                 for idx, target in enumerate(batch_targets):
-                    cf, log = self._search_single(
-                        batch_x[idx], batch_origins[idx], target
-                    )
+                    cf, log = self._search_single(batch_x[idx], batch_origins[idx], target)
                     cfs.append(cf)
                     logs.append(log)
 
@@ -209,15 +201,9 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             z_factual = self._encode(x_tensor)
             delta = self._get_delta_matrix(y_origin_tensor, y_target_tensor)
             best_cf = None
-            best_prob = torch.full(
-                (x_tensor.shape[0],), -float("inf"), device=self.device
-            )
-            best_distance = torch.full(
-                (x_tensor.shape[0],), float("inf"), device=self.device
-            )
-            best_alpha = torch.full(
-                (x_tensor.shape[0],), float("nan"), device=self.device
-            )
+            best_prob = torch.full((x_tensor.shape[0],), -float("inf"), device=self.device)
+            best_distance = torch.full((x_tensor.shape[0],), float("inf"), device=self.device)
+            best_alpha = torch.full((x_tensor.shape[0],), float("nan"), device=self.device)
 
             for alpha in self._alpha_values:
                 z_hat = z_factual + alpha * delta
@@ -235,9 +221,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 best_cf = torch.where(update[:, None], x_hat.detach(), best_cf)
                 best_prob = torch.where(update, target_prob, best_prob)
                 best_distance = torch.where(update, distance, best_distance)
-                best_alpha = torch.where(
-                    update, torch.full_like(best_alpha, alpha), best_alpha
-                )
+                best_alpha = torch.where(update, torch.full_like(best_alpha, alpha), best_alpha)
 
         cfs = best_cf.cpu().numpy()
         logs = []
@@ -304,9 +288,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             },
         )
 
-    def _target_probability(
-        self, preds: torch.Tensor, target: float | int
-    ) -> torch.Tensor:
+    def _target_probability(self, preds: torch.Tensor, target: float | int) -> torch.Tensor:
         if self.disc_model.num_targets == 1:
             use_logits = self._binary_logits
             if use_logits is None:
@@ -319,9 +301,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
         target_index = int(target)
         return probs[:, target_index]
 
-    def _target_probability_batch(
-        self, preds: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
+    def _target_probability_batch(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         if self.disc_model.num_targets == 1:
             use_logits = self._binary_logits
             if use_logits is None:
@@ -341,9 +321,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             return bool((prob >= 0.5).item())
         return bool(torch.argmax(preds, dim=1).item() == int(target))
 
-    def _is_target_hit_batch(
-        self, preds: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
+    def _is_target_hit_batch(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         if self.disc_model.num_targets == 1:
             prob = self._target_probability_batch(preds, targets)
             return prob >= 0.5
@@ -355,12 +333,8 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             return x_hat
         return torch.clamp(
             x_hat,
-            min=self.params.clamp_min
-            if self.params.clamp_min is not None
-            else -float("inf"),
-            max=self.params.clamp_max
-            if self.params.clamp_max is not None
-            else float("inf"),
+            min=self.params.clamp_min if self.params.clamp_min is not None else -float("inf"),
+            max=self.params.clamp_max if self.params.clamp_max is not None else float("inf"),
         )
 
     def _distance_value(
@@ -392,19 +366,13 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             return [float(alpha) for alpha in params.alpha_grid]
         if params.alpha_steps <= 1:
             return [float(params.alpha_max)]
-        return np.linspace(
-            params.alpha_min, params.alpha_max, params.alpha_steps
-        ).tolist()
+        return np.linspace(params.alpha_min, params.alpha_max, params.alpha_steps).tolist()
 
-    def _compute_class_means(
-        self, X: np.ndarray, y_labels: np.ndarray
-    ) -> Dict[int, torch.Tensor]:
+    def _compute_class_means(self, X: np.ndarray, y_labels: np.ndarray) -> Dict[int, torch.Tensor]:
         class_means: Dict[int, torch.Tensor] = {}
         unique_labels = np.unique(y_labels).astype(int)
         batch_size = max(1, int(self.params.batch_size))
-        latent_by_class: Dict[int, list[torch.Tensor]] = {
-            int(k): [] for k in unique_labels
-        }
+        latent_by_class: Dict[int, list[torch.Tensor]] = {int(k): [] for k in unique_labels}
         for start in range(0, len(X), batch_size):
             end = start + batch_size
             x_tensor = torch.from_numpy(X[start:end]).float().to(self.device)
@@ -422,18 +390,14 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             raise ValueError("CeFlow could not compute class means from training data.")
         return class_means
 
-    def _get_delta_vector(
-        self, y_origin: float | int, y_target: float | int
-    ) -> torch.Tensor:
+    def _get_delta_vector(self, y_origin: float | int, y_target: float | int) -> torch.Tensor:
         origin = int(y_origin)
         target = int(y_target)
         if origin not in self._class_means or target not in self._class_means:
             raise ValueError("CeFlow missing class means for requested labels.")
         return self._class_means[target] - self._class_means[origin]
 
-    def _get_delta_matrix(
-        self, y_origin: torch.Tensor, y_target: torch.Tensor
-    ) -> torch.Tensor:
+    def _get_delta_matrix(self, y_origin: torch.Tensor, y_target: torch.Tensor) -> torch.Tensor:
         origin_labels = y_origin.long().view(-1).tolist()
         target_labels = y_target.long().view(-1).tolist()
         deltas = []

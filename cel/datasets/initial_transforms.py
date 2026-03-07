@@ -282,9 +282,9 @@ class ConvertToNumericStep(InitialTransformStep):
             raise ValueError(f"Columns not found for ConvertToNumericStep: {missing}")
 
         for col in target_cols:
-            context.data[col] = pd.to_numeric(
-                context.data[col], errors=self.errors
-            ).astype("float32")
+            context.data[col] = pd.to_numeric(context.data[col], errors=self.errors).astype(
+                "float32"
+            )
         return context
 
 
@@ -302,9 +302,7 @@ class FilterClassesStep(InitialTransformStep):
             include_values: Target values to keep in the dataset.
             target_column: Optional target column name override.
         """
-        self.include_values = (
-            list(include_values) if include_values is not None else None
-        )
+        self.include_values = list(include_values) if include_values is not None else None
         self.target_column = target_column
 
     def fit(self, context: InitialTransformContext) -> "FilterClassesStep":

@@ -57,9 +57,7 @@ class PUMAL(BaseCounterfactualMethod):
         self.decrease_only_features = decrease_only_features
         self.feature_ranges = feature_ranges
 
-        self.delta = self._init_cf_method(
-            cf_method_type, K, init_cf_method_from_kmeans, X
-        )
+        self.delta = self._init_cf_method(cf_method_type, K, init_cf_method_from_kmeans, X)
         self.disc_model_criterion = disc_model_criterion
         self.gen_model = gen_model
         self.disc_model = disc_model
@@ -183,29 +181,22 @@ class PUMAL(BaseCounterfactualMethod):
         dist = alpha_dist * torch.linalg.vector_norm(delta(), dim=1, ord=1)
 
         disc_logits = self.disc_model(x_origin + delta())
-        disc_logits = (
-            disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
-        )
+        disc_logits = disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
         disc_target = (
-            torch.argmax(context_target, dim=1)
-            if context_target.ndim > 1
-            else context_target
+            torch.argmax(context_target, dim=1) if context_target.ndim > 1 else context_target
         )
         loss_disc = alpha_class * self.disc_model_criterion(disc_logits, disc_target)
 
         context_for_gen = (
             torch.argmax(context_target, dim=1, keepdim=True).float()
-            if getattr(self.gen_model, "context_features", None) == 1
-            and context_target.ndim > 1
+            if getattr(self.gen_model, "context_features", None) == 1 and context_target.ndim > 1
             else context_target.float()
         )
 
-        p_x_param_c_target = self.gen_model(
-            x_origin + delta(), context=context_for_gen
-        ).clamp(max=10**5)
-        max_inner = alpha_plaus * torch.nn.functional.relu(
-            log_prob_threshold - p_x_param_c_target
+        p_x_param_c_target = self.gen_model(x_origin + delta(), context=context_for_gen).clamp(
+            max=10**5
         )
+        max_inner = alpha_plaus * torch.nn.functional.relu(log_prob_threshold - p_x_param_c_target)
 
         delta_loss = delta.loss(alpha_s, alpha_k, alpha_d)
         loss = alpha_dist * dist + loss_disc + max_inner + delta_loss

@@ -64,9 +64,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
         )
         self.to(device)
 
-    def forward(
-        self, x: torch.Tensor, y: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Compute log probabilities for inputs."""
         dq_output = self.dequantizer(x, return_log_prob=True)
         z_dequant = dq_output.values
