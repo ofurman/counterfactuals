@@ -91,16 +91,12 @@ def search_counterfactuals(
     logger.info("Creating counterfactual model")
     wrapped_model = CustomMLModel(disc_model, custom_dataset)
 
-    hyperparams = OmegaConf.to_container(
-        cfg.counterfactuals_params.hyperparams, resolve=True
-    )
+    hyperparams = OmegaConf.to_container(cfg.counterfactuals_params.hyperparams, resolve=True)
     if not hyperparams.get("data_name"):
         hyperparams["data_name"] = cfg.dataset.config_path.split("/")[-1].split(".")[0]
 
     input_size = dataset.X_train.shape[1]
-    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"][
-        "layers"
-    ]
+    hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"]["layers"]
 
     exp = CCHVAE(wrapped_model, hyperparams)
 
@@ -203,9 +199,7 @@ def main(cfg: DictConfig) -> None:
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    full_pipeline(
-        cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics
-    )
+    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
 
 
 if __name__ == "__main__":

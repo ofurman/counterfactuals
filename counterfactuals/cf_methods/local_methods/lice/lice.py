@@ -180,7 +180,7 @@ class LiCE:
                 # Accept solutions within ce_relative_distance*100% of the optimal
                 opt.options["PoolGap"] = ce_relative_distance
         if ce_max_distance != np.inf:
-            print("Limiting max distance by", ce_max_distance)
+            logger.info("Limiting max distance by", ce_max_distance)
             model.max_dist = pyo.Constraint(expr=model.input_encoding.total_cost <= ce_max_distance)
 
         if "cplex" in solver_name:

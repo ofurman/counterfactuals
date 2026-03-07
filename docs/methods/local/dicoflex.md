@@ -43,4 +43,4 @@ result = method.explain(
 
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.DiCoFlex.method.DiCoFlex
+::: counterfactuals.cf_methods.local_methods.dicoflex.method.DiCoFlex

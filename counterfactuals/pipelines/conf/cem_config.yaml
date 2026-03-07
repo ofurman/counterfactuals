@@ -41,6 +41,9 @@ counterfactuals_params:
   c_steps: 5
   max_iterations: 200
   learning_rate_init: 0.01
+  fit_no_info_type: "median"
+  feature_range: [0.0, 1.0]
+  clip_range: [-1000.0, 1000.0]
   
   # General parameters
   target_class: 0

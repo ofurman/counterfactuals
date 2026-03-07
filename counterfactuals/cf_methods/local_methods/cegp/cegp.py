@@ -23,6 +23,9 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
         c_init: float = 1.0,
         c_steps: int = 5,
         max_iterations: int = 500,
+        feature_range: tuple[float, float] = (0.0, 1.0),
+        d_type: str = "abdm",
+        disc_perc: list[int] | None = None,
         device: str | None = None,
         **kwargs,  # ignore other arguments
     ) -> None:
@@ -44,8 +47,8 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
         num_features = disc_model.num_inputs
         shape = (1, num_features)
 
-        # Get feature ranges from training data
-        feature_range = (0, 1)  # Default range, should be adjusted based on data
+        self.d_type = d_type
+        self.disc_perc = [25, 50, 75] if disc_perc is None else disc_perc
 
         self.cf = CounterFactualProto(
             predict_proba,
@@ -66,7 +69,11 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
         Args:
             X_train: Training data to fit the model on
         """
-        self.cf.fit(X_train.astype(np.float32), d_type="abdm", disc_perc=[25, 50, 75])
+        self.cf.fit(
+            X_train.astype(np.float32),
+            d_type=self.d_type,
+            disc_perc=self.disc_perc,
+        )
         self.is_fitted = True
 
     def explain(
@@ -99,7 +106,7 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
             x_cfs = np.array(explanation.get("X"))
         except Exception as e:
             print(f"Error in CEGP explanation: {e}")
-            x_cfs = np.full_like(X.reshape(1, -1), np.nan).squeeze()
+            x_cfs = X.reshape(1, -1)
 
         # Wrap results in ExplanationResult
         return ExplanationResult(
@@ -123,7 +130,9 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
 
         # Fit on first batch if not already fitted
         if not self.is_fitted:
-            self.fit(Xs.numpy())
+            X_train = kwargs.get("X_train")
+            fit_data = np.asarray(X_train) if X_train is not None else Xs.numpy()
+            self.fit(fit_data)
 
         # create ys_target numpy array same shape as ys but with target class
         ys_target = np.full(ys.shape, target_class)
@@ -131,23 +140,21 @@ class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):
         model_returned = []
 
         for X, y in tqdm(zip(Xs, ys), total=len(Xs)):
+            x_input = X.numpy().reshape(1, -1)
             try:
-                X = X.reshape((1,) + X.shape)
-                explanation = self.cf.explain(X).cf
+                explanation = self.cf.explain(x_input).cf
                 if explanation is None:
                     raise ValueError("No counterfactual found")
-                Xs_cfs.append(explanation["X"])
+                Xs_cfs.append(np.asarray(explanation["X"]).reshape(-1))
                 model_returned.append(True)
             except Exception as e:
                 print(f"Error in CEGP explanation: {e}")
-                explanation = np.empty_like(X.reshape(1, -1))
-                explanation[:] = np.nan
-                Xs_cfs.append(explanation)
+                Xs_cfs.append(x_input.reshape(-1))
                 model_returned.append(False)
 
-        Xs_cfs = np.array(Xs_cfs).squeeze()
-        Xs = np.array(Xs)
-        ys = np.array(ys)
+        Xs_cfs = np.stack(Xs_cfs, axis=0)
+        Xs = Xs.numpy()
+        ys = ys.numpy()
         ys_target = np.array(ys_target)
 
         return ExplanationResult(

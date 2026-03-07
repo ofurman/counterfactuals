@@ -8,34 +8,29 @@ The library implements **17+ counterfactual explanation methods** organized into
 
 Local methods generate counterfactuals for **individual instances**. Given a single input, they find the minimal change needed to alter the model's prediction.
 
-[Explore Local Methods →](local/index.md){ .md-button }
+[Explore Local Methods :material-arrow-right:](local/index.md){ .md-button }
 
 ### Global Methods
 
 Global methods find **universal transformations** that work across an entire dataset or subpopulation, providing insights into systematic patterns.
 
-[Explore Global Methods →](global/index.md){ .md-button }
+[Explore Global Methods :material-arrow-right:](global/index.md){ .md-button }
 
 ### Group Methods
 
 Group methods generate counterfactuals for **clusters or subgroups** of similar instances, balancing individual precision with broader applicability.
 
-[Explore Group Methods →](group/index.md){ .md-button }
+[Explore Group Methods :material-arrow-right:](group/index.md){ .md-button }
 
 ## Method Comparison
 
-| Method | Category | Plausibility | Diversity | Actionability | Speed | Best For |
-|--------|----------|--------------|-----------|---------------|-------|----------|
-| PPCEF | Local | High | Medium | Yes | Medium | Normalizing flow-based CF |
-| DiCoFlex | Local | High | High | Yes | Medium | Flexible, diverse CFs |
-| DICE | Local | Medium | High | Yes | Fast | Fast, diverse CFs |
-| WACH | Local | Low | Low | No | Fast | Simple gradient-based CF |
-| CEM | Local | Medium | Low | Yes | Medium | Contrastive explanations |
-| CCHVAE | Local | High | Medium | Yes | Slow | VAE-based CF |
-| GLOBE-CE | Global | Medium | N/A | Yes | Fast | Dataset-wide patterns |
-| AReS | Global | Medium | N/A | Yes | Medium | Actionable rules |
-| ReViCE | Group | High | Medium | Yes | Medium | Subgroup explanations |
-| GLANCE | Group | Medium | High | Yes | Fast | Cluster-level CFs |
+| Method | Category | Plausibility | Diversity | Actionability | Speed |
+|--------|----------|--------------|-----------|---------------|-------|
+| PPCEF | Local | High | Medium | Yes | Medium |
+| DICE | Local | Medium | High | Yes | Fast |
+| DiCoFlex | Local | High | High | Yes | Medium |
+| GLOBE-CE | Global | Medium | N/A | Yes | Fast |
+| ReViCE | Group | High | Medium | Yes | Medium |
 
 ## Choosing a Method
 
@@ -48,8 +43,8 @@ flowchart TD
     D -->|No| F[Group Methods]
 
     C --> G{Need plausibility?}
-    G -->|Yes| H[PPCEF, DiCoFlex, CCHVAE]
-    G -->|No| I[DICE, WACH, CEM]
+    G -->|Yes| H[PPCEF, DiCoFlex]
+    G -->|No| I[DICE, WACH]
 
     E --> J[GLOBE-CE, AReS]
     F --> K[ReViCE, GLANCE]

@@ -65,17 +65,13 @@ class MixedTabularDiffusion(nn.Module):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute posterior mean and log variance for the Gaussian branch."""
         sqrt_recip_alphas_bar = extract(1.0 / self.sqrt_alphas_bar, t, x_t.shape)
-        sqrt_recip_m1_alphas_bar = extract(
-            torch.sqrt(1.0 / self.alphas_bar - 1.0), t, x_t.shape
-        )
+        sqrt_recip_m1_alphas_bar = extract(torch.sqrt(1.0 / self.alphas_bar - 1.0), t, x_t.shape)
         pred_x0 = sqrt_recip_alphas_bar * x_t - sqrt_recip_m1_alphas_bar * pred_eps
         pred_x0 = pred_x0.clamp(-5.0, 5.0)
         post_mean_coef1 = extract(self.posterior_mean_coef1, t, x_t.shape)
         post_mean_coef2 = extract(self.posterior_mean_coef2, t, x_t.shape)
         model_mean = post_mean_coef1 * pred_x0 + post_mean_coef2 * x_t
-        model_log_var = extract(
-            self.posterior_variance.clamp(min=1e-20).log(), t, x_t.shape
-        )
+        model_log_var = extract(self.posterior_variance.clamp(min=1e-20).log(), t, x_t.shape)
         return model_mean, model_log_var
 
     def q_sample_cat(self, log_x0: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
@@ -95,9 +91,7 @@ class MixedTabularDiffusion(nn.Module):
             log_probs_t = torch.logaddexp(term1, term2)
             uniform = torch.rand_like(log_probs_t).clamp(min=1e-30)
             gumbel = -torch.log(-torch.log(uniform))
-            sample_t = F.one_hot(
-                (log_probs_t + gumbel).argmax(dim=1), num_classes=K
-            ).float()
+            sample_t = F.one_hot((log_probs_t + gumbel).argmax(dim=1), num_classes=K).float()
 
             out_parts.append((sample_t + 1e-30).log())
             start += K
@@ -179,21 +173,15 @@ class MixedTabularDiffusion(nn.Module):
         return total_loss, {"num": loss_num.item(), "cat": loss_cat.item()}
 
     @torch.no_grad()
-    def sample_counterfactual(
-        self, x_orig: torch.Tensor, y_target: torch.Tensor
-    ) -> torch.Tensor:
+    def sample_counterfactual(self, x_orig: torch.Tensor, y_target: torch.Tensor) -> torch.Tensor:
         """Generate counterfactuals conditioned on original inputs and targets."""
         batch_size = x_orig.shape[0]
         device = x_orig.device
 
         x_num = torch.randn(batch_size, self.num_numerical, device=device)
-        cat_parts = [
-            torch.zeros(batch_size, K, device=device) for K in self.num_classes
-        ]
+        cat_parts = [torch.zeros(batch_size, K, device=device) for K in self.num_classes]
         x_cat_log = (
-            torch.cat(cat_parts, dim=1)
-            if cat_parts
-            else torch.zeros(batch_size, 0, device=device)
+            torch.cat(cat_parts, dim=1) if cat_parts else torch.zeros(batch_size, 0, device=device)
         )
 
         for i in reversed(range(0, len(self.betas))):

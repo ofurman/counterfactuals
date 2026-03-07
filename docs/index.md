@@ -1,10 +1,10 @@
-# CEL: Counterfactual Explanations Library
+# Counterfactuals
 
-A comprehensive Python framework for generating and evaluating counterfactual explanations in machine learning models.
+A comprehensive Python library for generating and evaluating counterfactual explanations.
 
 ---
 
-**CEL** (Counterfactual Explanations Library) provides a unified framework for counterfactual explanation methods, datasets, and evaluation metrics. Whether you're researching new methods, benchmarking existing approaches, or building explainable AI systems, this library has you covered.
+**Counterfactuals** provides a unified framework for counterfactual explanation methods, datasets, and evaluation metrics. Whether you're researching new methods, benchmarking existing approaches, or building explainable AI systems, this library has you covered.
 
 ## Features
 
@@ -13,9 +13,9 @@ A comprehensive Python framework for generating and evaluating counterfactual ex
 <div class="feature-item" markdown>
 **17+ Explanation Methods**
 
-Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLOBE-CE, and more.
+Local, global, and group-level counterfactual methods including PPCEF, DICE, GLOBE-CE, and more.
 
-[Explore Methods →](methods/index.md)
+[Explore Methods :material-arrow-right:](methods/index.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -23,7 +23,7 @@ Local, global, and group-level counterfactual methods including PPCEF, DiCE, GLO
 
 Ready-to-use datasets for classification and regression tasks with built-in preprocessing.
 
-[View Datasets →](datasets/index.md)
+[View Datasets :material-arrow-right:](datasets/index.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -31,7 +31,7 @@ Ready-to-use datasets for classification and regression tasks with built-in prep
 
 Comprehensive metrics for validity, proximity, sparsity, plausibility, and diversity.
 
-[See Metrics →](benchmarks/metrics.md)
+[See Metrics :material-arrow-right:](benchmarks/metrics.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -39,7 +39,7 @@ Comprehensive metrics for validity, proximity, sparsity, plausibility, and diver
 
 Hydra-based configuration system for reproducible experiments with MLflow logging.
 
-[Run Pipelines →](user-guide/pipelines.md)
+[Run Pipelines :material-arrow-right:](user-guide/pipelines.md)
 </div>
 
 </div>
@@ -75,7 +75,7 @@ classifier.fit(train_loader, test_loader, epochs=50)
 flow = MaskedAutoregressiveFlow(input_dim=14, hidden_dims=[64, 64], n_layers=5)
 flow.fit(train_loader, test_loader, epochs=100)
 
-# 4. Generate counterfactual (using PPCEF - one of 17+ available methods)
+# 4. Generate counterfactual
 method = PPCEF(gen_model=flow, disc_model=classifier, ...)
 result = method.explain(X=instance, y_origin=0, y_target=1, ...)
 
@@ -83,7 +83,7 @@ print(f"Original: {instance}")
 print(f"Counterfactual: {result.x_cfs}")
 ```
 
-[Full Quick Start Tutorial →](getting-started/quickstart.md){ .md-button .md-button--primary }
+[Full Quick Start Tutorial :material-arrow-right:](getting-started/quickstart.md){ .md-button .md-button--primary }
 
 ## Method Categories
 
@@ -98,8 +98,7 @@ flowchart TD
     B --> B1[PPCEF]
     B --> B2[DICE]
     B --> B3[DiCoFlex]
-    B --> B4[WACH]
-    B --> B5[...]
+    B --> B4[...]
 
     C --> C1[GLOBE-CE]
     C --> C2[AReS]
@@ -165,7 +164,7 @@ flowchart LR
 <div class="feature-grid" markdown>
 
 <div class="feature-item" markdown>
-📥 **Get Started**
+:material-download: **Get Started**
 
 Install the library and run your first example.
 
@@ -173,7 +172,7 @@ Install the library and run your first example.
 </div>
 
 <div class="feature-item" markdown>
-📖 **Learn the Basics**
+:material-book-open-variant: **Learn the Basics**
 
 Understand core concepts and workflows.
 
@@ -181,7 +180,7 @@ Understand core concepts and workflows.
 </div>
 
 <div class="feature-item" markdown>
-📊 **Compare Methods**
+:material-compare: **Compare Methods**
 
 See benchmark results across methods.
 
@@ -189,7 +188,7 @@ See benchmark results across methods.
 </div>
 
 <div class="feature-item" markdown>
-🔌 **API Reference**
+:material-api: **API Reference**
 
 Detailed documentation for all modules.
 
@@ -202,30 +201,12 @@ Detailed documentation for all modules.
 
 If you use this library in your research, please cite:
 
-### CEL Library
-
 ```bibtex
-@software{cel,
-  author = {Furman, Oleksii and Lenkiewicz, Łukasz and Musiałek, Marcel},
-  title = {CEL: Counterfactual Explanations Library},
+@software{counterfactuals,
+  author = {Furman, Oleksii, Łukasz Lenkiewicz, Marcel Musiałek},
+  title = {Counterfactuals: A Python Library for Counterfactual Explanations},
   url = {https://github.com/ofurman/counterfactuals},
   year = {2026}
-}
-```
-
-### Original PPCEF Research
-
-If you specifically use the PPCEF method, please also cite:
-
-```bibtex
-@inbook{ppcef,
-  author = {Wielopolski, Patryk and Furman, Oleksii and Stefanowski, Jerzy and Zieba, Maciej},
-  year = {2024},
-  month = {10},
-  pages = {},
-  title = {Probabilistically Plausible Counterfactual Explanations with Normalizing Flows},
-  isbn = {9781643685489},
-  doi = {10.3233/FAIA240584}
 }
 ```
 

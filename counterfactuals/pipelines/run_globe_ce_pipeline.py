@@ -17,6 +17,7 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.utils import align_counterfactuals_with_factuals
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -27,6 +28,39 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+
+
+def _build_features_tree_from_one_hot(
+    dataset: Any, data: pd.DataFrame
+) -> Tuple[pd.DataFrame, List[str]]:
+    """Build a features tree when data is already one-hot encoded."""
+    groups = getattr(dataset, "one_hot_feature_groups", None)
+    if groups is None and hasattr(dataset, "file_dataset"):
+        groups = getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+
+    dataset.bins = {}
+    dataset.bins_tree = {}
+    dataset.features_tree = {}
+    dataset.n_bins = None
+
+    columns = list(data.columns)
+    if not groups:
+        return data.copy(), columns
+
+    group_lookup = {column: base for base, group_cols in groups.items() for column in group_cols}
+    added_groups = set()
+    for column in columns:
+        base = group_lookup.get(column)
+        if base is None:
+            dataset.features_tree[column] = []
+            continue
+        if base in added_groups:
+            continue
+        grouped_columns = [feature for feature in columns if group_lookup.get(feature) == base]
+        dataset.features_tree[base] = grouped_columns
+        added_groups.add(base)
+
+    return data.copy(), columns
 
 
 def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
@@ -45,6 +79,12 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             - data_oh: One-hot encoded DataFrame
             - features: List of feature names after encoding
     """
+    if getattr(dataset, "one_hot_feature_groups", None) or (
+        hasattr(dataset, "file_dataset")
+        and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+    ):
+        return _build_features_tree_from_one_hot(dataset, data)
+
     label_encoder = LabelEncoder()
     data_encode = data.copy()
     dataset.bins = {}
@@ -105,9 +145,7 @@ def compute_bin_widths(
         try:
             categories = pd.cut(data[feature].astype(float), bins=n_bins).cat.categories
         except ValueError as err:
-            logger.warning(
-                "Skipping bin width computation for feature %s: %s", feature, err
-            )
+            logger.warning("Skipping bin width computation for feature %s: %s", feature, err)
             continue
 
         if len(categories) == 0:
@@ -128,7 +166,7 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray, float]:
     """
     Generate counterfactuals using the GLOBE-CE method.
 
@@ -151,6 +189,7 @@ def search_counterfactuals(
             - ys_orig: Original predicted labels
             - ys_target: Target labels for counterfactuals
             - model_returned: Boolean mask indicating successful generation
+            - cf_search_time: Time taken for counterfactual search in seconds
     """
     cf_method_name = "GLOBE_CE"
     disc_model.eval()
@@ -160,9 +199,7 @@ def search_counterfactuals(
     minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
 
     X_test_unscaled = minmax_scaler._inverse_transform_array(dataset.X_test)
-    data_oh, features = one_hot(
-        dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features)
-    )
+    data_oh, features = one_hot(dataset, pd.DataFrame(X_test_unscaled, columns=dataset.features))
 
     def predict_fn(x: pd.DataFrame | np.ndarray) -> np.ndarray:
         # Convert pandas DataFrame to numpy array if needed
@@ -211,7 +248,7 @@ def search_counterfactuals(
     )
     Xs_cfs = explanation_result.x_cfs
     Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-    model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
+    Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
     cf_search_time = np.mean(time() - time_start)
     logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
 
@@ -221,7 +258,15 @@ def search_counterfactuals(
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to {counterfactuals_path}")
 
-    return Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned
+    return (
+        Xs_cfs,
+        Xs,
+        log_prob_threshold,
+        ys_orig,
+        ys_target,
+        model_returned,
+        cf_search_time,
+    )
 
 
 def calculate_metrics(
@@ -298,9 +343,16 @@ def main(cfg: DictConfig) -> None:
 
         gen_model = create_gen_model(cfg, dataset, gen_model_path)
 
-        Xs_cfs, Xs, log_prob_threshold, ys_orig, ys_target, model_returned = search_counterfactuals(
-            cfg, dataset, gen_model, disc_model, save_folder
-        )
+        (
+            Xs_cfs,
+            Xs,
+            log_prob_threshold,
+            ys_orig,
+            ys_target,
+            model_returned,
+            cf_search_time,
+        ) = search_counterfactuals(cfg, dataset, gen_model, disc_model, save_folder)
+        logger.info("Fold %s counterfactual search time: %.4f seconds", fold_n, cf_search_time)
 
         metrics = calculate_metrics(
             gen_model=gen_model,
@@ -317,6 +369,7 @@ def main(cfg: DictConfig) -> None:
             median_log_prob=log_prob_threshold,
         )
         df_metrics = pd.DataFrame(metrics, index=[0])
+        df_metrics["cf_search_time"] = cf_search_time
         disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
         df_metrics.to_csv(
             os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False

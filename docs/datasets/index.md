@@ -11,7 +11,7 @@ The library includes **22 pre-configured datasets** for counterfactual explanati
 
 15 datasets for binary and multi-class classification tasks.
 
-[View Datasets →](classification.md)
+[View Datasets :material-arrow-right:](classification.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -19,7 +19,7 @@ The library includes **22 pre-configured datasets** for counterfactual explanati
 
 7 datasets for continuous prediction tasks.
 
-[View Datasets →](regression.md)
+[View Datasets :material-arrow-right:](regression.md)
 </div>
 
 <div class="feature-item" markdown>
@@ -27,7 +27,7 @@ The library includes **22 pre-configured datasets** for counterfactual explanati
 
 Add your own datasets with YAML configuration.
 
-[Learn How →](custom.md)
+[Learn How :material-arrow-right:](custom.md)
 </div>
 
 </div>

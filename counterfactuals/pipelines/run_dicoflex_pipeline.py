@@ -57,7 +57,7 @@ def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
 
 
 def instantiate_gen_model(cfg: DictConfig, dataset: MethodDataset, context_dim: int, device: str):
-    """Instantiate the conditional flow used by DiCoFlex."""
+    """Instantiate the conditional flow used by DiCoFlex for sampling."""
     model = instantiate(
         cfg.sampling_model.model,
         features=dataset.X_train.shape[1],
@@ -129,44 +129,6 @@ def train_dicoflex_generator(
     model.load(model_path)
 
 
-def compute_log_prob_threshold(
-    model,
-    dataloader: torch.utils.data.DataLoader,
-    quantile: float,
-    device: str,
-) -> float:
-    """Estimate a plausibility threshold based on training log probabilities."""
-    log_probs = []
-    model.eval()
-    with torch.no_grad():
-        for batch_cf, batch_context in dataloader:
-            batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
-            batch_scores = model(
-                batch_cf,
-                context=batch_context,
-            )
-            log_probs.append(batch_scores.cpu())
-    concat = torch.cat(log_probs)
-    return torch.quantile(concat, quantile).item()
-
-
-def get_full_training_loader(
-    subset_loader: torch.utils.data.DataLoader, batch_size: int
-) -> torch.utils.data.DataLoader:
-    """Create a loader that iterates over the complete DiCoFlex dataset."""
-    base_dataset = (
-        subset_loader.dataset.dataset
-        if hasattr(subset_loader.dataset, "dataset")
-        else subset_loader.dataset
-    )
-    return torch.utils.data.DataLoader(
-        base_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-    )
-
-
 def compute_feature_bounds(data: np.ndarray, padding: float = 0.05) -> List[tuple[float, float]]:
     """Return padded min/max bounds for the first two features."""
     if data.shape[1] < 2:
@@ -236,9 +198,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         seed=cfg.experiment.seed,
         numerical_indices=dataset.numerical_features_indices,
         categorical_indices=dataset.categorical_features_indices,
-        factual_chunk_size=cfg.counterfactuals_params.get(
-            "neighbor_factual_chunk_size"
-        ),
+        factual_chunk_size=cfg.counterfactuals_params.get("neighbor_factual_chunk_size"),
         target_chunk_size=cfg.counterfactuals_params.get("neighbor_target_chunk_size"),
     )
     vis_cfg = cfg.get("visualization")
@@ -358,9 +318,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         x_cfs_for_metrics = x_cfs_3d[:, 0, :].copy()
         x_origs_for_metrics = explanation_result.x_origs[::cf_per_instance].copy()
         y_origs_for_metrics = explanation_result.y_origs[::cf_per_instance].copy()
-        y_targets_for_metrics = explanation_result.y_cf_targets[
-            ::cf_per_instance
-        ].copy()
+        y_targets_for_metrics = explanation_result.y_cf_targets[::cf_per_instance].copy()
         model_returned_for_metrics = model_returned_mask[::cf_per_instance].copy()
         cf_group_ids_for_metrics = (
             cf_group_ids[::cf_per_instance] if cf_group_ids is not None else None
@@ -392,9 +350,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
             logger.info("Skipping counterfactual scatter plot: %s", exc)
     if vis_cfg and vis_cfg.get("enable_flow_contour", False):
         try:
-            bounds = compute_feature_bounds(
-                dataset.X_train, vis_cfg.get("contour_padding", 0.05)
-            )
+            bounds = compute_feature_bounds(dataset.X_train, vis_cfg.get("contour_padding", 0.05))
             factual_idx = min(
                 vis_cfg.get("contour_factual_index", 0),
                 filtered_X_test.shape[0] - 1,
@@ -458,9 +414,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
 
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_time
-    metrics_path = os.path.join(
-        save_folder, f"cf_metrics_DiCoFlex_{disc_model_name}.csv"
-    )
+    metrics_path = os.path.join(save_folder, f"cf_metrics_DiCoFlex_{disc_model_name}.csv")
     df_metrics.to_csv(metrics_path, index=False)
     logger.info("Saved metrics to %s", metrics_path)
 

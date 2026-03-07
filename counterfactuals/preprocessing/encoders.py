@@ -224,9 +224,7 @@ class LabelOneHotEncodingStep(PreprocessingStep):
         else:
             y_all = y_train
 
-        self.encoder = OneHotEncoder(
-            sparse_output=False, handle_unknown="ignore", dtype=np.float64
-        )
+        self.encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore", dtype=np.float64)
         self.encoder.fit(y_all)
         return self
 
@@ -258,19 +256,13 @@ class LabelOneHotEncodingStep(PreprocessingStep):
     def inverse_transform(self, context: PreprocessingContext) -> PreprocessingContext:
         """Inverse transform one-hot labels back to original labels."""
         if self.encoder is None:
-            raise ValueError(
-                "Call fit before inverse_transform in LabelOneHotEncodingStep."
-            )
+            raise ValueError("Call fit before inverse_transform in LabelOneHotEncodingStep.")
 
         y_train = (
-            self.encoder.inverse_transform(context.y_train)
-            if context.y_train is not None
-            else None
+            self.encoder.inverse_transform(context.y_train) if context.y_train is not None else None
         )
         y_test = (
-            self.encoder.inverse_transform(context.y_test)
-            if context.y_test is not None
-            else None
+            self.encoder.inverse_transform(context.y_test) if context.y_test is not None else None
         )
 
         # Flatten back to 1D

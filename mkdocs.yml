@@ -1,5 +1,5 @@
-site_name: CEL
-site_description: Counterfactual Explanations Library - A comprehensive Python framework for generating and evaluating counterfactual explanations
+site_name: Counterfactuals
+site_description: A Python library for counterfactual explanations with datasets, methods, and benchmarks
 site_url: https://ofurman.github.io/counterfactuals
 repo_url: https://github.com/ofurman/counterfactuals
 repo_name: ofurman/counterfactuals
@@ -83,6 +83,9 @@ markdown_extensions:
   - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 extra:
   social:
