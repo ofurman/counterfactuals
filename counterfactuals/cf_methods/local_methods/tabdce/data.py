@@ -120,12 +120,8 @@ class TabularCounterfactualDataset(Dataset):
                 X_feat = torch.from_numpy(X_num_tr.astype(np.float32)).to(self.device)
             else:
                 X_feat = torch.zeros((num_samples, 1), device=self.device)
-            logger.info(
-                "Building neighbors using method: %s", self.search_method.upper()
-            )
-            self.neigh_idx = self._build_opposite_class_neighbors(
-                X_feat, self.y, k=self.k
-            )
+            logger.info("Building neighbors using method: %s", self.search_method.upper())
+            self.neigh_idx = self._build_opposite_class_neighbors(X_feat, self.y, k=self.k)
         else:
             self.neigh_idx = None
 
@@ -147,9 +143,7 @@ class TabularCounterfactualDataset(Dataset):
                 if src_idx.numel() == 0:
                     continue
                 if tgt_idx.numel() == 0:
-                    rand = torch.randint(
-                        0, num_samples, (src_idx.numel(), k), device=self.device
-                    )
+                    rand = torch.randint(0, num_samples, (src_idx.numel(), k), device=self.device)
                     neigh_all[src_idx] = rand
                     continue
 
@@ -196,9 +190,7 @@ class TabularCounterfactualDataset(Dataset):
         sigma_q = 1.0
         sigma_s = 5.0
 
-        selected_indices = torch.zeros(
-            (batch_size, k), dtype=torch.long, device=self.device
-        )
+        selected_indices = torch.zeros((batch_size, k), dtype=torch.long, device=self.device)
 
         for i in range(batch_size):
             q_vec = query_feats[i].unsqueeze(0)
@@ -252,9 +244,7 @@ class TabularCounterfactualDataset(Dataset):
         y_orig = self.y[idx]
         if self.neigh_idx is not None:
             cand_indices = self.neigh_idx[idx]
-            chosen_idx = cand_indices[
-                torch.randint(0, cand_indices.numel(), (1,)).item()
-            ]
+            chosen_idx = cand_indices[torch.randint(0, cand_indices.numel(), (1,)).item()]
             x_neigh = self.X_model[chosen_idx]
             y_tgt = self.y[chosen_idx]
         else:
@@ -290,9 +280,7 @@ class TabularCounterfactualDataset(Dataset):
         if self.num_numerical > 0:
             x_num_tr = x_model[:, : self.num_numerical]
             x_num_tr = np.clip(x_num_tr, -5.2, 5.2)
-            x_num_orig = (
-                self.qt.inverse_transform(x_num_tr) if self.qt is not None else x_num_tr
-            )
+            x_num_orig = self.qt.inverse_transform(x_num_tr) if self.qt is not None else x_num_tr
         else:
             x_num_orig = np.zeros((num_samples, 0))
 

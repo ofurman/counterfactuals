@@ -37,9 +37,7 @@ def _resolve_flow_transforms(
     Optional[Callable[[torch.Tensor], torch.Tensor]],
     Optional[Callable[[torch.Tensor], torch.Tensor]],
 ]:
-    if hasattr(flow_model, "transform_to_latent") and hasattr(
-        flow_model, "transform_to_data"
-    ):
+    if hasattr(flow_model, "transform_to_latent") and hasattr(flow_model, "transform_to_data"):
 
         def encode(x: torch.Tensor) -> torch.Tensor:
             return flow_model.transform_to_latent(x)
@@ -54,13 +52,9 @@ def _resolve_flow_transforms(
 
     flow_core = getattr(flow_model, "model", None)
     if flow_core is None:
-        raise ValueError(
-            "CeFlow requires a flow model with an inverse or a .model attribute."
-        )
+        raise ValueError("CeFlow requires a flow model with an inverse or a .model attribute.")
 
-    if hasattr(flow_core, "transform_to_noise") and hasattr(
-        flow_core, "transform_to_data"
-    ):
+    if hasattr(flow_core, "transform_to_noise") and hasattr(flow_core, "transform_to_data"):
 
         def encode(x: torch.Tensor) -> torch.Tensor:
             z_value, _ = flow_core.transform_to_noise(x)
@@ -91,9 +85,7 @@ def _wrap_with_dequantizer(
     base_decode: Optional[Callable[[torch.Tensor], torch.Tensor]],
     flow_model: torch.nn.Module,
     dequantizer: GroupDequantizer,
-) -> Tuple[
-    Callable[[torch.Tensor], torch.Tensor], Callable[[torch.Tensor], torch.Tensor]
-]:
+) -> Tuple[Callable[[torch.Tensor], torch.Tensor], Callable[[torch.Tensor], torch.Tensor]]:
     def encode(x: torch.Tensor) -> torch.Tensor:
         x_np = x.detach().cpu().numpy()
         x_dq = dequantizer.transform(x_np)
@@ -164,9 +156,7 @@ def search_counterfactuals(
             "CeFlow flow_model must be unconditional; set flow_model.context_features to null."
         )
     base_encode, base_decode = _resolve_flow_transforms(flow_model)
-    if hasattr(flow_model, "transform_to_latent") and hasattr(
-        flow_model, "transform_to_data"
-    ):
+    if hasattr(flow_model, "transform_to_latent") and hasattr(flow_model, "transform_to_data"):
         encode_fn, decode_fn = base_encode, base_decode
     else:
         encode_fn, decode_fn = _wrap_with_dequantizer(
@@ -206,9 +196,7 @@ def search_counterfactuals(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
     )
     if cfg.counterfactuals_params.use_categorical:
-        Xs_cfs = apply_categorical_discretization(
-            dataset.categorical_features_lists, Xs_cfs
-        )
+        Xs_cfs = apply_categorical_discretization(dataset.categorical_features_lists, Xs_cfs)
 
     pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
     logger.info(f"Counterfactuals saved to: {counterfactuals_path}")
@@ -276,9 +264,7 @@ def _get_log_prob_threshold(
     log_prob_quantile: float,
 ) -> float:
     logger.info("Calculating log_prob_threshold")
-    train_dataloader_for_log_prob = dataset.train_dataloader(
-        batch_size=batch_size, shuffle=False
-    )
+    train_dataloader_for_log_prob = dataset.train_dataloader(batch_size=batch_size, shuffle=False)
     log_prob_threshold = torch.quantile(
         gen_model.predict_log_prob(train_dataloader_for_log_prob),
         log_prob_quantile,
@@ -345,9 +331,7 @@ def main(cfg: DictConfig):
     dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
     for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
-        disc_model_path, density_model_path, save_folder = set_model_paths(
-            cfg, fold=fold_n
-        )
+        disc_model_path, density_model_path, save_folder = set_model_paths(cfg, fold=fold_n)
         disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
 
         if cfg.experiment.relabel_with_disc_model:
@@ -365,9 +349,7 @@ def main(cfg: DictConfig):
                 f"flow_model_{flow_model_name}_relabeled_by_{disc_model_name}.pt",
             )
         else:
-            flow_model_path = os.path.join(
-                output_folder, f"flow_model_{flow_model_name}.pt"
-            )
+            flow_model_path = os.path.join(output_folder, f"flow_model_{flow_model_name}.pt")
 
         flow_model = _create_gen_model_from_cfg(
             cfg.flow_model, dataset, flow_model_path, dequantizer
@@ -385,10 +367,8 @@ def main(cfg: DictConfig):
         )
         dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
 
-        Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = (
-            search_counterfactuals(
-                cfg, dataset, flow_model, disc_model, save_folder, dequantizer
-            )
+        Xs_cfs, Xs, ys_orig, ys_target, model_returned, cf_search_time = search_counterfactuals(
+            cfg, dataset, flow_model, disc_model, save_folder, dequantizer
         )
 
         density_model = DequantizationWrapper(density_model, dequantizer)

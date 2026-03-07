@@ -38,9 +38,7 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self.ohe = ohe
         self.device = torch.device(device)
         self.num_numerical = len(spec.num_idx)
-        self.cat_cardinalities = (
-            [len(cats) for cats in ohe.categories_] if ohe is not None else []
-        )
+        self.cat_cardinalities = [len(cats) for cats in ohe.categories_] if ohe is not None else []
 
     def explain(
         self,
@@ -90,18 +88,14 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 y_target = batch[2] if len(batch) > 2 else None
 
             if x_batch is None:
-                raise ValueError(
-                    "Dataloader must yield input features as the first element."
-                )
+                raise ValueError("Dataloader must yield input features as the first element.")
 
             x_np = x_batch.detach().cpu().numpy()
             x_model = self._to_model_space(x_np)
 
             if y_target is None:
                 if target_class is None:
-                    raise ValueError(
-                        "Provide target_class or per-sample y_target values."
-                    )
+                    raise ValueError("Provide target_class or per-sample y_target values.")
                 y_target_tensor = torch.full(
                     (x_model.size(0),),
                     int(target_class),
@@ -128,9 +122,7 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
 
         return ExplanationResult(
             x_cfs=np.concatenate(x_cfs, axis=0) if x_cfs else np.empty((0,)),
-            y_cf_targets=np.concatenate(y_targets, axis=0)
-            if y_targets
-            else np.empty((0,)),
+            y_cf_targets=np.concatenate(y_targets, axis=0) if y_targets else np.empty((0,)),
             x_origs=np.concatenate(x_origs, axis=0) if x_origs else np.empty((0,)),
             y_origs=np.concatenate(y_origs, axis=0) if y_origs else np.empty((0,)),
         )
@@ -163,9 +155,7 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         if self.num_numerical > 0:
             x_num_tr = x_model[:, : self.num_numerical]
             x_num_tr = np.clip(x_num_tr, -5.2, 5.2)
-            x_num = (
-                self.qt.inverse_transform(x_num_tr) if self.qt is not None else x_num_tr
-            )
+            x_num = self.qt.inverse_transform(x_num_tr) if self.qt is not None else x_num_tr
         else:
             x_num = np.zeros((num_samples, 0), dtype=np.float32)
 

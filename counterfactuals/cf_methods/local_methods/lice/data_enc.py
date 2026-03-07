@@ -95,11 +95,9 @@ def encode_categorical(
             mio.inaccessible = pyo.Set(initialize=feature.greater_than(init_val))
         else:
             mio.inaccessible = pyo.Set(initialize=[])
-        mio.modif_constr = pyo.Constraint(
-            mio.inaccessible, rule=lambda m, v: (m.var_change[v] == 0)
-        )
+        mio.modif_constr = pyo.Constraint(mio.inaccessible, rule=lambda m, v: m.var_change[v] == 0)
     else:
-        mio.modif_constr = pyo.Constraint(mio.vals, rule=lambda m, v: (m.var_change[v] == 0))
+        mio.modif_constr = pyo.Constraint(mio.vals, rule=lambda m, v: m.var_change[v] == 0)
     mio.change_constr = pyo.Constraint(
         mio.vals,
         rule=lambda m, v: (

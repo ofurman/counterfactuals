@@ -96,9 +96,7 @@ def train_dicoflex_generator(
         train_loss = 0.0
         for batch_cf, batch_context in train_loader:
             batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
-                device
-            )
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
             optimizer.zero_grad()
             log_prob = model(
                 batch_cf,
@@ -115,9 +113,7 @@ def train_dicoflex_generator(
         with torch.no_grad():
             for batch_cf, batch_context in val_loader:
                 batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-                batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
-                    device
-                )
+                batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
                 log_prob = model(
                     batch_cf,
                     context=batch_context,
@@ -156,9 +152,7 @@ def compute_log_prob_threshold(
     with torch.no_grad():
         for batch_cf, batch_context in dataloader:
             batch_cf = batch_cf.reshape(-1, batch_cf.shape[-1]).to(device)
-            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(
-                device
-            )
+            batch_context = batch_context.reshape(-1, batch_context.shape[-1]).to(device)
             batch_scores = model(
                 batch_cf,
                 context=batch_context,
@@ -259,9 +253,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         seed=cfg.experiment.seed,
         numerical_indices=dataset.numerical_features_indices,
         categorical_indices=dataset.categorical_features_indices,
-        factual_chunk_size=cfg.counterfactuals_params.get(
-            "neighbor_factual_chunk_size"
-        ),
+        factual_chunk_size=cfg.counterfactuals_params.get("neighbor_factual_chunk_size"),
         target_chunk_size=cfg.counterfactuals_params.get("neighbor_target_chunk_size"),
     )
 
@@ -344,9 +336,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     model_returned_blocks: list[bool] = []
     for idx in range(n_instances):
         cf_block = x_cfs_raw[idx]
-        factual_block = np.repeat(
-            x_origs_raw[idx : idx + 1, 0, :], cf_per_instance, axis=0
-        )
+        factual_block = np.repeat(x_origs_raw[idx : idx + 1, 0, :], cf_per_instance, axis=0)
         valid_mask = ~np.isnan(cf_block).any(axis=1)
         valid_rows = cf_block[valid_mask]
         if valid_rows.size == 0:
@@ -365,9 +355,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         dataset.categorical_features_lists,
         x_cfs_3d.reshape(-1, x_cfs_3d.shape[-1]),
     ).reshape(x_cfs_3d.shape)
-    model_returned_mask = np.repeat(
-        np.array(model_returned_blocks, dtype=bool), cf_per_instance
-    )
+    model_returned_mask = np.repeat(np.array(model_returned_blocks, dtype=bool), cf_per_instance)
     # Decode one-hot categories for diversity calculation while keeping scaled numeric features
     decoded_for_diversity = x_cfs_3d
     onehot_step = dataset.preprocessing_pipeline.get_step("onehot")
@@ -386,12 +374,10 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     # Extract first CF per instance for standard metrics
     x_cfs_first = x_cfs_3d[:, 0, :].copy()
     x_origs_first = x_origs_raw[:, 0, :].copy()
-    y_origs_first = explanation_result.y_origs.reshape(n_instances, cf_per_instance)[
+    y_origs_first = explanation_result.y_origs.reshape(n_instances, cf_per_instance)[:, 0].copy()
+    y_targets_first = explanation_result.y_cf_targets.reshape(n_instances, cf_per_instance)[
         :, 0
     ].copy()
-    y_targets_first = explanation_result.y_cf_targets.reshape(
-        n_instances, cf_per_instance
-    )[:, 0].copy()
     model_returned_first = np.array(model_returned_blocks, dtype=bool)
 
     # Ensure arrays are contiguous
@@ -433,9 +419,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
         "Calculating pairwise minimum distance across %d CFs per instance...",
         cf_per_instance,
     )
-    metrics["pairwise_mean_distance"] = compute_pairwise_mean_distance(
-        decoded_for_diversity
-    )
+    metrics["pairwise_mean_distance"] = compute_pairwise_mean_distance(decoded_for_diversity)
     logger.info("pairwise_mean_distance: %.6f", metrics["pairwise_mean_distance"])
 
     logger.info("Metrics:\n%s", metrics)
@@ -443,9 +427,7 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_time
     df_metrics["cf_per_instance"] = cf_per_instance
-    metrics_path = os.path.join(
-        save_folder, f"cf_metrics_DiCoFlexPairwise_{disc_model_name}.csv"
-    )
+    metrics_path = os.path.join(save_folder, f"cf_metrics_DiCoFlexPairwise_{disc_model_name}.csv")
     df_metrics.to_csv(metrics_path, index=False)
     logger.info("Saved metrics to %s", metrics_path)
 
@@ -455,11 +437,7 @@ def main(cfg: DictConfig):
     """Run DiCoFlex pipeline with pairwise diversity metric."""
     torch.manual_seed(cfg.experiment.seed)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    device = (
-        "cuda"
-        if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False)
-        else "cpu"
-    )
+    device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 
     file_dataset = instantiate(cfg.dataset)
     preprocessing_pipeline = PreprocessingPipeline(
