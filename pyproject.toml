@@ -9,11 +9,15 @@ license-files = ["LICENSE"]
 authors = [
     { name = "Patryk Wielopolski" },
     { name = "Oleksii Furman" },
+    { name = "Lukasz Lenkiewicz" },
+    { name = "Marcel Musialek" },
     { name = "Jerzy Stefanowski" },
     { name = "Maciej Zieba" },
 ]
 maintainers = [
     { name = "Oleksii Furman" },
+    { name = "Lukasz Lenkiewicz" },
+    { name = "Marcel Musialek" },
 ]
 keywords = [
     "counterfactual-explanations",
@@ -95,14 +99,6 @@ Issues = "https://github.com/ofurman/counterfactuals/issues"
 [build-system]
 requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.uv]
-dev-dependencies = [
-    "ruff",
-    "pre-commit",
-    "pytest",
-    "ipykernel",
-]
 
 [tool.setuptools.packages.find]
 where = ["."]

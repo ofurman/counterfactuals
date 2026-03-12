@@ -4,7 +4,11 @@ from counterfactuals.preprocessing.encoders import (
     OneHotEncodingStep,
 )
 from counterfactuals.preprocessing.pipeline import PreprocessingPipeline
-from counterfactuals.preprocessing.scalers import MinMaxScalingStep, StandardScalingStep
+from counterfactuals.preprocessing.scalers import (
+    MinMaxScalingStep,
+    ScalingStep,
+    StandardScalingStep,
+)
 from counterfactuals.preprocessing.torch_dtype import TorchDataTypeStep
 
 __all__ = [
@@ -12,6 +16,7 @@ __all__ = [
     "PreprocessingContext",
     "OneHotEncodingStep",
     "LabelOneHotEncodingStep",
+    "ScalingStep",
     "MinMaxScalingStep",
     "StandardScalingStep",
     "PreprocessingPipeline",

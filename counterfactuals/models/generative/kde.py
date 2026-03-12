@@ -268,9 +268,3 @@ class KDE(PytorchBase, GenerativePytorchMixin):
     def sample_and_log_proba(self, n_samples: int, context: Optional[np.ndarray] = None) -> tuple:
         """Sample from KDE and return log probabilities."""
         raise NotImplementedError("Sampling from KDE is not implemented")
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))

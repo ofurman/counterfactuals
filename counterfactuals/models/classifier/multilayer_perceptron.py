@@ -1,6 +1,5 @@
 from typing import List, Optional
 
-import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -90,29 +89,3 @@ class MLPClassifier(PytorchBase, ClassifierPytorchMixin):
             pbar.set_description(
                 f"Epoch {epoch}, Train: {train_loss:.4f}, test: {test_loss:.4f}, patience: {patience_counter}"
             )
-
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        if isinstance(X_test, np.ndarray):
-            X_test = torch.from_numpy(X_test).float()
-        with torch.no_grad():
-            probs = self.predict_proba(X_test)
-            if isinstance(probs, np.ndarray):
-                probs = torch.from_numpy(probs)
-            predicted = torch.argmax(probs, dim=1)
-            return predicted.squeeze().cpu().numpy()
-
-    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
-        if isinstance(X_test, np.ndarray):
-            X_test = torch.from_numpy(X_test).float()
-        with torch.no_grad():
-            logits = self.forward(X_test)
-            probs = self.final_activation(logits)
-            if self.num_targets == 1:
-                probs = torch.hstack([1 - probs, probs])
-            return probs.cpu().numpy()
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))

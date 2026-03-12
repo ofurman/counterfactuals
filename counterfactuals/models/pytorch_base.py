@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
@@ -25,6 +26,20 @@ class PytorchBase(torch.nn.Module, ABC):
         super(PytorchBase, self).__init__()
         self.num_inputs = num_inputs
         self.num_targets = num_targets
+
+    @staticmethod
+    def _to_tensor(X: np.ndarray | torch.Tensor) -> torch.Tensor:
+        """Convert numpy array to float32 tensor if needed.
+
+        Args:
+            X: Input data as numpy array or tensor.
+
+        Returns:
+            Float32 tensor.
+        """
+        if isinstance(X, np.ndarray):
+            return torch.from_numpy(X).float()
+        return X
 
     def save(self, path: str) -> None:
         """Save model state to file."""

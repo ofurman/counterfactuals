@@ -128,33 +128,3 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
                 )
             else:
                 pbar.set_description(f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}")
-
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Make predictions on test data.
-
-        Args:
-            X_test: Input data as numpy array
-
-        Returns:
-            Predictions as numpy array
-        """
-        if not isinstance(X_test, torch.Tensor):
-            X_test = torch.from_numpy(X_test).type(torch.float32)
-
-        self.eval()
-        with torch.no_grad():
-            preds = self.forward(X_test)
-            return preds.cpu().numpy()
-
-    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Predict probabilities (not implemented for regression).
-
-        Args:
-            X_test: Input data as numpy array
-
-        Raises:
-            NotImplementedError: This method is not applicable for regression
-        """
-        raise NotImplementedError("predict_proba is not applicable for regression models")

@@ -168,12 +168,6 @@ class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
             log_probs = self(X_test, context=context)
             return log_probs.cpu().numpy()
 
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-
     def _unpack_batch(self, batch):
         if isinstance(batch, tuple):
             inputs, labels = batch
