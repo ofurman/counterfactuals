@@ -12,6 +12,12 @@ The main counterfactual explanation methods.
 
 ::: counterfactuals.cf_methods.counterfactual_base
 
+### Pipelines
+
+#### Base runner
+
+::: counterfactuals.pipelines.base_runner
+
 ### Datasets
 
 Dataset loading and configuration utilities.
@@ -38,3 +44,5 @@ For method-specific API documentation, see:
 - [DICE](../methods/local/dice.md#api-reference)
 - [GLOBE-CE](../methods/global/globe-ce.md#api-reference)
 - [ReViCE](../methods/group/revice.md#api-reference)
+
+For pipeline usage, see the [Pipelines user guide](../user-guide/pipelines.md).

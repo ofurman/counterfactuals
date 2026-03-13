@@ -77,6 +77,9 @@ python -m counterfactuals.pipelines.run_ppcef_pipeline \
 
 ## Adding New Methods to Benchmarks
 
-1. Create pipeline in `counterfactuals/pipelines/`
-2. Add configuration in `pipelines/conf/`
-3. Run benchmark with same datasets
+1. Create a runner class in `counterfactuals/pipelines/runners/`
+2. Create a thin entry-point script in `counterfactuals/pipelines/run_<method>_pipeline.py`
+3. Add a Hydra config file in `counterfactuals/pipelines/conf/<method>_config.yaml`
+4. Run the benchmark with the same datasets
+
+See the [Pipelines user guide](../user-guide/pipelines.md) for a step-by-step walkthrough.
