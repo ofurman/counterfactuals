@@ -1,0 +1,235 @@
+\begin{table*}[ht]
+\centering
+\caption{Proximity metrics across datasets and classification models. (MLP)}
+\label{tab:proximity_metrics_mlpclassifier}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrr}
+\toprule
+ & Method & L2-Ham.$\downarrow$ & L2-Jac.$\downarrow$ & L1-Jac.$\downarrow$ & MAD-Jac.$\downarrow$ & L2-Jac.$\downarrow$ & MAD-Ham.$\downarrow$ \\
+\midrule
+\multirow{5}{*}{adult\_census} & CADEX & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.02\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $0.02\pm{0.00}$ \\
+ & CCHVAE & $0.02\pm{0.00}$ & $0.28\pm{0.02}$ & $0.28\pm{0.02}$ & $0.35\pm{0.03}$ & $0.28\pm{0.02}$ & $0.09\pm{0.01}$ \\
+ & SACE & $0.06\pm{0.00}$ & $0.77\pm{0.01}$ & $0.77\pm{0.01}$ & $0.87\pm{0.02}$ & $0.77\pm{0.01}$ & $0.16\pm{0.01}$ \\
+ & DiCE & $0.01\pm{0.00}$ & $0.16\pm{0.00}$ & $0.16\pm{0.00}$ & $0.16\pm{0.00}$ & $0.16\pm{0.00}$ & $\boldsymbol{0.01\pm{0.00}}$ \\
+ & PPCEF & $0.01\pm{0.00}$ & $0.01\pm{0.01}$ & $0.02\pm{0.01}$ & $0.19\pm{0.05}$ & $0.01\pm{0.01}$ & $0.18\pm{0.05}$ \\
+\midrule
+\multirow{5}{*}{bank\_marketing} & CADEX & $\boldsymbol{0.02\pm{0.00}}$ & $\boldsymbol{0.03\pm{0.00}}$ & $\boldsymbol{0.05\pm{0.00}}$ & $2.10\pm{0.09}$ & $\boldsymbol{0.03\pm{0.00}}$ & $2.09\pm{0.09}$ \\
+ & CCHVAE & $0.07\pm{0.00}$ & $0.14\pm{0.01}$ & $0.17\pm{0.01}$ & $\boldsymbol{1.91\pm{0.10}}$ & $0.14\pm{0.01}$ & $\boldsymbol{1.84\pm{0.11}}$ \\
+ & SACE & $0.26\pm{0.00}$ & $0.66\pm{0.01}$ & $0.71\pm{0.01}$ & $2.63\pm{0.12}$ & $0.66\pm{0.01}$ & $2.24\pm{0.13}$ \\
+ & DiCE & $0.06\pm{0.01}$ & $0.15\pm{0.01}$ & $0.15\pm{0.01}$ & $1.94\pm{0.27}$ & $0.15\pm{0.01}$ & $1.85\pm{0.27}$ \\
+ & PPCEF & $0.04\pm{0.01}$ & $0.04\pm{0.01}$ & $0.07\pm{0.01}$ & $3.02\pm{0.38}$ & $0.04\pm{0.01}$ & $3.02\pm{0.38}$ \\
+\midrule
+\multirow{5}{*}{credit\_default} & CADEX & $\boldsymbol{0.06\pm{0.01}}$ & $\boldsymbol{0.11\pm{0.02}}$ & $0.25\pm{0.03}$ & $47.13\pm{6.59}$ & $\boldsymbol{0.11\pm{0.02}}$ & $47.08\pm{6.59}$ \\
+ & CCHVAE & $\boldsymbol{0.06\pm{0.00}}$ & $0.26\pm{0.01}$ & $0.30\pm{0.01}$ & $\boldsymbol{4.47\pm{0.07}}$ & $0.26\pm{0.01}$ & $\boldsymbol{4.27\pm{0.06}}$ \\
+ & SACE & $0.16\pm{0.00}$ & $0.65\pm{0.00}$ & $0.69\pm{0.01}$ & $4.94\pm{0.34}$ & $0.65\pm{0.00}$ & $4.44\pm{0.34}$ \\
+ & DiCE & $0.10\pm{0.01}$ & $0.18\pm{0.01}$ & $\boldsymbol{0.19\pm{0.02}}$ & $43.64\pm{9.74}$ & $0.18\pm{0.01}$ & $43.56\pm{9.74}$ \\
+ & PPCEF & $0.19\pm{0.03}$ & $0.57\pm{0.12}$ & $0.71\pm{0.10}$ & $35.97\pm{8.87}$ & $0.57\pm{0.12}$ & $35.59\pm{8.93}$ \\
+\midrule
+\multirow{5}{*}{german\_credit} & CADEX & $0.13\pm{0.01}$ & $0.34\pm{0.02}$ & $0.42\pm{0.02}$ & $1.07\pm{0.05}$ & $0.34\pm{0.02}$ & $0.86\pm{0.04}$ \\
+ & CCHVAE & $0.24\pm{0.01}$ & $0.67\pm{0.02}$ & $0.79\pm{0.03}$ & $1.58\pm{0.13}$ & $0.67\pm{0.02}$ & $1.16\pm{0.14}$ \\
+ & SACE & $0.35\pm{0.02}$ & $0.79\pm{0.02}$ & $0.87\pm{0.03}$ & $1.68\pm{0.12}$ & $0.79\pm{0.02}$ & $1.25\pm{0.11}$ \\
+ & DiCE & $\boldsymbol{0.10\pm{0.02}}$ & $\boldsymbol{0.26\pm{0.04}}$ & $\boldsymbol{0.26\pm{0.04}}$ & $\boldsymbol{0.38\pm{0.05}}$ & $\boldsymbol{0.26\pm{0.04}}$ & $\boldsymbol{0.23\pm{0.04}}$ \\
+ & PPCEF & $0.36\pm{0.01}$ & $0.71\pm{0.02}$ & $0.94\pm{0.02}$ & $2.67\pm{0.40}$ & $0.71\pm{0.02}$ & $2.32\pm{0.41}$ \\
+\midrule
+\multirow{5}{*}{give\_me\_some\_credit} & CADEX & $\boldsymbol{0.02\pm{0.02}}$ & $\boldsymbol{0.04\pm{0.08}}$ & $\boldsymbol{0.06\pm{0.10}}$ & $865.92\pm{800.85}$ & $\boldsymbol{0.04\pm{0.08}}$ & $865.90\pm{800.80}$ \\
+ & CCHVAE & $0.08\pm{0.01}$ & $0.43\pm{0.05}$ & $0.44\pm{0.05}$ & $53.14\pm{17.06}$ & $0.43\pm{0.05}$ & $52.79\pm{17.03}$ \\
+ & SACE & $0.12\pm{0.00}$ & $0.66\pm{0.03}$ & $0.68\pm{0.03}$ & $\boldsymbol{20.98\pm{9.99}}$ & $0.66\pm{0.03}$ & $\boldsymbol{20.44\pm{9.97}}$ \\
+ & DiCE & $0.10\pm{0.02}$ & $0.24\pm{0.03}$ & $0.25\pm{0.03}$ & $1965.92\pm{578.43}$ & $0.24\pm{0.03}$ & $1965.78\pm{578.43}$ \\
+ & PPCEF & $0.17\pm{0.13}$ & $0.46\pm{0.28}$ & $0.58\pm{0.36}$ & $2243.24\pm{1312.93}$ & $0.46\pm{0.28}$ & $2242.96\pm{1313.04}$ \\
+\midrule
+\multirow{5}{*}{law} & CADEX & $0.09\pm{0.01}$ & $0.19\pm{0.02}$ & $0.22\pm{0.02}$ & $\boldsymbol{0.74\pm{0.05}}$ & $0.19\pm{0.02}$ & $\boldsymbol{0.64\pm{0.04}}$ \\
+ & CCHVAE & $0.08\pm{0.01}$ & $0.10\pm{0.01}$ & $0.14\pm{0.02}$ & $0.91\pm{0.06}$ & $0.10\pm{0.01}$ & $0.88\pm{0.05}$ \\
+ & SACE & $0.24\pm{0.07}$ & $0.45\pm{0.19}$ & $0.50\pm{0.19}$ & $1.76\pm{0.13}$ & $0.45\pm{0.19}$ & $1.54\pm{0.02}$ \\
+ & DiCE & $0.13\pm{0.00}$ & $0.23\pm{0.01}$ & $0.24\pm{0.01}$ & $0.92\pm{0.04}$ & $0.23\pm{0.01}$ & $0.82\pm{0.04}$ \\
+ & PPCEF & $\boldsymbol{0.07\pm{0.01}}$ & $\boldsymbol{0.07\pm{0.01}}$ & $\boldsymbol{0.12\pm{0.01}}$ & $0.98\pm{0.06}$ & $\boldsymbol{0.07\pm{0.01}}$ & $0.98\pm{0.06}$ \\
+\midrule
+\multirow{5}{*}{lending\_club} & CADEX & $0.30\pm{0.01}$ & $0.73\pm{0.02}$ & $0.94\pm{0.02}$ & $21.52\pm{3.25}$ & $0.73\pm{0.02}$ & $21.09\pm{3.25}$ \\
+ & CCHVAE & $\boldsymbol{0.18\pm{0.01}}$ & $\boldsymbol{0.46\pm{0.02}}$ & $\boldsymbol{0.56\pm{0.02}}$ & $\boldsymbol{2.68\pm{0.07}}$ & $\boldsymbol{0.46\pm{0.02}}$ & $\boldsymbol{2.40\pm{0.08}}$ \\
+ & SACE & $0.32\pm{0.01}$ & $0.77\pm{0.01}$ & $0.89\pm{0.03}$ & $3.27\pm{0.14}$ & $0.77\pm{0.01}$ & $2.82\pm{0.14}$ \\
+ & DiCE & $0.24\pm{0.02}$ & $0.51\pm{0.04}$ & $\boldsymbol{0.56\pm{0.05}}$ & $8.21\pm{2.32}$ & $0.51\pm{0.04}$ & $7.94\pm{2.32}$ \\
+ & PPCEF & $0.46\pm{0.06}$ & $0.87\pm{0.05}$ & $1.24\pm{0.15}$ & $10.69\pm{4.35}$ & $0.87\pm{0.05}$ & $10.28\pm{4.39}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}
+
+\begin{table*}[ht]
+\centering
+\caption{Additional metrics across datasets and classification models. (MLP)}
+\label{tab:other_metrics_mlpclassifier}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrrrr}
+\toprule
+ & Method & Cov.$\uparrow$ & Valid.$\uparrow$ & Sparse.$\uparrow$ & Prob. Plaus.$\uparrow$ & Log Dens.$\uparrow$ & LOF$\downarrow$ & IsoForest$\uparrow$ & Time(s)$\downarrow$ \\
+\midrule
+\multirow{5}{*}{adult\_census} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $0.51\pm{0.02}$ & $0.01\pm{0.00}$ & $0.62\pm{0.04}$ & $-147.00\pm{36.30}$ & $\boldsymbol{2.41\pm{0.06}}$ & $0.13\pm{0.00}$ & $304.92\pm{110.68}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.04\pm{0.00}$ & $0.77\pm{0.04}$ & $-214.42\pm{136.54}$ & $5.67\pm{0.90}$ & $\boldsymbol{0.14\pm{0.00}}$ & $\boldsymbol{45.36\pm{3.86}}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.07\pm{0.00}}$ & $\boldsymbol{0.93\pm{0.04}}$ & $\boldsymbol{-109.47\pm{39.10}}$ & $3.17\pm{4.32}$ & $0.13\pm{0.01}$ & $52.38\pm{2.27}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.99\pm{0.01}$ & $0.01\pm{0.00}$ & $0.35\pm{0.06}$ & $-1004.90\pm{1272.17}$ & $8.28\pm{0.32}$ & $0.12\pm{0.00}$ & $162.59\pm{9.31}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.02\pm{0.00}$ & $0.53\pm{0.09}$ & $-153.70\pm{35.27}$ & $3.33\pm{0.17}$ & $0.13\pm{0.00}$ & $439.01\pm{8.23}$ \\
+\midrule
+\multirow{5}{*}{bank\_marketing} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.14\pm{0.00}$ & $0.27\pm{0.04}$ & $-63.91\pm{4.73}$ & $1.88\pm{0.05}$ & $0.04\pm{0.00}$ & $9.22\pm{1.74}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.16\pm{0.00}$ & $0.67\pm{0.07}$ & $-40.50\pm{2.03}$ & $2.48\pm{0.16}$ & $0.07\pm{0.01}$ & $\boldsymbol{2.90\pm{0.68}}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.30\pm{0.00}}$ & $\boldsymbol{0.98\pm{0.01}}$ & $\boldsymbol{-27.52\pm{2.52}}$ & $\boldsymbol{1.11\pm{0.03}}$ & $\boldsymbol{0.09\pm{0.01}}$ & $18.28\pm{2.77}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.93\pm{0.09}$ & $0.04\pm{0.00}$ & $0.13\pm{0.02}$ & $-94.68\pm{11.55}$ & $3.42\pm{0.23}$ & $0.01\pm{0.00}$ & $34.14\pm{7.28}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.14\pm{0.00}$ & $0.30\pm{0.07}$ & $-53.98\pm{5.78}$ & $1.97\pm{0.06}$ & $0.04\pm{0.01}$ & $233.99\pm{61.32}$ \\
+\midrule
+\multirow{5}{*}{credit\_default} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.16\pm{0.00}$ & $0.01\pm{0.00}$ & $-1457.68\pm{553.77}$ & $3.07\pm{0.11}$ & $-0.05\pm{0.01}$ & $34.53\pm{3.29}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.18\pm{0.00}$ & $\boldsymbol{0.46\pm{0.06}}$ & $-413.44\pm{555.21}$ & $4.55\pm{0.23}$ & $0.05\pm{0.00}$ & $\boldsymbol{12.70\pm{2.15}}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.26\pm{0.01}}$ & $0.28\pm{0.41}$ & $\boldsymbol{39.91\pm{37.24}}$ & $\boldsymbol{1.05\pm{0.02}}$ & $\boldsymbol{0.08\pm{0.04}}$ & $18.15\pm{0.64}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.95\pm{0.08}$ & $0.02\pm{0.00}$ & $0.02\pm{0.01}$ & $-8987.03\pm{5645.83}$ & $4.22\pm{0.34}$ & $0.00\pm{0.00}$ & $60.59\pm{2.93}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.24\pm{0.02}$ & $0.05\pm{0.05}$ & $-693.44\pm{233.86}$ & $3.57\pm{0.37}$ & $-0.04\pm{0.03}$ & $325.52\pm{3.49}$ \\
+\midrule
+\multirow{5}{*}{german\_credit} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.21\pm{0.01}$ & $0.35\pm{0.05}$ & $-73.58\pm{5.70}$ & $1.08\pm{0.00}$ & $0.01\pm{0.01}$ & $4.51\pm{0.22}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.28\pm{0.00}$ & $0.68\pm{0.40}$ & $-56.56\pm{16.10}$ & $\boldsymbol{0.98\pm{0.00}}$ & $\boldsymbol{0.12\pm{0.00}}$ & $1.20\pm{1.39}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.32\pm{0.01}}$ & $\boldsymbol{0.93\pm{0.02}}$ & $\boldsymbol{-44.13\pm{6.43}}$ & $1.04\pm{0.01}$ & $0.04\pm{0.02}$ & $\boldsymbol{0.03\pm{0.00}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.97\pm{0.03}$ & $0.08\pm{0.01}$ & $0.11\pm{0.06}$ & $-129.32\pm{26.54}$ & $1.12\pm{0.02}$ & $-0.01\pm{0.01}$ & $6.49\pm{0.99}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.29\pm{0.01}$ & $0.17\pm{0.09}$ & $-73.04\pm{6.83}$ & $1.11\pm{0.03}$ & $0.02\pm{0.01}$ & $81.88\pm{0.99}$ \\
+\midrule
+\multirow{5}{*}{give\_me\_some\_credit} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $0.98\pm{0.01}$ & $0.16\pm{0.01}$ & $0.27\pm{0.09}$ & $-703.55\pm{980.46}$ & $2.34\pm{0.86}$ & $-0.01\pm{0.03}$ & $35.20\pm{13.82}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.20\pm{0.01}$ & $0.69\pm{0.12}$ & $-57.27\pm{55.47}$ & $7.72\pm{1.98}$ & $0.08\pm{0.01}$ & $29.28\pm{3.58}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.23\pm{0.00}}$ & $\boldsymbol{0.97\pm{0.02}}$ & $\boldsymbol{22.11\pm{4.61}}$ & $\boldsymbol{1.42\pm{0.24}}$ & $\boldsymbol{0.10\pm{0.01}}$ & $\boldsymbol{9.88\pm{0.47}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.98\pm{0.02}$ & $0.04\pm{0.00}$ & $0.06\pm{0.01}$ & $-1081.51\pm{1542.37}$ & $11.14\pm{0.99}$ & $-0.01\pm{0.01}$ & $118.58\pm{31.94}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.20\pm{0.03}$ & $0.00\pm{0.00}$ & $-391.86\pm{497.52}$ & $8.77\pm{4.97}$ & $-0.06\pm{0.03}$ & $287.71\pm{7.05}$ \\
+\midrule
+\multirow{5}{*}{law} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.28\pm{0.00}$ & $0.66\pm{0.04}$ & $-12.76\pm{0.61}$ & $1.68\pm{0.21}$ & $0.05\pm{0.00}$ & $7.07\pm{0.52}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.24\pm{0.00}$ & $\boldsymbol{0.92\pm{0.02}}$ & $\boldsymbol{-10.16\pm{0.61}}$ & $1.22\pm{0.15}$ & $\boldsymbol{0.12\pm{0.00}}$ & $4.26\pm{1.43}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.33\pm{0.08}}$ & $0.68\pm{0.30}$ & $-12.92\pm{2.39}$ & $1.83\pm{1.77}$ & $0.04\pm{0.07}$ & $\boldsymbol{0.17\pm{0.00}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.98\pm{0.04}$ & $0.11\pm{0.00}$ & $0.33\pm{0.01}$ & $-17.46\pm{1.13}$ & $5.21\pm{0.50}$ & $0.00\pm{0.00}$ & $4.79\pm{0.14}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.23\pm{0.00}$ & $0.85\pm{0.02}$ & $-10.85\pm{0.45}$ & $\boldsymbol{1.14\pm{0.04}}$ & $0.08\pm{0.01}$ & $71.71\pm{0.30}$ \\
+\midrule
+\multirow{5}{*}{lending\_club} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.43\pm{0.01}}$ & $0.01\pm{0.01}$ & $-2.91\times 10^{8}\pm{6.51\times 10^{8}}$ & $3.25\pm{0.67}$ & $-0.01\pm{0.01}$ & $270.51\pm{17.68}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.33\pm{0.01}$ & $0.70\pm{0.11}$ & $-27.51\pm{12.79}$ & $1.87\pm{0.18}$ & $\boldsymbol{0.05\pm{0.00}}$ & $113.32\pm{9.60}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.42\pm{0.01}$ & $\boldsymbol{0.86\pm{0.11}}$ & $\boldsymbol{-13.83\pm{9.94}}$ & $\boldsymbol{1.06\pm{0.05}}$ & $\boldsymbol{0.05\pm{0.01}}$ & $\boldsymbol{28.22\pm{0.48}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.94\pm{0.12}$ & $0.15\pm{0.02}$ & $0.04\pm{0.03}$ & $-3760.84\pm{6580.03}$ & $6.78\pm{0.69}$ & $-0.03\pm{0.01}$ & $373.73\pm{64.16}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.41\pm{0.03}$ & $0.00\pm{0.00}$ & $-14290.89\pm{31813.72}$ & $2.87\pm{1.17}$ & $-0.03\pm{0.01}$ & $662.99\pm{23.48}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}
+
+\begin{table*}[ht]
+\centering
+\caption{Proximity metrics across datasets and classification models. (LR)}
+\label{tab:proximity_metrics_multinomiallogisticregression}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrr}
+\toprule
+ & Method & L2-Ham.$\downarrow$ & L2-Jac.$\downarrow$ & L1-Jac.$\downarrow$ & MAD-Jac.$\downarrow$ & L2-Jac.$\downarrow$ & MAD-Ham.$\downarrow$ \\
+\midrule
+\multirow{5}{*}{adult\_census} & CADEX & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.02\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $0.02\pm{0.00}$ \\
+ & CCHVAE & $0.02\pm{0.00}$ & $0.27\pm{0.01}$ & $0.27\pm{0.01}$ & $0.34\pm{0.02}$ & $0.27\pm{0.01}$ & $0.09\pm{0.01}$ \\
+ & SACE & $0.06\pm{0.00}$ & $0.77\pm{0.01}$ & $0.77\pm{0.01}$ & $0.87\pm{0.02}$ & $0.77\pm{0.01}$ & $0.16\pm{0.01}$ \\
+ & DiCE & $0.01\pm{0.00}$ & $0.15\pm{0.00}$ & $0.15\pm{0.00}$ & $0.16\pm{0.00}$ & $0.15\pm{0.00}$ & $\boldsymbol{0.01\pm{0.00}}$ \\
+ & PPCEF & $0.01\pm{0.00}$ & $0.03\pm{0.00}$ & $0.03\pm{0.00}$ & $0.22\pm{0.09}$ & $0.03\pm{0.00}$ & $0.21\pm{0.09}$ \\
+\midrule
+\multirow{5}{*}{bank\_marketing} & CADEX & $\boldsymbol{0.02\pm{0.01}}$ & $\boldsymbol{0.03\pm{0.01}}$ & $\boldsymbol{0.06\pm{0.01}}$ & $2.53\pm{0.21}$ & $\boldsymbol{0.03\pm{0.01}}$ & $2.53\pm{0.21}$ \\
+ & CCHVAE & $0.07\pm{0.00}$ & $0.15\pm{0.01}$ & $0.18\pm{0.01}$ & $\boldsymbol{2.05\pm{0.09}}$ & $0.15\pm{0.01}$ & $\boldsymbol{1.97\pm{0.08}}$ \\
+ & SACE & $0.27\pm{0.00}$ & $0.68\pm{0.01}$ & $0.72\pm{0.00}$ & $2.75\pm{0.09}$ & $0.68\pm{0.01}$ & $2.35\pm{0.10}$ \\
+ & DiCE & $0.08\pm{0.01}$ & $0.15\pm{0.01}$ & $0.16\pm{0.01}$ & $3.43\pm{0.38}$ & $0.15\pm{0.01}$ & $3.36\pm{0.38}$ \\
+ & PPCEF & $0.04\pm{0.01}$ & $0.04\pm{0.01}$ & $0.08\pm{0.02}$ & $3.68\pm{0.28}$ & $0.04\pm{0.01}$ & $3.68\pm{0.28}$ \\
+\midrule
+\multirow{5}{*}{credit\_default} & CADEX & $\boldsymbol{0.06\pm{0.02}}$ & $\boldsymbol{0.09\pm{0.05}}$ & $0.23\pm{0.07}$ & $41.57\pm{8.08}$ & $\boldsymbol{0.09\pm{0.05}}$ & $41.54\pm{8.06}$ \\
+ & CCHVAE & $\boldsymbol{0.06\pm{0.00}}$ & $0.27\pm{0.02}$ & $0.31\pm{0.02}$ & $\boldsymbol{4.60\pm{0.34}}$ & $0.27\pm{0.02}$ & $4.39\pm{0.34}$ \\
+ & SACE & $0.16\pm{0.00}$ & $0.65\pm{0.00}$ & $0.70\pm{0.01}$ & $4.68\pm{0.27}$ & $0.65\pm{0.00}$ & $\boldsymbol{4.18\pm{0.27}}$ \\
+ & DiCE & $0.10\pm{0.01}$ & $0.17\pm{0.02}$ & $\boldsymbol{0.18\pm{0.02}}$ & $40.85\pm{7.75}$ & $0.17\pm{0.02}$ & $40.78\pm{7.74}$ \\
+ & PPCEF & $0.20\pm{0.01}$ & $0.58\pm{0.04}$ & $0.75\pm{0.04}$ & $42.14\pm{9.71}$ & $0.58\pm{0.04}$ & $41.76\pm{9.72}$ \\
+\midrule
+\multirow{5}{*}{german\_credit} & CADEX & $0.28\pm{0.03}$ & $0.60\pm{0.07}$ & $0.69\pm{0.07}$ & $1.39\pm{0.11}$ & $0.60\pm{0.07}$ & $1.07\pm{0.07}$ \\
+ & CCHVAE & $0.25\pm{0.01}$ & $0.67\pm{0.03}$ & $0.79\pm{0.04}$ & $1.59\pm{0.08}$ & $0.67\pm{0.03}$ & $1.17\pm{0.08}$ \\
+ & SACE & $0.36\pm{0.01}$ & $0.79\pm{0.02}$ & $0.87\pm{0.03}$ & $1.69\pm{0.09}$ & $0.79\pm{0.02}$ & $1.26\pm{0.09}$ \\
+ & DiCE & $\boldsymbol{0.10\pm{0.04}}$ & $\boldsymbol{0.27\pm{0.07}}$ & $\boldsymbol{0.27\pm{0.08}}$ & $\boldsymbol{0.42\pm{0.15}}$ & $\boldsymbol{0.27\pm{0.07}}$ & $\boldsymbol{0.26\pm{0.11}}$ \\
+ & PPCEF & $0.33\pm{0.04}$ & $0.62\pm{0.11}$ & $0.86\pm{0.11}$ & $2.71\pm{0.27}$ & $0.62\pm{0.11}$ & $2.42\pm{0.20}$ \\
+\midrule
+\multirow{5}{*}{give\_me\_some\_credit} & CADEX & $\boldsymbol{0.01\pm{0.00}}$ & $\boldsymbol{0.01\pm{0.00}}$ & $\boldsymbol{0.02\pm{0.00}}$ & $360.26\pm{12.17}$ & $\boldsymbol{0.01\pm{0.00}}$ & $360.26\pm{12.17}$ \\
+ & CCHVAE & $0.07\pm{0.01}$ & $0.43\pm{0.02}$ & $0.45\pm{0.02}$ & $42.87\pm{4.41}$ & $0.43\pm{0.02}$ & $42.51\pm{4.42}$ \\
+ & SACE & $0.12\pm{0.00}$ & $0.68\pm{0.01}$ & $0.70\pm{0.01}$ & $\boldsymbol{18.95\pm{3.93}}$ & $0.68\pm{0.01}$ & $\boldsymbol{18.39\pm{3.93}}$ \\
+ & DiCE & $0.08\pm{0.00}$ & $0.22\pm{0.01}$ & $0.23\pm{0.01}$ & $1710.64\pm{455.39}$ & $0.22\pm{0.01}$ & $1710.49\pm{455.40}$ \\
+ & PPCEF & $0.17\pm{0.03}$ & $0.63\pm{0.08}$ & $0.72\pm{0.11}$ & $2874.17\pm{2863.62}$ & $0.63\pm{0.08}$ & $2873.71\pm{2863.63}$ \\
+\midrule
+\multirow{5}{*}{law} & CADEX & $0.10\pm{0.01}$ & $0.18\pm{0.03}$ & $0.21\pm{0.03}$ & $\boldsymbol{0.77\pm{0.07}}$ & $0.18\pm{0.03}$ & $\boldsymbol{0.69\pm{0.05}}$ \\
+ & CCHVAE & $0.08\pm{0.01}$ & $0.11\pm{0.01}$ & $0.15\pm{0.01}$ & $0.93\pm{0.04}$ & $0.11\pm{0.01}$ & $0.90\pm{0.03}$ \\
+ & SACE & $0.24\pm{0.07}$ & $0.45\pm{0.19}$ & $0.50\pm{0.19}$ & $1.74\pm{0.13}$ & $0.45\pm{0.19}$ & $1.53\pm{0.02}$ \\
+ & DiCE & $0.13\pm{0.00}$ & $0.24\pm{0.00}$ & $0.24\pm{0.00}$ & $0.87\pm{0.04}$ & $0.24\pm{0.00}$ & $0.77\pm{0.04}$ \\
+ & PPCEF & $\boldsymbol{0.06\pm{0.01}}$ & $\boldsymbol{0.06\pm{0.01}}$ & $\boldsymbol{0.10\pm{0.01}}$ & $0.85\pm{0.09}$ & $\boldsymbol{0.06\pm{0.01}}$ & $0.85\pm{0.09}$ \\
+\midrule
+\multirow{5}{*}{lending\_club} & CADEX & $0.25\pm{0.04}$ & $0.56\pm{0.11}$ & $0.80\pm{0.12}$ & $21.68\pm{2.33}$ & $0.56\pm{0.11}$ & $21.36\pm{2.31}$ \\
+ & CCHVAE & $\boldsymbol{0.19\pm{0.01}}$ & $0.49\pm{0.02}$ & $0.59\pm{0.02}$ & $\boldsymbol{2.86\pm{0.08}}$ & $0.49\pm{0.02}$ & $\boldsymbol{2.57\pm{0.08}}$ \\
+ & SACE & $0.33\pm{0.04}$ & $0.79\pm{0.05}$ & $0.92\pm{0.10}$ & $3.45\pm{0.46}$ & $0.79\pm{0.05}$ & $2.99\pm{0.46}$ \\
+ & DiCE & $0.21\pm{0.01}$ & $\boldsymbol{0.34\pm{0.08}}$ & $\boldsymbol{0.37\pm{0.08}}$ & $9.82\pm{3.71}$ & $\boldsymbol{0.34\pm{0.08}}$ & $9.69\pm{3.78}$ \\
+ & PPCEF & $0.35\pm{0.03}$ & $0.74\pm{0.05}$ & $0.98\pm{0.06}$ & $11.52\pm{3.68}$ & $0.74\pm{0.05}$ & $11.13\pm{3.68}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}
+
+\begin{table*}[ht]
+\centering
+\caption{Additional metrics across datasets and classification models. (LR)}
+\label{tab:other_metrics_multinomiallogisticregression}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrrrr}
+\toprule
+ & Method & Cov.$\uparrow$ & Valid.$\uparrow$ & Sparse.$\uparrow$ & Prob. Plaus.$\uparrow$ & Log Dens.$\uparrow$ & LOF$\downarrow$ & IsoForest$\uparrow$ & Time(s)$\downarrow$ \\
+\midrule
+\multirow{5}{*}{adult\_census} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $0.56\pm{0.02}$ & $0.01\pm{0.00}$ & $0.61\pm{0.04}$ & $-166.58\pm{7.96}$ & $\boldsymbol{2.37\pm{0.10}}$ & $0.13\pm{0.00}$ & $75.51\pm{3.50}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.03\pm{0.00}$ & $0.75\pm{0.03}$ & $-142.85\pm{19.68}$ & $6.49\pm{0.98}$ & $\boldsymbol{0.14\pm{0.00}}$ & $\boldsymbol{37.67\pm{2.21}}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.07\pm{0.00}}$ & $\boldsymbol{0.92\pm{0.05}}$ & $\boldsymbol{-118.19\pm{10.11}}$ & $3.10\pm{4.32}$ & $0.13\pm{0.01}$ & $50.20\pm{0.65}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.97\pm{0.04}$ & $0.01\pm{0.00}$ & $0.35\pm{0.04}$ & $-461.00\pm{145.25}$ & $8.03\pm{0.21}$ & $0.12\pm{0.00}$ & $158.63\pm{3.98}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.02\pm{0.00}$ & $0.39\pm{0.09}$ & $-185.05\pm{11.27}$ & $3.58\pm{0.30}$ & $\boldsymbol{0.14\pm{0.00}}$ & $417.63\pm{2.78}$ \\
+\midrule
+\multirow{5}{*}{bank\_marketing} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.15\pm{0.00}$ & $0.21\pm{0.04}$ & $-62.52\pm{9.35}$ & $1.66\pm{0.12}$ & $0.03\pm{0.00}$ & $4.17\pm{0.60}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.16\pm{0.00}$ & $0.61\pm{0.06}$ & $-73.85\pm{70.46}$ & $2.24\pm{0.15}$ & $0.07\pm{0.00}$ & $\boldsymbol{1.51\pm{0.11}}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.31\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.01}}$ & $\boldsymbol{-23.93\pm{7.90}}$ & $\boldsymbol{1.10\pm{0.03}}$ & $\boldsymbol{0.09\pm{0.01}}$ & $13.27\pm{0.66}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.91\pm{0.08}$ & $0.04\pm{0.00}$ & $0.09\pm{0.02}$ & $-318.65\pm{502.93}$ & $2.88\pm{0.19}$ & $0.01\pm{0.00}$ & $24.85\pm{1.25}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.14\pm{0.00}$ & $0.20\pm{0.03}$ & $-54.35\pm{4.52}$ & $1.77\pm{0.13}$ & $0.03\pm{0.00}$ & $153.55\pm{1.99}$ \\
+\midrule
+\multirow{5}{*}{credit\_default} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.16\pm{0.01}$ & $0.02\pm{0.01}$ & $-3376.12\pm{2761.91}$ & $2.45\pm{0.21}$ & $-0.05\pm{0.02}$ & $16.21\pm{3.99}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.19\pm{0.00}$ & $\boldsymbol{0.32\pm{0.10}}$ & $-274.46\pm{144.35}$ & $4.63\pm{0.68}$ & $0.05\pm{0.01}$ & $\boldsymbol{8.99\pm{0.99}}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.26\pm{0.01}}$ & $0.20\pm{0.45}$ & $\boldsymbol{48.27\pm{26.09}}$ & $\boldsymbol{1.05\pm{0.02}}$ & $\boldsymbol{0.08\pm{0.04}}$ & $18.07\pm{0.42}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.81\pm{0.23}$ & $0.02\pm{0.00}$ & $0.02\pm{0.01}$ & $-1.23\times 10^{6}\pm{2.73\times 10^{6}}$ & $4.08\pm{0.29}$ & $0.00\pm{0.00}$ & $58.96\pm{2.38}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.24\pm{0.01}$ & $0.08\pm{0.06}$ & $-1740.56\pm{2956.04}$ & $3.38\pm{0.35}$ & $-0.05\pm{0.03}$ & $311.68\pm{1.45}$ \\
+\midrule
+\multirow{5}{*}{german\_credit} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.35\pm{0.03}}$ & $0.19\pm{0.03}$ & $-90.66\pm{10.56}$ & $1.14\pm{0.02}$ & $-0.01\pm{0.01}$ & $1.90\pm{0.09}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.28\pm{0.00}$ & $0.83\pm{0.10}$ & $-48.90\pm{5.03}$ & $\boldsymbol{0.98\pm{0.01}}$ & $\boldsymbol{0.12\pm{0.00}}$ & $0.46\pm{0.41}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.32\pm{0.01}$ & $\boldsymbol{0.92\pm{0.05}}$ & $\boldsymbol{-45.30\pm{6.75}}$ & $1.03\pm{0.01}$ & $0.04\pm{0.02}$ & $\boldsymbol{0.03\pm{0.00}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.73\pm{0.21}$ & $0.08\pm{0.03}$ & $0.13\pm{0.08}$ & $-129.90\pm{39.08}$ & $1.13\pm{0.04}$ & $-0.01\pm{0.02}$ & $6.58\pm{2.47}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.26\pm{0.04}$ & $0.13\pm{0.14}$ & $-73.69\pm{5.42}$ & $1.11\pm{0.03}$ & $0.01\pm{0.01}$ & $84.11\pm{1.25}$ \\
+\midrule
+\multirow{5}{*}{give\_me\_some\_credit} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $0.79\pm{0.03}$ & $0.13\pm{0.01}$ & $0.21\pm{0.04}$ & $-1996.84\pm{3794.71}$ & $2.09\pm{0.11}$ & $0.02\pm{0.01}$ & $35.90\pm{3.58}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.20\pm{0.00}$ & $0.47\pm{0.11}$ & $-257.76\pm{374.80}$ & $14.86\pm{3.79}$ & $0.07\pm{0.01}$ & $16.74\pm{1.41}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.23\pm{0.00}}$ & $\boldsymbol{0.98\pm{0.01}}$ & $\boldsymbol{22.77\pm{11.02}}$ & $\boldsymbol{1.42\pm{0.24}}$ & $\boldsymbol{0.10\pm{0.01}}$ & $\boldsymbol{9.80\pm{0.45}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.92\pm{0.06}$ & $0.03\pm{0.00}$ & $0.05\pm{0.01}$ & $-181533.88\pm{403595.91}$ & $11.07\pm{0.75}$ & $0.00\pm{0.00}$ & $58.36\pm{2.48}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.23\pm{0.01}}$ & $0.00\pm{0.00}$ & $-137.47\pm{107.61}$ & $10.89\pm{2.92}$ & $0.02\pm{0.06}$ & $282.79\pm{2.36}$ \\
+\midrule
+\multirow{5}{*}{law} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.28\pm{0.01}$ & $0.68\pm{0.05}$ & $-12.77\pm{0.97}$ & $1.58\pm{0.15}$ & $0.06\pm{0.01}$ & $3.90\pm{0.56}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.24\pm{0.00}$ & $\boldsymbol{0.93\pm{0.03}}$ & $\boldsymbol{-10.52\pm{0.95}}$ & $\boldsymbol{1.02\pm{0.07}}$ & $\boldsymbol{0.11\pm{0.00}}$ & $2.78\pm{0.53}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.33\pm{0.08}}$ & $0.61\pm{0.30}$ & $-13.74\pm{2.11}$ & $1.82\pm{1.77}$ & $0.04\pm{0.07}$ & $\boldsymbol{0.16\pm{0.01}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.92\pm{0.04}$ & $0.11\pm{0.00}$ & $0.28\pm{0.03}$ & $-17.70\pm{1.05}$ & $5.38\pm{0.27}$ & $0.00\pm{0.01}$ & $4.92\pm{0.19}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.23\pm{0.00}$ & $0.85\pm{0.03}$ & $-11.31\pm{1.06}$ & $1.12\pm{0.03}$ & $0.08\pm{0.01}$ & $64.41\pm{0.45}$ \\
+\midrule
+\multirow{5}{*}{lending\_club} & CADEX & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.37\pm{0.04}$ & $0.03\pm{0.00}$ & $-1.90\times 10^{8}\pm{4.28\times 10^{8}}$ & $3.10\pm{1.02}$ & $-0.01\pm{0.02}$ & $90.70\pm{3.01}$ \\
+ & CCHVAE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.34\pm{0.00}$ & $\boldsymbol{0.76\pm{0.15}}$ & $-6.56\times 10^{6}\pm{1.48\times 10^{7}}$ & $2.33\pm{0.32}$ & $\boldsymbol{0.05\pm{0.00}}$ & $69.45\pm{2.18}$ \\
+ & SACE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.42\pm{0.02}}$ & $0.71\pm{0.13}$ & $\boldsymbol{-16.38\pm{8.75}}$ & $\boldsymbol{1.08\pm{0.01}}$ & $\boldsymbol{0.05\pm{0.02}}$ & $\boldsymbol{27.79\pm{0.60}}$ \\
+ & DiCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.79\pm{0.22}$ & $0.08\pm{0.03}$ & $0.02\pm{0.01}$ & $-2.51\times 10^{10}\pm{5.66\times 10^{10}}$ & $6.29\pm{0.43}$ & $0.01\pm{0.01}$ & $268.12\pm{99.87}$ \\
+ & PPCEF & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.40\pm{0.02}$ & $0.00\pm{0.00}$ & $-276.86\pm{480.04}$ & $3.09\pm{0.74}$ & $0.01\pm{0.02}$ & $681.98\pm{4.60}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}

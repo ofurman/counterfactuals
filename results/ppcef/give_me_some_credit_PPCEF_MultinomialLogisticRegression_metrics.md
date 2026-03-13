@@ -1,0 +1,4 @@
+| coverage | validity | actionability | sparsity | proximity_euclidean_hamming | proximity_euclidean_jaccard | proximity_l1_jaccard | proximity_mad_jaccard | proximity_l2_jaccard | proximity_mad_hamming | prob_plausibility | log_density_cf | log_density_test | lof_scores_cf | lof_scores_test | isolation_forest_scores_cf | isolation_forest_scores_test | number_of_instances | cf_search_time |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1.00 ± 0.00 | 1.00 ± 0.00 | 0.00 ± 0.00 | 0.23 ± 0.01 | 0.17 ± 0.03 | 0.63 ± 0.08 | 0.72 ± 0.11 | 2874.17 ± 2863.62 | 0.63 ± 0.08 | 2873.71 ± 2863.63 | 0.00 ± 0.00 | -137.47 ± 107.61 | -0.04 ± 7.80 | 10.89 ± 2.92 | 2.05 ± 0.10 | 0.02 ± 0.06 | 0.05 ± 0.00 | 6567.00 ± 19.27 | 282.79 ± 2.36 |
+
