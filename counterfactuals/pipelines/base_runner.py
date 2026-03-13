@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
+import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
@@ -87,29 +88,64 @@ class PipelineRunner(ABC):
         dequantizer = GroupDequantizer(dataset.categorical_features_lists)
 
         for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
-            disc_model_path, gen_model_path, save_folder = set_model_paths(self.cfg, fold=fold_n)
+            try:
+                disc_model_path, gen_model_path, save_folder = set_model_paths(
+                    self.cfg, fold=fold_n
+                )
 
-            disc_model = self.create_disc_model(dataset, disc_model_path, save_folder)
+                try:
+                    disc_model = self.create_disc_model(dataset, disc_model_path, save_folder)
+                except (FileNotFoundError, RuntimeError, OSError) as e:
+                    self.logger.warning(
+                        f"Fold {fold_n}: Failed to create discriminative model at '{disc_model_path}': {e}. "
+                        "Skipping to next fold."
+                    )
+                    continue
 
-            if self.cfg.experiment.relabel_with_disc_model:
-                self.relabel_with_disc_model(dataset, disc_model)
+                if self.cfg.experiment.relabel_with_disc_model:
+                    self.relabel_with_disc_model(dataset, disc_model)
 
-            dequantizer.fit(dataset.X_train)
-            gen_model = self.create_gen_model(dataset, gen_model_path, dequantizer)
+                dequantizer.fit(dataset.X_train)
 
-            log_prob_threshold = self.compute_log_prob_threshold(gen_model, dataset, dequantizer)
+                try:
+                    gen_model = self.create_gen_model(dataset, gen_model_path, dequantizer)
+                except (FileNotFoundError, RuntimeError, OSError) as e:
+                    self.logger.warning(
+                        f"Fold {fold_n}: Failed to create generative model at '{gen_model_path}': {e}. "
+                        "Skipping to next fold."
+                    )
+                    continue
 
-            result = self.search_counterfactuals(
-                dataset, gen_model, disc_model, save_folder, log_prob_threshold
-            )
+                log_prob_threshold = self.compute_log_prob_threshold(
+                    gen_model, dataset, dequantizer
+                )
 
-            wrapped_gen_model = DequantizationWrapper(gen_model, dequantizer)
+                try:
+                    result = self.search_counterfactuals(
+                        dataset, gen_model, disc_model, save_folder, log_prob_threshold
+                    )
+                except (RuntimeError, ValueError, torch.cuda.OutOfMemoryError) as e:
+                    self.logger.warning(
+                        f"Fold {fold_n}: Counterfactual search failed: {e}. Skipping to next fold."
+                    )
+                    continue
 
-            metrics = self.calculate_metrics(
-                wrapped_gen_model, disc_model, dataset, result, log_prob_threshold
-            )
+                wrapped_gen_model = DequantizationWrapper(gen_model, dequantizer)
 
-            self.save_results(metrics, result.cf_search_time, save_folder)
+                try:
+                    metrics = self.calculate_metrics(
+                        wrapped_gen_model, disc_model, dataset, result, log_prob_threshold
+                    )
+                    self.save_results(metrics, result.cf_search_time, save_folder)
+                except Exception as e:
+                    self.logger.warning(
+                        f"Fold {fold_n}: Failed to calculate/save metrics: {e}. "
+                        "Continuing to next fold."
+                    )
+
+            except Exception as e:
+                self.logger.error(f"Fold {fold_n}: Unexpected error during pipeline run: {e}")
+                continue
 
     def load_dataset(self) -> MethodDataset:
         """Load and preprocess the dataset.
@@ -118,9 +154,21 @@ class PipelineRunner(ABC):
 
         Returns:
             Preprocessed :class:`MethodDataset` ready for model training.
+
+        Raises:
+            OSError: If dataset file cannot be found or read.
+            ValueError: If dataset configuration is invalid.
         """
-        file_dataset = instantiate(self.cfg.dataset)
-        return MethodDataset(file_dataset, self.preprocessing_pipeline)
+        try:
+            file_dataset = instantiate(self.cfg.dataset)
+            return MethodDataset(file_dataset, self.preprocessing_pipeline)
+        except OSError as e:
+            dataset_target = self.cfg.dataset.get("_target_", "unknown")
+            self.logger.error(f"Failed to load dataset '{dataset_target}': {e}")
+            raise
+        except ValueError as e:
+            self.logger.error(f"Invalid dataset configuration: {e}")
+            raise
 
     def create_disc_model(
         self, dataset: MethodDataset, path: str, save_folder: str
@@ -342,3 +390,64 @@ class PipelineRunner(ABC):
         cf_method_name = self.cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
         disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
         return cf_method_name, disc_model_name
+
+    @staticmethod
+    def _run_cf_generation_safely(
+        cf_method: object,
+        X: np.ndarray,
+        y_origin: np.ndarray,
+        y_target: np.ndarray,
+        logger: logging.Logger,
+        **kwargs,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Run CF generation with per-sample error handling.
+
+        This helper method wraps counterfactual generation to gracefully handle
+        failures on individual samples or batches. Failed samples are marked with
+        NaN in the counterfactuals array and False in the model_returned mask.
+
+        Args:
+            cf_method: Counterfactual generation method instance.
+            X: Original input samples.
+            y_origin: Original labels.
+            y_target: Target labels for counterfactuals.
+            logger: Logger instance for warning messages.
+            **kwargs: Additional arguments passed to the CF method.
+
+        Returns:
+            Tuple of (counterfactuals, model_returned mask).
+            Failed samples have NaN counterfactuals and False in model_returned.
+        """
+        n_samples = len(X)
+        n_features = X.shape[1]
+
+        # Initialize output arrays with NaN and False
+        X_cf = np.full((n_samples, n_features), np.nan, dtype=np.float32)
+        model_returned = np.zeros(n_samples, dtype=bool)
+
+        for i in range(n_samples):
+            try:
+                X_i = X[i : i + 1]
+                y_origin_i = y_origin[i : i + 1]
+                y_target_i = y_target[i : i + 1]
+
+                result = cf_method.generate(
+                    X=X_i, y_origin=y_origin_i, y_target=y_target_i, **kwargs
+                )
+
+                X_cf[i] = result
+                model_returned[i] = True
+
+            except Exception as e:
+                logger.warning(f"CF generation failed for sample {i}: {e}")
+                X_cf[i] = np.nan
+                model_returned[i] = False
+
+        failed_count = n_samples - model_returned.sum()
+        if failed_count > 0:
+            logger.warning(
+                f"CF generation completed with {failed_count}/{n_samples} failed samples "
+                f"({100 * failed_count / n_samples:.1f}%)"
+            )
+
+        return X_cf, model_returned
