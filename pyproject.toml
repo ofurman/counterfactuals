@@ -118,6 +118,12 @@ line-length = 100
 "counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
 "counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
 
+[tool.pytest.ini_options]
+markers = [
+    "smoke: lightweight regression guards (all runners, fast)",
+    "slow: marks tests as slow (distinguished during test selection)",
+]
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.3.0",
