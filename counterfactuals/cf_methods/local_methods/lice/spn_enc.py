@@ -1,7 +1,7 @@
 import numpy as np
 import pyomo.environ as pyo
 
-from counterfactuals.cf_methods.local.lice.SPN import SPN, NodeType
+from counterfactuals.cf_methods.local_methods.lice.SPN import SPN, NodeType
 
 # from scipy.special import logsumexp
 

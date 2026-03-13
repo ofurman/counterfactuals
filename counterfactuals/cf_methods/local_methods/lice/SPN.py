@@ -2,21 +2,41 @@ from enum import Enum
 from typing import Any
 
 import numpy as np
-from spn.algorithms.Inference import EPSILON, log_likelihood
-from spn.algorithms.LearningWrappers import learn_mspn
-from spn.structure.Base import Context, Leaf, Product, Sum, get_topological_order
-from spn.structure.Base import Node as SPFlow_Node
-from spn.structure.StatisticalTypes import MetaType
 
-from counterfactuals.cf_methods.local.lice.data.DataHandler import DataHandler
-from counterfactuals.cf_methods.local.lice.data.Features import (
+try:
+    from spn.algorithms.Inference import EPSILON, log_likelihood
+    from spn.algorithms.LearningWrappers import learn_mspn
+    from spn.structure.Base import Context, Leaf, Product, Sum, get_topological_order
+    from spn.structure.Base import Node as SPFlow_Node
+    from spn.structure.StatisticalTypes import MetaType
+
+    _SPN_IMPORT_ERROR = None
+except ModuleNotFoundError as exc:  # pragma: no cover - optional dependency
+    EPSILON = 1e-12
+    Context = Leaf = Product = Sum = SPFlow_Node = object
+    MetaType = object
+    _SPN_IMPORT_ERROR = exc
+    _spn_exc = exc  # keep reference after except block clears `exc`
+
+    def log_likelihood(*args, **kwargs):  # type: ignore[misc]
+        raise ModuleNotFoundError("LiCE requires the optional 'spn' dependency.") from _spn_exc
+
+    def learn_mspn(*args, **kwargs):  # type: ignore[misc]
+        raise ModuleNotFoundError("LiCE requires the optional 'spn' dependency.") from _spn_exc
+
+    def get_topological_order(*args, **kwargs):  # type: ignore[misc]
+        raise ModuleNotFoundError("LiCE requires the optional 'spn' dependency.") from _spn_exc
+
+
+from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
+from counterfactuals.cf_methods.local_methods.lice.data.Features import (
     Binary,
     Categorical,
     Contiguous,
     Feature,
     Mixed,
 )
-from counterfactuals.cf_methods.local.lice.data.Types import DataLike
+from counterfactuals.cf_methods.local_methods.lice.data.Types import DataLike
 
 
 class NodeType(
@@ -139,6 +159,10 @@ class SPN:
         # trunk-ignore(ruff/B006)
         learn_mspn_kwargs: dict[str, Any] = {},
     ):
+        if _SPN_IMPORT_ERROR is not None:
+            raise ModuleNotFoundError(
+                "LiCE requires the optional 'spn' dependency."
+            ) from _SPN_IMPORT_ERROR
         types = []
         domains = []
         self.__feature_list = data_handler.features + [data_handler.target_feature]

@@ -21,7 +21,7 @@ from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_threshold
+from counterfactuals.pipelines.base_runner import get_log_prob_threshold
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
@@ -314,11 +314,6 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     )
     explanation_result.x_origs = np.ascontiguousarray(
         explanation_result.x_origs.astype(np.float32, copy=False)
-    )
-    cf_group_ids = (
-        None
-        if explanation_result.cf_group_ids is None
-        else np.asarray(explanation_result.cf_group_ids, dtype=int)
     )
     model_returned_mask = np.array(
         explanation_result.logs.get("model_returned_mask", []), dtype=bool

@@ -1,5 +1,6 @@
 import logging
 from time import perf_counter
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pyomo.environ as pyo
@@ -9,12 +10,11 @@ from omlt.neuralnet import FullSpaceNNFormulation
 from pyomo.contrib.iis import write_iis
 from pyomo.opt import SolverStatus, TerminationCondition
 
-from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
 from counterfactuals.cf_methods.local_methods.lice.data.Types import DataLike
-from counterfactuals.cf_methods.local_methods.lice.SPN import SPN
 
-from .data_enc import decode_input_change, encode_input_change
-from .spn_enc import encode_spn
+if TYPE_CHECKING:
+    from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
+    from counterfactuals.cf_methods.local_methods.lice.SPN import SPN
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 class LiCE:
     MIO_EPS = 1e-6
 
-    def __init__(self, spn: SPN, nn_path: str, data_handler: DataHandler) -> None:
+    def __init__(self, spn: "SPN", nn_path: str, data_handler: "DataHandler") -> None:
         self.__spn = spn
         self.__nn_path = nn_path
         self.__dhandler = data_handler
@@ -41,6 +41,9 @@ class LiCE:
     ) -> pyo.Model:
         # Lazy import to avoid dependency issues when LiCE is not used
         import onnx
+
+        from .data_enc import encode_input_change
+        from .spn_enc import encode_spn
 
         model = pyo.ConcreteModel()
 
@@ -256,6 +259,8 @@ class LiCE:
         raise ValueError("Unexpected termination condition")
 
     def __get_CEs(self, n: int, model: pyo.Model, factual: np.ndarray, opt: pyo.SolverFactory):
+        from .data_enc import decode_input_change
+
         if n > 1:
             # this takes a lot of time for high n (~100 000)
             CEs = []

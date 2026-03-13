@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List, Tuple
 
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 
 def apply_categorical_discretization(
@@ -84,3 +86,57 @@ def align_counterfactuals_with_factuals(
     model_returned = np.zeros(n_expected, dtype=bool)
     model_returned[:n_returned] = True
     return aligned, model_returned
+
+
+def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    """Apply one-hot encoding to categorical features in the dataset.
+
+    Mirrors the AReS preprocessing utility: encodes categoricals and optionally
+    bins continuous features, updating dataset metadata for later use.
+
+    Args:
+        dataset: Dataset object that will be updated with encoding metadata.
+        data: DataFrame with raw features to be encoded.
+
+    Returns:
+        Tuple containing:
+            - data_oh: One-hot encoded DataFrame.
+            - features: List of feature names after encoding.
+    """
+    label_encoder = LabelEncoder()
+    data_encode = data.copy()
+    dataset.bins = {}
+    dataset.bins_tree = {}
+    dataset.features_tree = {}
+    dataset.n_bins = None
+
+    # Assign encoded features to one hot columns
+    data_oh, features = [], []
+    for x in data.columns:
+        dataset.features_tree[x] = []
+        categorical = x in dataset.categorical_features
+        if categorical:
+            data_encode[x] = label_encoder.fit_transform(data_encode[x])
+            cols = label_encoder.classes_
+        elif dataset.n_bins is not None:
+            data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins)
+            cols = data_encode[x].cat.categories
+            dataset.bins_tree[x] = {}
+        else:
+            data_oh.append(data[x])
+            features.append(x)
+            continue
+
+        one_hot = pd.get_dummies(data_encode[x])
+        data_oh.append(one_hot)
+        for col in cols:
+            feature_value = x + " = " + str(col)
+            features.append(feature_value)
+            dataset.features_tree[x].append(feature_value)
+            if not categorical:
+                dataset.bins[feature_value] = col.mid
+                dataset.bins_tree[x][feature_value] = col.mid
+
+    data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
+    data_oh.columns = features
+    return data_oh, features

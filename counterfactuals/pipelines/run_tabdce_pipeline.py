@@ -22,7 +22,7 @@ from counterfactuals.cf_methods.local_methods.tabdce.diffusion import (
 from counterfactuals.cf_methods.local_methods.tabdce.tabdce import TabDCE
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import full_pipeline
+from counterfactuals.pipelines.runners.tabdce_runner import TabDCEPipelineRunner
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -256,7 +256,8 @@ def main(cfg: DictConfig) -> None:
     seed = cfg.experiment.get("seed", 0)
     torch.manual_seed(seed)
     preprocessing_pipeline = build_preprocessing_pipeline()
-    full_pipeline(cfg, preprocessing_pipeline, logger, search_counterfactuals, calculate_metrics)
+    runner = TabDCEPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner.run()
 
 
 if __name__ == "__main__":

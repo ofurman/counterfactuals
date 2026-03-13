@@ -25,7 +25,7 @@ from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_threshold
+from counterfactuals.pipelines.base_runner import get_log_prob_threshold
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
