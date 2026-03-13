@@ -54,7 +54,7 @@ class DiceExplainerWrapper:
                 desired_class=desired,
                 verbose=False,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             return None
 
         if dice_exp.cf_examples_list[0].final_cfs_df is not None:

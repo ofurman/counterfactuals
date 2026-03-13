@@ -22,6 +22,9 @@ from .local_methods import (
     TabDCE,
 )
 
+# Backward compatibility alias for legacy Hydra targets.
+RPPCEF = PPCEF
+
 # Import from subpackages
 
 __all__ = [
@@ -32,6 +35,7 @@ __all__ = [
     "GlobalCounterfactualMixin",
     "GroupCounterfactualMixin",
     # Local methods
+    "RPPCEF",
     "PPCEF",
     "DiCoFlex",
     "DICE",

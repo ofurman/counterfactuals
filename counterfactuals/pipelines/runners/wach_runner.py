@@ -49,7 +49,7 @@ class WACHPipelineRunner(PipelineRunner):
         return create_gen_model(self.cfg, dataset, path)
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
+        self, dataset, gen_model, disc_model, save_folder, _log_prob_threshold
     ):
         disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
         target_class = self.cfg.counterfactuals_params.target_class
@@ -59,16 +59,6 @@ class WACHPipelineRunner(PipelineRunner):
 
         logger.info("Creating counterfactual model")
         cf_method: WACH = WACH(disc_model=disc_model)
-
-        logger.info("Calculating log_prob_threshold")
-        train_dataloader_for_log_prob = dataset.train_dataloader(
-            batch_size=self.cfg.counterfactuals_params.batch_size, shuffle=False
-        )
-        log_prob_threshold = torch.quantile(
-            gen_model.predict_log_prob(train_dataloader_for_log_prob),
-            self.cfg.counterfactuals_params.log_prob_quantile,
-        )
-        logger.info("log_prob_threshold: %.4f", log_prob_threshold)
 
         logger.info("Handling counterfactual generation")
         cf_dataloader = self._create_cf_dataloader(

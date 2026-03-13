@@ -23,7 +23,7 @@ try:
     from .lice.lice import LiCE
 
     _LICE_AVAILABLE = True
-except (ImportError, AttributeError) as e:
+except (ImportError, AttributeError):
     _LICE_AVAILABLE = False
     LiCE = None  # type: ignore
 

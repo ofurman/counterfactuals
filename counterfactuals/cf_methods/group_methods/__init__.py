@@ -4,7 +4,6 @@ from .glance.glance import GLANCE
 from .tcrex.tcrex import TCREx
 
 __all__ = [
-    "RPPCEF",
     "GLANCE",
     "TCREx",
 ]
