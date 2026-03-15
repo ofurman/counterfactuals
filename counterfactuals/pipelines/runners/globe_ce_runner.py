@@ -1,5 +1,4 @@
 import logging
-from time import time
 
 import hydra
 import numpy as np
@@ -12,7 +11,10 @@ from sklearn.preprocessing import LabelEncoder
 from counterfactuals.cf_methods.global_methods.globe_ce import GLOBE_CE
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.pipelines.utils import align_counterfactuals_with_factuals
+from counterfactuals.pipelines.utils import (
+    _build_features_tree_from_one_hot,
+    align_counterfactuals_with_factuals,
+)
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -20,47 +22,28 @@ from counterfactuals.preprocessing import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
-def _build_features_tree_from_one_hot(dataset, data):
-    groups = getattr(dataset, "one_hot_feature_groups", None)
-    if groups is None and hasattr(dataset, "file_dataset"):
-        groups = getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+def one_hot(dataset: MethodDataset, data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Build one-hot encoded feature matrix for GLOBE-CE.
 
-    dataset.bins = {}
-    dataset.bins_tree = {}
-    dataset.features_tree = {}
-    dataset.n_bins = None
+    Encodes categorical features via one-hot dummies and passes continuous
+    features through unchanged. Mutates ``dataset.bins``, ``dataset.bins_tree``,
+    and ``dataset.features_tree`` as side-effects.
 
-    columns = list(data.columns)
-    if not groups:
-        return data.copy(), columns
+    Args:
+        dataset: Dataset object exposing ``categorical_features`` and optional
+            ``one_hot_feature_groups`` / ``n_bins`` attributes.
+        data: Raw (unscaled) feature DataFrame.
 
-    group_lookup = {column: base for base, group_cols in groups.items() for column in group_cols}
-    added_groups = set()
-    for column in columns:
-        base = group_lookup.get(column)
-        if base is None:
-            dataset.features_tree[column] = []
-            continue
-        if base in added_groups:
-            continue
-        grouped_columns = [feature for feature in columns if group_lookup.get(feature) == base]
-        dataset.features_tree[base] = grouped_columns
-        added_groups.add(base)
-
-    return data.copy(), columns
-
-
-def one_hot(dataset, data):
+    Returns:
+        Tuple of (one-hot encoded DataFrame, list of encoded feature names).
+    """
     if getattr(dataset, "one_hot_feature_groups", None) or (
         hasattr(dataset, "file_dataset")
         and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
     ):
-        return _build_features_tree_from_one_hot(dataset, data)
+        return _build_features_tree_from_one_hot(dataset, data, rename_columns=False)
 
     label_encoder = LabelEncoder()
     data_encode = data.copy()
@@ -100,7 +83,22 @@ def one_hot(dataset, data):
     return data_oh, features
 
 
-def compute_bin_widths(dataset, data, n_bins=10):
+def compute_bin_widths(
+    dataset: MethodDataset, data: pd.DataFrame, n_bins: int = 10
+) -> dict[str, float]:
+    """Compute the width of the last histogram bin for each continuous feature.
+
+    Skips features listed in ``dataset.categorical_features``. Logs a warning
+    and skips any feature where binning fails or produces no categories.
+
+    Args:
+        dataset: Dataset object exposing ``categorical_features``.
+        data: Raw (unscaled) feature DataFrame.
+        n_bins: Number of equal-width bins to use for each feature.
+
+    Returns:
+        Mapping from feature name to bin width (midpoint length of last bin).
+    """
     bin_widths = {}
     for feature in data.columns:
         if feature in dataset.categorical_features:
@@ -134,11 +132,28 @@ class GLOBECEPipelineRunner(PipelineRunner):
         return MethodDataset(file_dataset, self.preprocessing_pipeline)
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
         disc_model.eval()
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
-        target_class = self.cfg.counterfactuals_params.target_class
+        disc_model_name = self._get_disc_model_name()
+        target_class = self._get_target_class()
 
         minmax_scaler = dataset.preprocessing_pipeline.get_step("minmax")
 
@@ -152,14 +167,14 @@ class GLOBECEPipelineRunner(PipelineRunner):
             x_scaled = minmax_scaler._transform_array(x_array)
             return disc_model.predict(x_scaled)
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        self.logger.info("Filtering out target class data for counterfactual generation")
         ys_pred = predict_fn(X_test_unscaled)
         mask = ys_pred != target_class
         Xs_unscaled = X_test_unscaled[mask]
         Xs = dataset.X_test[mask]
         ys_orig = ys_pred[mask]
 
-        logger.info("Computing bin widths for continuous features")
+        self.logger.info("Computing bin widths for continuous features")
         bin_widths = compute_bin_widths(
             dataset=dataset,
             data=pd.DataFrame(X_test_unscaled, columns=dataset.features),
@@ -174,18 +189,17 @@ class GLOBECEPipelineRunner(PipelineRunner):
             target_class=target_class,
         )
 
-        logger.info("Handling counterfactual generation")
-        time_start = time()
-        ys_target = np.full_like(ys_orig, target_class)
-        explanation_result = cf_method.explain(
-            y_origin=ys_orig,
-            y_target=ys_target,
-        )
-        Xs_cfs = explanation_result.x_cfs
-        Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-        Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
-        cf_search_time = np.mean(time() - time_start)
-        logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+        self.logger.info("Handling counterfactual generation")
+        with self._timed_search() as timer:
+            ys_target = np.full_like(ys_orig, target_class)
+            explanation_result = cf_method.explain(
+                y_origin=ys_orig,
+                y_target=ys_target,
+            )
+            Xs_cfs = explanation_result.x_cfs
+            Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
+            Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
+        cf_search_time = timer["elapsed"]
 
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import logging
-from time import time
 
 import hydra
 import numpy as np
@@ -15,7 +14,11 @@ from sklearn.preprocessing import LabelEncoder
 from counterfactuals.cf_methods import AReS
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.pipelines.utils import align_counterfactuals_with_factuals
+from counterfactuals.pipelines.utils import (
+    _build_features_tree_from_one_hot,
+    _set_dataset_attribute,
+    align_counterfactuals_with_factuals,
+)
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -23,82 +26,23 @@ from counterfactuals.preprocessing import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
-def _set_dataset_attribute(dataset, attribute, value):
-    try:
-        setattr(dataset, attribute, value)
-        return
-    except AttributeError:
-        pass
+def one_hot(dataset: MethodDataset, data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Build one-hot encoded feature matrix for AReS.
 
-    if hasattr(dataset, "file_dataset"):
-        setattr(dataset.file_dataset, attribute, value)
-        return
+    Encodes categorical features via one-hot dummies and passes continuous
+    features through unchanged. Mutates ``dataset.bins``, ``dataset.bins_tree``,
+    and ``dataset.features_tree`` as side-effects.
 
-    raise
+    Args:
+        dataset: Dataset object exposing ``categorical_features`` and optional
+            ``one_hot_feature_groups`` / ``n_bins`` attributes.
+        data: Raw (unscaled) feature DataFrame.
 
-
-def _infer_one_hot_category(base_feature, column):
-    if not column.startswith(base_feature):
-        return column
-
-    suffix = column[len(base_feature) :]
-    for sep in (" = ", "__", "=", "_"):
-        if suffix.startswith(sep):
-            return suffix[len(sep) :]
-    return suffix.lstrip(" _=")
-
-
-def _build_features_tree_from_one_hot(dataset, data):
-    groups = getattr(dataset, "one_hot_feature_groups", None)
-    if groups is None and hasattr(dataset, "file_dataset"):
-        groups = getattr(dataset.file_dataset, "one_hot_feature_groups", None)
-
-    dataset.bins = {}
-    dataset.bins_tree = {}
-    dataset.features_tree = {}
-    dataset.n_bins = None
-
-    columns = list(data.columns)
-    if not groups:
-        dataset.features_tree = {col: [] for col in columns}
-        return data.copy(), columns
-
-    group_lookup = {
-        column: base_feature
-        for base_feature, group_columns in groups.items()
-        for column in group_columns
-    }
-
-    data_transformed = data.copy()
-    transformed_columns = []
-    for column in columns:
-        base_feature = group_lookup.get(column)
-        if base_feature is None:
-            dataset.features_tree[column] = []
-            transformed_columns.append(column)
-            continue
-
-        category = _infer_one_hot_category(base_feature, column)
-        feature_value = f"{base_feature} = {category}" if category else column
-        dataset.features_tree.setdefault(base_feature, []).append(feature_value)
-        transformed_columns.append(feature_value)
-
-    data_transformed.columns = transformed_columns
-    _set_dataset_attribute(dataset, "features", transformed_columns)
-    _set_dataset_attribute(
-        dataset,
-        "categorical_features",
-        [feature for feature, values in dataset.features_tree.items() if values],
-    )
-    return data_transformed, transformed_columns
-
-
-def one_hot(dataset, data):
+    Returns:
+        Tuple of (one-hot encoded DataFrame, list of encoded feature names).
+    """
     if getattr(dataset, "one_hot_feature_groups", None) or (
         hasattr(dataset, "file_dataset")
         and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
@@ -190,10 +134,27 @@ class AReSPipelineRunner(PipelineRunner):
         return MethodDataset(dataset, preprocessing_pipeline)
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
         disc_model.eval()
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
 
         feature_transformer = _get_feature_transformer(dataset)
         minmax_scaler = None
@@ -223,7 +184,7 @@ class AReSPipelineRunner(PipelineRunner):
             preds = disc_model.predict(x_scaled)
             return _ensure_numpy(preds)
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        self.logger.info("Filtering out target class data for counterfactual generation")
         target_class = getattr(self.cfg.counterfactuals_params, "target_class", 1)
         ys_pred = predict_fn_raw(X_test_unscaled)
         mask = ys_pred != target_class
@@ -235,7 +196,7 @@ class AReSPipelineRunner(PipelineRunner):
             (lambda x: 1 - predict_fn_raw(x)) if target_class == 0 else predict_fn_raw
         )
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         apriori_threshold = float(
             getattr(self.cfg.counterfactuals_params, "apriori_threshold", 0.6)
         )
@@ -252,27 +213,26 @@ class AReSPipelineRunner(PipelineRunner):
             constraints=[20, 7, 10],
         )
 
-        logger.info("Handling counterfactual generation")
-        time_start = time()
+        self.logger.info("Handling counterfactual generation")
         ys_target = np.full_like(ys_orig, target_class)
-        explanation_result = cf_method.explain(
-            apriori_threshold=apriori_threshold,
-            max_triples_eval=max_triples_eval,
-            y_origin=ys_orig,
-            y_target=ys_target,
-        )
-        Xs_cfs = explanation_result.x_cfs
-        if Xs_cfs.shape[0] > 0:
-            if feature_transformer is not None:
-                if hasattr(feature_transformer, "_transform_array"):
-                    Xs_cfs = feature_transformer._transform_array(Xs_cfs)
+        with self._timed_search() as timer:
+            explanation_result = cf_method.explain(
+                apriori_threshold=apriori_threshold,
+                max_triples_eval=max_triples_eval,
+                y_origin=ys_orig,
+                y_target=ys_target,
+            )
+            Xs_cfs = explanation_result.x_cfs
+            if Xs_cfs.shape[0] > 0:
+                if feature_transformer is not None:
+                    if hasattr(feature_transformer, "_transform_array"):
+                        Xs_cfs = feature_transformer._transform_array(Xs_cfs)
+                    else:
+                        Xs_cfs = feature_transformer.transform(Xs_cfs)
                 else:
-                    Xs_cfs = feature_transformer.transform(Xs_cfs)
-            else:
-                Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
-        Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
-        cf_search_time = np.mean(time() - time_start)
-        logger.info(f"Counterfactual search time: {cf_search_time:.2f} seconds")
+                    Xs_cfs = minmax_scaler._transform_array(Xs_cfs)
+            Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
+        cf_search_time = timer["elapsed"]
 
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
 
@@ -289,13 +249,7 @@ class AReSPipelineRunner(PipelineRunner):
 @hydra.main(config_path="./conf", config_name="ares_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = AReSPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = AReSPipelineRunner(cfg, logger, AReSPipelineRunner.default_preprocessing())
     runner.run()
 
 

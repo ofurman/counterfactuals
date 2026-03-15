@@ -201,12 +201,7 @@ def _assert_valid_result(result: SearchResult, dataset) -> None:
     assert y_orig.shape == (n,), f"y_orig shape mismatch: {y_orig.shape}"
     assert y_target.shape == (n,), f"y_target shape mismatch: {y_target.shape}"
 
-    # Handle tuple or 2D array bug in WACH_OURS runner
     model_returned = result.model_returned
-    if isinstance(model_returned, tuple):
-        model_returned = np.asarray(model_returned).flatten()
-    elif hasattr(model_returned, "shape") and model_returned.ndim > 1:
-        model_returned = model_returned.flatten()
     assert model_returned.shape == (n,), f"model_returned shape mismatch: {model_returned.shape}"
 
     # Some runners may return int dtype instead of bool

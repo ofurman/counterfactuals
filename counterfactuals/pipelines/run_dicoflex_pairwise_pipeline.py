@@ -34,10 +34,6 @@ from counterfactuals.preprocessing import (
 from counterfactuals.preprocessing.base import PreprocessingContext
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
 
 # =============================================================================
 # CF Generation Flow (for sampling counterfactuals) - follows DiCoFlex pattern

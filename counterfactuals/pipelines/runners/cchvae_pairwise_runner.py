@@ -2,22 +2,20 @@
 
 import logging
 import os
-from time import time
 
 import numpy as np
 import pandas as pd
+import torch
 from omegaconf import OmegaConf
 
 from counterfactuals.cf_methods.local_methods.c_chvae.c_chvae import CCHVAE
 from counterfactuals.cf_methods.local_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.local_methods.c_chvae.mlmodel import CustomMLModel
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
 from counterfactuals.pipelines.runners.pairwise_mixin import PairwiseMixin
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class CCHVAEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
@@ -26,18 +24,35 @@ class CCHVAEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
     cf_method_name = "CCHVAE"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        logger.info("Filtering out target class data for counterfactual generation")
-        target_class = self.cfg.counterfactuals_params.target_class
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
+        disc_model_name = self._get_disc_model_name()
+
+        self.logger.info("Filtering out target class data for counterfactual generation")
+        target_class = self._get_target_class()
         X_test_origin, y_test_origin = self._filter_test_data(dataset, target_class)
 
-        logger.info("Creating dataset interface")
+        self.logger.info("Creating dataset interface")
         custom_dataset = CustomData(dataset)
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         wrapped_model = CustomMLModel(disc_model, custom_dataset)
 
         hyperparams = OmegaConf.to_container(
@@ -51,29 +66,26 @@ class CCHVAEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
 
         exp = CCHVAE(wrapped_model, hyperparams)
 
-        logger.info("Handling counterfactual generation")
+        self.logger.info("Handling counterfactual generation")
         cf_per_instance = int(self.cfg.counterfactuals_params.get("num_counterfactuals", 1))
         cf_dataloader = self._create_cf_dataloader(
             X_test_origin, y_test_origin, self.cfg.counterfactuals_params.batch_size
         )
 
-        time_start = time()
-        cfs_list: list[np.ndarray] = []
-        y_target = np.abs(1 - y_test_origin)
-        for _ in range(cf_per_instance):
-            explanation_result = exp.explain_dataloader(
-                dataloader=cf_dataloader,
-                epochs=self.cfg.counterfactuals_params.epochs,
-                lr=self.cfg.counterfactuals_params.lr,
-                y_target=y_target,
-            )
-            cfs_list.append(explanation_result.x_cfs)
+        with self._timed_search() as timer:
+            cfs_list: list[np.ndarray] = []
+            y_target = np.abs(1 - y_test_origin)
+            for _ in range(cf_per_instance):
+                explanation_result = exp.explain_dataloader(
+                    dataloader=cf_dataloader,
+                    epochs=self.cfg.counterfactuals_params.epochs,
+                    lr=self.cfg.counterfactuals_params.lr,
+                    y_target=y_target,
+                )
+                cfs_list.append(explanation_result.x_cfs)
+        cf_search_time = timer["elapsed"]
 
-        cf_search_time = time() - time_start
-        logger.info("Counterfactual search time: %.4f seconds", cf_search_time)
-
-        Xs_cfs_all = np.stack(cfs_list, axis=1)
-        Xs_cfs_first = Xs_cfs_all[:, 0, :]
+        Xs_cfs_first, Xs_cfs_all = self._build_pairwise_arrays(cfs_list)
 
         counterfactuals_path = os.path.join(
             save_folder, f"counterfactuals_{self.cf_method_name}_{disc_model_name}.csv"
@@ -81,7 +93,7 @@ class CCHVAEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
         pd.DataFrame(Xs_cfs_all.reshape(-1, Xs_cfs_all.shape[-1])).to_csv(
             counterfactuals_path, index=False
         )
-        logger.info("Counterfactuals saved to %s", counterfactuals_path)
+        self.logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
         model_returned_first = np.ones(Xs_cfs_first.shape[0], dtype=bool)
 

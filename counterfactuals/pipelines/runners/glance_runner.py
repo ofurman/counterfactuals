@@ -1,5 +1,4 @@
 import logging
-from time import time
 
 import hydra
 import numpy as np
@@ -7,18 +6,11 @@ import torch
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.group_methods.glance.glance import GLANCE
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf_for_glance
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class GLANCEPipelineRunner(PipelineRunner):
@@ -27,24 +19,41 @@ class GLANCEPipelineRunner(PipelineRunner):
     cf_method_name = "GLANCE"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        _ = gen_model
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        target_class = self.cfg.counterfactuals_params.target_class
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
+        _ = gen_model
+        disc_model_name = self._get_disc_model_name()
+
+        target_class = self._get_target_class()
         if target_class != 1:
-            logger.warning(
+            self.logger.warning(
                 "GLANCE assumes target class 1; overriding configured target_class=%s",
                 target_class,
             )
             target_class = 1
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        self.logger.info("Filtering out target class data for counterfactual generation")
         Xs = dataset.X_test[dataset.y_test != target_class]
         ys_orig = dataset.y_test[dataset.y_test != target_class]
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         cf_method_cfg = self.cfg.counterfactuals_params.cf_method
         cf_method = GLANCE(
             X_test=dataset.X_test,
@@ -57,20 +66,19 @@ class GLANCEPipelineRunner(PipelineRunner):
             target_class=target_class,
         )
 
-        logger.info("Handling counterfactual generation")
-        time_start = time()
-        ys_target = np.abs(ys_orig - 1)
-        explanation_results = cf_method.explain(
-            X=Xs,
-            y_origin=ys_orig,
-            y_target=ys_target,
-            X_train=dataset.X_train,
-            y_train=dataset.y_train,
-        )
-        Xs_cfs = explanation_results.x_cfs
-        model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
-        cf_search_time = np.mean(time() - time_start)
-        logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
+        self.logger.info("Handling counterfactual generation")
+        with self._timed_search() as timer:
+            ys_target = np.abs(ys_orig - 1)
+            explanation_results = cf_method.explain(
+                X=Xs,
+                y_origin=ys_orig,
+                y_target=ys_target,
+                X_train=dataset.X_train,
+                y_train=dataset.y_train,
+            )
+            Xs_cfs = explanation_results.x_cfs
+            model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
+        cf_search_time = timer["elapsed"]
 
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
 
@@ -87,7 +95,7 @@ class GLANCEPipelineRunner(PipelineRunner):
 
     def calculate_metrics(self, gen_model, disc_model, dataset, result, log_prob_threshold):
         """Calculate evaluation metrics for GLANCE counterfactuals."""
-        logger.info("Calculating metrics")
+        self.logger.info("Calculating metrics")
         metrics = evaluate_cf_for_glance(
             gen_model=gen_model,
             disc_model=disc_model,
@@ -104,20 +112,14 @@ class GLANCEPipelineRunner(PipelineRunner):
             cf_group_ids=result.extras.get("cf_group_ids"),
             metrics_conf_path="counterfactuals/pipelines/conf/metrics/default.yaml",
         )
-        logger.info("Metrics calculated: %s", metrics)
+        self.logger.info("Metrics calculated: %s", metrics)
         return metrics
 
 
 @hydra.main(config_path="./conf", config_name="glance_config", version_base="1.2")
 def main(cfg: DictConfig):
     torch.manual_seed(0)
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = GLANCEPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = GLANCEPipelineRunner(cfg, logger, GLANCEPipelineRunner.default_preprocessing())
     runner.run()
 
 

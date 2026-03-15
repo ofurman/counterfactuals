@@ -1,7 +1,6 @@
 import inspect
 import logging
 import os
-from time import time
 
 import hydra
 import numpy as np
@@ -10,19 +9,12 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.local_methods.ceflow.ceflow import CeFlow, CeFlowParams
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
 from counterfactuals.pipelines.utils import apply_categorical_discretization
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 def _resolve_flow_transforms(flow_model):
@@ -164,7 +156,7 @@ class CeFlowPipelineRunner(PipelineRunner):
     def create_gen_model(self, dataset, path, dequantizer):
         output_folder = os.path.dirname(path)
         flow_model_name = self.cfg.flow_model.model._target_.split(".")[-1]
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
         if self.cfg.experiment.relabel_with_disc_model:
             flow_model_path = os.path.join(
                 output_folder,
@@ -184,7 +176,7 @@ class CeFlowPipelineRunner(PipelineRunner):
 
     def compute_log_prob_threshold(self, gen_model, dataset, dequantizer):
         """Use the density_model (gen_model here) for log_prob threshold calculation."""
-        logger.info("Calculating log_prob_threshold")
+        self.logger.info("Calculating log_prob_threshold")
         dataset.X_train = dequantizer.transform(dataset.X_train)
         train_dataloader = dataset.train_dataloader(
             batch_size=self.cfg.counterfactuals_params.batch_size, shuffle=False
@@ -194,19 +186,36 @@ class CeFlowPipelineRunner(PipelineRunner):
             self.cfg.counterfactuals_params.log_prob_quantile,
         )
         dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
-        logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
+        self.logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
         return log_prob_threshold
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
-        target_class = self.cfg.counterfactuals_params.target_class
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
+        disc_model_name = self._get_disc_model_name()
+        target_class = self._get_target_class()
+
+        self.logger.info("Filtering out target class data for counterfactual generation")
         X_test_origin, y_test_origin = self._filter_test_data(dataset, target_class)
 
-        logger.info("Creating CeFlow counterfactual model")
+        self.logger.info("Creating CeFlow counterfactual model")
         if getattr(self.flow_model, "context_features", None):
             raise ValueError(
                 "CeFlow flow_model must be unconditional; set flow_model.context_features to null."
@@ -231,19 +240,17 @@ class CeFlowPipelineRunner(PipelineRunner):
             decode_fn=decode_fn,
         )
 
-        logger.info("Handling counterfactual generation")
-        time_start = time()
+        self.logger.info("Handling counterfactual generation")
         y_target = np.full_like(y_test_origin, fill_value=target_class)
-        explanation_result = cf_method.explain(
-            X=X_test_origin,
-            y_origin=y_test_origin,
-            y_target=y_target,
-            X_train=dataset.X_train,
-            y_train=dataset.y_train,
-        )
-
-        cf_search_time = time() - time_start
-        logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
+        with self._timed_search() as timer:
+            explanation_result = cf_method.explain(
+                X=X_test_origin,
+                y_origin=y_test_origin,
+                y_target=y_target,
+                X_train=dataset.X_train,
+                y_train=dataset.y_train,
+            )
+        cf_search_time = timer["elapsed"]
 
         Xs = explanation_result.x_origs
         Xs_cfs = explanation_result.x_cfs
@@ -269,13 +276,7 @@ class CeFlowPipelineRunner(PipelineRunner):
 
 @hydra.main(config_path="./conf", config_name="ceflow_config", version_base="1.2")
 def main(cfg: DictConfig):
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = CeFlowPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = CeFlowPipelineRunner(cfg, logger, CeFlowPipelineRunner.default_preprocessing())
     runner.run()
 
 

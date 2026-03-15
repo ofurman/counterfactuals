@@ -30,9 +30,6 @@ from counterfactuals.preprocessing import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 def compute_pairwise_mean_distance(cfs: np.ndarray) -> float:

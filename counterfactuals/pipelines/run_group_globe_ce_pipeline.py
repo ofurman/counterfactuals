@@ -7,9 +7,6 @@ from omegaconf import DictConfig
 from counterfactuals.pipelines.runners.group_globe_ce_runner import GroupGLOBECEPipelineRunner
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 @hydra.main(config_path="./conf", config_name="group_globe_ce_config", version_base="1.2")

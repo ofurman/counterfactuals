@@ -1,24 +1,16 @@
 import logging
-from time import time
 
 import hydra
-import numpy as np
+import torch
 from omegaconf import DictConfig, OmegaConf
 
 from counterfactuals.cf_methods.local_methods.c_chvae.c_chvae import CCHVAE
 from counterfactuals.cf_methods.local_methods.c_chvae.data import CustomData
 from counterfactuals.cf_methods.local_methods.c_chvae.mlmodel import CustomMLModel
-from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class CCHVAEPipelineRunner(PipelineRunner):
@@ -27,69 +19,62 @@ class CCHVAEPipelineRunner(PipelineRunner):
     cf_method_name = "CCHVAE"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
-        target_class = self.cfg.counterfactuals_params.target_class
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        logger.info("Filtering out target class data for counterfactual generation")
-        X_test_origin, y_test_origin = self._filter_test_data(dataset, target_class)
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
 
-        logger.info("Creating dataset interface")
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
+        return self._default_search_counterfactuals(
+            dataset, gen_model, disc_model, save_folder, log_prob_threshold
+        )
+
+    def create_cf_method(self, dataset, gen_model, disc_model):
+        self.logger.info("Creating dataset interface")
         custom_dataset = CustomData(dataset)
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         wrapped_model = CustomMLModel(disc_model, custom_dataset)
 
         hyperparams = OmegaConf.to_container(
             self.cfg.counterfactuals_params.hyperparams, resolve=True
         )
-
         input_size = dataset.X_train.shape[1]
         hyperparams["vae_params"]["layers"] = [input_size] + hyperparams["vae_params"]["layers"]
 
-        exp = CCHVAE(wrapped_model, hyperparams)
+        return CCHVAE(wrapped_model, hyperparams)
 
-        logger.info("Handling counterfactual generation")
-        cf_dataloader = self._create_cf_dataloader(
-            X_test_origin, y_test_origin, self.cfg.counterfactuals_params.batch_size
-        )
-        time_start = time()
-        explanation_result = exp.explain_dataloader(
+    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+        self.logger.info("Handling counterfactual generation")
+        explanation_result = cf_method.explain_dataloader(
             dataloader=cf_dataloader,
             epochs=self.cfg.counterfactuals_params.epochs,
             lr=self.cfg.counterfactuals_params.lr,
         )
-        Xs = explanation_result.x_origs
-        Xs_cfs = explanation_result.x_cfs
-        ys_orig = explanation_result.y_origs
-        ys_target = explanation_result.y_cf_targets
-
-        cf_search_time = np.mean(time() - time_start)
-        logger.info(f"Counterfactual search time: {cf_search_time:.4f} seconds")
-
-        model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
-        self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
-
-        return SearchResult(
-            X_cf=Xs_cfs,
-            X_test=Xs,
-            y_orig=ys_orig,
-            y_target=ys_target,
-            model_returned=model_returned,
-            cf_search_time=cf_search_time,
+        return CfMethodOutput(
+            x_cfs=explanation_result.x_cfs,
+            x_origs=explanation_result.x_origs,
+            y_origs=explanation_result.y_origs,
+            y_targets=explanation_result.y_cf_targets,
         )
 
 
 @hydra.main(config_path="./conf", config_name="cchvae_config", version_base="1.2")
 def main(cfg: DictConfig):
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = CCHVAEPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = CCHVAEPipelineRunner(cfg, logger, CCHVAEPipelineRunner.default_preprocessing())
     runner.run()
 
 

@@ -140,3 +140,137 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
     data_oh.columns = features
     return data_oh, features
+
+
+# ---------------------------------------------------------------------------
+# One-hot feature-tree builders (shared between AReS and GLOBE-CE runners)
+# ---------------------------------------------------------------------------
+
+
+def _set_dataset_attribute(dataset: Any, attribute: str, value: Any) -> None:
+    """Set an attribute on a dataset, falling back to file_dataset if needed.
+
+    Args:
+        dataset: Dataset object to update.
+        attribute: Name of the attribute to set.
+        value: Value to assign.
+
+    Raises:
+        AttributeError: If neither dataset nor its file_dataset supports the attribute.
+    """
+    try:
+        setattr(dataset, attribute, value)
+        return
+    except AttributeError:
+        pass
+
+    if hasattr(dataset, "file_dataset"):
+        setattr(dataset.file_dataset, attribute, value)
+        return
+
+    raise
+
+
+def _infer_one_hot_category(base_feature: str, column: str) -> str:
+    """Infer a human-readable category name from a one-hot column name.
+
+    Args:
+        base_feature: The base feature name (e.g. ``"color"``).
+        column: The one-hot column name (e.g. ``"color = red"`` or ``"color__red"``).
+
+    Returns:
+        The inferred category string (e.g. ``"red"``), or the full column name
+        if no separator is recognised.
+    """
+    if not column.startswith(base_feature):
+        return column
+
+    suffix = column[len(base_feature) :]
+    for sep in (" = ", "__", "=", "_"):
+        if suffix.startswith(sep):
+            return suffix[len(sep) :]
+    return suffix.lstrip(" _=")
+
+
+def _build_features_tree_from_one_hot(
+    dataset: Any, data: pd.DataFrame, rename_columns: bool = True
+) -> Tuple[pd.DataFrame, List[str]]:
+    """Build a features tree from one-hot encoded column groups.
+
+    When ``rename_columns=True`` (AReS behavior), column names are rewritten to
+    human-readable ``"feature = category"`` strings and dataset metadata attributes
+    (``features``, ``categorical_features``) are updated via
+    :func:`_set_dataset_attribute`.
+
+    When ``rename_columns=False`` (GLOBE-CE behavior), original column names are
+    preserved and no metadata attributes are updated.
+
+    Args:
+        dataset: Dataset object whose ``bins``, ``bins_tree``, ``features_tree``,
+            and ``n_bins`` attributes will be initialised.
+        data: DataFrame of unscaled feature values.
+        rename_columns: If ``True``, apply AReS-style column renaming and metadata
+            updates. If ``False``, use GLOBE-CE's lighter behavior.
+
+    Returns:
+        Tuple of (transformed_data, column_names).
+    """
+    groups = getattr(dataset, "one_hot_feature_groups", None)
+    if groups is None and hasattr(dataset, "file_dataset"):
+        groups = getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+
+    dataset.bins = {}
+    dataset.bins_tree = {}
+    dataset.features_tree = {}
+    dataset.n_bins = None
+
+    columns = list(data.columns)
+    if not groups:
+        if rename_columns:
+            dataset.features_tree = {col: [] for col in columns}
+        return data.copy(), columns
+
+    group_lookup = {
+        column: base_feature
+        for base_feature, group_columns in groups.items()
+        for column in group_columns
+    }
+
+    if not rename_columns:
+        # GLOBE-CE behavior: build features_tree without renaming
+        added_groups: set[str] = set()
+        for column in columns:
+            base = group_lookup.get(column)
+            if base is None:
+                dataset.features_tree[column] = []
+                continue
+            if base in added_groups:
+                continue
+            grouped_columns = [c for c in columns if group_lookup.get(c) == base]
+            dataset.features_tree[base] = grouped_columns
+            added_groups.add(base)
+        return data.copy(), columns
+
+    # AReS behavior: rename columns using _infer_one_hot_category
+    data_transformed = data.copy()
+    transformed_columns: List[str] = []
+    for column in columns:
+        base_feature = group_lookup.get(column)
+        if base_feature is None:
+            dataset.features_tree[column] = []
+            transformed_columns.append(column)
+            continue
+
+        category = _infer_one_hot_category(base_feature, column)
+        feature_value = f"{base_feature} = {category}" if category else column
+        dataset.features_tree.setdefault(base_feature, []).append(feature_value)
+        transformed_columns.append(feature_value)
+
+    data_transformed.columns = transformed_columns
+    _set_dataset_attribute(dataset, "features", transformed_columns)
+    _set_dataset_attribute(
+        dataset,
+        "categorical_features",
+        [feature for feature, values in dataset.features_tree.items() if values],
+    )
+    return data_transformed, transformed_columns

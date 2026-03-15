@@ -14,9 +14,6 @@ warnings = __import__("warnings")
 warnings.filterwarnings("ignore", category=FutureWarning, module="dice_ml")
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 @hydra.main(config_path="./conf", config_name="dice_config", version_base="1.2")

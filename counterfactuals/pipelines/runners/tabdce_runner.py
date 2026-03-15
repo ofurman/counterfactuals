@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-from time import time
 
 import hydra
 import numpy as np
@@ -18,29 +17,26 @@ from counterfactuals.cf_methods.local_methods.tabdce.diffusion import (
     MixedTabularDiffusion,
 )
 from counterfactuals.cf_methods.local_methods.tabdce.tabdce import TabDCE
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
-def build_preprocessing_pipeline() -> PreprocessingPipeline:
-    return PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
+def prepare_tabular_dataset(
+    dataset: object, cfg: DictConfig, device: torch.device
+) -> TabularCounterfactualDataset:
+    """Create the training dataset used by the TabDCE diffusion model.
 
+    Args:
+        dataset: Dataset with ``X_train``, ``y_train``, ``numerical_features_indices``,
+            and ``categorical_features_indices`` attributes.
+        cfg: Hydra configuration with ``tabdce.k_neighbors`` and ``tabdce.search_method``.
+        device: Target torch device.
 
-def prepare_tabular_dataset(dataset, cfg, device):
+    Returns:
+        Wrapped ``TabularCounterfactualDataset`` ready for the diffusion training loop.
+    """
     spec = TabularSpec(
         num_idx=list(dataset.numerical_features_indices),
         cat_idx=list(dataset.categorical_features_indices),
@@ -55,7 +51,19 @@ def prepare_tabular_dataset(dataset, cfg, device):
     )
 
 
-def create_diffusion_model(tab_dataset, cfg, device):
+def create_diffusion_model(
+    tab_dataset: TabularCounterfactualDataset, cfg: DictConfig, device: torch.device
+) -> MixedTabularDiffusion:
+    """Instantiate the denoiser and diffusion components.
+
+    Args:
+        tab_dataset: Prepared tabular dataset providing shape metadata.
+        cfg: Hydra configuration with ``tabdce.hidden_dim`` and ``tabdce.T``.
+        device: Target torch device.
+
+    Returns:
+        ``MixedTabularDiffusion`` model placed on ``device``.
+    """
     eps_model = TabularEpsModel(
         xdim=tab_dataset.X_model.shape[1],
         cat_dims=tab_dataset.cat_cardinalities,
@@ -72,7 +80,22 @@ def create_diffusion_model(tab_dataset, cfg, device):
     return diffusion_model.to(device)
 
 
-def train_tabdce_diffusion(model, dataloader, epochs, lr, model_path):
+def train_tabdce_diffusion(
+    model: MixedTabularDiffusion,
+    dataloader: DataLoader,
+    epochs: int,
+    lr: float,
+    model_path: Path,
+) -> None:
+    """Train the TabDCE diffusion model, saving the best checkpoint.
+
+    Args:
+        model: ``MixedTabularDiffusion`` model to train.
+        dataloader: Training data loader.
+        epochs: Number of training epochs.
+        lr: Learning rate for the Adam optimiser.
+        model_path: Path where the best model checkpoint is saved.
+    """
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     best_loss = float("inf")
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,22 +142,39 @@ class TabDCEPipelineRunner(PipelineRunner):
     cf_method_name = "TabDCE"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
         _ = gen_model, disc_model
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
-        target_class = self.cfg.counterfactuals_params.target_class
+        disc_model_name = self._get_disc_model_name()
+        target_class = self._get_target_class()
 
         use_gpu = torch.cuda.is_available() and self.cfg.tabdce.get("use_gpu", False)
         if not use_gpu:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         device = torch.device("cuda" if use_gpu else "cpu")
-        logger.info("Using device: %s", device)
+        self.logger.info("Using device: %s", device)
 
         X_test_origin, y_test_origin = self._filter_test_data(dataset, target_class)
 
         if X_test_origin.shape[0] == 0:
-            logger.info("All samples already belong to the target class %s", target_class)
+            self.logger.info("All samples already belong to the target class %s", target_class)
             return SearchResult(
                 X_cf=np.empty((0, dataset.X_test.shape[1])),
                 X_test=np.empty((0, dataset.X_test.shape[1])),
@@ -168,13 +208,12 @@ class TabDCEPipelineRunner(PipelineRunner):
             X_test_origin, y_test_origin, self.cfg.counterfactuals_params.batch_size
         )
 
-        time_start = time()
-        explanation_result = cf_method.explain_dataloader(
-            dataloader=cf_dataloader,
-            target_class=target_class,
-        )
-        cf_search_time = time() - time_start
-        logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
+        with self._timed_search() as timer:
+            explanation_result = cf_method.explain_dataloader(
+                dataloader=cf_dataloader,
+                target_class=target_class,
+            )
+        cf_search_time = timer["elapsed"]
 
         Xs_cfs = np.asarray(explanation_result.x_cfs)
         Xs = np.asarray(explanation_result.x_origs)
@@ -198,8 +237,7 @@ class TabDCEPipelineRunner(PipelineRunner):
 def main(cfg: DictConfig):
     seed = cfg.experiment.get("seed", 0)
     torch.manual_seed(seed)
-    preprocessing_pipeline = build_preprocessing_pipeline()
-    runner = TabDCEPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = TabDCEPipelineRunner(cfg, logger, TabDCEPipelineRunner.default_preprocessing())
     runner.run()
 
 

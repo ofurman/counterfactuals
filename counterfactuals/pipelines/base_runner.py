@@ -1,7 +1,10 @@
 import logging
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from time import time
 from typing import Any, ClassVar
 
 import numpy as np
@@ -17,6 +20,11 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 
 def get_log_prob_threshold(
@@ -60,6 +68,27 @@ class SearchResult:
     extras: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class CfMethodOutput:
+    """Raw output from a CF method invocation.
+
+    Attributes:
+        x_cfs: Generated counterfactual examples.
+        x_origs: Original input samples.
+        y_origs: Original labels.
+        y_targets: Target labels for counterfactuals.
+        model_returned: Boolean mask for successful CF generation. None means all succeeded.
+        extras: Method-specific additional outputs.
+    """
+
+    x_cfs: np.ndarray
+    x_origs: np.ndarray
+    y_origs: np.ndarray
+    y_targets: np.ndarray
+    model_returned: np.ndarray | None = None
+    extras: dict[str, Any] = field(default_factory=dict)
+
+
 class PipelineRunner(ABC):
     """Template-method base class for counterfactual pipeline runners.
 
@@ -79,6 +108,21 @@ class PipelineRunner(ABC):
         self.cfg = cfg
         self.logger = logger
         self.preprocessing_pipeline = preprocessing_pipeline
+
+    @classmethod
+    def default_preprocessing(cls) -> PreprocessingPipeline:
+        """Standard preprocessing pipeline: MinMax scaling followed by Torch dtype conversion.
+
+        Returns:
+            A :class:`PreprocessingPipeline` with ``("minmax", MinMaxScalingStep())``
+            and ``("torch_dtype", TorchDataTypeStep())``.
+        """
+        return PreprocessingPipeline(
+            [
+                ("minmax", MinMaxScalingStep()),
+                ("torch_dtype", TorchDataTypeStep()),
+            ]
+        )
 
     def run(self) -> None:
         """Orchestrate the full pipeline across all CV folds."""
@@ -267,6 +311,141 @@ class PipelineRunner(ABC):
         """
         ...
 
+    # --- Template-method hooks (override in subclasses) ---
+
+    def create_cf_method(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+    ) -> object:
+        """Instantiate the CF method object.
+
+        Required hook for :meth:`_default_search_counterfactuals`.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+
+        Returns:
+            Instantiated CF method.
+
+        Raises:
+            NotImplementedError: Subclasses must implement this hook.
+        """
+        raise NotImplementedError(f"{type(self).__name__} must implement create_cf_method()")
+
+    def pre_cf_generation(self, cf_method: object, dataset: MethodDataset) -> None:
+        """Optional hook called after CF method creation, before CF generation.
+
+        Default implementation is a no-op. Override for methods that require
+        a fitting step (e.g. density estimator fitting in Artelt).
+
+        Args:
+            cf_method: The CF method instance.
+            dataset: The current fold's dataset.
+        """
+
+    def run_cf_method(
+        self,
+        cf_method: object,
+        cf_dataloader: torch.utils.data.DataLoader,
+        dataset: MethodDataset,
+        log_prob_threshold: float,
+    ) -> CfMethodOutput:
+        """Run the CF method and return raw outputs.
+
+        Required hook for :meth:`_default_search_counterfactuals`.
+
+        Args:
+            cf_method: The CF method instance from :meth:`create_cf_method`.
+            cf_dataloader: DataLoader for the filtered test set.
+            dataset: The current fold's dataset.
+            log_prob_threshold: Plausibility threshold.
+
+        Returns:
+            :class:`CfMethodOutput` with raw CF generation results.
+
+        Raises:
+            NotImplementedError: Subclasses must implement this hook.
+        """
+        raise NotImplementedError(f"{type(self).__name__} must implement run_cf_method()")
+
+    def postprocess_cf_output(
+        self, output: CfMethodOutput, dataset: MethodDataset
+    ) -> CfMethodOutput:
+        """Optional hook to post-process raw CF output before saving.
+
+        Default implementation returns the output unchanged. Override for methods
+        that require categorical discretization or other post-processing.
+
+        Args:
+            output: Raw output from :meth:`run_cf_method`.
+            dataset: The current fold's dataset.
+
+        Returns:
+            Processed :class:`CfMethodOutput`.
+        """
+        return output
+
+    def _default_search_counterfactuals(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Template-method implementation of counterfactual search.
+
+        Orchestrates the standard CF generation pipeline using the hook methods
+        :meth:`create_cf_method`, :meth:`pre_cf_generation`, :meth:`run_cf_method`,
+        and :meth:`postprocess_cf_output`. Simple runners opt in by calling this
+        from :meth:`search_counterfactuals`.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold.
+
+        Returns:
+            :class:`SearchResult` with counterfactuals and timing information.
+        """
+        disc_model_name = self._get_disc_model_name()
+        target_class = self._get_target_class()
+
+        X_test, y_test = self._filter_test_data(dataset, target_class)
+        cf_method = self.create_cf_method(dataset, gen_model, disc_model)
+        cf_dataloader = self._create_cf_dataloader(
+            X_test, y_test, self.cfg.counterfactuals_params.batch_size
+        )
+        self.pre_cf_generation(cf_method, dataset)
+
+        with self._timed_search() as timer:
+            output = self.run_cf_method(cf_method, cf_dataloader, dataset, log_prob_threshold)
+        cf_search_time = timer["elapsed"]
+
+        output = self.postprocess_cf_output(output, dataset)
+
+        if output.model_returned is None:
+            model_returned = np.ones(output.x_cfs.shape[0], dtype=bool)
+        else:
+            model_returned = output.model_returned
+
+        self._save_counterfactuals(output.x_cfs, save_folder, self.cf_method_name, disc_model_name)
+
+        return SearchResult(
+            X_cf=output.x_cfs,
+            X_test=output.x_origs,
+            y_orig=output.y_origs,
+            y_target=output.y_targets,
+            model_returned=model_returned,
+            cf_search_time=cf_search_time,
+        )
+
     def calculate_metrics(
         self,
         gen_model: torch.nn.Module,
@@ -319,7 +498,7 @@ class PipelineRunner(ABC):
         """
         df = pd.DataFrame(metrics, index=[0])
         df["cf_search_time"] = cf_search_time
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
         df.to_csv(os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False)
 
     @staticmethod
@@ -388,8 +567,36 @@ class PipelineRunner(ABC):
             Tuple of (cf_method_name, disc_model_name).
         """
         cf_method_name = self.cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
         return cf_method_name, disc_model_name
+
+    def _get_disc_model_name(self) -> str:
+        """Extract the discriminative model class name from config.
+
+        Returns:
+            Class name of the discriminative model.
+        """
+        return self.cfg.disc_model.model._target_.split(".")[-1]
+
+    def _get_target_class(self) -> int:
+        """Extract the target class from config.
+
+        Returns:
+            Target class index for counterfactual generation.
+        """
+        return self.cfg.counterfactuals_params.target_class
+
+    @contextmanager
+    def _timed_search(self) -> Generator[dict[str, float], None, None]:
+        """Context manager that measures wall-clock time of the CF search.
+
+        Yields a mutable dict; ``result["elapsed"]`` is set on block exit.
+        """
+        result: dict[str, float] = {"elapsed": 0.0}
+        start = time()
+        yield result
+        result["elapsed"] = time() - start
+        self.logger.info("Counterfactual search completed in %.4f seconds", result["elapsed"])
 
     @staticmethod
     def _run_cf_generation_safely(

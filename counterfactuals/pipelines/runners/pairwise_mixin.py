@@ -2,6 +2,7 @@
 
 from typing import Any
 
+import numpy as np
 import torch
 
 from counterfactuals.pipelines.base_runner import SearchResult
@@ -19,6 +20,25 @@ class PairwiseMixin:
         - Pairwise runners store ``Xs_cfs_all`` (3D array) in ``SearchResult.extras``.
         - ``X_cf`` is set to the first counterfactual per instance (``Xs_cfs_first``).
     """
+
+    @staticmethod
+    def _build_pairwise_arrays(
+        cfs_list: list[np.ndarray],
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Stack per-run CFs into 3D array, extract first CF per instance.
+
+        Args:
+            cfs_list: List of CF arrays, each of shape ``(n_samples, n_features)``.
+                Each element represents one run/draw of the CF method.
+
+        Returns:
+            Tuple of:
+                - ``Xs_cfs_first``: First CF per instance, shape ``(n_samples, n_features)``.
+                - ``Xs_cfs_all``: All CFs stacked, shape ``(n_samples, n_runs, n_features)``.
+        """
+        Xs_cfs_all = np.stack(cfs_list, axis=1)
+        Xs_cfs_first = Xs_cfs_all[:, 0, :]
+        return Xs_cfs_first, Xs_cfs_all
 
     def calculate_metrics(
         self,

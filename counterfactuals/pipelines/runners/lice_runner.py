@@ -2,7 +2,6 @@
 
 import logging
 import os
-from time import time
 
 import hydra
 import numpy as np
@@ -12,15 +11,13 @@ from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.local_methods.lice.lice import LiCE
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class LiCEPipelineRunner(PipelineRunner):
@@ -57,24 +54,37 @@ class LiCEPipelineRunner(PipelineRunner):
             self.save_results(metrics, result.cf_search_time, save_folder)
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        """Generate counterfactuals using LiCE method.
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        LiCE uses SPN for plausibility and ONNX export for the classifier.
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
         """
         disc_model.eval()
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
         X_train, y_train = dataset.X_train, dataset.y_train
         X_test = dataset.X_test
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        self.logger.info("Filtering out target class data for counterfactual generation")
         target_class = 1
         ys_pred = disc_model.predict(X_test)
         Xs = dataset.X_test[ys_pred != target_class]
         ys_orig = ys_pred[ys_pred != target_class]
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         # Convert data to pandas DataFrame for LiCE
         X_train_df = pd.DataFrame(X_train, columns=dataset.features[:-1])
         y_train_df = pd.DataFrame(y_train, columns=[dataset.features[-1]])
@@ -108,60 +118,63 @@ class LiCEPipelineRunner(PipelineRunner):
             data_handler=dhandler,
         )
 
-        logger.info("Calculating log_prob_threshold")
+        self.logger.info("Calculating log_prob_threshold")
         train_data = np.concatenate([X_train, y_train.reshape(-1, 1)], axis=1)
         lls = spn.compute_ll(train_data)
         log_prob_threshold = np.median(lls)
-        logger.info("log_prob_threshold: %.4f", log_prob_threshold)
+        self.logger.info("log_prob_threshold: %.4f", log_prob_threshold)
 
-        logger.info("Handling counterfactual generation")
-        time_start = time()
-        Xs_cfs = []
-        model_returned = []
-        ys_target = []
-        for i, sample in enumerate(Xs):
-            try:
-                enc_sample = dhandler.encode(pd.DataFrame([sample], columns=dataset.features[:-1]))
-                prediction = disc_model.predict(enc_sample) > 0
+        self.logger.info("Handling counterfactual generation")
+        with self._timed_search() as timer:
+            Xs_cfs = []
+            model_returned = []
+            ys_target = []
+            for i, sample in enumerate(Xs):
+                try:
+                    enc_sample = dhandler.encode(
+                        pd.DataFrame([sample], columns=dataset.features[:-1])
+                    )
+                    prediction = disc_model.predict(enc_sample) > 0
 
-                # Generate counterfactual
-                time_limit = 600  # Default time limit in seconds
-                if hasattr(self.cfg, "counterfactuals_params") and hasattr(
-                    self.cfg.counterfactuals_params, "time_limit"
-                ):
-                    time_limit = self.cfg.counterfactuals_params.time_limit
+                    # Generate counterfactual
+                    time_limit = 600  # Default time limit in seconds
+                    if hasattr(self.cfg, "counterfactuals_params") and hasattr(
+                        self.cfg.counterfactuals_params, "time_limit"
+                    ):
+                        time_limit = self.cfg.counterfactuals_params.time_limit
 
-                cf = lice.generate_counterfactual(
-                    sample,
-                    not prediction,
-                    ll_threshold=log_prob_threshold,
-                    n_counterfactuals=1,
-                    time_limit=time_limit,
-                    leaf_encoding="histogram",
-                    spn_variant="lower",
-                    solver_name="cbc",
-                )
+                    cf = lice.generate_counterfactual(
+                        sample,
+                        not prediction,
+                        ll_threshold=log_prob_threshold,
+                        n_counterfactuals=1,
+                        time_limit=time_limit,
+                        leaf_encoding="histogram",
+                        spn_variant="lower",
+                        solver_name="cbc",
+                    )
 
-                logger.info("Counterfactual: %s", cf)
-                if len(cf) > 0:
-                    Xs_cfs.append(cf[0])
-                    model_returned.append(True)
-                    ys_target.append(1 - prediction)
-                else:
+                    self.logger.info("Counterfactual: %s", cf)
+                    if len(cf) > 0:
+                        Xs_cfs.append(cf[0])
+                        model_returned.append(True)
+                        ys_target.append(1 - prediction)
+                    else:
+                        Xs_cfs.append(sample)
+                        model_returned.append(False)
+                        ys_target.append(1 - prediction)
+                except Exception as e:
+                    self.logger.error(
+                        "Error generating counterfactual for sample %d: %s", i, str(e)
+                    )
                     Xs_cfs.append(sample)
                     model_returned.append(False)
-                    ys_target.append(1 - prediction)
-            except Exception as e:
-                logger.error("Error generating counterfactual for sample %d: %s", i, str(e))
-                Xs_cfs.append(sample)
-                model_returned.append(False)
-                ys_target.append(1 - int(ys_orig[i]))
+                    ys_target.append(1 - int(ys_orig[i]))
 
-        Xs_cfs = np.array(Xs_cfs)
-        model_returned = np.array(model_returned)
-        ys_target = np.array(ys_target)
-        cf_search_time = time() - time_start
-        logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
+            Xs_cfs = np.array(Xs_cfs)
+            model_returned = np.array(model_returned)
+            ys_target = np.array(ys_target)
+        cf_search_time = timer["elapsed"]
 
         counterfactuals_path = os.path.join(
             save_folder, f"counterfactuals_{self.cf_method_name}_{disc_model_name}.csv"
@@ -169,7 +182,7 @@ class LiCEPipelineRunner(PipelineRunner):
         pd.DataFrame(Xs_cfs, columns=dataset.features[:-1]).to_csv(
             counterfactuals_path, index=False
         )
-        logger.info("Counterfactuals saved to %s", counterfactuals_path)
+        self.logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
         return SearchResult(
             X_cf=Xs_cfs,

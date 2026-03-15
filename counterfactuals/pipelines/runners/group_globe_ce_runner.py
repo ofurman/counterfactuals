@@ -2,7 +2,6 @@
 
 import logging
 import os
-from time import time
 
 import hydra
 import numpy as np
@@ -13,6 +12,7 @@ from omegaconf import DictConfig
 from sklearn.cluster import KMeans
 
 from counterfactuals.cf_methods import GLOBE_CE, AReS
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
@@ -20,9 +20,6 @@ from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.utils import one_hot
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class GroupGLOBECEPipelineRunner(PipelineRunner):
@@ -58,10 +55,27 @@ class GroupGLOBECEPipelineRunner(PipelineRunner):
             self.save_results(metrics, result.cf_search_time, save_folder)
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
         disc_model.eval()
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
 
         X_test_unscaled = dataset.feature_transformer.inverse_transform(dataset.X_test)
         data_oh, features = one_hot(
@@ -72,13 +86,13 @@ class GroupGLOBECEPipelineRunner(PipelineRunner):
             x_scaled = dataset.feature_transformer.transform(x)
             return disc_model.predict(x_scaled).detach().numpy().flatten()
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        self.logger.info("Filtering out target class data for counterfactual generation")
         target_class = 1
         ys_pred = predict_fn(X_test_unscaled)
         Xs = dataset.X_test[ys_pred != target_class]
         ys_orig = ys_pred[ys_pred != target_class]
 
-        logger.info("Calculating log_prob_threshold")
+        self.logger.info("Calculating log_prob_threshold")
         train_dataloader_for_log_prob = dataset.train_dataloader(
             batch_size=self.cfg.counterfactuals_params.batch_size, shuffle=False
         )
@@ -86,55 +100,57 @@ class GroupGLOBECEPipelineRunner(PipelineRunner):
             gen_model.predict_log_prob(train_dataloader_for_log_prob),
             self.cfg.counterfactuals_params.log_prob_quantile,
         )
-        logger.info("log_prob_threshold: %.4f", log_prob_threshold)
+        self.logger.info("log_prob_threshold: %.4f", log_prob_threshold)
 
         kmeans = KMeans(n_clusters=self.cfg.counterfactuals_params.n_clusters)
         kmeans.fit(Xs)
 
-        logger.info("Handling counterfactual generation")
+        self.logger.info("Handling counterfactual generation")
 
-        time_start = time()
+        with self._timed_search() as timer:
+            labels = kmeans.labels_
+            Xs_cfs = np.empty_like(Xs)
 
-        labels = kmeans.labels_
-        Xs_cfs = np.empty_like(Xs)
+            X_test_unscaled_reduced = X_test_unscaled[ys_pred != target_class]
 
-        X_test_unscaled_reduced = X_test_unscaled[ys_pred != target_class]
+            for i in range(kmeans.n_clusters):
+                self.logger.info("Creating counterfactual model for cluster %d", i)
+                ares_helper = AReS(
+                    predict_fn=predict_fn,
+                    dataset=dataset,
+                    X=pd.DataFrame(
+                        X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]
+                    ),
+                    dropped_features=[],
+                    n_bins=10,
+                    ordinal_features=[],
+                    normalise=False,
+                    constraints=[20, 7, 10],
+                )
+                bin_widths = ares_helper.bin_widths
 
-        for i in range(kmeans.n_clusters):
-            logger.info("Creating counterfactual model for cluster %d", i)
-            ares_helper = AReS(
-                predict_fn=predict_fn,
-                dataset=dataset,
-                X=pd.DataFrame(X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]),
-                dropped_features=[],
-                n_bins=10,
-                ordinal_features=[],
-                normalise=False,
-                constraints=[20, 7, 10],
-            )
-            bin_widths = ares_helper.bin_widths
+                cf_method = GLOBE_CE(
+                    predict_fn=predict_fn,
+                    dataset=dataset,
+                    X=pd.DataFrame(
+                        X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]
+                    ),
+                    bin_widths=bin_widths,
+                )
 
-            cf_method = GLOBE_CE(
-                predict_fn=predict_fn,
-                dataset=dataset,
-                X=pd.DataFrame(X_test_unscaled_reduced[labels == i], columns=dataset.features[:-1]),
-                bin_widths=bin_widths,
-            )
+                Xs_cfs[labels == i] = cf_method.explain()
 
-            Xs_cfs[labels == i] = cf_method.explain()
+            Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
+            ys_target = np.abs(ys_orig - 1)
 
-        Xs_cfs = dataset.feature_transformer.transform(Xs_cfs)
-        ys_target = np.abs(ys_orig - 1)
-
-        model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
-        cf_search_time = np.mean(time() - time_start)
-        logger.info("Counterfactual search time: %.4f seconds", cf_search_time)
+            model_returned = np.ones(Xs_cfs.shape[0]).astype(bool)
+        cf_search_time = timer["elapsed"]
 
         counterfactuals_path = os.path.join(
             save_folder, f"counterfactuals_{self.cf_method_name}_{disc_model_name}.csv"
         )
         pd.DataFrame(Xs_cfs).to_csv(counterfactuals_path, index=False)
-        logger.info("Counterfactuals saved to %s", counterfactuals_path)
+        self.logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
         return SearchResult(
             X_cf=Xs_cfs,

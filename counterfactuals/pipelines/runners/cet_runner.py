@@ -1,5 +1,4 @@
 import logging
-from time import time
 
 import hydra
 import numpy as np
@@ -10,20 +9,13 @@ from omegaconf import DictConfig
 from counterfactuals.cf_methods.local_methods.cet.cet import (
     CounterfactualExplanationTree,
 )
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
 
 MAX_ITERATION = 50
 LAMBDA, GAMMA = 0.02, 1.0
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class CETPipelineRunner(PipelineRunner):
@@ -32,22 +24,41 @@ class CETPipelineRunner(PipelineRunner):
     cf_method_name = "CET"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
         _ = gen_model
         disc_model.eval()
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        disc_model_name = self._get_disc_model_name()
         X_train = dataset.inverse_transform(dataset.X_train)
         y_train = dataset.y_train
         X_test = dataset.inverse_transform(dataset.X_test)
-        target_class = self.cfg.counterfactuals_params.target_class
+        target_class = self._get_target_class()
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        self.logger.info("Filtering out target class data for counterfactual generation")
         ys_pred = disc_model.predict(dataset.X_test)
-        Xs = dataset.X_test[ys_pred != target_class]
-        ys_orig = ys_pred[ys_pred != target_class]
+        mask = ys_pred != target_class
+        Xs = dataset.X_test[mask]
+        X_test = X_test[mask]
+        ys_orig = ys_pred[mask]
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         X_train_df = pd.DataFrame(X_train, columns=dataset.features)
         columns = X_train_df.columns
         X_train = X_train_df.to_numpy()
@@ -71,22 +82,21 @@ class CETPipelineRunner(PipelineRunner):
             target_labels=[0, 1],
         )
 
-        logger.info("Handling counterfactual generation")
-        time_start = time()
-        cet = cet.fit(
-            X_test,
-            max_change_num=3,
-            cost_type="MPS",
-            C=LAMBDA,
-            gamma=GAMMA,
-            time_limit=60,
-            verbose=True,
-        )
-        Xs_cfs = cet.predict(X_test)
-        ys_target = np.abs(ys_orig - 1)
-        model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
-        cf_search_time = time() - time_start
-        logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
+        self.logger.info("Handling counterfactual generation")
+        with self._timed_search() as timer:
+            cet = cet.fit(
+                X_test,
+                max_change_num=3,
+                cost_type="MPS",
+                C=LAMBDA,
+                gamma=GAMMA,
+                time_limit=60,
+                verbose=True,
+            )
+            Xs_cfs = cet.predict(X_test)
+            ys_target = np.abs(ys_orig - 1)
+            model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
+        cf_search_time = timer["elapsed"]
 
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
 
@@ -107,23 +117,15 @@ class DiscModelWrapper:
         self.disc_model = disc_model
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        out = self.disc_model.predict(X)
-        return out.detach().numpy()
+        return self.disc_model.predict(X)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        out = self.disc_model.predict_proba(X)
-        return out.detach().numpy()
+        return self.disc_model.predict_proba(X)
 
 
 @hydra.main(config_path="./conf", config_name="cet_config", version_base="1.2")
 def main(cfg: DictConfig):
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = CETPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = CETPipelineRunner(cfg, logger, CETPipelineRunner.default_preprocessing())
     runner.run()
 
 

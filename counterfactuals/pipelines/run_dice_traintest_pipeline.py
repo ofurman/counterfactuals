@@ -42,9 +42,6 @@ from counterfactuals.preprocessing import (
 warnings.filterwarnings("ignore", category=FutureWarning, module="dice_ml")
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class DiscWrapper(nn.Module):

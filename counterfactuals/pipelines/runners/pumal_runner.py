@@ -1,24 +1,17 @@
 import logging
-from time import time
 
 import hydra
 import numpy as np
+import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.group_methods.pumal import PUMAL
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf_for_pumal
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class PUMALPipelineRunner(PipelineRunner):
@@ -27,13 +20,30 @@ class PUMALPipelineRunner(PipelineRunner):
     cf_method_name = "PUMAL"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        logger.info("Filtering out target class data for counterfactual generation")
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
+        disc_model_name = self._get_disc_model_name()
+
+        self.logger.info("Filtering out target class data for counterfactual generation")
         origin_class = self.cfg.counterfactuals_params.origin_class
-        target_class = self.cfg.counterfactuals_params.target_class
+        target_class = self._get_target_class()
         y_test = dataset.y_test
         y_labels = np.argmax(y_test, axis=1) if y_test.ndim > 1 else y_test.reshape(-1)
         y_indices = y_labels.astype(int)
@@ -53,7 +63,7 @@ class PUMALPipelineRunner(PipelineRunner):
                 if feature not in actionable_features
             ]
 
-        logger.info("Creating counterfactual model")
+        self.logger.info("Creating counterfactual model")
         disc_model_criterion = instantiate(self.cfg.counterfactuals_params.disc_model_criterion)
         cf_method = PUMAL(
             cf_method_type=self.cfg.counterfactuals_params.cf_method.cf_method_type,
@@ -65,28 +75,27 @@ class PUMALPipelineRunner(PipelineRunner):
             not_actionable_features=not_actionable_features,
         )
 
-        logger.info("Handling counterfactual generation")
+        self.logger.info("Handling counterfactual generation")
         cf_dataloader = self._create_cf_dataloader(
             X_test_origin, y_test_origin, self.cfg.counterfactuals_params.batch_size
         )
-        time_start = time()
-        delta, Xs, _, _ = cf_method.explain_dataloader(
-            dataloader=cf_dataloader,
-            target_class=target_class,
-            epochs=self.cfg.counterfactuals_params.epochs,
-            lr=self.cfg.counterfactuals_params.lr,
-            patience=self.cfg.counterfactuals_params.patience,
-            alpha_dist=self.cfg.counterfactuals_params.alpha_dist,
-            alpha_plaus=self.cfg.counterfactuals_params.alpha_plaus,
-            alpha_class=self.cfg.counterfactuals_params.alpha_class,
-            alpha_s=self.cfg.counterfactuals_params.alpha_s,
-            alpha_k=self.cfg.counterfactuals_params.alpha_k,
-            alpha_d=self.cfg.counterfactuals_params.alpha_d,
-            log_prob_threshold=log_prob_threshold,
-            decrease_loss_patience=self.cfg.counterfactuals_params.decrease_loss_patience,
-        )
-
-        cf_search_time = np.mean(time() - time_start)
+        with self._timed_search() as timer:
+            delta, Xs, _, _ = cf_method.explain_dataloader(
+                dataloader=cf_dataloader,
+                target_class=target_class,
+                epochs=self.cfg.counterfactuals_params.epochs,
+                lr=self.cfg.counterfactuals_params.lr,
+                patience=self.cfg.counterfactuals_params.patience,
+                alpha_dist=self.cfg.counterfactuals_params.alpha_dist,
+                alpha_plaus=self.cfg.counterfactuals_params.alpha_plaus,
+                alpha_class=self.cfg.counterfactuals_params.alpha_class,
+                alpha_s=self.cfg.counterfactuals_params.alpha_s,
+                alpha_k=self.cfg.counterfactuals_params.alpha_k,
+                alpha_d=self.cfg.counterfactuals_params.alpha_d,
+                log_prob_threshold=log_prob_threshold,
+                decrease_loss_patience=self.cfg.counterfactuals_params.decrease_loss_patience,
+            )
+        cf_search_time = timer["elapsed"]
         Xs_cfs = Xs + delta().detach().numpy()
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
 
@@ -116,7 +125,7 @@ class PUMALPipelineRunner(PipelineRunner):
 
     def calculate_metrics(self, gen_model, disc_model, dataset, result, log_prob_threshold):
         """Calculate evaluation metrics for generated counterfactuals."""
-        logger.info("Calculating metrics")
+        self.logger.info("Calculating metrics")
         metrics = evaluate_cf_for_pumal(
             gen_model=gen_model,
             disc_model=disc_model,
@@ -134,19 +143,13 @@ class PUMALPipelineRunner(PipelineRunner):
             D_matrix=result.extras.get("D_matrix"),
             metrics_conf_path="counterfactuals/pipelines/conf/metrics/group_metrics.yaml",
         )
-        logger.info(f"Metrics:\n{metrics}")
+        self.logger.info(f"Metrics:\n{metrics}")
         return metrics
 
 
 @hydra.main(config_path="./conf", config_name="pumal_config", version_base="1.2")
 def main(cfg: DictConfig):
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = PUMALPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = PUMALPipelineRunner(cfg, logger, PUMALPipelineRunner.default_preprocessing())
     runner.run()
 
 

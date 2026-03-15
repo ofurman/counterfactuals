@@ -5,9 +5,6 @@ from typing import Any, Dict
 from omegaconf import DictConfig, OmegaConf
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 def log_parameters(cfg: DictConfig) -> Dict[str, Any]:

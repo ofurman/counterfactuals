@@ -3,7 +3,6 @@
 import logging
 import os
 from pathlib import Path
-from time import time
 
 import numpy as np
 import pandas as pd
@@ -11,6 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from counterfactuals.cf_methods.local_methods.tabdce.tabdce import TabDCE
+from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
 from counterfactuals.pipelines.run_tabdce_pipeline import (
     create_diffusion_model,
@@ -20,9 +20,6 @@ from counterfactuals.pipelines.run_tabdce_pipeline import (
 from counterfactuals.pipelines.runners.pairwise_mixin import PairwiseMixin
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class TabDCEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
@@ -31,22 +28,39 @@ class TabDCEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
     cf_method_name = "TabDCEPairwise"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
+
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
         _ = gen_model, disc_model
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
-        target_class = self.cfg.counterfactuals_params.target_class
+        disc_model_name = self._get_disc_model_name()
+        target_class = self._get_target_class()
 
         use_gpu = torch.cuda.is_available() and self.cfg.tabdce.get("use_gpu", False)
         if not use_gpu:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         device = torch.device("cuda" if use_gpu else "cpu")
-        logger.info("Using device: %s", device)
+        self.logger.info("Using device: %s", device)
 
         X_test_origin, y_test_origin = self._filter_test_data(dataset, target_class)
 
         if X_test_origin.shape[0] == 0:
-            logger.info("All samples already belong to the target class %s", target_class)
+            self.logger.info("All samples already belong to the target class %s", target_class)
             return SearchResult(
                 X_cf=np.empty((0, dataset.X_test.shape[1])),
                 X_test=np.empty((0, dataset.X_test.shape[1])),
@@ -82,30 +96,28 @@ class TabDCEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
         )
 
         cf_per_instance = int(self.cfg.counterfactuals_params.get("cf_samples_per_factual", 5))
-        time_start = time()
-        cf_samples: list[np.ndarray] = []
-        x_origs = None
-        y_origs = None
-        y_targets = None
-        for _ in range(cf_per_instance):
-            explanation_result = cf_method.explain_dataloader(
-                dataloader=cf_dataloader,
-                target_class=target_class,
-            )
-            cf_samples.append(np.asarray(explanation_result.x_cfs))
-            if x_origs is None:
-                x_origs = np.asarray(explanation_result.x_origs)
-                y_origs = np.asarray(explanation_result.y_origs)
-                y_targets = np.asarray(explanation_result.y_cf_targets)
-        cf_search_time = time() - time_start
-        logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
+        with self._timed_search() as timer:
+            cf_samples: list[np.ndarray] = []
+            x_origs = None
+            y_origs = None
+            y_targets = None
+            for _ in range(cf_per_instance):
+                explanation_result = cf_method.explain_dataloader(
+                    dataloader=cf_dataloader,
+                    target_class=target_class,
+                )
+                cf_samples.append(np.asarray(explanation_result.x_cfs))
+                if x_origs is None:
+                    x_origs = np.asarray(explanation_result.x_origs)
+                    y_origs = np.asarray(explanation_result.y_origs)
+                    y_targets = np.asarray(explanation_result.y_cf_targets)
+        cf_search_time = timer["elapsed"]
 
         x_origs = x_origs if x_origs is not None else np.empty((0, dataset.X_test.shape[1]))
         y_origs = y_origs if y_origs is not None else np.array([])
         y_targets = y_targets if y_targets is not None else np.array([])
 
-        Xs_cfs_all = np.stack(cf_samples, axis=1)
-        Xs_cfs_first = Xs_cfs_all[:, 0, :]
+        Xs_cfs_first, Xs_cfs_all = self._build_pairwise_arrays(cf_samples)
         model_returned_first = np.ones(Xs_cfs_first.shape[0], dtype=bool)
 
         counterfactuals_path = os.path.join(
@@ -114,7 +126,7 @@ class TabDCEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
         pd.DataFrame(Xs_cfs_all.reshape(-1, Xs_cfs_all.shape[-1])).to_csv(
             counterfactuals_path, index=False
         )
-        logger.info("Counterfactuals saved to %s", counterfactuals_path)
+        self.logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
         return SearchResult(
             X_cf=Xs_cfs_first,

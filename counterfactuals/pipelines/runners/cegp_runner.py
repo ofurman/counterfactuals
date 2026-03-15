@@ -1,22 +1,15 @@
 import logging
-from time import time
 
 import hydra
 import numpy as np
+import torch
 from omegaconf import DictConfig
 
 from counterfactuals.cf_methods.local_methods.cegp.cegp import CEGP
-from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from counterfactuals.datasets.method_dataset import MethodDataset
+from counterfactuals.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class CEGPPipelineRunner(PipelineRunner):
@@ -25,16 +18,32 @@ class CEGPPipelineRunner(PipelineRunner):
     cf_method_name = "CEGP"
 
     def search_counterfactuals(
-        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
-        target_class = self.cfg.counterfactuals_params.target_class
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+        save_folder: str,
+        log_prob_threshold: float,
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold.
 
-        logger.info("Filtering out target class data for counterfactual generation")
-        X_test_origin, y_test_origin = self._filter_test_data(dataset, target_class)
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model.
+            disc_model: Trained discriminative model.
+            save_folder: Directory for saving generated counterfactuals.
+            log_prob_threshold: Plausibility threshold from compute_log_prob_threshold.
 
-        logger.info("Creating counterfactual model")
-        cf_method = CEGP(
+        Returns:
+            SearchResult with counterfactuals and timing information.
+        """
+        return self._default_search_counterfactuals(
+            dataset, gen_model, disc_model, save_folder, log_prob_threshold
+        )
+
+    def create_cf_method(self, dataset, gen_model, disc_model):
+        self.logger.info("Creating counterfactual model")
+        return CEGP(
             disc_model=disc_model,
             beta=self.cfg.counterfactuals_params.beta,
             c_init=self.cfg.counterfactuals_params.c_init,
@@ -45,48 +54,30 @@ class CEGPPipelineRunner(PipelineRunner):
             disc_perc=list(self.cfg.counterfactuals_params.fit_disc_perc),
         )
 
-        logger.info("Handling counterfactual generation")
-        cf_dataloader = self._create_cf_dataloader(
-            X_test_origin, y_test_origin, self.cfg.counterfactuals_params.batch_size
-        )
-
-        time_start = time()
+    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+        self.logger.info("Handling counterfactual generation")
+        target_class = self._get_target_class()
         explanation_result = cf_method.explain_dataloader(
             dataloader=cf_dataloader,
             target_class=target_class,
             X_train=np.asarray(dataset.X_train),
         )
-        Xs_cfs = explanation_result.x_cfs
-        Xs = explanation_result.x_origs
-        ys_orig = explanation_result.y_origs
-        ys_target = explanation_result.y_cf_targets
         logs = explanation_result.logs or {}
-        model_returned = np.asarray(logs.get("model_returned", np.ones(len(Xs_cfs), dtype=bool)))
-
-        cf_search_time = np.mean(time() - time_start)
-        logger.info(f"Counterfactual search completed in {cf_search_time:.4f} seconds")
-
-        self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
-
-        return SearchResult(
-            X_cf=Xs_cfs,
-            X_test=Xs,
-            y_orig=ys_orig,
-            y_target=ys_target,
+        model_returned = np.asarray(
+            logs.get("model_returned", np.ones(len(explanation_result.x_cfs), dtype=bool))
+        )
+        return CfMethodOutput(
+            x_cfs=explanation_result.x_cfs,
+            x_origs=explanation_result.x_origs,
+            y_origs=explanation_result.y_origs,
+            y_targets=explanation_result.y_cf_targets,
             model_returned=model_returned,
-            cf_search_time=cf_search_time,
         )
 
 
 @hydra.main(config_path="./conf", config_name="cegp_config", version_base="1.2")
 def main(cfg: DictConfig):
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
-    )
-    runner = CEGPPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = CEGPPipelineRunner(cfg, logger, CEGPPipelineRunner.default_preprocessing())
     runner.run()
 
 
