@@ -11,12 +11,13 @@ import numpy as np
 import pandas as pd
 import torch
 from hydra.utils import instantiate
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.pipelines.config_schema import REQUIRED_CFG_KEYS
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
@@ -105,9 +106,37 @@ class PipelineRunner(ABC):
     def __init__(
         self, cfg: DictConfig, logger: logging.Logger, preprocessing_pipeline=None
     ) -> None:
+        self._validate_cfg(cfg)
         self.cfg = cfg
         self.logger = logger
         self.preprocessing_pipeline = preprocessing_pipeline
+
+    @staticmethod
+    def _validate_cfg(cfg: DictConfig) -> None:
+        """Validate that all required config keys are present.
+
+        Checks every key in :data:`~counterfactuals.pipelines.config_schema.REQUIRED_CFG_KEYS`
+        using :func:`omegaconf.OmegaConf.select`.  Raises :exc:`ValueError` early
+        so misconfigured runs fail before any model loading or training.
+
+        Args:
+            cfg: Hydra ``DictConfig`` passed to the runner constructor.
+
+        Raises:
+            ValueError: If one or more required keys are absent from ``cfg``.
+        """
+        _SENTINEL = object()
+        missing = [
+            key
+            for key in REQUIRED_CFG_KEYS
+            if OmegaConf.select(cfg, key, default=_SENTINEL) is _SENTINEL
+        ]
+        if missing:
+            raise ValueError(
+                f"Pipeline config is missing required keys: {missing}\n"
+                "Check that your Hydra config includes all mandatory fields "
+                "(see counterfactuals.pipelines.config_schema)."
+            )
 
     @classmethod
     def default_preprocessing(cls) -> PreprocessingPipeline:
