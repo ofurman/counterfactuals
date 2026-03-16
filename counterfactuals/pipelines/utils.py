@@ -88,21 +88,36 @@ def align_counterfactuals_with_factuals(
     return aligned, model_returned
 
 
-def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+def one_hot(
+    dataset: Any, data: pd.DataFrame, rename_columns: bool = False
+) -> Tuple[pd.DataFrame, List[str]]:
     """Apply one-hot encoding to categorical features in the dataset.
 
-    Mirrors the AReS preprocessing utility: encodes categoricals and optionally
-    bins continuous features, updating dataset metadata for later use.
+    When the dataset has ``one_hot_feature_groups``, delegates to
+    :func:`_build_features_tree_from_one_hot` which handles pre-encoded groups.
+    Otherwise encodes categoricals via :class:`~sklearn.preprocessing.LabelEncoder`
+    and optionally bins continuous features.
 
     Args:
-        dataset: Dataset object that will be updated with encoding metadata.
-        data: DataFrame with raw features to be encoded.
+        dataset: Dataset object that will be updated with encoding metadata
+            (``bins``, ``bins_tree``, ``features_tree``, ``n_bins``).
+        data: DataFrame with raw (unscaled) features to be encoded.
+        rename_columns: If ``True``, rewrite column names to ``"feature = category"``
+            format and update ``dataset.features`` via :func:`_set_dataset_attribute`
+            (AReS behavior). If ``False``, preserve original column names (default,
+            GLOBE-CE behavior).
 
     Returns:
         Tuple containing:
             - data_oh: One-hot encoded DataFrame.
             - features: List of feature names after encoding.
     """
+    if getattr(dataset, "one_hot_feature_groups", None) or (
+        hasattr(dataset, "file_dataset")
+        and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
+    ):
+        return _build_features_tree_from_one_hot(dataset, data, rename_columns=rename_columns)
+
     label_encoder = LabelEncoder()
     data_encode = data.copy()
     dataset.bins = {}
@@ -110,7 +125,6 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     dataset.features_tree = {}
     dataset.n_bins = None
 
-    # Assign encoded features to one hot columns
     data_oh, features = [], []
     for x in data.columns:
         dataset.features_tree[x] = []
@@ -127,8 +141,8 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
             features.append(x)
             continue
 
-        one_hot = pd.get_dummies(data_encode[x])
-        data_oh.append(one_hot)
+        one_hot_dummies = pd.get_dummies(data_encode[x])
+        data_oh.append(one_hot_dummies)
         for col in cols:
             feature_value = x + " = " + str(col)
             features.append(feature_value)
@@ -139,6 +153,8 @@ def one_hot(dataset: Any, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
     data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
     data_oh.columns = features
+    if rename_columns:
+        _set_dataset_attribute(dataset, "features", features)
     return data_oh, features
 
 

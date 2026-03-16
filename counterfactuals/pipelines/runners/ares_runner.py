@@ -9,15 +9,13 @@ import pandas as pd
 import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
-from sklearn.preprocessing import LabelEncoder
 
 from counterfactuals.cf_methods import AReS
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
 from counterfactuals.pipelines.utils import (
-    _build_features_tree_from_one_hot,
-    _set_dataset_attribute,
     align_counterfactuals_with_factuals,
+    one_hot,
 )
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
@@ -26,66 +24,6 @@ from counterfactuals.preprocessing import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def one_hot(dataset: MethodDataset, data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
-    """Build one-hot encoded feature matrix for AReS.
-
-    Encodes categorical features via one-hot dummies and passes continuous
-    features through unchanged. Mutates ``dataset.bins``, ``dataset.bins_tree``,
-    and ``dataset.features_tree`` as side-effects.
-
-    Args:
-        dataset: Dataset object exposing ``categorical_features`` and optional
-            ``one_hot_feature_groups`` / ``n_bins`` attributes.
-        data: Raw (unscaled) feature DataFrame.
-
-    Returns:
-        Tuple of (one-hot encoded DataFrame, list of encoded feature names).
-    """
-    if getattr(dataset, "one_hot_feature_groups", None) or (
-        hasattr(dataset, "file_dataset")
-        and getattr(dataset.file_dataset, "one_hot_feature_groups", None)
-    ):
-        return _build_features_tree_from_one_hot(dataset, data)
-
-    label_encoder = LabelEncoder()
-    data_encode = data.copy()
-    dataset.bins = {}
-    dataset.bins_tree = {}
-    dataset.features_tree = {}
-    dataset.n_bins = None
-
-    data_oh, features = [], []
-    for x in data.columns:
-        dataset.features_tree[x] = []
-        categorical = x in dataset.categorical_features
-        if categorical:
-            data_encode[x] = label_encoder.fit_transform(data_encode[x])
-            cols = label_encoder.classes_
-        elif dataset.n_bins is not None:
-            data_encode[x] = pd.cut(data_encode[x].apply(lambda x: float(x)), bins=dataset.n_bins)
-            cols = data_encode[x].cat.categories
-            dataset.bins_tree[x] = {}
-        else:
-            data_oh.append(data[x])
-            features.append(x)
-            continue
-
-        one_hot = pd.get_dummies(data_encode[x])
-        data_oh.append(one_hot)
-        for col in cols:
-            feature_value = x + " = " + str(col)
-            features.append(feature_value)
-            dataset.features_tree[x].append(feature_value)
-            if not categorical:
-                dataset.bins[feature_value] = col.mid
-                dataset.bins_tree[x][feature_value] = col.mid
-
-    data_oh = pd.concat(data_oh, axis=1, ignore_index=True)
-    data_oh.columns = features
-    _set_dataset_attribute(dataset, "features", features)
-    return data_oh, features
 
 
 def _feature_columns(dataset):
@@ -169,7 +107,9 @@ class AReSPipelineRunner(PipelineRunner):
         feature_columns = _feature_columns(dataset)
         ares_dataset = copy.deepcopy(dataset)
         X_test_for_ares, _ = one_hot(
-            ares_dataset, pd.DataFrame(X_test_unscaled, columns=feature_columns)
+            ares_dataset,
+            pd.DataFrame(X_test_unscaled, columns=feature_columns),
+            rename_columns=True,
         )
 
         def predict_fn_raw(x):
