@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict
 
 import numpy as np
 import torch
@@ -137,7 +137,7 @@ class CeFlowModel(nn.Module):
         self.total_dim = n_continuous + n_categorical
 
         if n_categorical > 0:
-            self.dequantizer: Optional[VariationalDequantizer] = VariationalDequantizer(
+            self.dequantizer: VariationalDequantizer | None = VariationalDequantizer(
                 cat_cardinalities, hidden_dim=config.dequant_hidden_dim
             )
         else:
@@ -152,7 +152,7 @@ class CeFlowModel(nn.Module):
         self.class_means: Dict[int, torch.Tensor] | None = None
 
     def forward(
-        self, x_con: torch.Tensor, x_cat: Optional[torch.Tensor], y: torch.Tensor
+        self, x_con: torch.Tensor, x_cat: torch.Tensor | None, y: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if self.dequantizer is not None and x_cat is not None:
             z_cat, log_q_cat = self.dequantizer(x_cat)
@@ -166,7 +166,7 @@ class CeFlowModel(nn.Module):
         log_p_x = log_p_z + log_det - log_q_cat
         return log_p_x, z
 
-    def encode(self, x_con: torch.Tensor, x_cat: Optional[torch.Tensor]) -> torch.Tensor:
+    def encode(self, x_con: torch.Tensor, x_cat: torch.Tensor | None) -> torch.Tensor:
         if self.dequantizer is not None and x_cat is not None:
             z_cat = self.dequantizer.dequantize_deterministic(x_cat)
             x_full = torch.cat([x_con, z_cat], dim=-1)
@@ -175,7 +175,7 @@ class CeFlowModel(nn.Module):
         z, _ = self.flow.forward(x_full)
         return z
 
-    def decode(self, z: torch.Tensor) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def decode(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor | None]:
         x_full = self.flow.inverse(z)
         if self.n_categorical > 0:
             x_con = x_full[:, : self.n_continuous]

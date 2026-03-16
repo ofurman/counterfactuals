@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 import torch
@@ -17,7 +16,7 @@ class DequantizerOutput:
     """Dequantization output container."""
 
     values: torch.Tensor
-    log_q: Optional[torch.Tensor]
+    log_q: torch.Tensor | None
 
 
 class VariationalDequantizer(nn.Module):
@@ -37,7 +36,7 @@ class VariationalDequantizer(nn.Module):
 
         self.cat_indices = sorted({idx for group in categorical_groups for idx in group})
         self.con_indices = [idx for idx in range(total_features) if idx not in self.cat_indices]
-        self.dividers: Optional[list[int]] = None
+        self.dividers: list[int] | None = None
 
         n_cat_features = len(self.cat_indices)
         if n_cat_features > 0:

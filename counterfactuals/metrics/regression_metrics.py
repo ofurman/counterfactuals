@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Union
 
 import numpy as np
 import torch
@@ -24,8 +24,8 @@ class RegressionCFMetrics(CFMetrics):
         disc_model: torch.nn.Module,
         continuous_features: List[int],
         categorical_features: List[int],
-        ratio_cont: Optional[float] = None,
-        prob_plausibility_threshold: Optional[float] = None,
+        ratio_cont: float | None = None,
+        prob_plausibility_threshold: float | None = None,
         target_tolerance: float = 0.05,
     ):
         """

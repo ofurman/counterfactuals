@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import torch
@@ -40,7 +40,7 @@ class MADE(nn.Module):
         hidden_dims: List[int],
         gaussian: bool = False,
         random_order: bool = False,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         """Initalise MADE model.
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -329,8 +329,8 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for given instances.
@@ -369,7 +369,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         epochs: int = None,
         lr: float = None,
         patience_eps: float = 1e-5,
-        y_target: Optional[np.ndarray] = None,
+        y_target: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for data provided via DataLoader.

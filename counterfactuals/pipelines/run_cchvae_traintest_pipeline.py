@@ -3,7 +3,7 @@
 import logging
 import os
 from time import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import hydra
 import numpy as np
@@ -167,7 +167,7 @@ def calculate_metrics(
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
-    y_target: Optional[np.ndarray] = None,
+    y_target: np.ndarray | None = None,
 ) -> Dict[str, Any]:
     """Calculate evaluation metrics for generated counterfactual explanations."""
     Xs_cfs_first, Xs_cfs_all = Xs_cfs

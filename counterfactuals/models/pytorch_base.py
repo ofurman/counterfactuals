@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import numpy as np
 import torch
@@ -66,7 +65,7 @@ class PytorchBase(torch.nn.Module, ABC):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.003,
         **kwargs,

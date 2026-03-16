@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generator, Optional, Tuple
+from typing import Generator, Tuple
 
 import numpy as np
 import torch
@@ -36,7 +36,7 @@ class MethodDataset:
     def __init__(
         self,
         file_dataset: FileDataset,
-        preprocessing_pipeline: Optional[PreprocessingStep] = None,
+        preprocessing_pipeline: PreprocessingStep | None = None,
     ):
         """Initialize MethodDataset.
 
@@ -46,7 +46,7 @@ class MethodDataset:
                 preprocessing is applied and raw data is returned.
         """
         self.file_dataset = file_dataset
-        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
+        self.initial_transform_pipeline: InitialTransformPipeline | None = (
             file_dataset.initial_transform_pipeline
         )
 

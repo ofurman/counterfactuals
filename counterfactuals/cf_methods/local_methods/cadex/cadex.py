@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable
 
 import numpy as np
 import torch
@@ -37,11 +37,11 @@ class CadexEngine:
     def __init__(
         self,
         model: torch.nn.Module,
-        categorical_attributes: Optional[list[list[int]]] = None,
-        ordinal_attributes: Optional[list[int]] = None,
-        scale: Optional[ScaleFn] = None,
-        unscale: Optional[ScaleFn] = None,
-        device: Optional[str] = None,
+        categorical_attributes: list[list[int]] | None = None,
+        ordinal_attributes: list[int] | None = None,
+        scale: ScaleFn | None = None,
+        unscale: ScaleFn | None = None,
+        device: str | None = None,
     ) -> None:
         if ordinal_attributes is not None and (scale is None or unscale is None):
             raise ValueError("scale and unscale must be provided for ordinal attributes.")
@@ -55,9 +55,9 @@ class CadexEngine:
         self._unscale = unscale
         self.device = device or "cpu"
 
-        self._input_layer: Optional[InputAddLayer] = None
-        self._mask: Optional[torch.Tensor] = None
-        self._optimizer: Optional[torch.optim.Optimizer] = None
+        self._input_layer: InputAddLayer | None = None
+        self._mask: torch.Tensor | None = None
+        self._optimizer: torch.optim.Optimizer | None = None
 
     def reset(self, n_features: int) -> None:
         self._input_layer = InputAddLayer(n_features).to(self.device)
@@ -67,12 +67,12 @@ class CadexEngine:
         inputs: np.ndarray,
         target: int,
         num_classes: int,
-        num_changed_attributes: Optional[int] = None,
+        num_changed_attributes: int | None = None,
         max_epochs: int = 1000,
         skip_attributes: int = 0,
         categorical_threshold: float = 0.2,
-        direction_constraints: Optional[np.ndarray] = None,
-    ) -> tuple[Optional[np.ndarray], int]:
+        direction_constraints: np.ndarray | None = None,
+    ) -> tuple[np.ndarray | None, int]:
         """Train the input modifier to produce a CADEX explanation."""
         self.reset(inputs.shape[1])
         self._begin_train(
@@ -94,9 +94,9 @@ class CadexEngine:
         self,
         inputs: np.ndarray,
         target: int,
-        num_changed_attributes: Optional[int] = None,
+        num_changed_attributes: int | None = None,
         skip_attributes: int = 0,
-        direction_constraints: Optional[np.ndarray] = None,
+        direction_constraints: np.ndarray | None = None,
     ) -> None:
         mask = np.ones(inputs.shape, dtype=np.float32)
         if num_changed_attributes is not None or direction_constraints is not None:
@@ -131,7 +131,7 @@ class CadexEngine:
         num_classes: int,
         max_epochs: int = 1000,
         categorical_threshold: float = 0.0,
-    ) -> tuple[Optional[np.ndarray], int]:
+    ) -> tuple[np.ndarray | None, int]:
         result = None
         pred_threshold = 1.0 / num_classes
 
@@ -204,8 +204,8 @@ class CadexEngine:
     def _apply_constraints(
         self,
         inputs: np.ndarray,
-        categorical_attributes: Optional[list[list[int]]],
-        ordinal_attributes: Optional[list[int]],
+        categorical_attributes: list[list[int]] | None,
+        ordinal_attributes: list[int] | None,
     ) -> tuple[np.ndarray, np.ndarray]:
         input_mod = self._input_layer.transform(inputs)
         input_target = input_mod.copy()
@@ -265,11 +265,11 @@ class CADEX(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         disc_model: torch.nn.Module,
-        categorical_attributes: Optional[list[list[int]]] = None,
-        ordinal_attributes: Optional[list[int]] = None,
-        scale: Optional[ScaleFn] = None,
-        unscale: Optional[ScaleFn] = None,
-        device: Optional[str] = None,
+        categorical_attributes: list[list[int]] | None = None,
+        ordinal_attributes: list[int] | None = None,
+        scale: ScaleFn | None = None,
+        unscale: ScaleFn | None = None,
+        device: str | None = None,
     ) -> None:
         super().__init__(disc_model=disc_model, device=device)
         self._engine = CadexEngine(
@@ -286,8 +286,8 @@ class CADEX(BaseCounterfactualMethod, LocalCounterfactualMixin):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for provided instances."""

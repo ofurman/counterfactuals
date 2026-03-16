@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -20,7 +19,7 @@ class FileDataset(DatasetBase):
     def __init__(
         self,
         config_path: Path,
-        samples_keep: Optional[int] = None,
+        samples_keep: int | None = None,
     ):
         """Initializes the File dataset with OmegaConf config.
         Args:
@@ -29,7 +28,7 @@ class FileDataset(DatasetBase):
         """
         super().__init__(config_path=config_path)
         self.samples_keep = samples_keep if samples_keep is not None else self.config.samples_keep
-        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
+        self.initial_transform_pipeline: InitialTransformPipeline | None = (
             build_initial_transform_pipeline(self.config.initial_transforms)
         )
         self.one_hot_feature_groups: dict[str, list[str]] = {}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal
 
 import numpy as np
 import torch
@@ -18,7 +18,7 @@ class TabularSpec:
 
     num_idx: list[int]
     cat_idx: list[int]
-    cat_cardinalities: Optional[list[int]] = None
+    cat_cardinalities: list[int] | None = None
 
 
 class TabularCounterfactualDataset(Dataset):
@@ -32,7 +32,7 @@ class TabularCounterfactualDataset(Dataset):
         k: int = 15,
         search_method: Literal["knn", "dpp"] = "knn",
         dpp_pool_factor: int = 3,
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
         dtype: torch.dtype = torch.float32,
         qt: QuantileTransformer | None = None,
         ohe: OneHotEncoder | None = None,

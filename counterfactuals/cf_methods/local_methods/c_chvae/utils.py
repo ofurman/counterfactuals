@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -50,7 +50,7 @@ def check_counterfactuals(
     return df_cfs
 
 
-def merge_default_parameters(hyperparams: Optional[Dict], default: Dict) -> Dict:
+def merge_default_parameters(hyperparams: Dict | None, default: Dict) -> Dict:
     """
     Checks if the input parameter hyperparams contains every necessary key and if not, uses default values or
     raises a ValueError if no default value is given.

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import torch
 from hydra.utils import instantiate
@@ -47,7 +46,7 @@ def train_gen_model(
     dataset: DictConfig,
     gen_model_path: str,
     cfg: DictConfig,
-    dequantizer: Optional[object] = None,
+    dequantizer: object | None = None,
 ) -> torch.nn.Module:
     """
     Train a generative model on the provided dataset.
@@ -140,7 +139,7 @@ def create_gen_model(
     cfg: DictConfig,
     dataset: DictConfig,
     gen_model_path: str,
-    dequantizer: Optional[object] = None,
+    dequantizer: object | None = None,
 ) -> torch.nn.Module:
     """
     Create, train, and evaluate a generative model.

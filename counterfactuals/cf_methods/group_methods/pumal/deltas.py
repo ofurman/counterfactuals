@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Dict, Optional
+from typing import Dict
 
 import numpy as np
 import torch
@@ -21,8 +21,8 @@ class DimConfig:
     """Configuration for a single dimension in the optimization process."""
 
     strategy: GradStrategy = GradStrategy.UNRESTRICTED
-    min_val: Optional[float] = None
-    max_val: Optional[float] = None
+    min_val: float | None = None
+    max_val: float | None = None
 
     def has_range(self) -> bool:
         """Check if this dimension has a valid clamping range defined."""
@@ -107,7 +107,7 @@ class GCE(torch.nn.Module):
         K,
         init_from_kmeans=False,
         X=None,
-        dim_configs: Optional[Dict[int, DimConfig]] = None,
+        dim_configs: Dict[int, DimConfig] | None = None,
     ):
         """
         Initialize GCE with per-dimension gradient strategies and value ranges.

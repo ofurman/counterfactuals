@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -21,7 +19,7 @@ class LinearRegression(PytorchBase, RegressionPytorchMixin):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.003,
         patience: int = 100,

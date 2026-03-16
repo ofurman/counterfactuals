@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
@@ -20,8 +18,8 @@ class Mixed(Feature):
         self,
         training_vals: OneDimData,
         categ_value_names: list[CategValue],
-        map_to: Optional[list[float]] = None,
-        name: Optional[str] = None,
+        map_to: list[float] | None = None,
+        name: str | None = None,
         # TODO add the bounds parameter
         default_val: float = 0,
         monotone: Monotonicity = Monotonicity.NONE,

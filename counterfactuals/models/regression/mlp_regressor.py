@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import torch
@@ -59,7 +59,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.001,
         patience: int = 20,

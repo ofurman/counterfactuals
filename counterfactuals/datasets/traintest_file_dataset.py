@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -27,7 +26,7 @@ class TrainTestFileDataset(DatasetBase):
         config_path: Path,
         train_data_path: str,
         test_data_path: str,
-        samples_keep: Optional[int] = None,
+        samples_keep: int | None = None,
     ):
         """Initializes the dataset with separate train and test files.
 
@@ -42,7 +41,7 @@ class TrainTestFileDataset(DatasetBase):
         self.train_data_path = train_data_path
         self.test_data_path = test_data_path
         self.samples_keep = samples_keep if samples_keep is not None else self.config.samples_keep
-        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
+        self.initial_transform_pipeline: InitialTransformPipeline | None = (
             build_initial_transform_pipeline(self.config.initial_transforms)
         )
         self.one_hot_feature_groups: dict[str, list[str]] = {}

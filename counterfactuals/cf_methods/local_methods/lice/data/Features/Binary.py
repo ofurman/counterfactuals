@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
@@ -16,8 +14,8 @@ class Binary(Feature):
     def __init__(
         self,
         training_vals: OneDimData,
-        value_names: Optional[list[CategValue]] = None,
-        name: Optional[str] = None,
+        value_names: list[CategValue] | None = None,
+        name: str | None = None,
         monotone: Monotonicity = Monotonicity.NONE,
         modifiable: bool = True,
     ):

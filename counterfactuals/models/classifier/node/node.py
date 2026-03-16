@@ -1,5 +1,3 @@
-from typing import Optional
-
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -63,7 +61,7 @@ class NODE(PytorchBase, ClassifierPytorchMixin):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.001,
         patience: int = 20,

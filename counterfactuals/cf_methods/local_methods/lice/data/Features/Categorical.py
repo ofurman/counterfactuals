@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
@@ -16,10 +14,10 @@ class Categorical(Feature):
     def __init__(
         self,
         training_vals: OneDimData,
-        value_names: Optional[list[CategValue]] = None,
-        map_to: Optional[list[float]] = None,
+        value_names: list[CategValue] | None = None,
+        map_to: list[float] | None = None,
         ordering: list[CategValue] | None = None,  # TODO separate into subclass?
-        name: Optional[str] = None,
+        name: str | None = None,
         monotone: Monotonicity = Monotonicity.NONE,
         modifiable: bool = True,
     ):

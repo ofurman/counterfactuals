@@ -1,7 +1,7 @@
 """Orchestrator for computing counterfactual metrics."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import numpy as np
 import torch
@@ -44,9 +44,9 @@ class MetricsOrchestrator:
         disc_model: torch.nn.Module,
         continuous_features: list[int],
         categorical_features: list[int],
-        ratio_cont: Optional[float] = None,
-        prob_plausibility_threshold: Optional[float] = None,
-        cf_group_ids: Optional[Union[np.ndarray, torch.Tensor]] = None,
+        ratio_cont: float | None = None,
+        prob_plausibility_threshold: float | None = None,
+        cf_group_ids: Union[np.ndarray, torch.Tensor] | None = None,
         metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
     ) -> None:
         """Initialize the metrics orchestrator with data and models."""

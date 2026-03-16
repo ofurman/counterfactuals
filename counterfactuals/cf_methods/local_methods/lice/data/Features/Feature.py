@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -20,7 +19,7 @@ class Feature(ABC):
     def __init__(
         self,
         training_vals: OneDimData,
-        name: Optional[str],
+        name: str | None,
         monotone: Monotonicity = Monotonicity.NONE,
         modifiable: bool = True,
     ):

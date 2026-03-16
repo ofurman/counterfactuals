@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 import torch
@@ -25,7 +25,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
         self,
         features: int,
         n_classes: int = 2,
-        categorical_groups: Optional[list[list[int]]] = None,
+        categorical_groups: list[list[int]] | None = None,
         hidden_features: int = 64,
         num_layers: int = 5,
         num_blocks_per_layer: int = 2,
@@ -64,7 +64,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
         )
         self.to(device)
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         """Compute log probabilities for inputs."""
         dq_output = self.dequantizer(x, return_log_prob=True)
         z_dequant = dq_output.values
@@ -105,7 +105,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
         patience: int = 20,
         eps: float = 1e-3,
         checkpoint_path: str = "ceflow_gmm_best.pt",
-        dequantizer: Optional[object] = None,
+        dequantizer: object | None = None,
     ) -> None:
         """Train CeFlow GMM with joint objective."""
         for x_batch, _ in train_loader:
@@ -170,7 +170,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
         return torch.cat(log_probs)
 
     def predict_log_proba(
-        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+        self, X_test: np.ndarray, context: np.ndarray | None = None
     ) -> np.ndarray:
         """Predict log probabilities for numpy array inputs."""
         x = torch.from_numpy(X_test).float().to(self.device)
@@ -183,7 +183,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
         return log_prob.cpu().numpy()
 
     def sample_and_log_proba(
-        self, n_samples: int, context: Optional[np.ndarray] = None
+        self, n_samples: int, context: np.ndarray | None = None
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Sample from the model and return log probabilities."""
         y = None

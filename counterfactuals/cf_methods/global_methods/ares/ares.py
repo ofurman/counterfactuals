@@ -1,7 +1,6 @@
 import copy
 import itertools
 import warnings
-from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -214,8 +213,8 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
     def explain(
         self,
         apriori_threshold: float = 0.6,
-        y_origin: Optional[np.ndarray] = None,
-        y_target: Optional[np.ndarray] = None,
+        y_origin: np.ndarray | None = None,
+        y_target: np.ndarray | None = None,
         max_triples_eval: int = 5000,
         max_triples_select: int = 5000,
         disable_tqdm: bool = False,
@@ -292,7 +291,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         epochs: int = None,
         lr: float = None,
         patience_eps: float = 1e-5,
-        y_target: Optional[np.ndarray] = None,
+        y_target: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for data provided via DataLoader.

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from counterfactuals.preprocessing.base import PreprocessingContext, PreprocessingStep
 
 
@@ -91,7 +89,7 @@ class PreprocessingPipeline(PreprocessingStep):
         """
         return self.fit(context).transform(context)
 
-    def get_step(self, name: str) -> Optional[PreprocessingStep]:
+    def get_step(self, name: str) -> PreprocessingStep | None:
         """Retrieve a specific step from the pipeline by name.
 
         Args:

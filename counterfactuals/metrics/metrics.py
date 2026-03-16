@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import List, Union
 
 import numpy as np
 import torch
@@ -32,8 +32,8 @@ class CFMetrics:
         disc_model (torch.nn.Module): Discriminator model.
         continuous_features (list[int]): List of indices of continuous features.
         categorical_features (list[int]): List of indices of categorical features.
-        ratio_cont (Optional[float], optional): Ratio of continuous features to be perturbed. Defaults to None.
-        prob_plausibility_threshold (Optional[float], optional): Log Likelihood Threshold for prob. plausibility. Defaults to None.
+        ratio_cont (float | None, optional): Ratio of continuous features to be perturbed. Defaults to None.
+        prob_plausibility_threshold (float | None, optional): Log Likelihood Threshold for prob. plausibility. Defaults to None.
     """
 
     def __init__(
@@ -48,8 +48,8 @@ class CFMetrics:
         disc_model: torch.nn.Module,
         continuous_features: List[int],
         categorical_features: List[int],
-        ratio_cont: Optional[float] = None,
-        prob_plausibility_threshold: Optional[float] = None,
+        ratio_cont: float | None = None,
+        prob_plausibility_threshold: float | None = None,
     ) -> None:
         # precheck input assumptions
         if X_cf.shape[1] != X_train.shape[1] or X_cf.shape[1] != X_test.shape[1]:
@@ -245,9 +245,9 @@ class CFMetrics:
 
     def feature_distance(
         self,
-        continuous_metric: Optional[str] = "euclidean",
-        categorical_metric: Optional[str] = "jaccard",
-        X_train: Optional[np.ndarray] = None,
+        continuous_metric: str | None = "euclidean",
+        categorical_metric: str | None = "jaccard",
+        X_train: np.ndarray | None = None,
     ) -> float:
         """
         Compute the distance metric.

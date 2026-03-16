@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -28,9 +28,9 @@ class FeatureParameters:
     """
 
     actionable: bool
-    top_limit: Optional[float] = None
-    bottom_limit: Optional[float] = None
-    direction: Optional[MonotonicityDirection] = None
+    top_limit: float | None = None
+    bottom_limit: float | None = None
+    direction: MonotonicityDirection | None = None
 
 
 @dataclass
@@ -71,8 +71,8 @@ class DatasetBase:
             config_path: Path to the YAML config file.
         """
         self.config = self._load_config(config_path)
-        self.X: Optional[np.ndarray] = None
-        self.y: Optional[np.ndarray] = None
+        self.X: np.ndarray | None = None
+        self.y: np.ndarray | None = None
         self.features: List[Any] = self.config.features
         self.numerical_features: List[Any] = self.config.continuous_features
         self.numerical_features_indices: List[int] = [

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 from torch.utils.data import DataLoader
@@ -22,7 +22,7 @@ class ExplanationResult:
         y_cf_targets (np.ndarray): Target labels/values for the counterfactuals.
         x_origs (np.ndarray): Original input instances.
         y_origs (np.ndarray): Original labels/values for the input instances.
-        logs (Optional[Dict[str, Any]]): Additional logging information such as
+        logs (Dict[str, Any] | None): Additional logging information such as
             loss curves, convergence metrics, or method-specific data.
     """
 
@@ -30,8 +30,8 @@ class ExplanationResult:
     y_cf_targets: np.ndarray
     x_origs: np.ndarray
     y_origs: np.ndarray
-    logs: Optional[Dict[str, Any]] = None
-    cf_group_ids: Optional[np.ndarray] = None
+    logs: Dict[str, Any] | None = None
+    cf_group_ids: np.ndarray | None = None
 
 
 class BaseCounterfactualMethod(ABC):
@@ -55,23 +55,23 @@ class BaseCounterfactualMethod(ABC):
 
     def __init__(
         self,
-        gen_model: Optional[Any] = None,
-        disc_model: Optional[PytorchBase] = None,
-        disc_model_criterion: Optional[Any] = None,
-        device: Optional[str] = None,
+        gen_model: Any | None = None,
+        disc_model: PytorchBase | None = None,
+        disc_model_criterion: Any | None = None,
+        device: str | None = None,
         **kwargs,
     ) -> None:
         """
         Initialize the counterfactual method.
 
         Args:
-            gen_model (Optional[Any]): Generative model for CF generation. Can be None
+            gen_model (Any | None): Generative model for CF generation. Can be None
                 for methods that don't use generative models.
-            disc_model (Optional[PytorchBase]): The model to be explained. Should be
+            disc_model (PytorchBase | None): The model to be explained. Should be
                 a PyTorch-based model wrapped in our PytorchBase interface.
-            disc_model_criterion (Optional[Any]): Loss function for the discriminative
+            disc_model_criterion (Any | None): Loss function for the discriminative
                 model. Required by optimization-based methods.
-            device (Optional[str]): Device for computation. Defaults to 'cpu'.
+            device (str | None): Device for computation. Defaults to 'cpu'.
             **kwargs: Additional method-specific parameters.
         """
         self.gen_model = gen_model
@@ -106,8 +106,8 @@ class BaseCounterfactualMethod(ABC):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """
@@ -121,8 +121,8 @@ class BaseCounterfactualMethod(ABC):
             X (np.ndarray): Input instances to explain with shape (n_instances, n_features).
             y_origin (np.ndarray): Original predictions/labels for X with shape (n_instances,).
             y_target (np.ndarray): Desired target predictions/labels with shape (n_instances,).
-            X_train (Optional[np.ndarray]): Training data, if needed by the method.
-            y_train (Optional[np.ndarray]): Training labels, if needed by the method.
+            X_train (np.ndarray | None): Training data, if needed by the method.
+            y_train (np.ndarray | None): Training labels, if needed by the method.
             **kwargs: Additional method-specific parameters.
 
         Returns:

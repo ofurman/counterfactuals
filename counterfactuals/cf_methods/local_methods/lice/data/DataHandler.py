@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
@@ -52,8 +50,8 @@ class DataHandler:
         # trunk-ignore(ruff/B006)
         greater_than: list[tuple[FeatureID, FeatureID]] = [],
         regression: bool = False,
-        feature_names: Optional[list[str]] = None,
-        target_name: Optional[str] = None,
+        feature_names: list[str] | None = None,
+        target_name: str | None = None,
     ):
         """
                 Initialize a DataHandler instance.
@@ -151,9 +149,9 @@ class DataHandler:
     def __make_feature(
         self,
         data: OneDimData,
-        feat_name: Optional[str],
-        categ_vals: Optional[list[CategValue]],
-        real_bounds: Optional[list[CategValue]],
+        feat_name: str | None,
+        categ_vals: list[CategValue] | None,
+        real_bounds: list[CategValue] | None,
         ordered: bool,
         discrete: bool,
         monotone: bool,
