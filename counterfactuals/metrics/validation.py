@@ -1,7 +1,6 @@
 """Input validation utilities for metrics."""
 
 import logging
-from typing import Union
 
 import numpy as np
 import torch
@@ -30,8 +29,8 @@ def validate_metric_inputs(
         y_train: Training labels.
         y_test: Test labels.
         y_target: Target labels.
-        continuous_features: List of continuous feature indices.
-        categorical_features: List of categorical feature indices.
+        continuous_features: list of continuous feature indices.
+        categorical_features: list of categorical feature indices.
         ratio_cont: Optional ratio of continuous features.
 
     Raises:
@@ -103,7 +102,7 @@ def validate_metric_inputs(
     logger.debug("All metric inputs validated successfully")
 
 
-def convert_to_numpy(X: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
+def convert_to_numpy(X: np.ndarray | torch.Tensor) -> np.ndarray:
     """
     Convert input data to numpy array.
 

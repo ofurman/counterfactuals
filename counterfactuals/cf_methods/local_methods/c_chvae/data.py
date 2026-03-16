@@ -21,7 +21,7 @@ class Data(ABC):
         Returns
         -------
         list of Strings
-            List of all categorical columns
+            list of all categorical columns
         """
         pass
 
@@ -36,7 +36,7 @@ class Data(ABC):
         Returns
         -------
         list of Strings
-            List of all continuous columns
+            list of all continuous columns
         """
         pass
 
@@ -51,7 +51,7 @@ class Data(ABC):
         Returns
         -------
         list of Strings
-            List of all immutable columns
+            list of all immutable columns
         """
         pass
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Literal
+from typing import Literal
 
 import numpy as np
 import torch
@@ -238,7 +238,7 @@ class TabularCounterfactualDataset(Dataset):
         """Return the number of samples."""
         return self.X_model.size(0)
 
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """Return a training pair for the diffusion model."""
         x_orig = self.X_model[idx]
         y_orig = self.y[idx]

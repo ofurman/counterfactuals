@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 import numpy as np
 
@@ -37,7 +36,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self,
         gen_model: GenerativePytorchMixin,
         disc_model: PytorchBase,
-        class_to_index: Dict[int, int],
+        class_to_index: dict[int, int],
         mask_vectors: list[np.ndarray],
         params: DiCoFlexParams,
         device: str | None = None,

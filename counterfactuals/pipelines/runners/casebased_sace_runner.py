@@ -43,7 +43,22 @@ class CaseBasedSACEPipelineRunner(PipelineRunner):
             dataset, gen_model, disc_model, save_folder, log_prob_threshold
         )
 
-    def create_cf_method(self, dataset, gen_model, disc_model):
+    def create_cf_method(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+    ) -> object:
+        """Instantiate the CaseBasedSACE CF method.
+
+        Args:
+            dataset: The current fold's dataset providing feature indices.
+            gen_model: Trained generative model (unused by CaseBasedSACE).
+            disc_model: Trained discriminative model.
+
+        Returns:
+            CaseBasedSACE CF method instance.
+        """
         self.logger.info("Creating counterfactual model")
         return CaseBasedSACE(
             disc_model=disc_model,
@@ -54,7 +69,24 @@ class CaseBasedSACEPipelineRunner(PipelineRunner):
             **self.cfg.counterfactuals_params.cf_method,
         )
 
-    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+    def run_cf_method(
+        self,
+        cf_method: object,
+        cf_dataloader: torch.utils.data.DataLoader,
+        dataset: MethodDataset,
+        log_prob_threshold: float,
+    ) -> CfMethodOutput:
+        """Run CaseBasedSACE CF generation via explain_dataloader.
+
+        Args:
+            cf_method: CaseBasedSACE CF method instance.
+            cf_dataloader: DataLoader for the filtered test set.
+            dataset: The current fold's dataset providing X_train and y_train.
+            log_prob_threshold: Plausibility threshold (unused by CaseBasedSACE).
+
+        Returns:
+            CfMethodOutput with generated counterfactuals.
+        """
         self.logger.info("Handling counterfactual generation")
         Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(
             dataloader=cf_dataloader,

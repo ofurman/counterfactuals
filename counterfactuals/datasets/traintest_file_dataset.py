@@ -79,7 +79,7 @@ class TrainTestFileDataset(DatasetBase):
             raw_data: Raw dataset as a pandas DataFrame.
 
         Returns:
-            Tuple (X, y) as numpy arrays.
+            tuple (X, y) as numpy arrays.
         """
         data = raw_data.copy()
         if self.config.target_mapping:

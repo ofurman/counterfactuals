@@ -64,7 +64,7 @@ class LiCE:
         model.predictor.build_formulation(formulation)
 
         # connect the vars
-        model.inputset = pyo.Set(initialize=range(len(input_vec)))
+        model.inputset = pyo.set(initialize=range(len(input_vec)))
 
         def connect_input(mdl, i):
             return input_vec[i] == mdl.predictor.inputs[i]
@@ -78,7 +78,7 @@ class LiCE:
 
         # TODO put this to dataenc or to spn, using the fact that spn object knows about features (afaik)
         # spn_inputs = []
-        # model.contig_names = pyo.Set(
+        # model.contig_names = pyo.set(
         #     initialize=[
         #         f.name for f in self.__dhandler.features if isinstance(f, Contiguous)
         #     ]

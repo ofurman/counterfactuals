@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
@@ -15,22 +13,22 @@ class GroupTransformer(BaseEstimator, TransformerMixin):
     The overall shape of `X` is preserved.
 
     Attributes:
-        groups (List[List[int]]): Column index groups, one list of indices per group.
+        groups (list[list[int]]): Column index groups, one list of indices per group.
         _make_transformer (Callable[[], TransformerMixin]): Factory creating a new
             (unfitted) transformer for a single group.
-        transformers_ (List[TransformerMixin]): Fitted transformers, one per group.
+        transformers_ (list[TransformerMixin]): Fitted transformers, one per group.
         n_features_in_ (int): Number of features seen during fitting.
     """
 
     def __init__(
         self,
-        groups: List[List[int]],
+        groups: list[list[int]],
         transformer_factory,
     ):
         """Initialize the group transformer.
 
         Args:
-            groups (List[List[int]]): Column index groups; each inner list contains
+            groups (list[list[int]]): Column index groups; each inner list contains
                 indices belonging to one categorical group.
             transformer_factory (Callable[[], TransformerMixin]): Zero-argument factory
                 returning a new transformer instance for a group (e.g., a dequantizer).

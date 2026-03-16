@@ -72,7 +72,7 @@ class GLANCE(BaseCounterfactualMethod, GroupCounterfactualMixin):
         best_total_cost = float("inf")
 
         cent_lab = zip(self.centroids, self.clusters)
-        actions = defaultdict(set)  # Tuple -> Set of actions
+        actions = defaultdict(set)  # tuple -> set of actions
         merge_history = []
         action_full_history = []
         # First generate counterfactuals m for each cluster center

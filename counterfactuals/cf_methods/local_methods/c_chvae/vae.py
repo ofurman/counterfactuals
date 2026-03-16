@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -36,7 +35,7 @@ def get_home(models_home=None):
 
 
 class VariationalAutoencoder(nn.Module):
-    def __init__(self, data_name: str, layers: List, mutable_mask):
+    def __init__(self, data_name: str, layers: list, mutable_mask):
         """
 
         Parameters
@@ -44,7 +43,7 @@ class VariationalAutoencoder(nn.Module):
         data_name:
             Name of the dataset, used for the name when saving and loading the model.
         layers:
-            List of layer sizes.
+            list of layer sizes.
         mutable_mask:
             Mask that indicates which feature columns are mutable, and which are immutable. Setting
             all columns to mutable, results in the standard case.
@@ -127,7 +126,7 @@ class VariationalAutoencoder(nn.Module):
 
     def fit(
         self,
-        xtrain: Union[pd.DataFrame, np.ndarray],
+        xtrain: pd.DataFrame | np.ndarray,
         kl_weight=0.3,
         lambda_reg=1e-6,
         epochs=5,

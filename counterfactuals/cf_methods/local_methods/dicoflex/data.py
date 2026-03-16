@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Iterable, Sequence
 
 import numpy as np
 import torch
@@ -68,8 +68,8 @@ def build_actionability_mask(dataset: MethodDataset) -> np.ndarray:
 class DiCoFlexDatasetConfig:
     """Container describing how to assemble the DiCoFlex training dataset."""
 
-    masks: List[np.ndarray]
-    p_values: List[float]
+    masks: list[np.ndarray]
+    p_values: list[float]
     n_neighbors: int
     noise_level: float
     factual_chunk_size: int | None = None
@@ -105,7 +105,7 @@ class DiCoFlexTrainingDataset(Dataset):
         self.classes = np.unique(self.y)
         if len(self.classes) < 2:
             raise ValueError("DiCoFlex requires at least two classes.")
-        self.class_to_index: Dict[int, int] = {cls: idx for idx, cls in enumerate(self.classes)}
+        self.class_to_index: dict[int, int] = {cls: idx for idx, cls in enumerate(self.classes)}
         self.total_candidates = max(
             self.n_neighbors * max(len(self.classes) - 1, 1), self.n_neighbors
         )
@@ -116,8 +116,8 @@ class DiCoFlexTrainingDataset(Dataset):
             max(1, config.target_chunk_size) if config.target_chunk_size else 1024
         )
         # Pre-separate data by class to reduce memory usage during neighbor computation
-        self._X_by_class: Dict[int, np.ndarray] = {}
-        self._indices_by_class: Dict[int, np.ndarray] = {}
+        self._X_by_class: dict[int, np.ndarray] = {}
+        self._indices_by_class: dict[int, np.ndarray] = {}
         for cls in self.classes:
             class_mask = self.y == cls
             self._X_by_class[cls] = self.X[class_mask]
@@ -136,18 +136,18 @@ class DiCoFlexTrainingDataset(Dataset):
         return self.n_features + len(self.classes) + self.n_features + 1
 
     @property
-    def mask_vectors(self) -> List[np.ndarray]:
+    def mask_vectors(self) -> list[np.ndarray]:
         """Expose the validated mask vectors."""
         return self.masks
 
     def __len__(self) -> int:
         return len(self._factual_entries)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         mask_idx, p_value, factual_idx, neighbor_records = self._factual_entries[idx]
         factual = self.X[factual_idx]
-        cf_samples: List[np.ndarray] = []
-        contexts: List[np.ndarray] = []
+        cf_samples: list[np.ndarray] = []
+        contexts: list[np.ndarray] = []
         for cf_idx, target_class in neighbor_records:
             counterfactual = self._apply_noise(self.X[cf_idx].copy())
             cf_samples.append(counterfactual.astype(np.float32))
@@ -176,13 +176,13 @@ class DiCoFlexTrainingDataset(Dataset):
             )
         return vector
 
-    def _precompute_neighbors(self) -> Dict[Tuple[int, float, int, int], np.ndarray]:
+    def _precompute_neighbors(self) -> dict[tuple[int, float, int, int], np.ndarray]:
         """Compute nearest neighbors using class-separated, chunked distance computation.
 
         Distances are computed between factual/target class subsets in chunks, reducing
         peak memory usage while still selecting the closest candidates.
         """
-        neighbor_map: Dict[Tuple[int, float, int, int], np.ndarray] = {}
+        neighbor_map: dict[tuple[int, float, int, int], np.ndarray] = {}
         for mask_idx, mask in enumerate(self.masks):
             for p_value in self.p_values:
                 for factual_class in self.classes:
@@ -272,12 +272,12 @@ class DiCoFlexTrainingDataset(Dataset):
 
     def _build_factual_entries(
         self,
-    ) -> List[Tuple[int, float, int, List[Tuple[int, int]]]]:
+    ) -> list[tuple[int, float, int, list[tuple[int, int]]]]:
         """Build training entries pairing factual points with their nearest counterfactuals.
 
         Iterates by class to align with the class-separated neighbor map structure.
         """
-        entries: List[Tuple[int, float, int, List[Tuple[int, int]]]] = []
+        entries: list[tuple[int, float, int, list[tuple[int, int]]]] = []
 
         # Iterate by factual class to match the neighbor map's class-separated structure
         for factual_class in self.classes:
@@ -286,7 +286,7 @@ class DiCoFlexTrainingDataset(Dataset):
             for local_factual_idx, factual_idx in enumerate(factual_global_indices):
                 for mask_idx, _ in enumerate(self.masks):
                     for p_value in self.p_values:
-                        neighbor_records: List[Tuple[int, int]] = []
+                        neighbor_records: list[tuple[int, int]] = []
 
                         for target_class in self.classes:
                             if target_class == factual_class:
@@ -334,8 +334,8 @@ class DiCoFlexTrainingDataset(Dataset):
 def create_dicoflex_dataloaders(
     X: np.ndarray,
     y: np.ndarray,
-    masks: List[np.ndarray],
-    p_values: List[float],
+    masks: list[np.ndarray],
+    p_values: list[float],
     n_neighbors: int,
     noise_level: float,
     factual_batch_size: int,
@@ -345,7 +345,7 @@ def create_dicoflex_dataloaders(
     categorical_indices: Sequence[int],
     factual_chunk_size: int | None = None,
     target_chunk_size: int | None = None,
-) -> Tuple[DataLoader, DataLoader, Dict[int, int], List[np.ndarray], int]:
+) -> tuple[DataLoader, DataLoader, dict[int, int], list[np.ndarray], int]:
     """Create train/validation loaders for DiCoFlex flow training.
 
     Args:

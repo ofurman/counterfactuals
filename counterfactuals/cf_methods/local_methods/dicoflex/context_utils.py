@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 import numpy as np
 import torch
 
@@ -13,7 +11,7 @@ def _ensure_float32_contiguous(array: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(array.astype(np.float32, copy=False))
 
 
-def _label_to_index(label: float | int, class_to_index: Dict[int, int]) -> int:
+def _label_to_index(label: float | int, class_to_index: dict[int, int]) -> int:
     """Map a raw label value to its contiguous class index."""
     if label in class_to_index:
         return class_to_index[label]
@@ -28,7 +26,7 @@ def build_context_matrix(
     labels: np.ndarray,
     mask_vector: np.ndarray,
     p_value: float,
-    class_to_index: Dict[int, int],
+    class_to_index: dict[int, int],
 ) -> torch.Tensor:
     """Construct the DiCoFlex conditioning matrix for a batch of samples."""
     factual = _ensure_float32_contiguous(factual_points)
@@ -71,14 +69,14 @@ class DiCoFlexGeneratorMetricsAdapter(torch.nn.Module):
     def __init__(
         self,
         base_model: torch.nn.Module,
-        context_lookup: Dict[int, torch.Tensor],
+        context_lookup: dict[int, torch.Tensor],
     ) -> None:
         super().__init__()
         self.base_model = base_model
         self.context_lookup = context_lookup
 
     def eval(self) -> "DiCoFlexGeneratorMetricsAdapter":
-        """Set the underlying model to eval mode and return self."""
+        """set the underlying model to eval mode and return self."""
         self.base_model.eval()
         return self
 

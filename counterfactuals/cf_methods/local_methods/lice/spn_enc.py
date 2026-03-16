@@ -5,10 +5,8 @@ from counterfactuals.cf_methods.local_methods.lice.SPN import SPN, NodeType
 
 # from scipy.special import logsumexp
 
-
 # issues with binding variables in lambda functions for constraints
 # trunk-ignore-all(ruff/B023)
-
 
 # def contains_positive_logdensities(spn: SPN) -> bool:
 #     """Checks whether there is a possibility that the SPN will have input log density on a sum node > 0
@@ -79,7 +77,7 @@ def encode_histogram(
     n_bins = len(vals)
     M = max(1, breaks[-1] - breaks[0])
 
-    mio_block.bins = pyo.Set(initialize=list(range(n_bins)))
+    mio_block.bins = pyo.set(initialize=list(range(n_bins)))
     mio_block.not_in_bin = pyo.Var(mio_block.bins, domain=pyo.Binary)
     mio_block.one_bin = pyo.Constraint(
         expr=sum(mio_block.not_in_bin[i] for i in mio_block.bins) == n_bins - 1
@@ -112,7 +110,7 @@ def encode_spn(
     Args:
         spn (SPN): The SPN to model
         mio_spn (pyo.Block): Pyomo block used to model the spn
-        input_vars (list[list[pyo.Var]  |  pyo.Var]): Variables representing the SPN inputed. List of variables (possibly one-hot encoded in the same ordering as SPN bins)
+        input_vars (list[list[pyo.Var]  |  pyo.Var]): Variables representing the SPN inputed. list of variables (possibly one-hot encoded in the same ordering as SPN bins)
         leaf_encoding (str, optional): either "histogram" or one of the values for piece-wise linear function approximation within Pyomo library (see https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Expressions.html#piecewise-linear-expressions). Defaults to "histogram".
         mio_epsilon (float, optional): the minimal change between values (for numerical stability), used for sharp inequalities. Defaults to 1e-6.
         TODO add sum_approx
@@ -132,9 +130,9 @@ def encode_spn(
     #     node_ids.append(node.id)
 
     # mio_spn.node_type_sets = {
-    #     t: pyo.Set(initialize=ids) for t, ids in node_type_ids.items()
+    #     t: pyo.set(initialize=ids) for t, ids in node_type_ids.items()
     # }
-    mio_spn.node_set = pyo.Set(initialize=node_ids)
+    mio_spn.node_set = pyo.set(initialize=node_ids)
 
     # values are log likelihoods - almost always negative - except in narrow peaks that go above 1
     # mio_spn.node_out = pyo.Var(mio_spn.node_set, within=pyo.NonPositiveReals)

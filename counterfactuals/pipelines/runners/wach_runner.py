@@ -63,11 +63,43 @@ class WACHPipelineRunner(PipelineRunner):
             dataset, gen_model, disc_model, save_folder, log_prob_threshold
         )
 
-    def create_cf_method(self, dataset, gen_model, disc_model):
+    def create_cf_method(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+    ) -> object:
+        """Instantiate the WACH CF method.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model (unused by WACH).
+            disc_model: Trained discriminative model.
+
+        Returns:
+            WACH CF method instance.
+        """
         self.logger.info("Creating counterfactual model")
         return WACH(disc_model=disc_model)
 
-    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+    def run_cf_method(
+        self,
+        cf_method: object,
+        cf_dataloader: torch.utils.data.DataLoader,
+        dataset: MethodDataset,
+        log_prob_threshold: float,
+    ) -> CfMethodOutput:
+        """Run WACH CF generation via explain_dataloader.
+
+        Args:
+            cf_method: WACH CF method instance.
+            cf_dataloader: DataLoader for the filtered test set.
+            dataset: The current fold's dataset.
+            log_prob_threshold: Plausibility threshold (unused by WACH).
+
+        Returns:
+            CfMethodOutput with generated counterfactuals.
+        """
         self.logger.info("Handling counterfactual generation")
         target_class = self._get_target_class()
         Xs_cfs, Xs, ys_orig, ys_target, model_returned = cf_method.explain_dataloader(

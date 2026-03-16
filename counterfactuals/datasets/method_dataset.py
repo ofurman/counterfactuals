@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generator, Tuple
+from typing import Generator
 
 import numpy as np
 import torch
@@ -205,7 +205,7 @@ class MethodDataset:
         the structure after refitting in cross-validation folds.
 
         Returns:
-            list: List of lists, where each inner list contains the indices of
+            list: list of lists, where each inner list contains the indices of
                   one-hot encoded features for each original categorical variable.
 
         Raises:
@@ -245,7 +245,7 @@ class MethodDataset:
 
     def get_cv_splits(
         self, n_splits: int = 5, shuffle: bool = True
-    ) -> Generator[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
+    ) -> Generator[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
         """Generates stratified cross-validation splits.
 
         Note: This method updates instance variables (X_train, X_test, y_train, y_test)

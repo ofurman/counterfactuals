@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
 
 import numpy as np
 import torch
@@ -149,7 +148,7 @@ class CeFlowModel(nn.Module):
             hidden_dim=config.hidden_dim,
         )
         self.prior = GaussianMixturePrior(self.total_dim, n_classes)
-        self.class_means: Dict[int, torch.Tensor] | None = None
+        self.class_means: dict[int, torch.Tensor] | None = None
 
     def forward(
         self, x_con: torch.Tensor, x_cat: torch.Tensor | None, y: torch.Tensor

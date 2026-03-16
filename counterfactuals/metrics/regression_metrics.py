@@ -1,5 +1,3 @@
-from typing import List, Union
-
 import numpy as np
 import torch
 
@@ -14,16 +12,16 @@ class RegressionCFMetrics(CFMetrics):
 
     def __init__(
         self,
-        X_cf: Union[np.ndarray, torch.Tensor],
-        y_target: Union[np.ndarray, torch.Tensor],
-        X_train: Union[np.ndarray, torch.Tensor],
-        y_train: Union[np.ndarray, torch.Tensor],
-        X_test: Union[np.ndarray, torch.Tensor],
-        y_test: Union[np.ndarray, torch.Tensor],
+        X_cf: np.ndarray | torch.Tensor,
+        y_target: np.ndarray | torch.Tensor,
+        X_train: np.ndarray | torch.Tensor,
+        y_train: np.ndarray | torch.Tensor,
+        X_test: np.ndarray | torch.Tensor,
+        y_test: np.ndarray | torch.Tensor,
         gen_model: torch.nn.Module,
         disc_model: torch.nn.Module,
-        continuous_features: List[int],
-        categorical_features: List[int],
+        continuous_features: list[int],
+        categorical_features: list[int],
         ratio_cont: float | None = None,
         prob_plausibility_threshold: float | None = None,
         target_tolerance: float = 0.05,

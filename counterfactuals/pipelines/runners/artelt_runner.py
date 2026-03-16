@@ -41,17 +41,55 @@ class ArteltPipelineRunner(PipelineRunner):
             dataset, gen_model, disc_model, save_folder, log_prob_threshold
         )
 
-    def create_cf_method(self, dataset, gen_model, disc_model):
+    def create_cf_method(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+    ) -> object:
+        """Instantiate the Artelt CF method.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model (unused by Artelt).
+            disc_model: Trained discriminative model.
+
+        Returns:
+            Artelt CF method instance.
+        """
         self.logger.info("Creating counterfactual model")
         return Artelt(disc_model=disc_model)
 
-    def pre_cf_generation(self, cf_method, dataset):
+    def pre_cf_generation(self, cf_method: object, dataset: MethodDataset) -> None:
+        """Fit density estimators required by Artelt before CF generation.
+
+        Args:
+            cf_method: Artelt CF method instance.
+            dataset: The current fold's dataset providing X_train and y_train.
+        """
         cf_method.fit_density_estimators(
             X_train=np.asarray(dataset.X_train),
             y_train=np.asarray(dataset.y_train).reshape(-1),
         )
 
-    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+    def run_cf_method(
+        self,
+        cf_method: object,
+        cf_dataloader: torch.utils.data.DataLoader,
+        dataset: MethodDataset,
+        log_prob_threshold: float,
+    ) -> CfMethodOutput:
+        """Run Artelt CF generation via explain_dataloader.
+
+        Args:
+            cf_method: Artelt CF method instance (post-density-fitting).
+            cf_dataloader: DataLoader for the filtered test set.
+            dataset: The current fold's dataset.
+            log_prob_threshold: Plausibility threshold (unused by Artelt).
+
+        Returns:
+            CfMethodOutput with generated counterfactuals.
+        """
         self.logger.info("Handling counterfactual generation")
         explanation_result = cf_method.explain_dataloader(dataloader=cf_dataloader)
         x_cfs = np.atleast_2d(np.asarray(explanation_result.x_cfs))

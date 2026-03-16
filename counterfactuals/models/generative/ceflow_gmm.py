@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 import torch
 import torch.optim as optim
@@ -184,7 +182,7 @@ class CeFlowGMM(PytorchBase, GenerativePytorchMixin):
 
     def sample_and_log_proba(
         self, n_samples: int, context: np.ndarray | None = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Sample from the model and return log probabilities."""
         y = None
         if context is not None:

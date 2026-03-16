@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -37,7 +35,7 @@ class MADE(nn.Module):
     def __init__(
         self,
         n_in: int,
-        hidden_dims: List[int],
+        hidden_dims: list[int],
         gaussian: bool = False,
         random_order: bool = False,
         seed: int | None = None,
@@ -46,13 +44,13 @@ class MADE(nn.Module):
 
         Args:
             n_in: Size of input.
-            hidden_dims: List with sizes of the hidden layers.
+            hidden_dims: list with sizes of the hidden layers.
             gaussian: Whether to use Gaussian MADE. Default: False.
             random_order: Whether to use random order. Default: False.
             seed: Random seed for numpy. Default: None.
         """
         super().__init__()
-        # Set random seed.
+        # set random seed.
         np.random.seed(seed)
         self.n_in = n_in
         self.n_out = 2 * n_in if gaussian else n_in
@@ -63,7 +61,7 @@ class MADE(nn.Module):
         self.mask_matrix = []
         self.layers = []
 
-        # List of layers sizes.
+        # list of layers sizes.
         dim_list = [self.n_in, *hidden_dims, self.n_out]
         # Make layers and activation functions.
         for i in range(len(dim_list) - 2):
@@ -96,7 +94,7 @@ class MADE(nn.Module):
         # Whether to use random or natural ordering of the inputs.
         self.masks[0] = permutation(D) if self.random_order else np.arange(D)
 
-        # Set the connectivity number m for the hidden layers.
+        # set the connectivity number m for the hidden layers.
         # m ~ DiscreteUniform[min_{prev_layer}(m), D-1]
         for l in range(L):  # noqa: E741
             low = self.masks[l].min()

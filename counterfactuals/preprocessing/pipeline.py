@@ -8,14 +8,14 @@ class PreprocessingPipeline(PreprocessingStep):
     maintaining a consistent context-based interface.
 
     Attributes:
-        steps: List of (name, step) tuples defining the pipeline.
+        steps: list of (name, step) tuples defining the pipeline.
     """
 
     def __init__(self, steps: list[tuple[str, PreprocessingStep]]):
         """Initialize the preprocessing pipeline.
 
         Args:
-            steps: List of (name, step) tuples where step implements PreprocessingStep.
+            steps: list of (name, step) tuples where step implements PreprocessingStep.
         """
         self.steps = steps
         self._validate_steps()

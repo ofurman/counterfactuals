@@ -60,11 +60,11 @@ class SearchResult:
         extras: Method-specific additional outputs (e.g. group IDs, S/D matrices).
     """
 
-    X_cf: Any
-    X_test: Any
-    y_orig: Any
-    y_target: Any
-    model_returned: Any
+    X_cf: np.ndarray
+    X_test: np.ndarray
+    y_orig: np.ndarray
+    y_target: np.ndarray
+    model_returned: np.ndarray
     cf_search_time: float
     extras: dict[str, Any] = field(default_factory=dict)
 
@@ -539,7 +539,7 @@ class PipelineRunner(ABC):
             target_class: Class label to exclude from counterfactual generation.
 
         Returns:
-            Tuple of (X_test_filtered, y_test_filtered).
+            tuple of (X_test_filtered, y_test_filtered).
         """
         X_test_origin = dataset.X_test[dataset.y_test != target_class]
         y_test_origin = dataset.y_test[dataset.y_test != target_class]
@@ -593,7 +593,7 @@ class PipelineRunner(ABC):
         """Extract CF method and disc model names from config.
 
         Returns:
-            Tuple of (cf_method_name, disc_model_name).
+            tuple of (cf_method_name, disc_model_name).
         """
         cf_method_name = self.cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
         disc_model_name = self._get_disc_model_name()
@@ -651,7 +651,7 @@ class PipelineRunner(ABC):
             **kwargs: Additional arguments passed to the CF method.
 
         Returns:
-            Tuple of (counterfactuals, model_returned mask).
+            tuple of (counterfactuals, model_returned mask).
             Failed samples have NaN counterfactuals and False in model_returned.
         """
         n_samples = len(X)

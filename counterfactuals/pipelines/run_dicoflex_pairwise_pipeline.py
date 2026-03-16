@@ -1,7 +1,6 @@
 import logging
 import os
 from time import time
-from typing import List
 
 import hydra
 import numpy as np
@@ -40,9 +39,9 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 
-def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
+def build_masks(dataset: MethodDataset, cfg: DictConfig) -> list[np.ndarray]:
     """Assemble the mask catalogue used during DiCoFlex training."""
-    masks: List[np.ndarray] = []
+    masks: list[np.ndarray] = []
     if cfg.use_actionability_mask:
         masks.append(build_actionability_mask(dataset))
     for custom_mask in cfg.get("custom_masks", []):

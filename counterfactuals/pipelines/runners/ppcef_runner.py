@@ -42,7 +42,22 @@ class PPCEFPipelineRunner(PipelineRunner):
             dataset, gen_model, disc_model, save_folder, log_prob_threshold
         )
 
-    def create_cf_method(self, dataset, gen_model, disc_model):
+    def create_cf_method(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+    ) -> object:
+        """Instantiate the PPCEF CF method.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model used for plausibility.
+            disc_model: Trained discriminative model.
+
+        Returns:
+            PPCEF CF method instance.
+        """
         self.logger.info("Creating counterfactual model")
         disc_model_criterion = instantiate(self.cfg.counterfactuals_params.disc_model_criterion)
         return PPCEF(
@@ -51,7 +66,24 @@ class PPCEFPipelineRunner(PipelineRunner):
             disc_model_criterion=disc_model_criterion,
         )
 
-    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+    def run_cf_method(
+        self,
+        cf_method: object,
+        cf_dataloader: torch.utils.data.DataLoader,
+        dataset: MethodDataset,
+        log_prob_threshold: float,
+    ) -> CfMethodOutput:
+        """Run PPCEF CF generation via explain_dataloader.
+
+        Args:
+            cf_method: PPCEF CF method instance.
+            cf_dataloader: DataLoader for the filtered test set.
+            dataset: The current fold's dataset providing categorical feature lists.
+            log_prob_threshold: Plausibility threshold passed to PPCEF.
+
+        Returns:
+            CfMethodOutput with generated counterfactuals.
+        """
         self.logger.info("Handling counterfactual generation")
         explanation_result = cf_method.explain_dataloader(
             dataloader=cf_dataloader,
@@ -76,7 +108,9 @@ class PPCEFPipelineRunner(PipelineRunner):
             y_targets=explanation_result.y_cf_targets,
         )
 
-    def postprocess_cf_output(self, output, dataset):
+    def postprocess_cf_output(
+        self, output: CfMethodOutput, dataset: MethodDataset
+    ) -> CfMethodOutput:
         if self.cfg.counterfactuals_params.use_categorical:
             output.x_cfs = apply_categorical_discretization(
                 dataset.categorical_features_lists, output.x_cfs

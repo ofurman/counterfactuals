@@ -28,11 +28,11 @@ class PairwiseMixin:
         """Stack per-run CFs into 3D array, extract first CF per instance.
 
         Args:
-            cfs_list: List of CF arrays, each of shape ``(n_samples, n_features)``.
+            cfs_list: list of CF arrays, each of shape ``(n_samples, n_features)``.
                 Each element represents one run/draw of the CF method.
 
         Returns:
-            Tuple of:
+            tuple of:
                 - ``Xs_cfs_first``: First CF per instance, shape ``(n_samples, n_features)``.
                 - ``Xs_cfs_all``: All CFs stacked, shape ``(n_samples, n_runs, n_features)``.
         """

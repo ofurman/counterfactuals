@@ -1,12 +1,12 @@
 import copy
 import itertools
+import logging
 import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from mlxtend.frequent_patterns import apriori
-from sklearn import preprocessing
 from tqdm import tqdm
 
 from counterfactuals.cf_methods.counterfactual_base import (
@@ -16,6 +16,8 @@ from counterfactuals.cf_methods.counterfactual_base import (
 from counterfactuals.cf_methods.global_counterfactual_mixin import (
     GlobalCounterfactualMixin,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def create_feature_values_tree(features_tree, use_values=False):
@@ -76,7 +78,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
                            and information on categorical/continuous features
 
         (optional arguments)
-        dropped_features    : List of dropped features in the form of just the
+        dropped_features    : list of dropped features in the form of just the
                               feature e.g. 'Foreign-Worker'
         add_redundant       : If True, evaluate each candidate rule and reject
                               those which don't provide any recourse for the
@@ -93,7 +95,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
                               size 4 for AReS, size 2 for our objective)
         feature_costs       : optional vector for defined feature costs
                               (otherwise, we use l1 norm)
-        ordinal_features    : List of categorical features that require ordinal
+        ordinal_features    : list of categorical features that require ordinal
                               costs when moving between categories (typically
                               continuous features which have been one-hot
                               encoded before model training)
@@ -114,7 +116,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
                               to not match the "inner-if" entirely.
         """
 
-        # Set Input Parameters
+        # set Input Parameters
         self.predict_fn = predict_fn
         self.normalise = normalise
         if self.normalise:
@@ -315,7 +317,6 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             xs.append(batch_x.detach().cpu().numpy())
             ys.append(batch_y.detach().cpu().numpy())
 
-        X = np.vstack(xs)
         y_origin = np.concatenate(ys).reshape(-1)
 
         if y_target is None:
@@ -450,9 +451,9 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             then_generation=then_generation,
         )
 
-        print("Ground Set Computed with Length", self.V.length)
+        logger.info("Ground set Computed with Length", self.V.length)
         if save_copy:
-            print("Saving Copy of Ground Set as V_copy")
+            logger.info("Saving Copy of Ground set as V_copy")
             self.V_copy = copy.deepcopy(self.V)
 
     def evaluate_groundset(self, lams, r=None, save_mode=0, disable_tqdm=False, plot_accuracy=True):
@@ -498,13 +499,13 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
 
         Output: Final two level recourse set, S
         """
-        print("Initialising Copy of Ground Set")
+        logger.info("Initialising Copy of Ground set")
         if save_copy:
             self.V_opt = None
             # ensures python doesn't use an already
             # stored version during the deepcopy process
             self.V_opt = copy.deepcopy(self.V)
-            print("Ground Set Copied")
+            logger.info("Ground set Copied")
         else:
             self.V_opt = self.V
         N = self.V_opt.length
@@ -710,7 +711,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         """
         Computes if constraints (e1: total number of rules, e3: total number of unique sub-descriptors) are violated
 
-        Input: Two Level Recourse Set, Si
+        Input: Two Level Recourse set, Si
         Output: boolean (True if constraints are not violated)
         """
         if len(triples) > self.e1:
@@ -726,8 +727,6 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         """
         Combine with first class method?
         """
-        label_encoder = preprocessing.LabelEncoder()
-        data_encode = data.copy()
         self.data_binned_te = data.copy()
         data_oh = []
         for x in data.columns:
@@ -913,7 +912,7 @@ class TwoLevelRecourseSet:
         Stores SD, RL, triples and length
         """
         # Initialise SD and RL
-        print("Computing Ground Set of Triples V")
+        logger.info("Computing Ground set of Triples V")
         self.SD, self.RL = SD, RL
         # Apply RL-Reduction if required
         if RL_reduction is True:
@@ -1174,7 +1173,7 @@ class TwoLevelRecourseSet:
             )
             plt.title(
                 "Performance of Triples vs Number of Triples\nSelected "
-                "in Ground Set of Total Length {}".format(self.length)
+                "in Ground set of Total Length {}".format(self.length)
             )
             plt.ylabel("Recourse Accuracy (%)")
             plt.xlabel("Number of Triples in V Selected")
@@ -1214,4 +1213,4 @@ class TwoLevelRecourseSet:
         for i in self.triples_array[idx]:
             self.triples.add(i)
         self.length = len(self.triples)
-        print("Candidate Set Filtered with Length:", s)
+        logger.info("Candidate set Filtered with Length:", s)

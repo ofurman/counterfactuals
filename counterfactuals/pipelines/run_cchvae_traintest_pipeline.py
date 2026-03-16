@@ -3,7 +3,7 @@
 import logging
 import os
 from time import time
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import hydra
 import numpy as np
@@ -59,8 +59,8 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[
-    Tuple[np.ndarray, np.ndarray],
+) -> tuple[
+    tuple[np.ndarray, np.ndarray],
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -70,8 +70,8 @@ def search_counterfactuals(
     """Generate multiple counterfactuals using CCHVAE on the test split.
 
     Returns:
-        Tuple containing:
-            - Xs_cfs_bundle: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
+        tuple containing:
+            - Xs_cfs_bundle: tuple of (Xs_cfs_first, Xs_cfs_all) where:
                 - Xs_cfs_first: First CF per factual instance
                 - Xs_cfs_all: All CFs per instance
             - X_test_origin: Original test instances
@@ -160,15 +160,15 @@ def calculate_metrics(
     disc_model: torch.nn.Module,
     Xs_cfs: np.ndarray | tuple,
     model_returned: np.ndarray,
-    categorical_features: List[int],
-    continuous_features: List[int],
+    categorical_features: list[int],
+    continuous_features: list[int],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
     y_test: np.ndarray,
     median_log_prob: float,
     y_target: np.ndarray | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate evaluation metrics for generated counterfactual explanations."""
     Xs_cfs_first, Xs_cfs_all = Xs_cfs
 

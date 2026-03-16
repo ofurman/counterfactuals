@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 import numpy as np
 from scipy.spatial.distance import _validate_vector, cdist
@@ -85,7 +85,7 @@ class CombinedDistanceMetric(BaseDistanceMetric):
     Subclasses should specify the continuous and categorical metrics to use.
     """
 
-    continuous_metric: Union[str, Callable]
+    continuous_metric: str | Callable
     categorical_metric: str
     requires_X_train: bool = False
 
@@ -103,7 +103,7 @@ class CombinedDistanceMetric(BaseDistanceMetric):
         continuous_features: list[int],
         categorical_features: list[int],
         ratio_cont: float | None,
-        continuous_metric: Union[str, Callable],
+        continuous_metric: str | Callable,
         categorical_metric: str,
     ) -> float:
         """

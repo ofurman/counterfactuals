@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Sequence, Tuple, Type
+from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
@@ -18,13 +18,13 @@ class InitialTransformContext:
     """Container holding dataset state for initial transforms."""
 
     data: pd.DataFrame
-    features: List[str]
-    continuous_features: List[str]
-    categorical_features: List[str]
-    feature_config: Dict[str, FeatureParameters]
+    features: list[str]
+    continuous_features: list[str]
+    categorical_features: list[str]
+    feature_config: dict[str, FeatureParameters]
     target: str
     task_type: str = "classification"
-    one_hot_feature_groups: Dict[str, List[str]] = field(default_factory=dict)
+    one_hot_feature_groups: dict[str, list[str]] = field(default_factory=dict)
 
     def copy(self) -> "InitialTransformContext":
         """Deep copy context to avoid shared state between steps."""
@@ -55,7 +55,7 @@ class InitialTransformStep(ABC):
 class InitialTransformPipeline:
     """Chain multiple initial transforms sequentially."""
 
-    def __init__(self, steps: List[Tuple[str, InitialTransformStep]]):
+    def __init__(self, steps: list[tuple[str, InitialTransformStep]]):
         self.steps = steps
         self._validate_steps()
 
@@ -220,8 +220,8 @@ class OneHotEncodingStep(InitialTransformStep):
         context.data = pd.concat([encoded, target_df], axis=1)
         context.features = list(encoded.columns)
 
-        new_feature_config: Dict[str, FeatureParameters] = {}
-        categorical_groups: Dict[str, List[str]] = {}
+        new_feature_config: dict[str, FeatureParameters] = {}
+        categorical_groups: dict[str, list[str]] = {}
 
         for feature in encoded.columns:
             base_feature = self._base_feature_name(feature, categorical)
@@ -324,7 +324,7 @@ class FilterClassesStep(InitialTransformStep):
         return context
 
 
-INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
+INITIAL_TRANSFORM_REGISTRY: dict[str, type[InitialTransformStep]] = {
     "dropna": DropNaStep,
     "drop_na": DropNaStep,
     "reorder_columns": ReorderColumnsStep,
@@ -339,13 +339,13 @@ INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
 
 
 def build_initial_transform_pipeline(
-    steps_config: Sequence[Dict[str, Any]] | None,
+    steps_config: Sequence[dict[str, Any]] | None,
 ) -> InitialTransformPipeline | None:
     """Create a pipeline instance from YAML configuration."""
     if not steps_config:
         return None
 
-    steps: List[Tuple[str, InitialTransformStep]] = []
+    steps: list[tuple[str, InitialTransformStep]] = []
     for step_cfg in steps_config:
         name = step_cfg.get("name")
         if name is None:

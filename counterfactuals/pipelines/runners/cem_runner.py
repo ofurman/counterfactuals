@@ -41,7 +41,22 @@ class CEMPipelineRunner(PipelineRunner):
             dataset, gen_model, disc_model, save_folder, log_prob_threshold
         )
 
-    def create_cf_method(self, dataset, gen_model, disc_model):
+    def create_cf_method(
+        self,
+        dataset: MethodDataset,
+        gen_model: torch.nn.Module,
+        disc_model: torch.nn.Module,
+    ) -> object:
+        """Instantiate the CEM CF method.
+
+        Args:
+            dataset: The current fold's dataset.
+            gen_model: Trained generative model (unused by CEM).
+            disc_model: Trained discriminative model.
+
+        Returns:
+            CEM_CF method instance.
+        """
         self.logger.info("Creating counterfactual model")
         return CEM_CF(
             disc_model=disc_model,
@@ -57,7 +72,24 @@ class CEMPipelineRunner(PipelineRunner):
             clip=tuple(self.cfg.counterfactuals_params.clip_range),
         )
 
-    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold):
+    def run_cf_method(
+        self,
+        cf_method: object,
+        cf_dataloader: torch.utils.data.DataLoader,
+        dataset: MethodDataset,
+        log_prob_threshold: float,
+    ) -> CfMethodOutput:
+        """Run CEM CF generation via explain_dataloader.
+
+        Args:
+            cf_method: CEM_CF method instance.
+            cf_dataloader: DataLoader for the filtered test set.
+            dataset: The current fold's dataset providing X_train.
+            log_prob_threshold: Plausibility threshold (unused by CEM).
+
+        Returns:
+            CfMethodOutput with generated counterfactuals.
+        """
         self.logger.info("Handling counterfactual generation")
         target_class = self._get_target_class()
         explanation_result = cf_method.explain_dataloader(

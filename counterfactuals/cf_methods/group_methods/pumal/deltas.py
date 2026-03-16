@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Dict
 
 import numpy as np
 import torch
@@ -107,7 +106,7 @@ class GCE(torch.nn.Module):
         K,
         init_from_kmeans=False,
         X=None,
-        dim_configs: Dict[int, DimConfig] | None = None,
+        dim_configs: dict[int, DimConfig] | None = None,
     ):
         """
         Initialize GCE with per-dimension gradient strategies and value ranges.
@@ -118,7 +117,7 @@ class GCE(torch.nn.Module):
             K (int): Number of clusters
             init_from_kmeans (bool): Whether to initialize S from KMeans clustering
             X (tensor): Data for KMeans initialization
-            dim_configs (Dict[int, DimConfig]): Dictionary mapping dimension indices to
+            dim_configs (dict[int, DimConfig]): Dictionary mapping dimension indices to
                                                 DimConfig objects specifying gradient behavior
                                                 and clamping ranges
         """

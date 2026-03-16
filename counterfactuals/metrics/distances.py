@@ -188,7 +188,7 @@ def distance_combined(
 
 
 if __name__ == "__main__":
-    # Set up logging
+    # set up logging
     logging.basicConfig(level=logging.DEBUG)
 
     X_test = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])

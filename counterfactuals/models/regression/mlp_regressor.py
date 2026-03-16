@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -22,7 +20,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
         self,
         num_inputs: int,
         num_targets: int,
-        hidden_layer_sizes: List[int] = [128, 128],
+        hidden_layer_sizes: list[int] = [128, 128],
         dropout: float = 0.2,
     ):
         """
@@ -31,7 +29,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
         Args:
             num_inputs: Number of input features
             num_targets: Number of output targets
-            hidden_layer_sizes: List of hidden layer sizes
+            hidden_layer_sizes: list of hidden layer sizes
             dropout: Dropout rate for regularization
         """
         super(MLPRegressor, self).__init__(num_inputs, num_targets)

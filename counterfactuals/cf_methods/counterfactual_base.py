@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Union
+from typing import Any
 
 import numpy as np
 from torch.utils.data import DataLoader
@@ -22,7 +22,7 @@ class ExplanationResult:
         y_cf_targets (np.ndarray): Target labels/values for the counterfactuals.
         x_origs (np.ndarray): Original input instances.
         y_origs (np.ndarray): Original labels/values for the input instances.
-        logs (Dict[str, Any] | None): Additional logging information such as
+        logs (dict[str, Any] | None): Additional logging information such as
             loss curves, convergence metrics, or method-specific data.
     """
 
@@ -30,7 +30,7 @@ class ExplanationResult:
     y_cf_targets: np.ndarray
     x_origs: np.ndarray
     y_origs: np.ndarray
-    logs: Dict[str, Any] | None = None
+    logs: dict[str, Any] | None = None
     cf_group_ids: np.ndarray | None = None
 
 
@@ -140,7 +140,7 @@ class BaseCounterfactualMethod(ABC):
         dataloader: DataLoader,
         epochs: int,
         lr: float,
-        patience_eps: Union[float, int] = 1e-5,
+        patience_eps: float | int = 1e-5,
         **search_step_kwargs,
     ) -> ExplanationResult:
         """
@@ -156,7 +156,7 @@ class BaseCounterfactualMethod(ABC):
                 where X are instances to explain and y are their labels.
             epochs (int): Maximum number of optimization epochs per instance.
             lr (float): Learning rate for optimization procedures.
-            patience_eps (Union[float, int]): Convergence threshold. When loss
+            patience_eps (float | int): Convergence threshold. When loss
                 drops below this value, optimization can terminate early.
             **search_step_kwargs: Additional parameters passed to the search
                 step function, such as regularization weights, constraints, etc.

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -10,12 +10,12 @@ from sklearn.preprocessing import LabelEncoder
 
 
 def apply_categorical_discretization(
-    categorical_features_lists: List[List[int]], samples: np.ndarray
+    categorical_features_lists: list[list[int]], samples: np.ndarray
 ) -> np.ndarray:
     """Discretize categorical feature groups into one-hot values.
 
     Args:
-        categorical_features_lists: List of index groups for categorical features.
+        categorical_features_lists: list of index groups for categorical features.
         samples: Array of samples with shape (n_samples, n_features).
 
     Returns:
@@ -50,7 +50,7 @@ def align_counterfactuals_with_factuals(
         x_factuals: Queried factual instances, shape ``(n_expected, n_features)``.
 
     Returns:
-        Tuple of:
+        tuple of:
             - Aligned counterfactual array of shape ``(n_expected, n_features)``.
             - Boolean mask of shape ``(n_expected,)`` indicating rows originally
               returned by the model.
@@ -90,7 +90,7 @@ def align_counterfactuals_with_factuals(
 
 def one_hot(
     dataset: Any, data: pd.DataFrame, rename_columns: bool = False
-) -> Tuple[pd.DataFrame, List[str]]:
+) -> tuple[pd.DataFrame, list[str]]:
     """Apply one-hot encoding to categorical features in the dataset.
 
     When the dataset has ``one_hot_feature_groups``, delegates to
@@ -108,9 +108,9 @@ def one_hot(
             GLOBE-CE behavior).
 
     Returns:
-        Tuple containing:
+        tuple containing:
             - data_oh: One-hot encoded DataFrame.
-            - features: List of feature names after encoding.
+            - features: list of feature names after encoding.
     """
     if getattr(dataset, "one_hot_feature_groups", None) or (
         hasattr(dataset, "file_dataset")
@@ -164,7 +164,7 @@ def one_hot(
 
 
 def _set_dataset_attribute(dataset: Any, attribute: str, value: Any) -> None:
-    """Set an attribute on a dataset, falling back to file_dataset if needed.
+    """set an attribute on a dataset, falling back to file_dataset if needed.
 
     Args:
         dataset: Dataset object to update.
@@ -210,7 +210,7 @@ def _infer_one_hot_category(base_feature: str, column: str) -> str:
 
 def _build_features_tree_from_one_hot(
     dataset: Any, data: pd.DataFrame, rename_columns: bool = True
-) -> Tuple[pd.DataFrame, List[str]]:
+) -> tuple[pd.DataFrame, list[str]]:
     """Build a features tree from one-hot encoded column groups.
 
     When ``rename_columns=True`` (AReS behavior), column names are rewritten to
@@ -229,7 +229,7 @@ def _build_features_tree_from_one_hot(
             updates. If ``False``, use GLOBE-CE's lighter behavior.
 
     Returns:
-        Tuple of (transformed_data, column_names).
+        tuple of (transformed_data, column_names).
     """
     groups = getattr(dataset, "one_hot_feature_groups", None)
     if groups is None and hasattr(dataset, "file_dataset"):
@@ -269,7 +269,7 @@ def _build_features_tree_from_one_hot(
 
     # AReS behavior: rename columns using _infer_one_hot_category
     data_transformed = data.copy()
-    transformed_columns: List[str] = []
+    transformed_columns: list[str] = []
     for column in columns:
         base_feature = group_lookup.get(column)
         if base_feature is None:

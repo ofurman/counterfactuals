@@ -1,5 +1,4 @@
 import logging
-from typing import List, Union
 
 import numpy as np
 import torch
@@ -30,24 +29,24 @@ class CFMetrics:
         y_test (np.ndarray | torch.Tensor): Test labels.
         gen_model (torch.nn.Module): Generator model.
         disc_model (torch.nn.Module): Discriminator model.
-        continuous_features (list[int]): List of indices of continuous features.
-        categorical_features (list[int]): List of indices of categorical features.
+        continuous_features (list[int]): list of indices of continuous features.
+        categorical_features (list[int]): list of indices of categorical features.
         ratio_cont (float | None, optional): Ratio of continuous features to be perturbed. Defaults to None.
         prob_plausibility_threshold (float | None, optional): Log Likelihood Threshold for prob. plausibility. Defaults to None.
     """
 
     def __init__(
         self,
-        X_cf: Union[np.ndarray, torch.Tensor],
-        y_target: Union[np.ndarray, torch.Tensor],
-        X_train: Union[np.ndarray, torch.Tensor],
-        y_train: Union[np.ndarray, torch.Tensor],
-        X_test: Union[np.ndarray, torch.Tensor],
-        y_test: Union[np.ndarray, torch.Tensor],
+        X_cf: np.ndarray | torch.Tensor,
+        y_target: np.ndarray | torch.Tensor,
+        X_train: np.ndarray | torch.Tensor,
+        y_train: np.ndarray | torch.Tensor,
+        X_test: np.ndarray | torch.Tensor,
+        y_test: np.ndarray | torch.Tensor,
         gen_model: torch.nn.Module,
         disc_model: torch.nn.Module,
-        continuous_features: List[int],
-        categorical_features: List[int],
+        continuous_features: list[int],
+        categorical_features: list[int],
         ratio_cont: float | None = None,
         prob_plausibility_threshold: float | None = None,
     ) -> None:
@@ -97,7 +96,7 @@ class CFMetrics:
         self.X_cf_valid = self.X_cf[self.y_cf_pred == self.y_target]
         self.X_test_valid = self.X_test[self.y_cf_pred == self.y_target]
 
-    def _convert_to_numpy(self, X: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
+    def _convert_to_numpy(self, X: np.ndarray | torch.Tensor) -> np.ndarray:
         """
         Convert input data to numpy array.
 

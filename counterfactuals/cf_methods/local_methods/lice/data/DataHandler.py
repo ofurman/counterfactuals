@@ -70,7 +70,7 @@ class DataHandler:
         regression : bool
             True if the task is regression, False if y is categorical and task is classification.
         feature_names : optional list of strings
-            List of feature names, if None it is recovered from column names if X is a DataFrame
+            list of feature names, if None it is recovered from column names if X is a DataFrame
         target_name : optional string
             Name of the target feature, if None it is recovered from X if X is a pandas Series
         """
@@ -211,7 +211,7 @@ class DataHandler:
 
     @property
     def features(self) -> list[Feature]:
-        """List of input features"""
+        """list of input features"""
         return self.__input_features
 
     @property
@@ -221,7 +221,7 @@ class DataHandler:
 
     @property
     def feature_names(self) -> list[str]:
-        """List of feature names"""
+        """list of feature names"""
         return [f.name for f in self.__input_features]
 
     def encode(
