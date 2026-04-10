@@ -117,10 +117,10 @@ class DiscModelWrapper:
         self.disc_model = disc_model
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return self.disc_model.predict(X)
+        return np.asarray(self.disc_model.predict(X))
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        return self.disc_model.predict_proba(X)
+        return np.asarray(self.disc_model.predict_proba(X))
 
 
 @hydra.main(config_path="./conf", config_name="cet_config", version_base="1.2")

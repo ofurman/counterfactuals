@@ -29,7 +29,7 @@ class WACH(BaseCounterfactualMethod, LocalCounterfactualMixin):
         lam_init = 1e-1
         max_lam_steps = 10
         learning_rate_init = 0.1
-        predict_proba = disc_model.predict_proba  # already returns np.ndarray
+        predict_proba = lambda x: np.asarray(disc_model.predict_proba(x))  # noqa: E731
         num_features = disc_model.num_inputs
 
         # TODO: Change in future to allow for different feature ranges
