@@ -177,18 +177,15 @@ class CeFlowPipelineRunner(PipelineRunner):
     def compute_log_prob_threshold(self, gen_model, dataset, dequantizer):
         """Use the density_model (gen_model here) for log_prob threshold calculation."""
         self.logger.info("Calculating log_prob_threshold")
-        original_X_train = dataset.X_train
         dataset.X_train = dequantizer.transform(dataset.X_train)
-        try:
-            train_dataloader = dataset.train_dataloader(
-                batch_size=self.cfg.counterfactuals_params.batch_size, shuffle=False
-            )
-            log_prob_threshold = torch.quantile(
-                gen_model.predict_log_prob(train_dataloader),
-                self.cfg.counterfactuals_params.log_prob_quantile,
-            )
-        finally:
-            dataset.X_train = dequantizer.inverse_transform(original_X_train)
+        train_dataloader = dataset.train_dataloader(
+            batch_size=self.cfg.counterfactuals_params.batch_size, shuffle=False
+        )
+        log_prob_threshold = torch.quantile(
+            gen_model.predict_log_prob(train_dataloader),
+            self.cfg.counterfactuals_params.log_prob_quantile,
+        )
+        dataset.X_train = dequantizer.inverse_transform(dataset.X_train)
         self.logger.info(f"log_prob_threshold: {log_prob_threshold:.4f}")
         return log_prob_threshold
 
