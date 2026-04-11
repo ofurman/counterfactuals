@@ -146,29 +146,33 @@ counterfactuals_params:
 1. Create a runner class in `counterfactuals/pipelines/runners/my_method_runner.py`:
 
 ```python
-from counterfactuals.pipelines.base_runner import PipelineRunner, SearchResult
+from counterfactuals.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
 
 class MyMethodPipelineRunner(PipelineRunner):
     cf_method_name = "MyMethod"
 
     def search_counterfactuals(
         self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
-    ):
-        disc_model_name = self.cfg.disc_model.model._target_.split(".")[-1]
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold."""
+        return self._default_search_counterfactuals(
+            dataset, gen_model, disc_model, save_folder, log_prob_threshold
+        )
 
-        X_test, y_test = self._filter_test_data(dataset, self.cfg.counterfactuals_params.target_class)
-        cf_method = MyMethod(disc_model=disc_model)
+    def create_cf_method(self, dataset, gen_model, disc_model) -> object:
+        """Instantiate the CF method."""
+        self.logger.info("Creating counterfactual model")
+        return MyMethod(disc_model=disc_model)
 
-        Xs_cfs = cf_method.explain(X_test)
-        self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
-
-        return SearchResult(
-            X_cf=Xs_cfs,
-            X_test=X_test,
-            y_orig=y_test,
-            y_target=...,
-            model_returned=...,
-            cf_search_time=...,
+    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold) -> CfMethodOutput:
+        """Run CF generation and return raw outputs."""
+        self.logger.info("Handling counterfactual generation")
+        result = cf_method.explain_dataloader(dataloader=cf_dataloader)
+        return CfMethodOutput(
+            x_cfs=result.x_cfs,
+            x_origs=result.x_origs,
+            y_origs=result.y_origs,
+            y_targets=result.y_cf_targets,
         )
 ```
 
@@ -179,17 +183,14 @@ import logging
 import hydra
 from omegaconf import DictConfig
 from counterfactuals.pipelines.runners.my_method_runner import MyMethodPipelineRunner
-from counterfactuals.preprocessing import MinMaxScalingStep, PreprocessingPipeline, TorchDataTypeStep
 
 logger = logging.getLogger(__name__)
 
 @hydra.main(config_path="./conf", config_name="my_method_config", version_base="1.2")
 def main(cfg: DictConfig):
-    preprocessing_pipeline = PreprocessingPipeline([
-        ("minmax", MinMaxScalingStep()),
-        ("torch_dtype", TorchDataTypeStep()),
-    ])
-    runner = MyMethodPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = MyMethodPipelineRunner(
+        cfg, logger, MyMethodPipelineRunner.default_preprocessing()
+    )
     runner.run()
 
 if __name__ == "__main__":
@@ -208,6 +209,10 @@ Override these methods on the runner class for non-standard behaviour:
 | `create_disc_model()` | Custom discriminative model setup |
 | `create_gen_model()` | Custom generative model (e.g. CeFlow uses two models) |
 | `compute_log_prob_threshold()` | Different plausibility threshold computation |
+| `create_cf_method()` | Instantiate the CF method (required for `_default_search_counterfactuals`) |
+| `pre_cf_generation()` | Hook before CF generation (e.g. density estimator fitting in Artelt) |
+| `run_cf_method()` | Run the CF method and return `CfMethodOutput` (required for `_default_search_counterfactuals`) |
+| `postprocess_cf_output()` | Post-process raw CF output (e.g. categorical discretization) |
 | `calculate_metrics()` | Method-specific metrics (e.g. group metrics for GLANCE) |
 | `save_results()` | Extra columns in the output CSV (e.g. `n_groups` for TCREx) |
 | `run()` | Completely custom pipeline loop (e.g. no CV, regression task) |

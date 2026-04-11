@@ -52,7 +52,7 @@ test_loader = DataLoader(test_dataset, batch_size=256)
 ## Step 3: Train a Classifier
 
 ```python
-from counterfactuals.models.classifiers import MLPClassifier
+from counterfactuals.models import MLPClassifier
 
 # Get dimensions
 n_features = X_train.shape[1]
@@ -60,9 +60,10 @@ n_classes = len(set(y_train))
 
 # Create and train classifier
 classifier = MLPClassifier(
-    input_dim=n_features,
-    hidden_dims=[128, 64],
-    output_dim=n_classes
+    num_inputs=n_features,
+    num_targets=n_classes,
+    hidden_layer_sizes=[128, 64],
+    dropout=0.2,
 )
 
 classifier.fit(
@@ -80,13 +81,13 @@ print(f"Test accuracy: {accuracy:.2%}")
 ## Step 4: Train a Generative Model
 
 ```python
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
+from counterfactuals.models import MaskedAutoregressiveFlow
 
 # Create and train flow model
 flow = MaskedAutoregressiveFlow(
-    input_dim=n_features,
-    hidden_dims=[128, 128],
-    n_layers=5
+    features=n_features,
+    hidden_features=128,
+    num_layers=5,
 )
 
 flow.fit(
@@ -187,8 +188,8 @@ Here's the full code in one block:
     from torch.utils.data import DataLoader, TensorDataset
 
     from counterfactuals.datasets import FileDataset
-    from counterfactuals.models.classifiers import MLPClassifier
-    from counterfactuals.models.generators import MaskedAutoregressiveFlow
+    from counterfactuals.models import MLPClassifier
+    from counterfactuals.models import MaskedAutoregressiveFlow
     from counterfactuals.cf_methods.local_methods import PPCEF
 
     # 1. Load dataset
@@ -216,17 +217,18 @@ Here's the full code in one block:
 
     # 3. Train classifier
     classifier = MLPClassifier(
-        input_dim=n_features,
-        hidden_dims=[128, 64],
-        output_dim=n_classes
+        num_inputs=n_features,
+        num_targets=n_classes,
+        hidden_layer_sizes=[128, 64],
+        dropout=0.2,
     )
     classifier.fit(train_loader, test_loader, epochs=50, lr=0.001)
 
     # 4. Train flow
     flow = MaskedAutoregressiveFlow(
-        input_dim=n_features,
-        hidden_dims=[128, 128],
-        n_layers=5
+        features=n_features,
+        hidden_features=128,
+        num_layers=5,
     )
     flow.fit(train_loader, test_loader, epochs=100, lr=0.0001)
 

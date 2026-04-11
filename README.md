@@ -107,20 +107,32 @@ The following Python code snippet demonstrates how to use the PPCEF framework fo
 import numpy as np
 import torch
 
-from counterfactuals.datasets import MoonsDataset
-from counterfactuals.cf_methods.ppcef import PPCEF
-from counterfactuals.generative_models import MaskedAutoregressiveFlow
-from counterfactuals.discriminative_models import MultilayerPerceptron
+from counterfactuals.datasets import FileDataset, MethodDataset
+from counterfactuals.cf_methods.local_methods import PPCEF
+from counterfactuals.models import MaskedAutoregressiveFlow, MLPClassifier
 from counterfactuals.losses import BinaryDiscLoss
 from counterfactuals.metrics import evaluate_cf
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 
-dataset = MoonsDataset("../data/moons.csv")
+file_dataset = FileDataset(config_path="config/datasets/moons.yaml")
+preprocessing = PreprocessingPipeline([
+    ("minmax", MinMaxScalingStep()),
+    ("torch_dtype", TorchDataTypeStep()),
+])
+dataset = MethodDataset(file_dataset, preprocessing)
 train_dataloader = dataset.train_dataloader(batch_size=128, shuffle=True)
 test_dataloader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
-disc_model = MultilayerPerceptron(
-    input_size=2, hidden_layer_sizes=[256, 256], target_size=1, dropout=0.2
+disc_model = MLPClassifier(
+    num_inputs=dataset.X_train.shape[1],
+    num_targets=1,
+    hidden_layer_sizes=[256, 256],
+    dropout=0.2,
 )
 disc_model.fit(
     train_dataloader,
@@ -152,8 +164,8 @@ evaluate_cf(
     gen_model=gen_model,
     X_cf=X_cf,
     model_returned=np.ones(X_cf.shape[0]),
-    continuous_features=dataset.numerical_features,
-    categorical_features=dataset.categorical_features,
+    continuous_features=dataset.numerical_features_indices,
+    categorical_features=dataset.categorical_features_indices,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
     X_test=X_orig,
@@ -174,10 +186,12 @@ We publish pre-trained models in the `./models/` directory for immediate use and
 The repository is organized as follows to facilitate ease of use and contribution:
 
 ```
-├── conf/                  # Configuration files
+├── config/                # Dataset configuration YAML files
 ├── data/                  # Datasets
-├── models/                # Trained models
+├── models/                # Pre-trained models
 ├── notebooks/             # Jupyter notebooks for analysis and examples
+├── docs/                  # MkDocs documentation
+├── tests/                 # Test suite
 ├── counterfactuals/       # Source code for the framework
 │   ├── cf_methods/        # Counterfactual methods
 │   │   ├── global_methods/
@@ -185,13 +199,14 @@ The repository is organized as follows to facilitate ease of use and contributio
 │   │   │   └── globe_ce/
 │   │   ├── group_methods/
 │   │   │   ├── glance/
-│   │   │   ├── group_ppcef/
 │   │   │   ├── pumal/
 │   │   │   └── tcrex/
 │   │   └── local_methods/
 │   │       ├── artelt/
 │   │       ├── c_chvae/
+│   │       ├── cadex/
 │   │       ├── casebased_sace/
+│   │       ├── ceflow/
 │   │       ├── cegp/
 │   │       ├── cem/
 │   │       ├── cet/
@@ -203,11 +218,20 @@ The repository is organized as follows to facilitate ease of use and contributio
 │   │       ├── sace/
 │   │       ├── tabdce/
 │   │       └── wach/
-│   ├── discriminative_models/  # Discriminative models for analysis
-│   ├── generative_models/      # Generative models for analysis
-│   ├── losses/            # Loss functions
-│   ├── metrics/           # Evaluation metrics
-│   └── pipelines/         # Data and model pipelines
+│   ├── models/            # Neural network models
+│   │   ├── classifier/    # Discriminative models (MLP, LR, NODE)
+│   │   ├── generative/    # Generative models (MAF, RealNVP, NICE, KDE, CNF)
+│   │   └── regression/    # Regression models (LinearRegression, MLPRegressor)
+│   ├── datasets/          # Dataset loading and preprocessing
+│   ├── preprocessing/     # Preprocessing pipeline (scaling, encoding, torch dtype)
+│   ├── dequantization/    # Dequantization utilities for categorical features
+│   ├── losses/            # Loss functions (BinaryDiscLoss, MulticlassDiscLoss)
+│   ├── metrics/           # Evaluation metrics (validity, proximity, plausibility, etc.)
+│   ├── pipelines/         # End-to-end experiment pipelines
+│   │   ├── runners/       # Method-specific pipeline runners
+│   │   ├── conf/          # Hydra configuration files
+│   │   └── nodes/         # Pipeline building blocks
+│   └── plotting/          # Visualization utilities
 ├── README.md              # This document
 └── ...
 ```
@@ -223,33 +247,28 @@ To run experiments, prepare the configuration files located in the `counterfactu
 Execute the following scripts to train models and run experiments:
 
 ```shell
-uv run python counterfactuals/pipelines/run_ppcef_pipeline.py
+uv run python -m counterfactuals.pipelines.run_ppcef_pipeline
 ```
 
-## Library Guide
+## Documentation
 
-Need a broader tour of everything inside `counterfactuals/`? Check `docs/library_overview.md` for:
+Full documentation is available via MkDocs. To build and serve locally:
 
-- high-level descriptions of each subpackage (datasets, preprocessing, models, cf methods, metrics, pipelines),
-- explanations of how Hydra configs map to implementations,
-- extension playbooks for adding datasets, models, metrics, or new pipelines, and
-- reminders about the development conventions enforced in `AGENTS.md`.
+```shell
+uv run mkdocs serve
+```
 
-## Pipeline Guide
+Key sections:
 
-Looking for a deeper explanation of how `run_ppcef_pipeline.py` wires datasets, models, and
-counterfactual search together? See `docs/ppcef_pipeline.md` for:
-
-- a fold-by-fold walkthrough of the orchestration logic,
-- a reference for the Hydra configuration tree and common overrides,
-- practical tips for running or extending the PPCEF pipeline, and
-- contribution rules for future development.
+- **[User Guide](docs/user-guide/index.md)** — datasets, models, generating counterfactuals, evaluation, pipelines.
+- **[Methods](docs/methods/index.md)** — per-method descriptions for local, global, and group methods.
+- **[Pipelines](docs/user-guide/pipelines.md)** — how `PipelineRunner` orchestrates CV folds, Hydra config structure, and how to add new runners.
 
 ## Contributing
 
 Contributions are welcome! Before opening a PR:
 
-- Read `AGENTS.md` and `docs/ppcef_pipeline.md` to understand the workflow, required typing,
+- Read `AGENTS.md` and `docs/user-guide/pipelines.md` to understand the workflow, required typing,
   docstrings, and logging conventions.
 - Use `uv` for everything (`uv sync`, `uv run ruff check --fix`, `uv run pytest`).
 - Keep patches small, fully type-hinted, and Ruff-clean (line length 100, Google docstrings).

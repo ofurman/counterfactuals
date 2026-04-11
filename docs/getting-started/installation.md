@@ -130,7 +130,7 @@ print(counterfactuals.__version__)
 
 # Test imports
 from counterfactuals.datasets import FileDataset
-from counterfactuals.models.classifiers import MLPClassifier
+from counterfactuals.models import MLPClassifier
 from counterfactuals.cf_methods.local_methods import PPCEF
 
 print("Installation successful!")

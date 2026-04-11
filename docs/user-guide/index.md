@@ -30,8 +30,8 @@ flowchart LR
 
 ```python
 from counterfactuals.datasets import FileDataset
-from counterfactuals.models.classifiers import MLPClassifier
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
+from counterfactuals.models import MLPClassifier
+from counterfactuals.models import MaskedAutoregressiveFlow
 from counterfactuals.cf_methods.local_methods import PPCEF
 
 # 1. Load dataset
