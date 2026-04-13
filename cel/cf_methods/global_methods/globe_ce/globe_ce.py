@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -866,8 +865,8 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
 
     def explain(
         self,
-        y_origin: Optional[np.ndarray] = None,
-        y_target: Optional[np.ndarray] = None,
+        y_origin: np.ndarray | None = None,
+        y_target: np.ndarray | None = None,
     ) -> ExplanationResult:
         best_delta = self.get_best_delta()
         best_k_s = self.get_best_k_s(best_delta)
@@ -893,7 +892,7 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         epochs: int = None,
         lr: float = None,
         patience_eps: float = 1e-5,
-        y_target: Optional[np.ndarray] = None,
+        y_target: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for data provided via DataLoader.

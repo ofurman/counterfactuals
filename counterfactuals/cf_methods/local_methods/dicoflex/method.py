@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import numpy as np
 
@@ -37,10 +36,10 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self,
         gen_model: GenerativePytorchMixin,
         disc_model: PytorchBase,
-        class_to_index: Dict[int, int],
+        class_to_index: dict[int, int],
         mask_vectors: list[np.ndarray],
         params: DiCoFlexParams,
-        device: Optional[str] = None,
+        device: str | None = None,
     ) -> None:
         super().__init__(
             gen_model=gen_model,
@@ -67,8 +66,8 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactuals for the provided samples."""

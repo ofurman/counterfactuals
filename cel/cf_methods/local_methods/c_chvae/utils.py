@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional, Union
-
 import numpy as np
 import pandas as pd
 import torch
@@ -9,7 +7,7 @@ from .mlmodel import MLModel
 
 def check_counterfactuals(
     mlmodel: MLModel,
-    counterfactuals: Union[List, pd.DataFrame],
+    counterfactuals: list | pd.DataFrame,
     factuals_index: pd.Index,
     negative_label: int = 0,
 ) -> pd.DataFrame:
@@ -23,7 +21,7 @@ def check_counterfactuals(
     mlmodel:
         Black-box-model we want to discover.
     counterfactuals:
-        List or DataFrame of generated samples from recourse method.
+        list or DataFrame of generated samples from recourse method.
     factuals_index:
         Index of the original factuals DataFrame.
     negative_label:
@@ -50,7 +48,7 @@ def check_counterfactuals(
     return df_cfs
 
 
-def merge_default_parameters(hyperparams: Optional[Dict], default: Dict) -> Dict:
+def merge_default_parameters(hyperparams: dict | None, default: dict) -> dict:
     """
     Checks if the input parameter hyperparams contains every necessary key and if not, uses default values or
     raises a ValueError if no default value is given.
@@ -102,7 +100,7 @@ def merge_default_parameters(hyperparams: Optional[Dict], default: Dict) -> Dict
 
 
 def reconstruct_encoding_constraints(
-    x: torch.Tensor, feature_pos: List[int], binary_cat: bool
+    x: torch.Tensor, feature_pos: list[int], binary_cat: bool
 ) -> torch.Tensor:
     """
     Reconstructing one-hot-encoded data, such that its values are either 0 or 1,
@@ -113,7 +111,7 @@ def reconstruct_encoding_constraints(
     x:
         Instance where we want to reconstruct categorical constraints.
     feature_pos:
-        List with positions of categorical features in x.
+        list with positions of categorical features in x.
     binary_cat:
         If True, categorical datas are encoded with drop_if_binary.
 

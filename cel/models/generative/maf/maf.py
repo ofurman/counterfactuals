@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import numpy as np
 import torch
@@ -141,7 +140,7 @@ class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
         assert len(dataloader.dataset) == len(results)
         return results
 
-    def sample_and_log_proba(self, n_samples: int, context: Optional[np.ndarray] = None):
+    def sample_and_log_proba(self, n_samples: int, context: np.ndarray | None = None):
         """Sample from the model and return (samples, log_probs) as numpy arrays."""
         if context is not None and self.context_features is not None:
             if isinstance(context, np.ndarray):
@@ -155,7 +154,7 @@ class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
             return samples.cpu().numpy(), log_probs.cpu().numpy()
 
     def predict_log_proba(
-        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+        self, X_test: np.ndarray, context: np.ndarray | None = None
     ) -> np.ndarray:
         """Predict log probabilities for input data (numpy array) and return numpy array."""
         if isinstance(X_test, np.ndarray):
@@ -167,12 +166,6 @@ class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
         with torch.no_grad():
             log_probs = self(X_test, context=context)
             return log_probs.cpu().numpy()
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
 
     def _unpack_batch(self, batch):
         if isinstance(batch, tuple):

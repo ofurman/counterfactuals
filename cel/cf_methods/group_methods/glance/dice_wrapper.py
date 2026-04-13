@@ -1,6 +1,5 @@
 import logging
 import warnings
-from typing import Optional
 
 import dice_ml
 import numpy as np
@@ -42,8 +41,8 @@ class DiceExplainerWrapper:
     def generate(
         self,
         query_instance: pd.DataFrame,
-        desired_class: Optional[int] = None,
-    ) -> Optional[np.ndarray]:
+        desired_class: int | None = None,
+    ) -> np.ndarray | None:
         """Generate a single counterfactual for the given query instance."""
         desired = self.desired_class if desired_class is None else desired_class
         query_instance = pd.DataFrame(query_instance, columns=self.features[:-1])
@@ -54,7 +53,7 @@ class DiceExplainerWrapper:
                 desired_class=desired,
                 verbose=False,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             return None
 
         if dice_exp.cf_examples_list[0].final_cfs_df is not None:

@@ -7,12 +7,13 @@ Learn how to train discriminative and generative models for counterfactual gener
 ### MLP Classifier
 
 ```python
-from counterfactuals.models.classifiers import MLPClassifier
+from counterfactuals.models import MLPClassifier
 
 classifier = MLPClassifier(
-    input_dim=n_features,
-    hidden_dims=[128, 64],
-    output_dim=n_classes
+    num_inputs=n_features,
+    num_targets=n_classes,
+    hidden_layer_sizes=[128, 64],
+    dropout=0.2,
 )
 
 classifier.fit(
@@ -26,9 +27,9 @@ classifier.fit(
 ### Logistic Regression
 
 ```python
-from counterfactuals.models.classifiers import LogisticRegression
+from counterfactuals.models import LogisticRegression
 
-classifier = LogisticRegression(input_dim=n_features, output_dim=n_classes)
+classifier = LogisticRegression(num_inputs=n_features, num_targets=n_classes)
 classifier.fit(train_loader, test_loader, epochs=50)
 ```
 
@@ -37,12 +38,12 @@ classifier.fit(train_loader, test_loader, epochs=50)
 ### Masked Autoregressive Flow (MAF)
 
 ```python
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
+from counterfactuals.models import MaskedAutoregressiveFlow
 
 flow = MaskedAutoregressiveFlow(
-    input_dim=n_features,
-    hidden_dims=[128, 128],
-    n_layers=5
+    features=n_features,
+    hidden_features=128,
+    num_layers=5,
 )
 
 flow.fit(

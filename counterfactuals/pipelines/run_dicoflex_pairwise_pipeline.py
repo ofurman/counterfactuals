@@ -1,7 +1,6 @@
 import logging
 import os
 from time import time
-from typing import List
 
 import hydra
 import numpy as np
@@ -21,7 +20,7 @@ from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_threshold
+from counterfactuals.pipelines.base_runner import get_log_prob_threshold
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
@@ -34,19 +33,15 @@ from counterfactuals.preprocessing import (
 from counterfactuals.preprocessing.base import PreprocessingContext
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
 
 # =============================================================================
 # CF Generation Flow (for sampling counterfactuals) - follows DiCoFlex pattern
 # =============================================================================
 
 
-def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
+def build_masks(dataset: MethodDataset, cfg: DictConfig) -> list[np.ndarray]:
     """Assemble the mask catalogue used during DiCoFlex training."""
-    masks: List[np.ndarray] = []
+    masks: list[np.ndarray] = []
     if cfg.use_actionability_mask:
         masks.append(build_actionability_mask(dataset))
     for custom_mask in cfg.get("custom_masks", []):
@@ -314,11 +309,6 @@ def run_fold(cfg: DictConfig, dataset: MethodDataset, device: str, fold_idx: int
     )
     explanation_result.x_origs = np.ascontiguousarray(
         explanation_result.x_origs.astype(np.float32, copy=False)
-    )
-    cf_group_ids = (
-        None
-        if explanation_result.cf_group_ids is None
-        else np.asarray(explanation_result.cf_group_ids, dtype=int)
     )
     model_returned_mask = np.array(
         explanation_result.logs.get("model_returned_mask", []), dtype=bool

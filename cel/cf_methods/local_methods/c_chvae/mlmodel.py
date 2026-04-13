@@ -1,6 +1,5 @@
 import warnings
 from abc import ABC, abstractmethod
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -94,7 +93,7 @@ class MLModel(ABC):
         pass
 
     @abstractmethod
-    def predict(self, x: Union[np.ndarray, pd.DataFrame]):
+    def predict(self, x: np.ndarray | pd.DataFrame):
         """
         One-dimensional prediction of ml model for an output interval of [0, 1].
 
@@ -113,7 +112,7 @@ class MLModel(ABC):
         pass
 
     @abstractmethod
-    def predict_proba(self, x: Union[np.ndarray, pd.DataFrame]):
+    def predict_proba(self, x: np.ndarray | pd.DataFrame):
         """
         Two-dimensional probability prediction of ml model.
 
@@ -222,7 +221,7 @@ class CustomMLModel(MLModel):
         """The raw ML model"""
         return self._model
 
-    def predict(self, x: Union[np.ndarray, pd.DataFrame, torch.Tensor]):
+    def predict(self, x: np.ndarray | pd.DataFrame | torch.Tensor):
         """One-dimensional prediction"""
         with torch.no_grad():
             if isinstance(x, pd.DataFrame):
@@ -233,7 +232,7 @@ class CustomMLModel(MLModel):
 
             return self._model.predict(x)
 
-    def predict_proba(self, x: Union[np.ndarray, pd.DataFrame, torch.Tensor]):
+    def predict_proba(self, x: np.ndarray | pd.DataFrame | torch.Tensor):
         """Two-dimensional probability prediction"""
         with torch.no_grad():
             if isinstance(x, pd.DataFrame):

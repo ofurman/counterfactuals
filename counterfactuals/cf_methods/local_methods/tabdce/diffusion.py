@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,7 +14,7 @@ class MixedTabularDiffusion(nn.Module):
         self,
         denoise_fn: nn.Module,
         num_numerical: int,
-        num_classes: List[int],
+        num_classes: list[int],
         T: int = 1000,
         schedule: str = "cosine",
         device: torch.device = torch.device("cpu"),
@@ -62,7 +60,7 @@ class MixedTabularDiffusion(nn.Module):
 
     def p_mean_variance_gauss(
         self, x_t: torch.Tensor, t: torch.Tensor, pred_eps: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute posterior mean and log variance for the Gaussian branch."""
         sqrt_recip_alphas_bar = extract(1.0 / self.sqrt_alphas_bar, t, x_t.shape)
         sqrt_recip_m1_alphas_bar = extract(torch.sqrt(1.0 / self.alphas_bar - 1.0), t, x_t.shape)

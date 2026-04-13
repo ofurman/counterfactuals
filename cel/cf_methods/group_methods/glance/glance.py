@@ -1,6 +1,5 @@
 import logging
 from collections import defaultdict
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -73,7 +72,7 @@ class GLANCE(BaseCounterfactualMethod, GroupCounterfactualMixin):
         best_total_cost = float("inf")
 
         cent_lab = zip(self.centroids, self.clusters)
-        actions = defaultdict(set)  # Tuple -> Set of actions
+        actions = defaultdict(set)  # tuple -> set of actions
         merge_history = []
         action_full_history = []
         # First generate counterfactuals m for each cluster center
@@ -271,8 +270,8 @@ class GLANCE(BaseCounterfactualMethod, GroupCounterfactualMixin):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for given instances.
@@ -311,7 +310,7 @@ class GLANCE(BaseCounterfactualMethod, GroupCounterfactualMixin):
         epochs: int = None,
         lr: float = None,
         patience_eps: float = 1e-5,
-        y_target: Optional[np.ndarray] = None,
+        y_target: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for data provided via DataLoader.

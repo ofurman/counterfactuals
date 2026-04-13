@@ -28,8 +28,8 @@ Where:
 
 ```python
 from counterfactuals.cf_methods.local_methods import PPCEF
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
-from counterfactuals.models.classifiers import MLPClassifier
+from counterfactuals.models import MaskedAutoregressiveFlow
+from counterfactuals.models import MLPClassifier
 
 # Initialize models
 gen_model = MaskedAutoregressiveFlow(...)

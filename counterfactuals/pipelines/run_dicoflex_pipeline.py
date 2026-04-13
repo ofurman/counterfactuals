@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 from time import time
-from typing import List
 
 import hydra
 import numpy as np
@@ -25,7 +24,7 @@ from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
-from counterfactuals.pipelines.full_pipeline.full_pipeline import get_log_prob_threshold
+from counterfactuals.pipelines.base_runner import get_log_prob_threshold
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
@@ -39,9 +38,9 @@ from counterfactuals.preprocessing import (
 logger = logging.getLogger(__name__)
 
 
-def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
+def build_masks(dataset: MethodDataset, cfg: DictConfig) -> list[np.ndarray]:
     """Assemble the mask catalogue used during DiCoFlex training."""
-    masks: List[np.ndarray] = []
+    masks: list[np.ndarray] = []
     if cfg.use_actionability_mask:
         masks.append(build_actionability_mask(dataset))
     for custom_mask in cfg.get("custom_masks", []):
@@ -135,9 +134,7 @@ def train_dicoflex_generator(
     model.load(model_path)
 
 
-def compute_feature_bounds(
-    data: np.ndarray, padding: float = 0.05
-) -> List[tuple[float, float]]:
+def compute_feature_bounds(data: np.ndarray, padding: float = 0.05) -> list[tuple[float, float]]:
     """Return padded min/max bounds for the first two features."""
     if data.shape[1] < 2:
         raise ValueError("At least two features are required for contour plots.")
@@ -145,7 +142,7 @@ def compute_feature_bounds(
     mins = subset.min(axis=0)
     maxs = subset.max(axis=0)
     ranges = np.maximum(maxs - mins, 1e-6)
-    bounds: List[tuple[float, float]] = []
+    bounds: list[tuple[float, float]] = []
     for mn, mx, rng in zip(mins, maxs, ranges):
         pad = rng * padding
         bounds.append((mn - pad, mx + pad))

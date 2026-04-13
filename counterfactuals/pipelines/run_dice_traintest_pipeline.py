@@ -14,7 +14,7 @@ import logging
 import os
 import warnings
 from time import time
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import dice_ml
 import hydra
@@ -42,9 +42,6 @@ from counterfactuals.preprocessing import (
 warnings.filterwarnings("ignore", category=FutureWarning, module="dice_ml")
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class DiscWrapper(nn.Module):
@@ -100,12 +97,12 @@ def search_counterfactuals(
     gen_model: torch.nn.Module,
     disc_model: torch.nn.Module,
     save_folder: str,
-) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
+) -> tuple[tuple[np.ndarray, np.ndarray], np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
     """Generate counterfactuals with DiCE and expand to fixed cf_per_instance per factual.
 
     Returns:
-        Tuple containing:
-            - Xs_cfs_bundle: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
+        tuple containing:
+            - Xs_cfs_bundle: tuple of (Xs_cfs_first, Xs_cfs_all) where:
                 - Xs_cfs_first: First CF per factual instance (for original metrics)
                 - Xs_cfs_all: All CFs expanded (for pairwise distance)
             - X_test_origin: Original test instances
@@ -150,7 +147,7 @@ def search_counterfactuals(
     cf_per_instance = int(cfg.counterfactuals_params.generation_params.total_CFs)
     query_instance = pd.DataFrame(X_test_origin, columns=features[:-1])
     time_start = time()
-    generation_params: Dict[str, Any] = OmegaConf.to_container(
+    generation_params: dict[str, Any] = OmegaConf.to_container(
         cfg.counterfactuals_params.generation_params, resolve=True
     )
     generation_params["total_CFs"] = cf_per_instance
@@ -214,8 +211,8 @@ def calculate_metrics(
     disc_model: torch.nn.Module,
     Xs_cfs: np.ndarray | tuple,
     model_returned: np.ndarray,
-    categorical_features: List[int],
-    continuous_features: List[int],
+    categorical_features: list[int],
+    continuous_features: list[int],
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_test: np.ndarray,
@@ -224,11 +221,11 @@ def calculate_metrics(
     y_target: np.ndarray | None = None,
     metrics_conf_path: str | None = None,
     **_: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate metrics using first CF only, then append pairwise distance from all CFs.
 
     Args:
-        Xs_cfs: Tuple of (Xs_cfs_first, Xs_cfs_all) where:
+        Xs_cfs: tuple of (Xs_cfs_first, Xs_cfs_all) where:
             - Xs_cfs_first: First counterfactual per instance (n_instances, n_features)
             - Xs_cfs_all: All counterfactuals (n_instances, cf_per_instance, n_features)
         Other args: Standard metric calculation arguments

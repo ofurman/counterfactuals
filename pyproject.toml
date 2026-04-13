@@ -7,10 +7,17 @@ requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
-    { name = "Anonymous" },
+    { name = "Patryk Wielopolski" },
+    { name = "Oleksii Furman" },
+    { name = "Lukasz Lenkiewicz" },
+    { name = "Marcel Musialek" },
+    { name = "Jerzy Stefanowski" },
+    { name = "Maciej Zieba" },
 ]
 maintainers = [
-    { name = "Anonymous" },
+    { name = "Oleksii Furman" },
+    { name = "Lukasz Lenkiewicz" },
+    { name = "Marcel Musialek" },
 ]
 keywords = [
     "counterfactual-explanations",
@@ -104,8 +111,15 @@ Issues = "https://github.com/ofurman/counterfactuals/issues"
 requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["counterfactuals"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["counterfactuals*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml"]
+
+[tool.ruff]
+line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -114,3 +128,26 @@ packages = ["counterfactuals"]
 "counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
 "counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
 "counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
+
+[tool.pytest.ini_options]
+markers = [
+    "smoke: lightweight regression guards (all runners, fast)",
+    "slow: marks tests as slow (distinguished during test selection)",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.3",
+    "ipykernel>=6.29.0",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocs-material-extensions",
+    "mkdocstrings[python]>=1.0.0",
+    "mkdocs-gen-files>=0.6.0",
+    "mkdocs-literate-nav>=0.6.2",
+    "mkdocs-section-index>=0.3.10",
+]

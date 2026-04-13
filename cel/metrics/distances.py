@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import numpy as np
 from scipy.spatial.distance import _validate_vector, cdist
@@ -54,7 +53,7 @@ def continuous_distance(
     X_cf: np.ndarray,
     continuous_features: list[int],
     metric: str = "euclidean",
-    X_all: Optional[np.ndarray] = None,
+    X_all: np.ndarray | None = None,
     agg: str = "mean",
 ) -> float:
     """
@@ -110,7 +109,7 @@ def categorical_distance(
     X_cf: np.ndarray,
     categorical_features: list[int],
     metric: str = "jaccard",
-    agg: Optional[str] = "mean",
+    agg: str | None = "mean",
 ) -> float:
     """
     Calculate the categorical distance between two datasets.
@@ -148,8 +147,8 @@ def distance_combined(
     categorical_metric: str,
     continuous_features: list[int],
     categorical_features: list[int],
-    X_all: Optional[np.ndarray] = None,
-    ratio_cont: Optional[float] = None,
+    X_all: np.ndarray | None = None,
+    ratio_cont: float | None = None,
 ) -> float:
     """
     Calculate the combined distance between two datasets.
@@ -189,7 +188,7 @@ def distance_combined(
 
 
 if __name__ == "__main__":
-    # Set up logging
+    # set up logging
     logging.basicConfig(level=logging.DEBUG)
 
     X_test = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])

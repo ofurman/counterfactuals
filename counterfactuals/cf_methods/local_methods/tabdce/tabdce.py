@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import torch
 from sklearn.preprocessing import OneHotEncoder, QuantileTransformer
@@ -27,8 +25,8 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self,
         diffusion_model: MixedTabularDiffusion,
         spec: TabularSpec,
-        qt: Optional[QuantileTransformer],
-        ohe: Optional[OneHotEncoder],
+        qt: QuantileTransformer | None,
+        ohe: OneHotEncoder | None,
         device: torch.device | str = "cpu",
     ) -> None:
         super().__init__(device=str(device))
@@ -45,8 +43,8 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         batch_size: int = 512,
         **kwargs,
     ) -> ExplanationResult:
@@ -65,7 +63,7 @@ class TabDCE(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def explain_dataloader(
         self,
         dataloader: DataLoader,
-        target_class: Optional[int] = None,
+        target_class: int | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactuals for a DataLoader of inputs."""

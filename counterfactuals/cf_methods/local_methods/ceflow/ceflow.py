@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, Literal
+from typing import Callable, Iterable, Literal
 
 import numpy as np
 import torch
@@ -68,7 +68,7 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self._encode_fn = encode_fn
         self._decode_fn = decode_fn
         self._binary_logits = self.params.binary_logits
-        self._class_means: Dict[int, torch.Tensor] = {}
+        self._class_means: dict[int, torch.Tensor] = {}
         self._alpha_values = self._resolve_alpha_grid(self.params)
 
         if self._decode_fn is None and not hasattr(self.flow_model, "inverse"):
@@ -368,11 +368,11 @@ class CeFlow(BaseCounterfactualMethod, LocalCounterfactualMixin):
             return [float(params.alpha_max)]
         return np.linspace(params.alpha_min, params.alpha_max, params.alpha_steps).tolist()
 
-    def _compute_class_means(self, X: np.ndarray, y_labels: np.ndarray) -> Dict[int, torch.Tensor]:
-        class_means: Dict[int, torch.Tensor] = {}
+    def _compute_class_means(self, X: np.ndarray, y_labels: np.ndarray) -> dict[int, torch.Tensor]:
+        class_means: dict[int, torch.Tensor] = {}
         unique_labels = np.unique(y_labels).astype(int)
         batch_size = max(1, int(self.params.batch_size))
-        latent_by_class: Dict[int, list[torch.Tensor]] = {int(k): [] for k in unique_labels}
+        latent_by_class: dict[int, list[torch.Tensor]] = {int(k): [] for k in unique_labels}
         for start in range(0, len(X), batch_size):
             end = start + batch_size
             x_tensor = torch.from_numpy(X[start:end]).float().to(self.device)

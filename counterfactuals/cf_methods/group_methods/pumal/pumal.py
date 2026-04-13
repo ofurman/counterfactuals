@@ -46,9 +46,9 @@ class PUMAL(BaseCounterfactualMethod):
             K: Number of clusters
             X: Training data
             device: Device to use (cpu/cuda)
-            not_actionable_features: List of feature indices that should not be modified
-            increase_only_features: List of feature indices that can only increase in value
-            decrease_only_features: List of feature indices that can only decrease in value
+            not_actionable_features: list of feature indices that should not be modified
+            increase_only_features: list of feature indices that can only increase in value
+            decrease_only_features: list of feature indices that can only decrease in value
             feature_ranges: Dictionary mapping feature indices to (min, max) tuples for clamping
             neptune_run: Neptune run for logging
         """

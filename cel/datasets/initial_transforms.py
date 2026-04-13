@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
+from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
@@ -18,13 +18,13 @@ class InitialTransformContext:
     """Container holding dataset state for initial transforms."""
 
     data: pd.DataFrame
-    features: List[str]
-    continuous_features: List[str]
-    categorical_features: List[str]
-    feature_config: Dict[str, FeatureParameters]
+    features: list[str]
+    continuous_features: list[str]
+    categorical_features: list[str]
+    feature_config: dict[str, FeatureParameters]
     target: str
     task_type: str = "classification"
-    one_hot_feature_groups: Dict[str, List[str]] = field(default_factory=dict)
+    one_hot_feature_groups: dict[str, list[str]] = field(default_factory=dict)
 
     def copy(self) -> "InitialTransformContext":
         """Deep copy context to avoid shared state between steps."""
@@ -55,7 +55,7 @@ class InitialTransformStep(ABC):
 class InitialTransformPipeline:
     """Chain multiple initial transforms sequentially."""
 
-    def __init__(self, steps: List[Tuple[str, InitialTransformStep]]):
+    def __init__(self, steps: list[tuple[str, InitialTransformStep]]):
         self.steps = steps
         self._validate_steps()
 
@@ -92,7 +92,7 @@ class InitialTransformPipeline:
 class DropNaStep(InitialTransformStep):
     """Drop rows with missing values in features and target column."""
 
-    def __init__(self, subset: Optional[Sequence[str]] = None):
+    def __init__(self, subset: Sequence[str] | None = None):
         """Initialize DropNaStep.
 
         Args:
@@ -123,7 +123,7 @@ class DropNaStep(InitialTransformStep):
 class ReorderColumnsStep(InitialTransformStep):
     """Reorder feature columns while keeping target at the end."""
 
-    def __init__(self, order: Optional[Sequence[str]] = None):
+    def __init__(self, order: Sequence[str] | None = None):
         self.order = list(order) if order is not None else None
 
     def fit(self, context: InitialTransformContext) -> "ReorderColumnsStep":
@@ -148,7 +148,7 @@ class ReorderColumnsStep(InitialTransformStep):
 class DownsampleStep(InitialTransformStep):
     """Balance classes by downsampling to the minority class size."""
 
-    def __init__(self, target_column: Optional[str] = None, random_state: int = 42):
+    def __init__(self, target_column: str | None = None, random_state: int = 42):
         self.target_column = target_column
         self.random_state = random_state
 
@@ -184,7 +184,7 @@ class OneHotEncodingStep(InitialTransformStep):
 
     def __init__(
         self,
-        columns: Optional[Sequence[str]] = None,
+        columns: Sequence[str] | None = None,
         drop_first: bool = False,
         prefix_sep: str = "__",
         dtype: type = np.float64,
@@ -220,8 +220,8 @@ class OneHotEncodingStep(InitialTransformStep):
         context.data = pd.concat([encoded, target_df], axis=1)
         context.features = list(encoded.columns)
 
-        new_feature_config: Dict[str, FeatureParameters] = {}
-        categorical_groups: Dict[str, List[str]] = {}
+        new_feature_config: dict[str, FeatureParameters] = {}
+        categorical_groups: dict[str, list[str]] = {}
 
         for feature in encoded.columns:
             base_feature = self._base_feature_name(feature, categorical)
@@ -248,7 +248,7 @@ class OneHotEncodingStep(InitialTransformStep):
         context.one_hot_feature_groups = categorical_groups
         return context
 
-    def _base_feature_name(self, feature_name: str, candidates: Sequence[str]) -> Optional[str]:
+    def _base_feature_name(self, feature_name: str, candidates: Sequence[str]) -> str | None:
         for candidate in candidates:
             if feature_name.startswith(f"{candidate}{self.prefix_sep}"):
                 return candidate
@@ -258,7 +258,7 @@ class OneHotEncodingStep(InitialTransformStep):
 class ConvertToNumericStep(InitialTransformStep):
     """Convert selected columns to numeric dtype."""
 
-    def __init__(self, columns: Optional[Sequence[str]] = None, errors: str = "raise"):
+    def __init__(self, columns: Sequence[str] | None = None, errors: str = "raise"):
         """Initialize conversion step.
 
         Args:
@@ -293,8 +293,8 @@ class FilterClassesStep(InitialTransformStep):
 
     def __init__(
         self,
-        include_values: Optional[Sequence[Any]] = None,
-        target_column: Optional[str] = None,
+        include_values: Sequence[Any] | None = None,
+        target_column: str | None = None,
     ):
         """Initialize class filtering.
 
@@ -324,7 +324,7 @@ class FilterClassesStep(InitialTransformStep):
         return context
 
 
-INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
+INITIAL_TRANSFORM_REGISTRY: dict[str, type[InitialTransformStep]] = {
     "dropna": DropNaStep,
     "drop_na": DropNaStep,
     "reorder_columns": ReorderColumnsStep,
@@ -339,13 +339,13 @@ INITIAL_TRANSFORM_REGISTRY: Dict[str, Type[InitialTransformStep]] = {
 
 
 def build_initial_transform_pipeline(
-    steps_config: Optional[Sequence[Dict[str, Any]]],
-) -> Optional[InitialTransformPipeline]:
+    steps_config: Sequence[dict[str, Any]] | None,
+) -> InitialTransformPipeline | None:
     """Create a pipeline instance from YAML configuration."""
     if not steps_config:
         return None
 
-    steps: List[Tuple[str, InitialTransformStep]] = []
+    steps: list[tuple[str, InitialTransformStep]] = []
     for step_cfg in steps_config:
         name = step_cfg.get("name")
         if name is None:

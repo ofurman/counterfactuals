@@ -1,7 +1,7 @@
 """Orchestrator for computing counterfactual metrics."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -26,27 +26,27 @@ class MetricsOrchestrator:
         y_test: Test labels.
         gen_model: Generator model.
         disc_model: Discriminator model.
-        continuous_features: List of indices of continuous features.
-        categorical_features: List of indices of categorical features.
+        continuous_features: list of indices of continuous features.
+        categorical_features: list of indices of categorical features.
         ratio_cont: Ratio of continuous features to be perturbed. Defaults to None.
         prob_plausibility_threshold: Log Likelihood Threshold for prob. plausibility.
     """
 
     def __init__(
         self,
-        X_cf: Union[np.ndarray, torch.Tensor],
-        y_target: Union[np.ndarray, torch.Tensor],
-        X_train: Union[np.ndarray, torch.Tensor],
-        y_train: Union[np.ndarray, torch.Tensor],
-        X_test: Union[np.ndarray, torch.Tensor],
-        y_test: Union[np.ndarray, torch.Tensor],
+        X_cf: np.ndarray | torch.Tensor,
+        y_target: np.ndarray | torch.Tensor,
+        X_train: np.ndarray | torch.Tensor,
+        y_train: np.ndarray | torch.Tensor,
+        X_test: np.ndarray | torch.Tensor,
+        y_test: np.ndarray | torch.Tensor,
         gen_model: torch.nn.Module,
         disc_model: torch.nn.Module,
         continuous_features: list[int],
         categorical_features: list[int],
-        ratio_cont: Optional[float] = None,
-        prob_plausibility_threshold: Optional[float] = None,
-        cf_group_ids: Optional[Union[np.ndarray, torch.Tensor]] = None,
+        ratio_cont: float | None = None,
+        prob_plausibility_threshold: float | None = None,
+        cf_group_ids: np.ndarray | torch.Tensor | None = None,
         metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
     ) -> None:
         """Initialize the metrics orchestrator with data and models."""

@@ -58,23 +58,44 @@ uv sync
 
 ```python
 import torch
-from counterfactuals.datasets import MethodDataset
-from counterfactuals.cf_methods import PPCEF
+
+from counterfactuals.datasets import FileDataset, MethodDataset
+from counterfactuals.cf_methods.local_methods import PPCEF
 from counterfactuals.models import MaskedAutoregressiveFlow, MLPClassifier
 from counterfactuals.losses import BinaryDiscLoss
 from counterfactuals.metrics import evaluate_cf
+from counterfactuals.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 # Load dataset with preprocessing
 dataset = MethodDataset.from_config("config/datasets/moons.yaml")
 train_loader = dataset.train_dataloader(batch_size=128, shuffle=True)
 test_loader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
-# Train discriminative model (classifier)
+file_dataset = FileDataset(config_path="config/datasets/moons.yaml")
+preprocessing = PreprocessingPipeline([
+    ("minmax", MinMaxScalingStep()),
+    ("torch_dtype", TorchDataTypeStep()),
+])
+dataset = MethodDataset(file_dataset, preprocessing)
+train_dataloader = dataset.train_dataloader(batch_size=128, shuffle=True)
+test_dataloader = dataset.test_dataloader(batch_size=128, shuffle=False)
+
 disc_model = MLPClassifier(
-    input_size=dataset.input_size,
+    num_inputs=dataset.X_train.shape[1],
+    num_targets=1,
     hidden_layer_sizes=[256, 256],
-    target_size=1,
     dropout=0.2,
+)
+disc_model.fit(
+    train_dataloader,
+    test_dataloader,
+    epochs=5000,
+    patience=300,
+    lr=1e-3,
 )
 disc_model.fit(train_loader, test_loader, epochs=5000, patience=300, lr=1e-3)
 
@@ -106,6 +127,9 @@ metrics = evaluate_cf(
     disc_model=disc_model,
     gen_model=gen_model,
     X_cf=X_cf,
+    model_returned=np.ones(X_cf.shape[0]),
+    continuous_features=dataset.numerical_features_indices,
+    categorical_features=dataset.categorical_features_indices,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
     X_test=result.x_origs,
@@ -120,32 +144,54 @@ metrics = evaluate_cf(
 ## Library Structure
 
 ```
-counterfactuals/
-├── cf_methods/           # Counterfactual explanation methods
-│   ├── local/            # Instance-level methods (PPCEF, DiCE, WACH, etc.)
-│   ├── global_/          # Model-level methods (GLOBE-CE, AReS)
-│   └── group/            # Cohort-level methods (RPPCEF, GLANCE)
-├── models/               # ML models
-│   ├── discriminative/   # Classifiers (MLP, LogisticRegression, NODE)
-│   ├── generative/       # Density estimators (MAF, RealNVP, NICE, KDE)
-│   └── regression/       # Regressors (MLP, LinearRegression)
-├── datasets/             # Dataset loading and configuration
-├── preprocessing/        # Feature transformation pipeline
-├── dequantization/       # Categorical feature handling for flows
-├── losses/               # Loss functions for CF optimization
-├── metrics/              # Evaluation metrics
-├── pipelines/            # Experiment orchestration
-│   ├── nodes/            # Pipeline components
-│   └── conf/             # Hydra configuration files
-├── plotting/             # Visualization utilities
-└── utils.py              # Helper functions
-
-config/
-└── datasets/             # Dataset YAML configurations (21 datasets)
-
-docs/
-├── library_overview.md   # Comprehensive package documentation
-└── ppcef_pipeline.md     # Pipeline guide
+├── config/                # Dataset configuration YAML files
+├── data/                  # Datasets
+├── models/                # Pre-trained models
+├── notebooks/             # Jupyter notebooks for analysis and examples
+├── docs/                  # MkDocs documentation
+├── tests/                 # Test suite
+├── counterfactuals/       # Source code for the framework
+│   ├── cf_methods/        # Counterfactual methods
+│   │   ├── global_methods/
+│   │   │   ├── ares/
+│   │   │   └── globe_ce/
+│   │   ├── group_methods/
+│   │   │   ├── glance/
+│   │   │   ├── pumal/
+│   │   │   └── tcrex/
+│   │   └── local_methods/
+│   │       ├── artelt/
+│   │       ├── c_chvae/
+│   │       ├── cadex/
+│   │       ├── casebased_sace/
+│   │       ├── ceflow/
+│   │       ├── cegp/
+│   │       ├── cem/
+│   │       ├── cet/
+│   │       ├── dice/
+│   │       ├── dicoflex/
+│   │       ├── lice/
+│   │       ├── ppcef/
+│   │       ├── regression_ppcef/
+│   │       ├── sace/
+│   │       ├── tabdce/
+│   │       └── wach/
+│   ├── models/            # Neural network models
+│   │   ├── classifier/    # Discriminative models (MLP, LR, NODE)
+│   │   ├── generative/    # Generative models (MAF, RealNVP, NICE, KDE, CNF)
+│   │   └── regression/    # Regression models (LinearRegression, MLPRegressor)
+│   ├── datasets/          # Dataset loading and preprocessing
+│   ├── preprocessing/     # Preprocessing pipeline (scaling, encoding, torch dtype)
+│   ├── dequantization/    # Dequantization utilities for categorical features
+│   ├── losses/            # Loss functions (BinaryDiscLoss, MulticlassDiscLoss)
+│   ├── metrics/           # Evaluation metrics (validity, proximity, plausibility, etc.)
+│   ├── pipelines/         # End-to-end experiment pipelines
+│   │   ├── runners/       # Method-specific pipeline runners
+│   │   ├── conf/          # Hydra configuration files
+│   │   └── nodes/         # Pipeline building blocks
+│   └── plotting/          # Visualization utilities
+├── README.md              # This document
+└── ...
 ```
 
 ## Counterfactual Methods
@@ -241,56 +287,32 @@ The library provides comprehensive evaluation metrics:
 ### Using Hydra Pipelines
 
 ```shell
-# Run PPCEF pipeline
-uv run python counterfactuals/pipelines/run_ppcef_pipeline.py
-
-# With custom configuration
-uv run python counterfactuals/pipelines/run_ppcef_pipeline.py \
-  dataset.config_path=config/datasets/heloc.yaml \
-  disc_model.model=disc_model/mlp_large \
-  counterfactuals_params.target_class=1
+uv run python -m counterfactuals.pipelines.run_ppcef_pipeline
 ```
-
-### Available Pipelines
-
-| Pipeline | Method |
-|----------|--------|
-| `run_ppcef_pipeline.py` | PPCEF |
-| `run_ppcefr_pipeline.py` | PPCEF for regression |
-| `run_rppcef_pipeline.py` | Regional PPCEF |
-| `run_dice_pipeline.py` | DiCE |
-| `run_cem_pipeline.py` | CEM |
-| `run_cet_pipeline.py` | CET |
-| `run_cchvae_pipeline.py` | C-CHVAE |
-| `run_wach_pipeline.py` | WACH |
-| `run_artelt_pipeline.py` | Artelt |
-| `run_cegp_pipeline.py` | CEGP |
-| `run_globe_ce_pipeline.py` | GLOBE-CE |
-| `run_ares_pipeline.py` | AReS |
-| `run_glance_pipeline.py` | GLANCE |
 
 ## Documentation
 
-**Live Docs**: https://ofurman.github.io/counterfactuals/
+Full documentation is available via MkDocs. To build and serve locally:
+
+```shell
+uv run mkdocs serve
+```
+
+Key sections:
+
+- **[User Guide](docs/user-guide/index.md)** — datasets, models, generating counterfactuals, evaluation, pipelines.
+- **[Methods](docs/methods/index.md)** — per-method descriptions for local, global, and group methods.
+- **[Pipelines](docs/user-guide/pipelines.md)** — how `PipelineRunner` orchestrates CV folds, Hydra config structure, and how to add new runners.
 
 ## Contributing
 
 Contributions are welcome! Before opening a PR:
 
-1. Read [`AGENTS.md`](AGENTS.md) and [`docs/ppcef_pipeline.md`](docs/ppcef_pipeline.md) to understand the workflow
-2. Use `uv` for all operations:
-   ```shell
-   uv sync                     # Install dependencies
-   uv run ruff check --fix     # Lint and fix
-   uv run pytest               # Run tests
-   ```
-3. Follow the coding standards:
-   - Python 3.10+, PEP 8 compliant
-   - Full type hints everywhere
-   - Google-style docstrings
-   - Line length: 100 characters
-4. Keep patches small and well-documented
-5. Update or add tests when behavior changes
+- Read `AGENTS.md` and `docs/user-guide/pipelines.md` to understand the workflow, required typing,
+  docstrings, and logging conventions.
+- Use `uv` for everything (`uv sync`, `uv run ruff check --fix`, `uv run pytest`).
+- Keep patches small, fully type-hinted, and Ruff-clean (line length 100, Google docstrings).
+- Update or add documentation/tests whenever behavior or configuration changes.
 
 To add new dependencies:
 ```shell

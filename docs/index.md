@@ -60,19 +60,19 @@ pip install -e .
 
 ```python
 from counterfactuals.datasets import FileDataset
-from counterfactuals.models.classifiers import MLPClassifier
-from counterfactuals.models.generators import MaskedAutoregressiveFlow
+from counterfactuals.models import MLPClassifier
+from counterfactuals.models import MaskedAutoregressiveFlow
 from counterfactuals.cf_methods.local_methods import PPCEF
 
 # 1. Load dataset
 dataset = FileDataset(config_path="config/datasets/adult.yaml")
 
 # 2. Train classifier
-classifier = MLPClassifier(input_dim=14, hidden_dims=[64, 32], output_dim=2)
+classifier = MLPClassifier(num_inputs=14, num_targets=2, hidden_layer_sizes=[64, 32])
 classifier.fit(train_loader, test_loader, epochs=50)
 
 # 3. Train generative model
-flow = MaskedAutoregressiveFlow(input_dim=14, hidden_dims=[64, 64], n_layers=5)
+flow = MaskedAutoregressiveFlow(features=14, hidden_features=64, num_layers=5)
 flow.fit(train_loader, test_loader, epochs=100)
 
 # 4. Generate counterfactual

@@ -50,7 +50,7 @@ class RegressionFileDataset(DatasetBase):
         Args:
             raw_data: Raw dataset as a pandas DataFrame.
         Returns:
-            Tuple (X, y) as numpy arrays.
+            tuple (X, y) as numpy arrays.
         """
         raw_data = raw_data.dropna(subset=self.config.features)
         raw_data = raw_data.head(self.samples_keep)

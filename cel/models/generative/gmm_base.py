@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -29,7 +27,7 @@ class GMMBaseDistribution(nn.Module):
         else:
             self.register_buffer("log_stds", torch.zeros(n_classes, features))
 
-    def log_prob(self, z: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def log_prob(self, z: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         """Compute log probabilities under the GMM."""
         if y is not None:
             return self._log_prob_conditional(z, y)
@@ -62,7 +60,7 @@ class GMMBaseDistribution(nn.Module):
         stacked = torch.stack(log_probs, dim=1)
         return -np.log(self.n_classes) + torch.logsumexp(stacked, dim=1)
 
-    def sample(self, n_samples: int, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def sample(self, n_samples: int, y: torch.Tensor | None = None) -> torch.Tensor:
         """Sample from the GMM."""
         device = self.means.device
         if y is None:

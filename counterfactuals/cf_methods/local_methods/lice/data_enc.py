@@ -1,8 +1,8 @@
 import numpy as np
 import pyomo.environ as pyo
 
-from counterfactuals.cf_methods.local.lice.data.DataHandler import DataHandler
-from counterfactuals.cf_methods.local.lice.data.Features import (
+from counterfactuals.cf_methods.local_methods.lice.data.DataHandler import DataHandler
+from counterfactuals.cf_methods.local_methods.lice.data.Features import (
     Binary,
     Categorical,
     Contiguous,
@@ -10,14 +10,14 @@ from counterfactuals.cf_methods.local.lice.data.Features import (
     Mixed,
     Monotonicity,
 )
-from counterfactuals.cf_methods.local.lice.data.Types import DataLike
-from counterfactuals.cf_methods.local.lice.SPN import SPN
+from counterfactuals.cf_methods.local_methods.lice.data.Types import DataLike
+from counterfactuals.cf_methods.local_methods.lice.SPN import SPN
 
 
 def encode_contiguous(
     mio: pyo.Block, init_val: float, feature: Contiguous, mio_eps: float
 ) -> tuple[pyo.Var, list[pyo.Var]]:
-    mio.cont_change = pyo.Set(initialize=["increase", "decrease"])
+    mio.cont_change = pyo.set(initialize=["increase", "decrease"])
     mio.var = pyo.Var(bounds=(0, 1), initialize=init_val)
 
     if feature.modifiable:
@@ -79,7 +79,7 @@ def encode_binary(mio: pyo.Block, init_val: int, feature: Binary) -> tuple[pyo.V
 def encode_categorical(
     mio: pyo.Block, init_val: int, feature: Categorical, ohe_extra: pyo.Var | int = 0
 ) -> tuple[pyo.Var, list[pyo.Var]]:
-    mio.vals = pyo.Set(initialize=feature.numeric_vals)
+    mio.vals = pyo.set(initialize=feature.numeric_vals)
     mio.var = pyo.Var(
         mio.vals,
         domain=pyo.Binary,
@@ -90,11 +90,11 @@ def encode_categorical(
     mio.var_change = pyo.Var(mio.vals, domain=pyo.Binary, initialize=0)
     if feature.modifiable:
         if feature.monotone == Monotonicity.INCREASING:
-            mio.inaccessible = pyo.Set(initialize=feature.lower_than(init_val))
+            mio.inaccessible = pyo.set(initialize=feature.lower_than(init_val))
         elif feature.monotone == Monotonicity.DECREASING:
-            mio.inaccessible = pyo.Set(initialize=feature.greater_than(init_val))
+            mio.inaccessible = pyo.set(initialize=feature.greater_than(init_val))
         else:
-            mio.inaccessible = pyo.Set(initialize=[])
+            mio.inaccessible = pyo.set(initialize=[])
         mio.modif_constr = pyo.Constraint(mio.inaccessible, rule=lambda m, v: m.var_change[v] == 0)
     else:
         mio.modif_constr = pyo.Constraint(mio.vals, rule=lambda m, v: m.var_change[v] == 0)
@@ -242,7 +242,7 @@ def encode_input_change(
         expr=mio_block.total_cost == sum(v * cost for cost, v in cost_pairs)
     )
 
-    mio_block.causal_set = pyo.Set(
+    mio_block.causal_set = pyo.set(
         initialize=[(i.name, j.name) for i, j in data_handler.causal_inc]
     )
     mio_block.causal = pyo.Block(mio_block.causal_set)
@@ -258,7 +258,7 @@ def encode_input_change(
             mio_eps,
         )
 
-    mio_block.gt_set = pyo.Set(initialize=[(i.name, j.name) for i, j in data_handler.greater_than])
+    mio_block.gt_set = pyo.set(initialize=[(i.name, j.name) for i, j in data_handler.greater_than])
 
     def ge_constraint(m, greater, smaller):
         # greater, smaller = pair

@@ -1,5 +1,3 @@
-from typing import List, Union
-
 import numpy as np
 import torch
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -13,7 +11,7 @@ ALPHA = 1e-6
 class GroupDequantizer(GroupTransformer):
     """Group dequantizer for categorical features."""
 
-    def __init__(self, groups: List[List[int]], transformer_factory=lambda: Dequantizer()):
+    def __init__(self, groups: list[list[int]], transformer_factory=lambda: Dequantizer()):
         super().__init__(groups, transformer_factory)
 
 
@@ -62,14 +60,14 @@ class Dequantizer(BaseEstimator, TransformerMixin):
         return np.log(x / (1.0 - x))
 
     @staticmethod
-    def inverse(x: Union[np.ndarray, torch.Tensor], dividers: list) -> np.ndarray:
+    def inverse(x: np.ndarray | torch.Tensor, dividers: list) -> np.ndarray:
         """
         Inverse transform the logit transformation.
         Handles both numpy arrays and torch tensors.
 
         Args:
-            x (Union[np.ndarray, torch.Tensor]): Logit-transformed data to invert.
-            dividers (list): List of integer dividers used for scaling each feature.
+            x (np.ndarray | torch.Tensor): Logit-transformed data to invert.
+            dividers (list): list of integer dividers used for scaling each feature.
 
         Returns:
             np.ndarray: Discretized data in original quantized scale.
@@ -123,7 +121,7 @@ class Dequantizer(BaseEstimator, TransformerMixin):
         Handles both numpy arrays and torch tensors.
 
         Args:
-            X (Union[np.ndarray, torch.Tensor]): Transformed data to invert.
+            X (np.ndarray | torch.Tensor): Transformed data to invert.
 
         Returns:
             np.ndarray: Data transformed back to original quantized scale.

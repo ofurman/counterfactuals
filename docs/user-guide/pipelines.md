@@ -1,24 +1,75 @@
 # Running Pipelines
 
-Execute end-to-end experiments using Hydra configuration system.
+Execute end-to-end experiments using the Hydra configuration system.
 
 ## Overview
 
 Pipelines automate the complete workflow:
-1. Load dataset
-2. Train/load models
+
+1. Load dataset (with 5-fold cross-validation)
+2. Train / load discriminative and generative models
 3. Generate counterfactuals
-4. Compute metrics
-5. Log results
+4. Compute evaluation metrics
+5. Save results to CSV
+
+## Architecture
+
+Each pipeline is built around two layers:
+
+- **Runner class** — lives in `counterfactuals/pipelines/runners/` and contains all the logic
+  for a specific CF method. Inherits from the abstract `PipelineRunner` base class.
+- **Entry-point script** — a thin `run_*_pipeline.py` wrapper that configures preprocessing
+  and instantiates the runner. This is what you invoke on the command line.
+
+### PipelineRunner base class
+
+`PipelineRunner` implements the *template method* pattern. The `run()` method orchestrates
+the full CV loop, calling overridable hooks in order:
+
+```
+run()
+ ├── load_dataset()
+ ├── for each fold:
+ │    ├── create_disc_model()
+ │    ├── create_gen_model()
+ │    ├── compute_log_prob_threshold()
+ │    ├── search_counterfactuals()   ← abstract, must be implemented
+ │    ├── calculate_metrics()
+ │    └── save_results()
+```
+
+Each runner subclass declares `cf_method_name` as a class-level constant:
+
+```python
+class PPCEFPipelineRunner(PipelineRunner):
+    cf_method_name = "PPCEF"
+
+    def search_counterfactuals(self, dataset, gen_model, disc_model, save_folder, log_prob_threshold):
+        ...
+```
+
+### SearchResult
+
+`search_counterfactuals()` must return a `SearchResult` dataclass:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `X_cf` | array | Generated counterfactual examples |
+| `X_test` | array | Original test examples used for generation |
+| `y_orig` | array | Original labels |
+| `y_target` | array | Target labels |
+| `model_returned` | bool array | Per-sample success flag |
+| `cf_search_time` | float | Wall-clock search time in seconds |
+| `extras` | dict | Method-specific outputs (e.g. group IDs, S/D matrices) |
 
 ## Running a Pipeline
 
 ```bash
 # Run PPCEF pipeline
-python -m counterfactuals.pipelines.run_ppcef_pipeline
+uv run python -m counterfactuals.pipelines.run_ppcef_pipeline
 
 # Override configuration
-python -m counterfactuals.pipelines.run_ppcef_pipeline \
+uv run python -m counterfactuals.pipelines.run_ppcef_pipeline \
     dataset.config_path=config/datasets/compas.yaml \
     counterfactuals_params.epochs=200
 ```
@@ -26,11 +77,10 @@ python -m counterfactuals.pipelines.run_ppcef_pipeline \
 ## Configuration Structure
 
 ```yaml
-# pipelines/conf/config.yaml
+# pipelines/conf/ppcef_config.yaml
 defaults:
   - gen_model: large_maf
   - disc_model: mlp
-  - metrics: default
 
 dataset:
   _target_: counterfactuals.datasets.FileDataset
@@ -47,33 +97,122 @@ disc_model:
   lr: 0.001
 
 counterfactuals_params:
+  target_class: 1
   epochs: 100
   lr: 0.01
   alpha: 1.0
-  beta: 0.5
+  log_prob_quantile: 0.5
 ```
 
 ## Available Pipelines
 
-| Pipeline | Method |
-|----------|--------|
-| `run_ppcef_pipeline` | PPCEF |
-| `run_dice_pipeline` | DICE |
-| `run_globe_ce_pipeline` | GLOBE-CE |
-| `run_rppcef_pipeline` | ReViCE |
-| ... | ... |
+### Local methods
 
-## MLflow Logging
+| Entry-point script | Runner class | CF method |
+|---|---|---|
+| `run_ppcef_pipeline` | `PPCEFPipelineRunner` | PPCEF |
+| `run_wach_pipeline` | `WACHPipelineRunner` | WACH / RPPCEF |
+| `run_wach_ours_pipeline` | `WACHOURSPipelineRunner` | WACH-OURS |
+| `run_dice_pipeline` | `DiceExplainerRunner` | DiCE |
+| `run_dice_pairwise_pipeline` | `DicePairwisePipelineRunner` | DiCE (pairwise) |
+| `run_cchvae_pipeline` | `CCHVAEPipelineRunner` | CCHVAE |
+| `run_cchvae_pairwise_pipeline` | `CCHVAEPairwisePipelineRunner` | CCHVAE (pairwise) |
+| `run_cegp_pipeline` | `CEGPPipelineRunner` | CEGP |
+| `run_cem_pipeline` | `CEMPipelineRunner` | CEM |
+| `run_cet_pipeline` | `CETPipelineRunner` | CET |
+| `run_artelt_pipeline` | `ArteltPipelineRunner` | Artelt |
+| `run_cadex_pipeline` | `CADEXPipelineRunner` | CADEX |
+| `run_casebased_sace_pipeline` | `CaseBasedSACEPipelineRunner` | Case-Based SACE |
+| `run_tabdce_pipeline` | `TabDCEPipelineRunner` | TabDCE |
+| `run_tabdce_pairwise_pipeline` | `TabDCEPairwisePipelineRunner` | TabDCE (pairwise) |
+| `run_ceflow_pipeline` | `CeFlowPipelineRunner` | CeFlow |
+| `run_lice_pipeline` | `LiCEPipelineRunner` | LiCE |
+| `run_ppcefr_pipeline` | `PPCEFRPipelineRunner` | PPCEF-R (regression) |
 
-Results are automatically logged to MLflow:
+### Group / global methods
+
+| Entry-point script | Runner class | CF method |
+|---|---|---|
+| `run_globe_ce_pipeline` | `GLOBECEPipelineRunner` | GLOBE-CE |
+| `run_group_globe_ce_pipeline` | `GroupGLOBECEPipelineRunner` | Group GLOBE-CE |
+| `run_regional_globe_ce_pipeline` | `RegionalGLOBECEPipelineRunner` | Regional GLOBE-CE |
+| `run_ares_pipeline` | `AReSPipelineRunner` | AReS |
+| `run_glance_pipeline` | `GLANCEPipelineRunner` | GLANCE |
+| `run_tcrex_pipeline` | `TCRExPipelineRunner` | TCREx |
+| `run_pumal_pipeline` | `PUMALPipelineRunner` | PUMAL |
+
+## Creating a Custom Pipeline
+
+1. Create a runner class in `counterfactuals/pipelines/runners/my_method_runner.py`:
 
 ```python
-import mlflow
+from counterfactuals.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
 
-# View logged runs
-mlflow.search_runs()
+class MyMethodPipelineRunner(PipelineRunner):
+    cf_method_name = "MyMethod"
+
+    def search_counterfactuals(
+        self, dataset, gen_model, disc_model, save_folder, log_prob_threshold
+    ) -> SearchResult:
+        """Generate counterfactuals for the current fold."""
+        return self._default_search_counterfactuals(
+            dataset, gen_model, disc_model, save_folder, log_prob_threshold
+        )
+
+    def create_cf_method(self, dataset, gen_model, disc_model) -> object:
+        """Instantiate the CF method."""
+        self.logger.info("Creating counterfactual model")
+        return MyMethod(disc_model=disc_model)
+
+    def run_cf_method(self, cf_method, cf_dataloader, dataset, log_prob_threshold) -> CfMethodOutput:
+        """Run CF generation and return raw outputs."""
+        self.logger.info("Handling counterfactual generation")
+        result = cf_method.explain_dataloader(dataloader=cf_dataloader)
+        return CfMethodOutput(
+            x_cfs=result.x_cfs,
+            x_origs=result.x_origs,
+            y_origs=result.y_origs,
+            y_targets=result.y_cf_targets,
+        )
 ```
 
-## Creating Custom Pipelines
+2. Create a thin entry-point script `counterfactuals/pipelines/run_my_method_pipeline.py`:
 
-See existing pipelines in `counterfactuals/pipelines/` for examples.
+```python
+import logging
+import hydra
+from omegaconf import DictConfig
+from counterfactuals.pipelines.runners.my_method_runner import MyMethodPipelineRunner
+
+logger = logging.getLogger(__name__)
+
+@hydra.main(config_path="./conf", config_name="my_method_config", version_base="1.2")
+def main(cfg: DictConfig):
+    runner = MyMethodPipelineRunner(
+        cfg, logger, MyMethodPipelineRunner.default_preprocessing()
+    )
+    runner.run()
+
+if __name__ == "__main__":
+    main()
+```
+
+3. Add a Hydra config file at `counterfactuals/pipelines/conf/my_method_config.yaml`.
+
+### Overridable hooks
+
+Override these methods on the runner class for non-standard behaviour:
+
+| Method | When to override |
+|--------|-----------------|
+| `load_dataset()` | Custom dataset loading (e.g. wrap with `MethodDataset`) |
+| `create_disc_model()` | Custom discriminative model setup |
+| `create_gen_model()` | Custom generative model (e.g. CeFlow uses two models) |
+| `compute_log_prob_threshold()` | Different plausibility threshold computation |
+| `create_cf_method()` | Instantiate the CF method (required for `_default_search_counterfactuals`) |
+| `pre_cf_generation()` | Hook before CF generation (e.g. density estimator fitting in Artelt) |
+| `run_cf_method()` | Run the CF method and return `CfMethodOutput` (required for `_default_search_counterfactuals`) |
+| `postprocess_cf_output()` | Post-process raw CF output (e.g. categorical discretization) |
+| `calculate_metrics()` | Method-specific metrics (e.g. group metrics for GLANCE) |
+| `save_results()` | Extra columns in the output CSV (e.g. `n_groups` for TCREx) |
+| `run()` | Completely custom pipeline loop (e.g. no CV, regression task) |

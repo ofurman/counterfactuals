@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -19,11 +18,11 @@ class PreprocessingContext:
     """
 
     X_train: np.ndarray
-    X_test: Optional[np.ndarray] = None
-    y_train: Optional[np.ndarray] = None
-    y_test: Optional[np.ndarray] = None
-    categorical_indices: Optional[list[int]] = None
-    continuous_indices: Optional[list[int]] = None
+    X_test: np.ndarray | None = None
+    y_train: np.ndarray | None = None
+    y_test: np.ndarray | None = None
+    categorical_indices: list[int] | None = None
+    continuous_indices: list[int] | None = None
 
     def __post_init__(self):
         """Infer feature indices if not provided."""
