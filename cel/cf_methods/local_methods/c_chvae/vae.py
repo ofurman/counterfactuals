@@ -148,9 +148,7 @@ class VariationalAutoencoder(nn.Module):
             )
             xtrain = np.clip(xtrain, 0.0, 1.0)
 
-        train_loader = torch.utils.data.DataLoader(
-            xtrain, batch_size=batch_size, shuffle=True
-        )
+        train_loader = torch.utils.data.DataLoader(xtrain, batch_size=batch_size, shuffle=True)
 
         optimizer = torch.optim.Adam(
             self.parameters(),

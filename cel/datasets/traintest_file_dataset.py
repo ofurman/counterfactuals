@@ -5,7 +5,6 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-
 from counterfactuals.datasets.base import DatasetBase
 from counterfactuals.datasets.initial_transforms import (
     InitialTransformContext,
@@ -41,9 +40,7 @@ class TrainTestFileDataset(DatasetBase):
         super().__init__(config_path=config_path)
         self.train_data_path = train_data_path
         self.test_data_path = test_data_path
-        self.samples_keep = (
-            samples_keep if samples_keep is not None else self.config.samples_keep
-        )
+        self.samples_keep = samples_keep if samples_keep is not None else self.config.samples_keep
         self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
             build_initial_transform_pipeline(self.config.initial_transforms)
         )
@@ -75,9 +72,7 @@ class TrainTestFileDataset(DatasetBase):
         self.X = np.vstack([self.X_train, self.X_test])
         self.y = np.concatenate([self.y_train, self.y_test])
 
-    def _preprocess_split(
-        self, raw_data: pd.DataFrame
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _preprocess_split(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """Preprocesses raw data into feature and target arrays.
 
         Args:
@@ -88,17 +83,13 @@ class TrainTestFileDataset(DatasetBase):
         """
         data = raw_data.copy()
         if self.config.target_mapping:
-            data[self.config.target] = data[self.config.target].replace(
-                self.config.target_mapping
-            )
+            data[self.config.target] = data[self.config.target].replace(self.config.target_mapping)
 
         X = data[self.features].to_numpy()
         y = data[self.config.target].to_numpy()
         return X, y
 
-    def _apply_initial_transforms(
-        self, raw_data: pd.DataFrame
-    ) -> InitialTransformContext:
+    def _apply_initial_transforms(self, raw_data: pd.DataFrame) -> InitialTransformContext:
         """Apply configured initial transforms to the raw dataframe."""
         context = InitialTransformContext(
             data=raw_data.copy(),
@@ -124,9 +115,7 @@ class TrainTestFileDataset(DatasetBase):
         self.features = list(context.features)
         self.numerical_features = list(context.continuous_features)
         self.categorical_features = list(context.categorical_features)
-        self.numerical_features_indices = [
-            self.features.index(f) for f in self.numerical_features
-        ]
+        self.numerical_features_indices = [self.features.index(f) for f in self.numerical_features]
         self.categorical_features_indices = [
             self.features.index(f) for f in self.categorical_features
         ]

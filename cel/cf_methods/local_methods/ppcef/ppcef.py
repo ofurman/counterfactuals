@@ -77,9 +77,7 @@ class PPCEF(BaseCounterfactualMethod, LocalCounterfactualMixin):
         )
 
         max_inner = torch.nn.functional.relu(
-            plausibility_weight * log_prob_threshold
-            + plausibility_bias
-            - p_x_param_c_target
+            plausibility_weight * log_prob_threshold + plausibility_bias - p_x_param_c_target
         )
 
         # regularization_loss = self.compute_regularization_loss(cf, categorical_intervals)

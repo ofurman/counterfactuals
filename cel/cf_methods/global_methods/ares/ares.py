@@ -6,9 +6,6 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from mlxtend.frequent_patterns import apriori
-from tqdm import tqdm
-
 from counterfactuals.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
@@ -16,6 +13,8 @@ from counterfactuals.cf_methods.counterfactual_base import (
 from counterfactuals.cf_methods.global_counterfactual_mixin import (
     GlobalCounterfactualMixin,
 )
+from mlxtend.frequent_patterns import apriori
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -247,11 +246,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             )
 
         lams = [1, 10]  # can play around with these lambda values
-        r = (
-            self.V.length
-            if max_triples_eval == 0
-            else min(int(max_triples_eval), self.V.length)
-        )
+        r = self.V.length if max_triples_eval == 0 else min(int(max_triples_eval), self.V.length)
         self.evaluate_groundset(
             lams=lams,
             r=r,
@@ -1195,9 +1190,7 @@ class TwoLevelRecourseSet:
         Input: size of final candidate set, s
         """
         if self.triples_array is None:
-            raise ValueError(
-                "triples_array is not initialised; run evaluate_triples() first"
-            )
+            raise ValueError("triples_array is not initialised; run evaluate_triples() first")
         # Check for valid n_prefilter
         s = int(s)
         if s > len(self.triples_array):
