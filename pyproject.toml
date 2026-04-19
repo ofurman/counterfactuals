@@ -85,22 +85,6 @@ dependencies = [
   "mkdocs-section-index>=0.3.10",
 ]
 
-[dependency-groups]
-dev = [
-    "pre-commit>=4.3.0",
-    "pytest>=8.4.2",
-    "ruff>=0.13.3",
-]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.7.1",
-    "mkdocs-material-extensions",
-    "mkdocstrings[python]>=1.0.0",
-    "mkdocs-gen-files>=0.6.0",
-    "mkdocs-literate-nav>=0.6.2",
-    "mkdocs-section-index>=0.3.10",
-]
-
 [project.urls]
 Homepage = "https://github.com/ofurman/counterfactuals"
 Repository = "https://github.com/ofurman/counterfactuals"
@@ -113,7 +97,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["counterfactuals*"]
+include = ["cel*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml"]
@@ -123,11 +107,8 @@ line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"counterfactuals/cf_methods/cet/*.py" = ["E741", "E711", "F841"]
-"counterfactuals/cf_methods/ares/ares.py" = ["F841"]
-"counterfactuals/cf_methods/globe_ce/globe_ce.py" = ["F841"]
-"counterfactuals/pipelines/run_cet_pipeline.py" = ["F841"]
-"counterfactuals/pipelines/run_lice_pipeline.py" = ["F841"]
+"cel/cf_methods/global_methods/ares/ares.py" = ["F841"]
+"cel/cf_methods/global_methods/globe_ce/globe_ce.py" = ["F841"]
 
 [tool.pytest.ini_options]
 markers = [
