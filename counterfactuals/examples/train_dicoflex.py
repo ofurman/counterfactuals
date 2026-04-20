@@ -1,31 +1,25 @@
-import sys
-
-import pandas as pd
-
-sys.path.append(r"C:\Users\marsz\Studies\ML-papers\DiCoFlex\counterfactuals")
-sys.path.append("/shared/results/marszale/counterfactuals")
-
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-from sklearn.datasets import make_moons, make_circles, make_classification
 import os
 import logging
+import json
 
-from counterfactuals.datasets.generic_counterfactual import (
-    MulticlassCounterfactualWrapper, 
-    train_multiclass_counterfactual_flow_model,
-    generate_multiclass_counterfactuals,
-    visualize_multiclass_counterfactual_generation
-)
+import pandas as pd
+
+from counterfactuals.cf_methods.dicoflex.dataset import MulticlassCounterfactualWrapper
+from counterfactuals.cf_methods.dicoflex.training import train_multiclass_counterfactual_flow_model
+from counterfactuals.cf_methods.dicoflex.generation import generate_multiclass_counterfactuals
+from counterfactuals.cf_methods.dicoflex.visualization import visualize_multiclass_counterfactual_generation
+from counterfactuals.cf_methods.dicoflex.utils import inverse_transform_data
+from counterfactuals.datasets.base import AbstractDataset
 from counterfactuals.generative_models.maf import MaskedAutoregressiveFlow
 from counterfactuals.examples.utils import (
     visualize_dataset,
     evaluate_counterfactuals
 )
-from counterfactuals.datasets.law import LawDataset
 from counterfactuals.discriminative_models.logistic_regression import (
-    LogisticRegression, 
+    LogisticRegression,
     MultinomialLogisticRegression,
 )
 from counterfactuals.discriminative_models.multilayer_perceptron import MultilayerPerceptron
@@ -35,7 +29,6 @@ from counterfactuals.datasets.moons import MoonsDataset
 from counterfactuals.datasets.blobs import BlobsDataset
 from counterfactuals.datasets.DCENF.adult import AdultDataset
 from counterfactuals.datasets import BankDataset, GMCDataset, LendingClubDataset, DefaultDataset
-from counterfactuals.datasets.generic_counterfactual import AbstractDataset
 
 # Configure logging
 logging.basicConfig(
@@ -55,17 +48,6 @@ def prepare_dataset_and_models(
         D=dataset.X_train_clf.shape[1],
         weights_path=os.path.join(save_dir, "model.pt")
     )
-    #if load_from_save_dir:
-    #    disc_model.load_state_dict(torch.load(os.path.join(save_dir, "disc_model.pth")))
-    #else:
-    #    disc_model.fit(
-    #        dataset.train_dataloader(64, True),
-    #        dataset.test_dataloader(64, False),
-    #        epochs=10000,
-    #        lr=0.001,
-    #        patience=100,
-    #        checkpoint_path=os.path.join(save_dir, "disc_model.pth")
-    #)
     disc_model.eval()
     y_train = disc_model.predict(dataset.X_train_clf).astype(int)
     y_test = disc_model.predict(dataset.X_test_clf).astype(int)
@@ -76,11 +58,9 @@ def prepare_dataset_and_models(
 
     # Train set
     print("Train true counts:", np.bincount(y_train))
-    #print("Train predicted counts:", np.bincount(y_pred_train))
 
     # Test set
     print("Test true counts:", np.bincount(y_test))
-    #print("Test predicted counts:", np.bincount(y_pred_test))
 
     gen_model = MaskedAutoregressiveFlow(
         features=dataset.X_train.shape[1],
@@ -89,48 +69,10 @@ def prepare_dataset_and_models(
         num_blocks_per_layer=2,
         context_features=1
     )
-    #if load_from_save_dir:
-    #    gen_model.load_state_dict(torch.load(os.path.join(save_dir, "gen_model.pth")))
-    #else:
-    #    gen_model.fit(
-    #        dataset.train_dataloader(64, True, 0.03), 
-    #        dataset.test_dataloader(64, False), 
-    #        num_epochs=10000, 
-    #        learning_rate=0.001, 
-    #        patience=100,
-    #        checkpoint_path=os.path.join(save_dir, "gen_model.pth")
-    #    )
     gen_model = gen_model.eval()
-    #return dataset, disc_model, gen_model
 
     return dataset, None, gen_model
 
-
-def inverse_transform_data(data, dataset):
-    data[:, dataset.categorical_features] = dataset.qt.inverse_transform(data[:, dataset.categorical_features])
-    data_orig = np.empty((
-        len(data), len(dataset.numerical_columns) + len(dataset.categorical_columns)
-    ), dtype=object)
-
-    numerical_pos = len(dataset.numerical_columns)
-    numerical_indexes = [
-        dataset.train_data.columns.get_loc(feat) for feat in dataset.feature_columns[:numerical_pos]
-    ]
-    data_orig[:, numerical_indexes] = (
-        dataset.feature_transformer.named_transformers_["MinMaxScaler"].inverse_transform(
-            data[:, dataset.numerical_features])
-    )
-
-    categorical_indexes = [
-        dataset.train_data.columns.get_loc(feat) for feat in dataset.feature_columns[numerical_pos:]
-    ]
-    data_orig[:, categorical_indexes] = (
-        dataset.feature_transformer.named_transformers_["OneHotEncoder"].inverse_transform(
-            data[:, dataset.categorical_features]
-        )
-    )
-
-    return data_orig
 
 def train_method(
         dataset_class: AbstractDataset = MoonsDataset,
@@ -148,20 +90,20 @@ def train_method(
     np.random.seed(0)
 
     os.makedirs(save_dir, exist_ok=True)
-    
+
     dataset, disc_model, gen_model = prepare_dataset_and_models(dataset_class, data_dir, load_from_save_dir=False)
-    
+
     # Visualize the dataset
     visualize_dataset(
-        dataset.X_train, dataset.y_train, 
-        title=f"{dataset_name} Dataset (Multiclass)", 
+        dataset.X_train, dataset.y_train,
+        title=f"{dataset_name} Dataset (Multiclass)",
         save_path=os.path.join(save_dir, f"{dataset_name}_dataset.png")
     )
     logger.info(f"Saved dataset visualization to {os.path.join(save_dir, f'{dataset_name}_dataset.png')}")
 
     # Select threshold for classifier as median of the posterior probabilities
     logger.info(f"Selected threshold for classifier: {prob_threshold}")
-    
+
     # Create masks
     features = dataset.X_train.shape[1]
     masks = []
@@ -172,7 +114,6 @@ def train_method(
     print(masks)
 
     p_values = [1e-2, 2.0]
-    #p_values = [2.0]
     noise_level = 0.01
 
     # Create the multiclass counterfactual wrapper
@@ -190,7 +131,7 @@ def train_method(
         log_level='INFO',
         numerical_pos=len(dataset.numerical_features)
     )
-    
+
     # Train a multiclass model
     logger.info("Training multiclass model")
     multiclass_model = train_multiclass_counterfactual_flow_model(
@@ -211,14 +152,13 @@ def train_method(
         load_from_save_dir=False
     )
     logger.info("Multiclass model training complete")
-    
+
     # Generate and visualize counterfactuals using multiclass model
     logger.info("Generating and visualizing counterfactuals using multiclass model")
     cf_vis_dir = os.path.join(save_dir, "counterfactual_visualization")
     os.makedirs(cf_vis_dir, exist_ok=True)
 
     if dataset_cf.X.shape[1] == 2:
-        #for mask, p_value in zip(masks, p_values):
         visualize_multiclass_counterfactual_generation(
             model=multiclass_model,
             dataset=dataset,
@@ -234,7 +174,7 @@ def train_method(
 
     # Generate counterfactuals for evaluation
     logger.info("Generating counterfactuals for evaluation")
-    
+
     metrics_all = {}
     for mask_idx, mask in enumerate(masks):
         logger.info(f"Generating counterfactuals for mask {mask}")
@@ -248,11 +188,11 @@ def train_method(
                 logger.info(f"Generating counterfactuals for factual class {factual_class}")
                 factual_indices = np.where(dataset.y_test == factual_class)[0]
                 factual_points = dataset.X_test[factual_indices]
-                
+
                 for target_class in dataset_cf.classes:
                     if target_class == factual_class:
                         continue
-                    
+
                     logger.info(f"Generating counterfactuals for factual class {factual_class} to target class {target_class}")
                     mask_ohe = np.zeros(mask_features)
                     mask_ohe[mask_idx] = 1
@@ -278,7 +218,7 @@ def train_method(
                     new_generated_cfs = []
                     for gen_cf, fact_point in zip(generated_cfs, factual_points):
                         nan_mask = np.isnan(gen_cf)
-                        if not np.all(nan_mask):    
+                        if not np.all(nan_mask):
                             while np.any(nan_mask):
                                 nan_mask = np.isnan(gen_cf)
                                 nan_mask_idx = np.any(nan_mask, axis=1)
@@ -341,36 +281,13 @@ def train_method(
                         log_probs
                     )
 
-                    #np.save(
-                    #    os.path.join(
-                    #        save_dir,
-                    #        path),
-                    #        gen_rev_orig
-                    #)
-
-                    #metrics_forward, cfs_orig_forward = evaluate_counterfactuals(
-                    #    disc_model=disc_model,
-                    #    gen_model=gen_model,
-                    #    dataset=dataset,
-                    #    X=dataset.X_test,
-                    #    y=dataset.y_test,
-                    #    target_class=target_class,
-                    #    factual_indices=factual_indices,
-                    #    generated_cfs=generated_cfs,
-                    #    p_value=p_value,
-                    #    action_mask=action_masks,
-                    #    direction=f'class_{factual_class}_to_class_{target_class}',
-                    #)
-                    #metrics_results[f'class_{factual_class}_to_class_{target_class}'] = metrics_forward
-
             # Save metrics comparison
-            import json
             metric_path = f"metrics_comparison_{p_value}_{mask_ohe}.json"
             metric_path = metric_path.replace('\n', '')
             metric_path = metric_path.replace(' ', '')
             with open(os.path.join(save_dir, metric_path), 'w') as f:
                 json.dump(metrics_results, f, indent=2, default=str)
-    
+
     return multiclass_model, dataset
 
 
@@ -391,7 +308,7 @@ if __name__ == "__main__":
     parser.add_argument('--default', action='store_true', help='Run Default multiclass example')
     parser.add_argument('--save_dir', default='results', help='Save directory path')
     args = parser.parse_args()
-    
+
     # Run the selected examples
     if args.moons or args.all:
         logger.info("\n=== Starting Moons Multiclass Example ===")
@@ -404,7 +321,7 @@ if __name__ == "__main__":
         )
         logger.info("Moons multiclass example completed")
         logger.info("Results saved to: results/moons")
-    
+
     if args.three_class or args.all:
         logger.info("\n=== Starting Three-Class Example ===")
         three_class_model, three_class_dataset = train_method(
@@ -415,8 +332,9 @@ if __name__ == "__main__":
             n_nearest=32
         )
         logger.info("Three-class example completed")
-    
+
     if args.law or args.all:
+        from counterfactuals.datasets.law import LawDataset
         logger.info("\n=== Starting Law Multiclass Example ===")
         law_model, law_dataset = train_method(
             dataset_class=LawDataset,
@@ -426,7 +344,7 @@ if __name__ == "__main__":
             n_nearest=32
         )
         logger.info("Law multiclass example completed")
-    
+
     if args.heloc or args.all:
         logger.info("\n=== Starting HELOC Multiclass Example ===")
         heloc_model, heloc_dataset = train_method(
@@ -437,7 +355,7 @@ if __name__ == "__main__":
             n_nearest=32
         )
         logger.info("HELOC multiclass example completed")
-    
+
     if args.wine or args.all:
         logger.info("\n=== Starting Wine Multiclass Example ===")
         wine_model, wine_dataset = train_method(
@@ -487,7 +405,7 @@ if __name__ == "__main__":
 
     if args.lending or args.all:
         logger.info("\n=== Starting LendingClub Multiclass Example ===")
-        gmc_model, gmc_dataset = train_method(
+        lending_model, lending_dataset = train_method(
             dataset_class=LendingClubDataset,
             dataset_name="LendingClub",
             save_dir=f"{args.save_dir}/lending-club",
@@ -499,7 +417,7 @@ if __name__ == "__main__":
 
     if args.default or args.all:
         logger.info("\n=== Starting Default Multiclass Example ===")
-        gmc_model, gmc_dataset = train_method(
+        default_model, default_dataset = train_method(
             dataset_class=DefaultDataset,
             dataset_name="Default",
             save_dir=f"{args.save_dir}/default",
@@ -508,5 +426,5 @@ if __name__ == "__main__":
             n_nearest=32
         )
         logger.info("Default multiclass example completed")
-    
+
     logger.info("\nAll examples completed successfully!")
