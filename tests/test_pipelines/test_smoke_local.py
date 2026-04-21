@@ -9,7 +9,7 @@ import copy
 import pytest
 from omegaconf import OmegaConf
 
-from counterfactuals.pipelines.runners import (
+from cel.pipelines.runners import (
     ArteltPipelineRunner,
     CADEXPipelineRunner,
     CaseBasedSACEPipelineRunner,
@@ -35,7 +35,7 @@ def _ppcef_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -62,7 +62,7 @@ def _wach_ours_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -83,14 +83,14 @@ def _wach_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
                 "batch_size": 16,
                 "log_prob_quantile": 0.5,
                 "cf_method": {
-                    "_target_": "counterfactuals.cf_methods.local_methods.wach.wach.WACH",
+                    "_target_": "cel.cf_methods.local_methods.wach.wach.WACH",
                 },
             },
             "experiment": {"relabel_with_disc_model": False},
@@ -103,7 +103,7 @@ def _artelt_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -120,7 +120,7 @@ def _cegp_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -144,7 +144,7 @@ def _cem_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -171,7 +171,7 @@ def _cet_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -188,7 +188,7 @@ def _cadex_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -213,7 +213,7 @@ def _casebased_sace_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -235,7 +235,7 @@ def _cchvae_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -267,7 +267,7 @@ def _dice_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -294,7 +294,7 @@ def _tabdce_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,

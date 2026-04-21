@@ -6,7 +6,7 @@ import hydra
 import torch
 from omegaconf import DictConfig
 
-from counterfactuals.pipelines.runners.regional_globe_ce_runner import RegionalGLOBECEPipelineRunner
+from cel.pipelines.runners.regional_globe_ce_runner import RegionalGLOBECEPipelineRunner
 
 logger = logging.getLogger(__name__)
 

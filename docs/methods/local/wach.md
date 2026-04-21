@@ -11,7 +11,7 @@ WACH emphasizes actionability by weighting features based on their modifiability
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import WACH
+from cel.cf_methods.local_methods import WACH
 
 method = WACH(
     gen_model=gen_model,
@@ -31,4 +31,4 @@ result = method.explain(
 
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.wach.wach.WACH
+::: cel.cf_methods.local_methods.wach.wach.WACH

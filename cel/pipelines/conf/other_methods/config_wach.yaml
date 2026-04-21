@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.MoonsDataset
+  _target_: cel.datasets.MoonsDataset
 
 reference_method: "wach"
 pca_dim: 25
@@ -25,7 +25,7 @@ counterfactuals:
   beta: 0.01
   patience: 500
   disc_loss:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
+    _target_: cel.losses.MulticlassDiscLoss
 
 # gen_model:
 #   batch_size: 256

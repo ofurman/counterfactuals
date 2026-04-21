@@ -39,7 +39,7 @@ Pre-configured datasets for classification tasks.
 ## Usage Example
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 
 # Load Adult dataset
 dataset = FileDataset(config_path="config/datasets/adult.yaml")

@@ -29,7 +29,7 @@ Local methods are ideal when you need to:
 ## Example Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
 
 # Initialize method
 method = PPCEF(

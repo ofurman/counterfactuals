@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: cel.datasets.FileDataset
   config_path: config/datasets/blobs.yaml
 
 disc_model:
@@ -33,7 +33,7 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # CEGP specific parameters
-    _target_: counterfactuals.cf_methods.CEGP
+    _target_: cel.cf_methods.CEGP
   beta: 0.01
   c_init: 1.0
   c_steps: 5

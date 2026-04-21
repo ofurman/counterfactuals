@@ -11,7 +11,7 @@ ReViCE extends PPCEF to handle groups, finding counterfactual transformations th
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.group_methods.group_ppcef import RPPCEF
+from cel.cf_methods.group_methods.group_ppcef import RPPCEF
 
 method = RPPCEF(
     gen_model=gen_model,
@@ -32,4 +32,4 @@ result = method.explain(
 
 ## API Reference
 
-::: counterfactuals.cf_methods.group_methods.group_ppcef.rppcef.RPPCEF
+::: cel.cf_methods.group_methods.group_ppcef.rppcef.RPPCEF

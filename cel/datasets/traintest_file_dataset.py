@@ -5,8 +5,9 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from counterfactuals.datasets.base import DatasetBase
-from counterfactuals.datasets.initial_transforms import (
+
+from cel.datasets.base import DatasetBase
+from cel.datasets.initial_transforms import (
     InitialTransformContext,
     InitialTransformPipeline,
     build_initial_transform_pipeline,

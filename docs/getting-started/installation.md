@@ -16,7 +16,7 @@ This guide covers installing the Counterfactuals library and its dependencies.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ofurman/counterfactuals.git
+git clone https://github.com/ofurman/cel.git
 cd counterfactuals
 
 # Install all dependencies
@@ -27,7 +27,7 @@ uv sync
 
 ```bash
 # Clone the repository
-git clone https://github.com/ofurman/counterfactuals.git
+git clone https://github.com/ofurman/cel.git
 cd counterfactuals
 
 # Create virtual environment
@@ -123,15 +123,15 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 Verify your installation:
 
 ```python
-import counterfactuals
+import cel
 
 # Check version
-print(counterfactuals.__version__)
+print(cel.__version__)
 
 # Test imports
-from counterfactuals.datasets import FileDataset
-from counterfactuals.models import MLPClassifier
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.datasets import FileDataset
+from cel.models import MLPClassifier
+from cel.cf_methods.local_methods import PPCEF
 
 print("Installation successful!")
 ```

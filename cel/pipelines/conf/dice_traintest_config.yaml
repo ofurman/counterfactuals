@@ -14,7 +14,7 @@ experiment:
   use_gpu: false
 
 dataset:
-  _target_: counterfactuals.datasets.TrainTestFileDataset
+  _target_: cel.datasets.TrainTestFileDataset
   config_path: config/datasets/lending_club.yaml
   train_data_path: data/lending_club_train.csv
   test_data_path: data/lending_club_test.csv
@@ -36,10 +36,10 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.DiceExplainerWrapper
+    _target_: cel.cf_methods.DiceExplainerWrapper
 
   disc_model_criterion:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
+    _target_: cel.losses.MulticlassDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0

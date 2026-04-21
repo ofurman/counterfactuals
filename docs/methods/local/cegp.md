@@ -11,7 +11,7 @@ CEGP applies genetic programming to evolve counterfactual candidates through mut
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import CEGP
+from cel.cf_methods.local_methods import CEGP
 
 method = CEGP(
     gen_model=gen_model,
@@ -31,4 +31,4 @@ result = method.explain(
 
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.cegp.cegp.CEGP
+::: cel.cf_methods.local_methods.cegp.cegp.CEGP

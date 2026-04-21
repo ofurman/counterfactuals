@@ -71,7 +71,7 @@ Write tests for:
 
 ```bash
 # Clone repository
-git clone https://github.com/ofurman/counterfactuals.git
+git clone https://github.com/ofurman/cel.git
 cd counterfactuals
 
 # Install with dev dependencies

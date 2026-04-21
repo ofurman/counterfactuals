@@ -3,8 +3,8 @@ import logging
 import hydra
 from omegaconf import DictConfig
 
-from counterfactuals.pipelines.runners.ppcef_runner import PPCEFPipelineRunner
-from counterfactuals.preprocessing import (
+from cel.pipelines.runners.ppcef_runner import PPCEFPipelineRunner
+from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,

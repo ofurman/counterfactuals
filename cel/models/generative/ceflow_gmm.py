@@ -8,12 +8,12 @@ import torch.optim as optim
 from nflows.flows import SimpleRealNVP
 from tqdm import tqdm
 
-from counterfactuals.dequantization.variational_dequantizer import (
+from cel.dequantization.variational_dequantizer import (
     VariationalDequantizer,
 )
-from counterfactuals.models.generative.gmm_base import GMMBaseDistribution
-from counterfactuals.models.generative_mixin import GenerativePytorchMixin
-from counterfactuals.models.pytorch_base import PytorchBase
+from cel.models.generative.gmm_base import GMMBaseDistribution
+from cel.models.generative_mixin import GenerativePytorchMixin
+from cel.models.pytorch_base import PytorchBase
 
 
 class CeFlowGMM(PytorchBase, GenerativePytorchMixin):

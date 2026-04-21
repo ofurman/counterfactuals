@@ -11,7 +11,7 @@ CCHVAE learns a latent representation that enables generating plausible counterf
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods.c_chvae import CCHVAE
+from cel.cf_methods.local_methods.c_chvae import CCHVAE
 
 method = CCHVAE(
     mlmodel=ml_model,
@@ -25,4 +25,4 @@ result = method.get_counterfactuals(
 
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.c_chvae.c_chvae.CCHVAE
+::: cel.cf_methods.local_methods.c_chvae.c_chvae.CCHVAE

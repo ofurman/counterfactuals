@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from omegaconf import OmegaConf
 
-from counterfactuals.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
+from cel.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
 
 # ---------------------------------------------------------------------------
 # Minimal concrete runner for testing
@@ -64,7 +64,7 @@ def minimal_cfg():
     return OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,

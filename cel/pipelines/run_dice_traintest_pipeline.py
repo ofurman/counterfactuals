@@ -5,7 +5,7 @@ where train and test splits are provided as separate files, rather than using
 cross-validation.
 
 Usage:
-    uv run python -m counterfactuals.pipelines.run_dice_traintest_pipeline \
+    uv run python -m cel.pipelines.run_dice_traintest_pipeline \
         dataset.train_data_path=data/my_train.csv \
         dataset.test_data_path=data/my_test.csv
 """

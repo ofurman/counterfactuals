@@ -5,7 +5,7 @@ The core workflow for generating counterfactual explanations.
 ## Basic Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
 
 # Initialize method
 method = PPCEF(
@@ -28,7 +28,7 @@ result = method.explain(
 ## Understanding ExplanationResult
 
 ```python
-from counterfactuals.cf_methods import ExplanationResult
+from cel.cf_methods import ExplanationResult
 
 # Result structure
 result.x_cfs         # Generated counterfactuals
@@ -43,7 +43,7 @@ result.cf_group_ids  # Group assignments (for group methods)
 
 ```python
 # Create dataloader
-from counterfactuals.datasets import TorchDataLoader
+from cel.datasets import TorchDataLoader
 
 loader = TorchDataLoader(X_test, y_test, batch_size=32)
 

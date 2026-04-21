@@ -5,7 +5,7 @@ Learn how to load, configure, and use datasets for counterfactual generation.
 ## Loading Pre-configured Datasets
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 
 # Load a dataset from YAML config
 dataset = FileDataset(config_path="config/datasets/adult.yaml")

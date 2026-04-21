@@ -11,8 +11,8 @@ from cel.cf_methods.counterfactual_base import (
 from cel.cf_methods.local_counterfactual_mixin import (
     LocalCounterfactualMixin,
 )
-from counterfactuals.cf_methods.tf_compat import ensure_tf_session
-from counterfactuals.models.pytorch_base import PytorchBase
+from cel.cf_methods.tf_compat import ensure_tf_session
+from cel.models.pytorch_base import PytorchBase
 
 
 class CEGP(BaseCounterfactualMethod, LocalCounterfactualMixin):

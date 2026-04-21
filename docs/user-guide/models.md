@@ -7,7 +7,7 @@ Learn how to train discriminative and generative models for counterfactual gener
 ### MLP Classifier
 
 ```python
-from counterfactuals.models import MLPClassifier
+from cel.models import MLPClassifier
 
 classifier = MLPClassifier(
     num_inputs=n_features,
@@ -27,7 +27,7 @@ classifier.fit(
 ### Logistic Regression
 
 ```python
-from counterfactuals.models import LogisticRegression
+from cel.models import LogisticRegression
 
 classifier = LogisticRegression(num_inputs=n_features, num_targets=n_classes)
 classifier.fit(train_loader, test_loader, epochs=50)
@@ -38,7 +38,7 @@ classifier.fit(train_loader, test_loader, epochs=50)
 ### Masked Autoregressive Flow (MAF)
 
 ```python
-from counterfactuals.models import MaskedAutoregressiveFlow
+from cel.models import MaskedAutoregressiveFlow
 
 flow = MaskedAutoregressiveFlow(
     features=n_features,
@@ -74,4 +74,4 @@ flow.load("models/flow.pt")
 
 ## Next Steps
 
-- [Generating Counterfactuals](generating-counterfactuals.md)
+- [Generating Counterfactuals](generating-cel.md)

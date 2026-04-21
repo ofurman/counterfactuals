@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.AuditDataset
+  _target_: cel.datasets.AuditDataset
 
 reference_method: "CEGP"
 pca_dim: 25

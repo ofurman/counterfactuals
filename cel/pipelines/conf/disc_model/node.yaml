@@ -1,5 +1,5 @@
 model:
-  _target_: counterfactuals.models.classifier.node.node.NODE
+  _target_: cel.models.classifier.node.node.NODE
   hidden_features: 128
   depth: 4
   num_layers: 1

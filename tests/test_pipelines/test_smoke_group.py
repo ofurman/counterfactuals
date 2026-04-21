@@ -7,7 +7,7 @@ objects for group methods (GLANCE, TCREx, PUMAL, GLOBE-CE, AReS, etc.).
 import pytest
 from omegaconf import OmegaConf
 
-from counterfactuals.pipelines.runners import (
+from cel.pipelines.runners import (
     AReSPipelineRunner,
     GLANCEPipelineRunner,
     GLOBECEPipelineRunner,
@@ -28,7 +28,7 @@ def _glance_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -50,7 +50,7 @@ def _tcrex_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -71,7 +71,7 @@ def _pumal_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -104,7 +104,7 @@ def _globe_ce_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -121,7 +121,7 @@ def _group_globe_ce_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -139,7 +139,7 @@ def _regional_globe_ce_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -156,7 +156,7 @@ def _ares_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,

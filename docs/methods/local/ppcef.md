@@ -27,9 +27,9 @@ Where:
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
-from counterfactuals.models import MaskedAutoregressiveFlow
-from counterfactuals.models import MLPClassifier
+from cel.cf_methods.local_methods import PPCEF
+from cel.models import MaskedAutoregressiveFlow
+from cel.models import MLPClassifier
 
 # Initialize models
 gen_model = MaskedAutoregressiveFlow(...)
@@ -86,4 +86,4 @@ result = method.explain(
 
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.ppcef.ppcef.PPCEF
+::: cel.cf_methods.local_methods.ppcef.ppcef.PPCEF

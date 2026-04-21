@@ -6,15 +6,16 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from counterfactuals.cf_methods.counterfactual_base import (
+from mlxtend.frequent_patterns import apriori
+from tqdm import tqdm
+
+from cel.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
     ExplanationResult,
 )
-from counterfactuals.cf_methods.global_counterfactual_mixin import (
+from cel.cf_methods.global_counterfactual_mixin import (
     GlobalCounterfactualMixin,
 )
-from mlxtend.frequent_patterns import apriori
-from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 

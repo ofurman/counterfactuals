@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.WineDataset
+  _target_: cel.datasets.WineDataset
 
 disc_model:
   train_model: true
@@ -31,7 +31,7 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.globe_ce.Group_GLOBE_CE
+    _target_: cel.cf_methods.globe_ce.Group_GLOBE_CE
   
   # General parameters
   target_class: 0

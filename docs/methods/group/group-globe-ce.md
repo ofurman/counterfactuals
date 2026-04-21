@@ -15,7 +15,7 @@ Group GLOBE-CE can be implemented by combining GLOBE-CE with group clustering. S
 ```python
 # Group GLOBE-CE is implemented via the RPPCEF method
 # with GLOBE-CE style deltas
-from counterfactuals.cf_methods.group_methods.group_ppcef import RPPCEF
+from cel.cf_methods.group_methods.group_ppcef import RPPCEF
 
 method = RPPCEF(
     gen_model=gen_model,

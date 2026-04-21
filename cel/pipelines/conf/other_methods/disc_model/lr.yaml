@@ -1,2 +1,2 @@
 model:
-  _target_: counterfactuals.models.classifier.logistic_regression.LogisticRegression
+  _target_: cel.models.classifier.logistic_regression.LogisticRegression

@@ -30,7 +30,7 @@ Global methods are ideal when you need to:
 ## Example Usage
 
 ```python
-from counterfactuals.cf_methods.global_methods import GLOBECE
+from cel.cf_methods.global_methods import GLOBECE
 
 # Initialize method
 method = GLOBECE(

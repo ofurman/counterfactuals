@@ -94,7 +94,7 @@ nav:
     - Overview: user-guide/index.md
     - Working with Datasets: user-guide/datasets.md
     - Training Models: user-guide/models.md
-    - Generating Counterfactuals: user-guide/generating-counterfactuals.md
+    - Generating Counterfactuals: user-guide/generating-cel.md
     - Evaluating Results: user-guide/evaluation.md
     - Running Pipelines: user-guide/pipelines.md
   - Methods:
@@ -147,7 +147,7 @@ docs/
 │   ├── index.md                      # User guide overview
 │   ├── datasets.md                   # Working with datasets
 │   ├── models.md                     # Training discriminative/generative models
-│   ├── generating-counterfactuals.md # Main usage guide
+│   ├── generating-cel.md # Main usage guide
 │   ├── evaluation.md                 # Evaluating counterfactuals
 │   └── pipelines.md                  # Using Hydra pipelines
 ├── methods/
@@ -219,7 +219,7 @@ docs/
 - Saving/loading models
 - Model selection guidance
 
-#### `generating-counterfactuals.md`
+#### `generating-cel.md`
 - Using `BaseCounterfactualMethod`
 - The `explain()` method
 - `ExplanationResult` structure

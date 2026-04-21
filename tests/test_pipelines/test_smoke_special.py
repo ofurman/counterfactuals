@@ -10,12 +10,12 @@ import pytest
 import torch
 from omegaconf import OmegaConf
 
-from counterfactuals.pipelines.base_runner import SearchResult
-from counterfactuals.pipelines.runners import (
+from cel.pipelines.base_runner import SearchResult
+from cel.pipelines.runners import (
     CeFlowPipelineRunner,
 )
-from counterfactuals.pipelines.runners.lice_runner import LiCEPipelineRunner
-from counterfactuals.pipelines.runners.ppcefr_runner import PPCEFRPipelineRunner
+from cel.pipelines.runners.lice_runner import LiCEPipelineRunner
+from cel.pipelines.runners.ppcefr_runner import PPCEFRPipelineRunner
 
 from .conftest import _assert_valid_result, make_runner
 
@@ -28,12 +28,10 @@ def _ceflow_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "flow_model": {
-                "model": {
-                    "_target_": "counterfactuals.models.generative.maf.maf.MaskedAutoregressiveFlow"
-                },
+                "model": {"_target_": "cel.models.generative.maf.maf.MaskedAutoregressiveFlow"},
                 "context_features": None,  # Must be None for CeFlow
                 "train_model": False,  # Use random weights for smoke test
                 "batch_size": 16,
@@ -43,9 +41,7 @@ def _ceflow_cfg() -> OmegaConf:
                 "noise_lvl": 0,
             },
             "gen_model": {
-                "model": {
-                    "_target_": "counterfactuals.models.generative.maf.maf.MaskedAutoregressiveFlow"
-                },
+                "model": {"_target_": "cel.models.generative.maf.maf.MaskedAutoregressiveFlow"},
                 "context_features": 1,
                 "train_model": False,
                 "batch_size": 16,
@@ -79,12 +75,10 @@ def _ppcefr_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "gen_model": {
-                "model": {
-                    "_target_": "counterfactuals.models.generative.maf.maf.MaskedAutoregressiveFlow"
-                },
+                "model": {"_target_": "cel.models.generative.maf.maf.MaskedAutoregressiveFlow"},
                 "context_features": 1,
                 "train_model": False,
                 "batch_size": 16,
@@ -121,7 +115,7 @@ def test_ceflow_search_counterfactuals(
 
     The test creates a separate flow model without context_features.
     """
-    from counterfactuals.models.generative.maf.maf import MaskedAutoregressiveFlow
+    from cel.models.generative.maf.maf import MaskedAutoregressiveFlow
 
     cfg = _ceflow_cfg()
     runner = make_runner(CeFlowPipelineRunner, cfg, logger=test_logger)
@@ -163,7 +157,7 @@ def test_lice_search_counterfactuals(synthetic_dataset, tiny_disc_model, tmp_pat
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,

@@ -9,9 +9,9 @@ import torch
 from omegaconf import OmegaConf
 from sklearn.preprocessing import MinMaxScaler
 
-from counterfactuals.models.classifier import MLPClassifier
-from counterfactuals.models.generative.maf.maf import MaskedAutoregressiveFlow
-from counterfactuals.pipelines.base_runner import SearchResult
+from cel.models.classifier import MLPClassifier
+from cel.models.generative.maf.maf import MaskedAutoregressiveFlow
+from cel.pipelines.base_runner import SearchResult
 
 
 @pytest.fixture(scope="session")
@@ -129,7 +129,7 @@ def base_cfg():
     return OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
