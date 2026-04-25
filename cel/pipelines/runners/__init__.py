@@ -24,7 +24,6 @@ _RUNNERS = {
     "CEGPPipelineRunner": "cel.pipelines.runners.cegp_runner",
     "CEMPipelineRunner": "cel.pipelines.runners.cem_runner",
     "CETPipelineRunner": "cel.pipelines.runners.cet_runner",
-    "DiCEPairwisePipelineRunner": "cel.pipelines.runners.dice_pairwise_runner",
     "DiCEPipelineRunner": "cel.pipelines.runners.dice_runner",
     "GLANCEPipelineRunner": "cel.pipelines.runners.glance_runner",
     "GLOBECEPipelineRunner": "cel.pipelines.runners.globe_ce_runner",
@@ -33,11 +32,9 @@ _RUNNERS = {
     "PPCEFPipelineRunner": "cel.pipelines.runners.ppcef_runner",
     "PPCEFRPipelineRunner": "cel.pipelines.runners.ppcefr_runner",
     "PUMALPipelineRunner": "cel.pipelines.runners.pumal_runner",
-    "RegionalGLOBECEPipelineRunner": "cel.pipelines.runners.regional_globe_ce_runner",
     "TabDCEPairwisePipelineRunner": "cel.pipelines.runners.tabdce_pairwise_runner",
     "TabDCEPipelineRunner": "cel.pipelines.runners.tabdce_runner",
     "TCRExPipelineRunner": "cel.pipelines.runners.tcrex_runner",
-    "WACHOURSPipelineRunner": "cel.pipelines.runners.wach_ours_runner",
     "WACHPipelineRunner": "cel.pipelines.runners.wach_runner",
 }
 
