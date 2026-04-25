@@ -188,6 +188,12 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         self.correct_max, self.cost_max = None, None
         self.scalars = None
 
+    def _is_target_prediction(self, predictions):
+        """Return a boolean mask for predictions matching the configured target class."""
+        if hasattr(predictions, "detach"):
+            predictions = predictions.detach().cpu().numpy()
+        return np.asarray(predictions).reshape(-1) == self.target_class
+
     def round_categorical(self, cf):
         """
         This function is used after the optimization to compute the actual counterfactual
@@ -260,9 +266,10 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         cost = np.zeros(x_aff.shape[0])
         ces = self.round_categorical(x_aff + delta) if self.n_categorical else x_aff + delta
         if self.normalise:
-            correct = self.predict_fn((ces - self.means) / self.stds)
+            preds = self.predict_fn((ces - self.means) / self.stds)
         else:
-            correct = self.predict_fn(ces)
+            preds = self.predict_fn(ces)
+        correct = self._is_target_prediction(preds)
         if non_zero_costs:
             if self.n_categorical:
                 cost = self.compute_costs(counterfactuals=ces, x_aff=x_aff)
@@ -271,11 +278,11 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         else:
             if correct.any():
                 if self.n_categorical:
-                    cost[correct == 1] = self.compute_costs(
-                        counterfactuals=ces[correct == 1], x_aff=x_aff[correct == 1]
+                    cost[correct] = self.compute_costs(
+                        counterfactuals=ces[correct], x_aff=x_aff[correct]
                     )
                 else:
-                    cost[correct == 1] = np.linalg.norm(
+                    cost[correct] = np.linalg.norm(
                         delta * self.feature_costs_vector, ord=self.p
                     ).item()
 
@@ -446,7 +453,7 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
         ces = self.round_categorical(self.x_aff + delta * b)
         if self.normalise:
             ces = (ces - self.means) / self.stds
-        pred = self.predict_fn(ces).mean() * 100
+        pred = self._is_target_prediction(self.predict_fn(ces)).mean() * 100
         while pred < thresh and b < b_lim:
             if pred > max_acc:
                 max_b = b
@@ -454,7 +461,7 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             ces = self.round_categorical(self.x_aff + delta * b)
             if self.normalise:
                 ces = (ces - self.means) / self.stds
-            pred = self.predict_fn(ces).mean() * 100
+            pred = self._is_target_prediction(self.predict_fn(ces)).mean() * 100
         if pred > max_acc:
             max_b = b
         a = b / 2  # lower interval
@@ -464,7 +471,7 @@ class GLOBE_CE(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             ces = self.round_categorical(self.x_aff + delta * c)
             if self.normalise:
                 ces = (ces - self.means) / self.stds
-            if self.predict_fn(ces).mean() * 100 > thresh:
+            if self._is_target_prediction(self.predict_fn(ces)).mean() * 100 > thresh:
                 b = c
             else:
                 a = c

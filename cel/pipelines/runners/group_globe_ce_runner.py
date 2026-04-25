@@ -99,26 +99,8 @@ class GroupGLOBECEPipelineRunner(PipelineRunner):
                     y_target=ys_target[cluster_mask],
                 )
                 Xs_cfs_unscaled[cluster_mask] = explanation_result.x_cfs
-                cluster_cf_preds = predict_fn(explanation_result.x_cfs)
-                self.logger.info(
-                    "Cluster %d: %d/%d CFs flip via predict_fn",
-                    i,
-                    int((cluster_cf_preds == target_class).sum()),
-                    len(cluster_cf_preds),
-                )
 
             Xs_cfs = minmax_scaler._transform_array(Xs_cfs_unscaled)
-            scaled_preds = disc_model.predict(Xs_cfs)
-            scaled_preds_np = (
-                scaled_preds.detach().cpu().numpy()
-                if hasattr(scaled_preds, "detach")
-                else np.asarray(scaled_preds)
-            ).flatten()
-            self.logger.info(
-                "After rescale: %d/%d CFs flip via disc_model.predict",
-                int((scaled_preds_np == target_class).sum()),
-                len(scaled_preds_np),
-            )
             Xs_cfs, model_returned = align_counterfactuals_with_factuals(Xs_cfs, Xs)
         cf_search_time = timer["elapsed"]
 
