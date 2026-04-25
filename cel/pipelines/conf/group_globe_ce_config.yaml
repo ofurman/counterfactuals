@@ -12,7 +12,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: cel.datasets.WineDataset
+  _target_: cel.datasets.FileDataset
+  config_path: config/datasets/wine.yaml
 
 disc_model:
   train_model: true
