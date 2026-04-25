@@ -2,11 +2,11 @@
 
 **Diverse Counterfactual Explanations**
 
-DICE is a popular method for generating diverse counterfactual explanations, integrated via the `dice-ml` library.
+DICE wraps the `dice-ml` library to generate diverse counterfactuals via gradient descent.
 
 ## Overview
 
-DICE generates multiple diverse counterfactuals by optimizing for both validity and diversity simultaneously.
+DICE produces multiple diverse counterfactuals by jointly optimizing for validity, proximity, and diversity. This wrapper uses `dice_ml.Dice(..., method="gradient")`.
 
 ## Usage
 
@@ -14,18 +14,17 @@ DICE generates multiple diverse counterfactuals by optimizing for both validity 
 from cel.cf_methods.local_methods import DICE
 
 method = DICE(
-    gen_model=gen_model,
+    X_train=X_train,
+    y_train=y_train,
+    features=feature_names,   # ordered list; last entry is treated as the outcome column
     disc_model=classifier,
-    disc_model_criterion=criterion,
-    device="cuda"
 )
 
 result = method.explain(
-    X=instance,
-    y_origin=0,
-    y_target=1,
-    X_train=X_train,
-    y_train=y_train
+    Xs=instances,             # 2D numpy array
+    ys=y_origin,
+    total_CFs=1,
+    desired_class="opposite",
 )
 ```
 
@@ -33,8 +32,12 @@ result = method.explain(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `disc_model` | BaseClassifier | required | Trained classifier |
-| `n_counterfactuals` | int | 5 | Number of CFs to generate |
+| `X_train` | `np.ndarray` | required | Training features. |
+| `y_train` | `np.ndarray` | required | Training labels. |
+| `features` | `list[str]` | required | Feature names. |
+| `disc_model` | model | required | PyTorch classifier (passed to `dice_ml.Model(..., backend="PYT")`). |
+
+`explain` and `explain_dataloader` accept the standard DiCE arguments: `total_CFs`, `desired_class`, `desired_range`, `permitted_range`, `features_to_vary`, `stopping_threshold`, `posthoc_sparsity_param`, `posthoc_sparsity_algorithm`, `verbose`.
 
 ## References
 

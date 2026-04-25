@@ -7,15 +7,16 @@ Local counterfactual methods generate explanations for **individual instances**.
 | Method | Description | Key Feature |
 |--------|-------------|-------------|
 | [PPCEF](ppcef.md) | Probabilistic counterfactuals with normalizing flows | High plausibility |
-| [DiCoFlex](dicoflex.md) | Diverse counterfactuals with flexible constraints | Diversity + constraints |
 | [DICE](dice.md) | Diverse counterfactual explanations | Multiple diverse CFs |
-| [WACH](wach.md) | Weighted actionable counterfactuals | Actionability focus |
-| [SACE](sace.md) | Several SACE variants | Multiple strategies |
-| [CEM](cem.md) | Contrastive explanation method | Pertinent negatives |
-| [CEGP](cegp.md) | Genetic programming approach | Evolutionary search |
-| [CET](cet.md) | Counterfactual explanation trees | Tree-based |
-| [CCHVAE](cchvae.md) | Conditional hierarchical VAE | Latent space |
-| [Artelt](artelt.md) | Heuristic-based method | Fast computation |
+| [WACH](wach.md) | Wachter et al. gradient-based counterfactuals | Classic L2 objective |
+| [SACE](sace.md) | Search-based abstract explainer with several variants | Multiple strategies |
+| [CEM](cem.md) | Contrastive explanation method (alibi) | Pertinent negatives |
+| [CEGP](cegp.md) | Counterfactuals guided by prototypes (alibi) | Prototype-guided search |
+| [CCHVAE](cchvae.md) | Conditional hierarchical VAE | Latent-space search |
+| [Artelt](artelt.md) | Plausible CFs for linear classifiers | Density-constrained |
+| [CADEX](cadex.md) | Constrained adversarial counterfactuals | Categorical/ordinal constraints |
+| [CeFlow](ceflow.md) | Normalizing-flow class-mean shift | Latent class means |
+| [CEARM](cearm.md) | Bayesian-optimization-based CFs | GP-based search |
 
 ## When to Use Local Methods
 
@@ -29,27 +30,24 @@ Local methods are ideal when you need to:
 ## Example Usage
 
 ```python
-from cel.cf_methods.local_methods import PPCEF
+import torch
+from cel.cf_methods.local_methods import WACH
 
 # Initialize method
-method = PPCEF(
-    gen_model=flow_model,
+method = WACH(
     disc_model=classifier,
-    disc_model_criterion=criterion,
-    device="cuda"
+    disc_model_criterion=torch.nn.BCEWithLogitsLoss(),
+    device="cpu",
 )
 
-# Generate counterfactual for a single instance
-result = method.explain(
-    X=instance,           # Shape: (1, n_features)
-    y_origin=0,           # Current prediction
-    y_target=1,           # Desired prediction
-    X_train=X_train,
-    y_train=y_train,
-    epochs=100,
-    lr=0.01
+# Generate counterfactuals for a full dataloader
+result = method.explain_dataloader(
+    dataloader=train_loader,
+    epochs=1000,
+    lr=5e-4,
+    alpha=1.0,
 )
 
-print(f"Original: {instance}")
-print(f"Counterfactual: {result.x_cfs}")
+print(f"Originals: {result.x_origs.shape}")
+print(f"Counterfactuals: {result.x_cfs.shape}")
 ```
