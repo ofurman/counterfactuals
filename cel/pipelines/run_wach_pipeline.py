@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @hydra.main(config_path="./conf", config_name="wach_config", version_base="1.2")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
     torch.manual_seed(0)
     preprocessing_pipeline = PreprocessingPipeline(
         [
