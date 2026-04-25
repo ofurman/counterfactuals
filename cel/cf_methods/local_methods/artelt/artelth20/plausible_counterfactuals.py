@@ -122,6 +122,7 @@ class PlausibleCounterfactualOfHyperplaneClassifier:
             x_i = self.gmm_means[i]
             cov = self.gmm_covariances[i]
             cov = np.linalg.inv(cov)
+            cov = (cov + cov.T) / 2.0
             """
             w_i = self.gmm_weights[i]
             b = -2.*np.log(w_i) + dim*np.log(2.*np.pi) - np.log(np.linalg.det(cov))
@@ -231,6 +232,7 @@ class PlausibleCounterfactualOfDecisionTree:
             x_i = self.gmm_means[i]
             cov = self.gmm_covariances[i]
             cov = np.linalg.inv(cov)
+            cov = (cov + cov.T) / 2.0
 
             """
             w_i = self.gmm_weights[i]

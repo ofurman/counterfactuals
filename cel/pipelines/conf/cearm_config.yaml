@@ -14,7 +14,7 @@ experiment:
 
 dataset:
   _target_: cel.datasets.RegressionFileDataset
-  config_path: config/datasets/toy_regression.yaml
+  config_path: config/datasets/concrete.yaml
 
 disc_model:
   train_model: false
@@ -34,7 +34,7 @@ gen_model:
 counterfactuals_params:
   target_change: 0.2
   cf_method:
-    _target_: cel.cf_methods.regression_ppcef.CEARM
+    _target_: cel.cf_methods.local_methods.cearm.CEARM
   epochs: 3000
   batch_size: 8096
   lr: 0.001

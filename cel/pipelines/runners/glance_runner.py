@@ -110,7 +110,7 @@ class GLANCEPipelineRunner(PipelineRunner):
             y_target=result.y_target,
             median_log_prob=log_prob_threshold,
             cf_group_ids=result.extras.get("cf_group_ids"),
-            metrics_conf_path="counterfactuals/pipelines/conf/metrics/default.yaml",
+            metrics_conf_path="cel/pipelines/conf/metrics/default.yaml",
         )
         self.logger.info("Metrics calculated: %s", metrics)
         return metrics

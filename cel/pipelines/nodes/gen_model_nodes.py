@@ -176,6 +176,5 @@ def create_gen_model(
             raise
 
     gen_model.eval()
-    logger.info("Evaluating generative model")
     evaluate_gen_model(cfg, gen_model, dataset)
     return gen_model

@@ -34,7 +34,7 @@ class LiCEPipelineRunner(PipelineRunner):
         """Custom run implementation for LiCE with raw dataset and no preprocessing."""
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         self.logger.info("Loading dataset")
-        dataset = instantiate(self.cfg.dataset, shuffle=False)
+        dataset = instantiate(self.cfg.dataset)
 
         for fold_n, _ in enumerate(dataset.get_cv_splits(5)):
             disc_model_path, gen_model_path, save_folder = set_model_paths(self.cfg, fold=fold_n)

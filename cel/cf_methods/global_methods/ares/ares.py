@@ -446,7 +446,7 @@ class AReS(BaseCounterfactualMethod, GlobalCounterfactualMixin):
             then_generation=then_generation,
         )
 
-        logger.info("Ground set Computed with Length", self.V.length)
+        logger.info("Ground set Computed with Length %s", self.V.length)
         if save_copy:
             logger.info("Saving Copy of Ground set as V_copy")
             self.V_copy = copy.deepcopy(self.V)
@@ -1208,4 +1208,4 @@ class TwoLevelRecourseSet:
         for i in self.triples_array[idx]:
             self.triples.add(i)
         self.length = len(self.triples)
-        logger.info("Candidate set Filtered with Length:", s)
+        logger.info("Candidate set Filtered with Length: %s", s)

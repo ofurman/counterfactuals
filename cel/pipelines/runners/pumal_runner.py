@@ -141,7 +141,7 @@ class PUMALPipelineRunner(PipelineRunner):
             y_target=result.y_target,
             S_matrix=result.extras.get("S_matrix"),
             D_matrix=result.extras.get("D_matrix"),
-            metrics_conf_path="counterfactuals/pipelines/conf/metrics/group_metrics.yaml",
+            metrics_conf_path="cel/pipelines/conf/metrics/group_metrics.yaml",
         )
         self.logger.info(f"Metrics:\n{metrics}")
         return metrics

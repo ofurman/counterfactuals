@@ -44,7 +44,15 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
         # "WineDataset",
     ]
     dataset_name = cfg.dataset._target_.split(".")[-1]
-    num_classes = 1 if dataset_name in binary_datasets else len(np.unique(dataset.y_train))
+    model_target = cfg.disc_model.model._target_.split(".")[-1]
+    regression_models = {"LinearRegression", "MLPRegressor"}
+    num_classes = (
+        1
+        if dataset_name in binary_datasets
+        or dataset_name == "RegressionFileDataset"
+        or model_target in regression_models
+        else len(np.unique(dataset.y_train))
+    )
     num_classes = 20 if dataset_name == "Scm20dDataset" else num_classes
 
     model_config = OmegaConf.to_container(cfg.disc_model.model)
