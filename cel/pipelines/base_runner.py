@@ -498,6 +498,11 @@ class PipelineRunner(ABC):
             Dictionary of metric name → value.
         """
         self.logger.info("Calculating metrics")
+        metrics_conf_path = OmegaConf.select(
+            self.cfg,
+            "experiment.metrics_conf_path",
+            default="cel/pipelines/conf/metrics/default.yaml",
+        )
         metrics = evaluate_cf(
             disc_model=disc_model,
             gen_model=gen_model,
@@ -511,6 +516,8 @@ class PipelineRunner(ABC):
             y_test=result.y_orig,
             y_target=result.y_target,
             median_log_prob=log_prob_threshold,
+            metrics_conf_path=metrics_conf_path,
+            cf_group_ids=result.extras.get("cf_group_ids"),
         )
         self.logger.info(f"Metrics:\n{metrics}")
         return metrics

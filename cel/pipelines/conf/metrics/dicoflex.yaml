@@ -1,0 +1,8 @@
+metrics_to_compute:
+  - "validity"
+  - "proximity_l1_continuous"
+  - "sparsity_categorical"
+  - "eps_sparsity"
+  - "lof_score_median_log"
+  - "pairwise_diversity_mixed"
+  - "number_of_instances"

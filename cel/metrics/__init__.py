@@ -1,4 +1,5 @@
 import cel.metrics.basic_metrics  # noqa: F401
+import cel.metrics.dicoflex_metrics  # noqa: F401
 import cel.metrics.distance  # noqa: F401
 import cel.metrics.diversity  # noqa: F401
 import cel.metrics.plausibility  # noqa: F401
