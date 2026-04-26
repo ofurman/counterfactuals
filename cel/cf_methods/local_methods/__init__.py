@@ -11,6 +11,7 @@ except ImportError:
 from .cegp.cegp import CEGP
 from .cem.cem import CEM_CF
 from .dice.dice import DICE
+from .dicoflex import DiCoFlex
 from .ppcef.ppcef import PPCEF
 from .sace.sace import SACE
 from .wach.wach import WACH
@@ -23,6 +24,7 @@ __all__ = [
     "CEGP",
     "CEM_CF",
     "DICE",
+    "DiCoFlex",
     "PPCEF",
     "SACE",
     "WACH",

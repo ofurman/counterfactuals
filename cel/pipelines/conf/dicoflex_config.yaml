@@ -1,0 +1,50 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+  seed: 42
+  cv_folds: 5
+  metrics_conf_path: cel/pipelines/conf/metrics/dicoflex.yaml
+
+dataset:
+  _target_: cel.datasets.FileDataset
+  config_path: config/datasets/blobs.yaml
+
+disc_model:
+  train_model: true
+  epochs: 2000
+  batch_size: 128
+  patience: 200
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  epochs: 200
+  patience: 100
+  lr: 0.001
+
+counterfactuals_params:
+  cf_method:
+    _target_: cel.cf_methods.local_methods.dicoflex.DiCoFlex
+  target_class: 0
+  p_values: [2.0]
+  inference_p_value: 2.0
+  n_neighbors: 16
+  noise_level: 0.02
+  train_batch_factuals: 4
+  val_ratio: 0.2
+  num_counterfactuals: 32
+  cf_samples_per_factual: 20
+  sampling_batch_size: 256
+  inference_mask_index: 0
+  use_actionability_mask: true
+  custom_masks: []
+  log_prob_quantile: 0.25
