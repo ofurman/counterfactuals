@@ -96,29 +96,44 @@ class DiCEPipelineRunner(PipelineRunner):
         cf_search_time = timer["elapsed"]
 
         Xs_cfs = []
-        for orig, cf in zip(X_test_origin, cfs.cf_examples_list):
-            if cf.final_cfs_df is None:
-                Xs_cfs.append(orig)
-                continue
-            out = cf.final_cfs_df.to_numpy()
-            if out.shape[0] > 0:
-                Xs_cfs.append(out[0][:-1])
-            else:
-                Xs_cfs.append(orig)
+        Xs_origs = []
+        ys_origs = []
+        group_ids = []
 
-        Xs_cfs = np.array(Xs_cfs)
-        ys_target = np.abs(1 - y_test_origin)
+        for idx, (orig, y_orig_i, cf) in enumerate(
+            zip(X_test_origin, y_test_origin, cfs.cf_examples_list)
+        ):
+            if cf.final_cfs_df is None or cf.final_cfs_df.shape[0] == 0:
+                Xs_cfs.append(orig)
+                Xs_origs.append(orig)
+                ys_origs.append(y_orig_i)
+                group_ids.append(idx)
+                continue
+            out = cf.final_cfs_df.to_numpy()[:, :-1]  # drop label column
+            n_cfs = out.shape[0]
+            Xs_cfs.append(out)
+            Xs_origs.append(np.tile(orig, (n_cfs, 1)))
+            ys_origs.append(np.full(n_cfs, y_orig_i))
+            group_ids.append(np.full(n_cfs, idx))
+
+        Xs_cfs = np.concatenate([np.atleast_2d(x) for x in Xs_cfs], axis=0)
+        Xs_origs = np.concatenate([np.atleast_2d(x) for x in Xs_origs], axis=0)
+        ys_origs = np.concatenate([np.atleast_1d(y) for y in ys_origs], axis=0)
+        cf_group_ids = np.concatenate([np.atleast_1d(g) for g in group_ids], axis=0)
+
+        ys_target = np.abs(1 - ys_origs)
         model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
 
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
 
         return SearchResult(
             X_cf=Xs_cfs,
-            X_test=X_test_origin,
-            y_orig=y_test_origin,
+            X_test=Xs_origs,
+            y_orig=ys_origs,
             y_target=ys_target,
             model_returned=model_returned,
             cf_search_time=cf_search_time,
+            extras={"cf_group_ids": cf_group_ids},
         )
 
 
