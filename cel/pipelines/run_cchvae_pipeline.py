@@ -3,7 +3,7 @@ import logging
 import hydra
 from omegaconf import DictConfig
 
-from cel.pipelines.runners.cchvae_runner import CCHVAEPipelineRunner
+from cel.pipelines.runners.cchvae_pairwise_runner import CCHVAEPairwisePipelineRunner
 from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -21,7 +21,7 @@ def main(cfg: DictConfig):
             ("torch_dtype", TorchDataTypeStep()),
         ]
     )
-    runner = CCHVAEPipelineRunner(cfg, logger, preprocessing_pipeline)
+    runner = CCHVAEPairwisePipelineRunner(cfg, logger, preprocessing_pipeline)
     runner.run()
 
 

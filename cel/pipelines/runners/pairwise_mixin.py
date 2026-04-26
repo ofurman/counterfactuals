@@ -48,7 +48,12 @@ class PairwiseMixin:
         result: SearchResult,
         log_prob_threshold: float,
     ) -> dict[str, Any]:
-        """Compute evaluation metrics including pairwise mean distance.
+        """Compute evaluation metrics over all CFs (flattened) with group IDs.
+
+        Flattens the 3-D ``extras["Xs_cfs_all"]`` array so that every generated
+        counterfactual is evaluated (not just the first per instance).  Group IDs
+        are passed through so that diversity metrics can compute pairwise distances
+        within each original-instance group.
 
         Args:
             gen_model: Wrapped generative model (with dequantization).
@@ -59,15 +64,32 @@ class PairwiseMixin:
             log_prob_threshold: Plausibility threshold from :meth:`compute_log_prob_threshold`.
 
         Returns:
-            Dictionary of metric name → value, including ``pairwise_mean_distance``.
+            Dictionary of metric name → value.
         """
-        # Call base calculate_metrics using result.X_cf (first CF per instance)
-        metrics = super().calculate_metrics(
-            gen_model, disc_model, dataset, result, log_prob_threshold
+        Xs_cfs_all = result.extras["Xs_cfs_all"]  # (n_instances, n_runs, n_features)
+        n_instances, n_runs, n_features = Xs_cfs_all.shape
+
+        # Flatten: (n_instances * n_runs, n_features)
+        X_cf_flat = Xs_cfs_all.reshape(-1, n_features)
+        X_test_flat = np.repeat(result.X_test, n_runs, axis=0)
+        y_orig_flat = np.repeat(result.y_orig, n_runs, axis=0)
+        y_target_flat = np.repeat(result.y_target, n_runs, axis=0)
+        cf_group_ids = np.repeat(np.arange(n_instances), n_runs)
+        model_returned_flat = np.ones(X_cf_flat.shape[0], dtype=bool)
+
+        flat_result = SearchResult(
+            X_cf=X_cf_flat,
+            X_test=X_test_flat,
+            y_orig=y_orig_flat,
+            y_target=y_target_flat,
+            model_returned=model_returned_flat,
+            cf_search_time=result.cf_search_time,
+            extras={"cf_group_ids": cf_group_ids},
         )
 
-        # Extract Xs_cfs_all from extras and compute pairwise distance
-        Xs_cfs_all = result.extras["Xs_cfs_all"]
+        metrics = super().calculate_metrics(
+            gen_model, disc_model, dataset, flat_result, log_prob_threshold
+        )
 
         from cel.pipelines.metrics_utils import compute_pairwise_mean_distance
 
