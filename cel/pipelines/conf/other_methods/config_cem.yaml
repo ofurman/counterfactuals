@@ -13,7 +13,7 @@ experiment:
   relabel_with_disc_model: false
 
 dataset:
-  _target_: counterfactuals.datasets.WineDataset
+  _target_: cel.datasets.WineDataset
 
 reference_method: "CEM"
 pca_dim: 25

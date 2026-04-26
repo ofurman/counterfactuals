@@ -6,9 +6,7 @@ import torch
 from matplotlib import cm
 
 
-def plot_x_point(
-    x: torch.Tensor, x_origin: torch.Tensor, model: torch.nn.Module
-) -> None:
+def plot_x_point(x: torch.Tensor, x_origin: torch.Tensor, model: torch.nn.Module) -> None:
     """Plot a point and its origin over model samples.
 
     Args:
@@ -171,9 +169,7 @@ def plot_distributions(
 
         zgrid1 = optim_function(xyinput, x_orig, model, alpha).reshape(200, 200)
 
-    ax[0].contourf(
-        xgrid.numpy(), ygrid.numpy(), zgrid0.numpy(), levels=20, cmap=cm.PuBu_r
-    )
+    ax[0].contourf(xgrid.numpy(), ygrid.numpy(), zgrid0.numpy(), levels=20, cmap=cm.PuBu_r)
     cs = ax[1].contourf(xgrid.numpy(), ygrid.numpy(), zgrid1, levels=50, cmap=cm.PuBu_r)
     fig.colorbar(cs)
     ax[0].scatter(x_orig[0, 0], x_orig[0, 1], c="r")
@@ -204,9 +200,7 @@ def plot_distributions(
     plt.show()
 
 
-def flatten_dict(
-    dd: dict[str, Any], separator: str = "_", prefix: str = ""
-) -> dict[str, Any]:
+def flatten_dict(dd: dict[str, Any], separator: str = "_", prefix: str = "") -> dict[str, Any]:
     """Flatten a nested dictionary.
 
     Args:

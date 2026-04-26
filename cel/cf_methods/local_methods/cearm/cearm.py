@@ -1,6 +1,5 @@
 from time import time
 
-import GPyOpt
 import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -43,6 +42,14 @@ class CEARM(BaseCounterfactualMethod, LocalCounterfactualMixin):
         target_change: float = 0.2,
         **search_step_kwargs,
     ):
+        try:
+            import GPyOpt
+        except ImportError as exc:
+            raise ImportError(
+                "CEARM requires the optional GPyOpt/GPy stack. Install it with "
+                "`pip install 'ce-library[cearm]'` on Python 3.10-3.12."
+            ) from exc
+
         X_test, y_test = dataloader.dataset.tensors
 
         # Define the EP potential function

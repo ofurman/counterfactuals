@@ -2,58 +2,37 @@
 
 **Plausible Probabilistic Counterfactual Explanations with Flows**
 
-PPCEF is the flagship method of this library, generating counterfactuals that are both valid and plausible by leveraging normalizing flows.
+PPCEF generates counterfactuals that are both valid and plausible by combining a discriminator loss with a normalizing-flow log-density constraint.
 
 ## Overview
 
-PPCEF optimizes counterfactuals to lie in high-density regions of the data distribution, ensuring they represent realistic inputs rather than adversarial examples.
+For each batch, a per-instance perturbation `delta` is optimized with Adam to minimize:
 
-!!! note "Key Innovation"
-    Unlike proximity-only methods, PPCEF uses a generative model (normalizing flow) to assess and maximize the plausibility of generated counterfactuals.
+```
+loss = ||delta||_2 + alpha * (disc_loss + relu(plausibility_weight * log_prob_threshold + plausibility_bias - log p(x + delta | y_target)))
+```
 
-## Algorithm
-
-The method minimizes a combined objective:
-
-$$
-\mathcal{L} = \alpha \cdot \mathcal{L}_{\text{validity}} + \beta \cdot \mathcal{L}_{\text{proximity}} + \gamma \cdot \mathcal{L}_{\text{plausibility}}
-$$
-
-Where:
-- $\mathcal{L}_{\text{validity}}$: Cross-entropy loss for target class
-- $\mathcal{L}_{\text{proximity}}$: Distance to original instance
-- $\mathcal{L}_{\text{plausibility}}$: Negative log-likelihood under the flow
+`explain` is not implemented; pipelines use `explain_dataloader`.
 
 ## Usage
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
-from counterfactuals.models import MaskedAutoregressiveFlow
-from counterfactuals.models import MLPClassifier
+import torch
+from cel.cf_methods.local_methods import PPCEF
 
-# Initialize models
-gen_model = MaskedAutoregressiveFlow(...)
-classifier = MLPClassifier(...)
-
-# Create PPCEF instance
 method = PPCEF(
-    gen_model=gen_model,
+    gen_model=flow_model,
     disc_model=classifier,
-    disc_model_criterion=torch.nn.CrossEntropyLoss(),
-    device="cuda"
+    disc_model_criterion=torch.nn.BCEWithLogitsLoss(),
+    device="cpu",
 )
 
-# Generate counterfactual
-result = method.explain(
-    X=instance,
-    y_origin=0,
-    y_target=1,
-    X_train=X_train,
-    y_train=y_train,
-    epochs=100,
-    lr=0.01,
+result = method.explain_dataloader(
+    dataloader=train_loader,
+    epochs=1000,
+    lr=5e-4,
     alpha=1.0,
-    beta=0.5
+    log_prob_threshold=-10.0,
 )
 ```
 
@@ -61,29 +40,13 @@ result = method.explain(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `gen_model` | BaseGenerator | required | Trained generative model (flow) |
-| `disc_model` | BaseClassifier | required | Trained classifier |
-| `epochs` | int | 100 | Optimization iterations |
-| `lr` | float | 0.01 | Learning rate |
-| `alpha` | float | 1.0 | Validity loss weight |
-| `beta` | float | 0.5 | Proximity loss weight |
+| `gen_model` | `GenerativePytorchMixin` | required | Trained generative model exposing `forward(x, context=...)` returning log-density. |
+| `disc_model` | `PytorchBase` | required | Trained classifier. |
+| `disc_model_criterion` | callable | required | Loss between discriminator logits and target context. |
+| `device` | `str \| None` | `"cpu"` | Torch device. |
 
-## Strengths
-
-- High plausibility of generated counterfactuals
-- Works well with tabular data
-- Supports actionability constraints
-
-## Limitations
-
-- Requires training a generative model
-- Slower than simple optimization methods
-- Performance depends on flow quality
-
-## References
-
-- [Paper citation placeholder]
+`explain_dataloader` requires `alpha` and `log_prob_threshold` in `search_step_kwargs`. Optional: `plausibility_weight` (default `1.0`), `plausibility_bias` (default `0.0`), `categorical_intervals`.
 
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.ppcef.ppcef.PPCEF
+::: cel.cf_methods.local_methods.ppcef.ppcef.PPCEF

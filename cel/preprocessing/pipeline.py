@@ -1,4 +1,4 @@
-from counterfactuals.preprocessing.base import PreprocessingContext, PreprocessingStep
+from cel.preprocessing.base import PreprocessingContext, PreprocessingStep
 
 
 class PreprocessingPipeline(PreprocessingStep):

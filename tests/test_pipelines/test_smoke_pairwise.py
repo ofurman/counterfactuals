@@ -7,7 +7,7 @@ objects with Xs_cfs_all in extras for methods that generate multiple CFs per ins
 import pytest
 from omegaconf import OmegaConf
 
-from counterfactuals.pipelines.runners import (
+from cel.pipelines.runners import (
     CCHVAEPairwisePipelineRunner,
     DiCEPairwisePipelineRunner,
     TabDCEPairwisePipelineRunner,
@@ -24,7 +24,7 @@ def _dice_pairwise_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -51,7 +51,7 @@ def _cchvae_pairwise_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,
@@ -84,7 +84,7 @@ def _tabdce_pairwise_cfg() -> OmegaConf:
     cfg = OmegaConf.create(
         {
             "disc_model": {
-                "model": {"_target_": "counterfactuals.models.classifier.MLPClassifier"},
+                "model": {"_target_": "cel.models.classifier.MLPClassifier"},
             },
             "counterfactuals_params": {
                 "target_class": 1,

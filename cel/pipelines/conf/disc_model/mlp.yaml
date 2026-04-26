@@ -1,4 +1,4 @@
 model:
-  _target_: counterfactuals.models.classifier.multilayer_perceptron.MLPClassifier
+  _target_: cel.models.classifier.multilayer_perceptron.MLPClassifier
   hidden_layer_sizes: [256, 256]
   dropout: 0.2

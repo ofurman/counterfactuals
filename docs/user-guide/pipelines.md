@@ -66,10 +66,10 @@ class PPCEFPipelineRunner(PipelineRunner):
 
 ```bash
 # Run PPCEF pipeline
-uv run python -m counterfactuals.pipelines.run_ppcef_pipeline
+uv run python -m cel.pipelines.run_ppcef_pipeline
 
 # Override configuration
-uv run python -m counterfactuals.pipelines.run_ppcef_pipeline \
+uv run python -m cel.pipelines.run_ppcef_pipeline \
     dataset.config_path=config/datasets/compas.yaml \
     counterfactuals_params.epochs=200
 ```
@@ -83,7 +83,7 @@ defaults:
   - disc_model: mlp
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: cel.datasets.FileDataset
   config_path: config/datasets/adult.yaml
 
 gen_model:
@@ -146,7 +146,7 @@ counterfactuals_params:
 1. Create a runner class in `counterfactuals/pipelines/runners/my_method_runner.py`:
 
 ```python
-from counterfactuals.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
+from cel.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
 
 class MyMethodPipelineRunner(PipelineRunner):
     cf_method_name = "MyMethod"
@@ -182,7 +182,7 @@ class MyMethodPipelineRunner(PipelineRunner):
 import logging
 import hydra
 from omegaconf import DictConfig
-from counterfactuals.pipelines.runners.my_method_runner import MyMethodPipelineRunner
+from cel.pipelines.runners.my_method_runner import MyMethodPipelineRunner
 
 logger = logging.getLogger(__name__)
 

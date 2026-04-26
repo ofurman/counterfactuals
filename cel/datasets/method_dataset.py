@@ -56,7 +56,11 @@ class MethodDataset:
             X_test,
             y_train,
             y_test,
-        ) = self.file_dataset.split_data(self.file_dataset.X, self.file_dataset.y)
+        ) = self.file_dataset.split_data(
+            self.file_dataset.X,
+            self.file_dataset.y,
+            stratify=self.file_dataset.task_type == "classification",
+        )
         self.X_train_raw = X_train.copy()
         self.X_test_raw = X_test.copy()
         self.y_train = y_train.copy()
@@ -108,9 +112,13 @@ class MethodDataset:
             # No preprocessing was applied, return as is
             return X
 
-        # Create context with the data to inverse transform
+        # Mirror X across all slots so individual steps can assume populated fields.
+        y_placeholder = np.zeros(X.shape[0], dtype=self.y_train.dtype)
         context = PreprocessingContext(
             X_train=X,
+            X_test=X,
+            y_train=y_placeholder,
+            y_test=y_placeholder,
             categorical_indices=self.file_dataset.categorical_features_indices,
             continuous_indices=self.file_dataset.numerical_features_indices,
         )

@@ -1,2 +1,0 @@
-model:
-  _target_: counterfactuals.models.classifier.logistic_regression.LogisticRegression

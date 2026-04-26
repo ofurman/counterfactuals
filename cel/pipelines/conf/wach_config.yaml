@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: cel.datasets.FileDataset
   config_path: config/datasets/blobs.yaml
 
 disc_model:
@@ -32,21 +32,18 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.DiceExplainerWrapper
+    _target_: cel.cf_methods.local_methods.wach.wach.WACH
 
   disc_model_criterion:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: cel.losses.MulticlassDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0
+  epochs: 20000
   batch_size: 4096
-  
-  # DiCE configuration
-  backend: "PYT"  # Backend for DiCE model ("PYT" for PyTorch, "TF1", "TF2", "sklearn")
-  method: "random"  # DiCE method ("random", "genetic", "kdtree")
-  
-  generation_params:
-    total_CFs: 1
-    desired_class: "opposite"
-    posthoc_sparsity_param: null
+  lr: 0.001
+  alpha: 1000
+  alpha_s: 1000
+  alpha_k: 100
+  beta: 0.01
+  patience: 1000

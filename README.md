@@ -41,7 +41,7 @@ The library includes multiple counterfactual methods, from gradient-based approa
 Clone the repository and set up the environment:
 
 ```shell
-git clone git@github.com:ofurman/counterfactuals.git
+git clone git@github.com:ofurman/cel.git
 cd counterfactuals
 ./setup_env.sh
 ```
@@ -59,12 +59,12 @@ uv sync
 ```python
 import torch
 
-from counterfactuals.datasets import FileDataset, MethodDataset
-from counterfactuals.cf_methods.local_methods import PPCEF
-from counterfactuals.models import MaskedAutoregressiveFlow, MLPClassifier
-from counterfactuals.losses import BinaryDiscLoss
-from counterfactuals.metrics import evaluate_cf
-from counterfactuals.preprocessing import (
+from cel.datasets import FileDataset, MethodDataset
+from cel.cf_methods.local_methods import PPCEF
+from cel.models import MaskedAutoregressiveFlow, MLPClassifier
+from cel.losses import BinaryDiscLoss
+from cel.metrics import evaluate_cf
+from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
@@ -287,7 +287,7 @@ The library provides comprehensive evaluation metrics:
 ### Using Hydra Pipelines
 
 ```shell
-uv run python -m counterfactuals.pipelines.run_ppcef_pipeline
+uv run python -m cel.pipelines.run_ppcef_pipeline
 ```
 
 ## Documentation

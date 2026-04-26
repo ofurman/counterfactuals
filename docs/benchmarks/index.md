@@ -41,7 +41,7 @@ flowchart TD
 ## Quick Benchmark
 
 ```python
-from counterfactuals.metrics import MetricsOrchestrator
+from cel.metrics import MetricsOrchestrator
 
 # Initialize metrics
 orchestrator = MetricsOrchestrator(

@@ -20,7 +20,7 @@ flowchart LR
 |---------|-------------|
 | [Working with Datasets](datasets.md) | Load and configure datasets for counterfactual generation |
 | [Training Models](models.md) | Train discriminative and generative models |
-| [Generating Counterfactuals](generating-counterfactuals.md) | Use various methods to generate explanations |
+| [Generating Counterfactuals](generating-cel.md) | Use various methods to generate explanations |
 | [Evaluating Results](evaluation.md) | Assess counterfactual quality with metrics |
 | [Running Pipelines](pipelines.md) | Execute end-to-end experiments with Hydra |
 
@@ -29,10 +29,10 @@ flowchart LR
 ### Basic Workflow
 
 ```python
-from counterfactuals.datasets import FileDataset
-from counterfactuals.models import MLPClassifier
-from counterfactuals.models import MaskedAutoregressiveFlow
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.datasets import FileDataset
+from cel.models import MLPClassifier
+from cel.models import MaskedAutoregressiveFlow
+from cel.cf_methods.local_methods import PPCEF
 
 # 1. Load dataset
 dataset = FileDataset(config_path="config/datasets/adult.yaml")
@@ -46,7 +46,7 @@ method = PPCEF(gen_model, classifier, ...)
 result = method.explain(X, y_origin, y_target, ...)
 
 # 4. Evaluate
-from counterfactuals.metrics import MetricsOrchestrator
+from cel.metrics import MetricsOrchestrator
 metrics = MetricsOrchestrator(...)
 scores = metrics.compute(result)
 ```

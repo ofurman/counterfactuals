@@ -47,7 +47,7 @@ class MetricsOrchestrator:
         ratio_cont: float | None = None,
         prob_plausibility_threshold: float | None = None,
         cf_group_ids: np.ndarray | torch.Tensor | None = None,
-        metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
+        metrics_conf_path: str = "cel/pipelines/conf/metrics/default.yaml",
     ) -> None:
         """Initialize the metrics orchestrator with data and models."""
         self.metrics_to_compute = OmegaConf.load(metrics_conf_path).metrics_to_compute

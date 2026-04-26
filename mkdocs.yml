@@ -115,23 +115,24 @@ nav:
     - Local Methods:
       - methods/local/index.md
       - PPCEF: methods/local/ppcef.md
-      - DiCoFlex: methods/local/dicoflex.md
       - DICE: methods/local/dice.md
       - WACH: methods/local/wach.md
       - SACE: methods/local/sace.md
       - CEM: methods/local/cem.md
       - CEGP: methods/local/cegp.md
-      - CET: methods/local/cet.md
       - CCHVAE: methods/local/cchvae.md
       - Artelt: methods/local/artelt.md
+      - CADEX: methods/local/cadex.md
+      - CeFlow: methods/local/ceflow.md
+      - CEARM: methods/local/cearm.md
     - Global Methods:
       - methods/global/index.md
       - GLOBE-CE: methods/global/globe-ce.md
       - AReS: methods/global/ares.md
     - Group Methods:
       - methods/group/index.md
-      - ReViCE: methods/group/revice.md
       - GLANCE: methods/group/glance.md
+      - TCREx: methods/group/tcrex.md
       - Group GLOBE-CE: methods/group/group-globe-ce.md
   - Datasets:
     - datasets/index.md

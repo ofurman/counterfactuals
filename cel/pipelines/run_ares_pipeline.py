@@ -4,8 +4,8 @@ import hydra
 import torch
 from omegaconf import DictConfig
 
-from counterfactuals.pipelines.runners.ares_runner import AReSPipelineRunner
-from counterfactuals.preprocessing import (
+from cel.pipelines.runners.ares_runner import AReSPipelineRunner
+from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,

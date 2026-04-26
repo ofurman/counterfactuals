@@ -20,10 +20,20 @@ from .local_methods import (
     SACE,
     WACH,
     Artelt,
-    CeFlow,
-    DiCoFlex,
-    TabDCE,
 )
+
+try:
+    from .local_methods import CeFlow  # type: ignore[attr-defined]
+except ImportError:
+    CeFlow = None
+try:
+    from .local_methods import DiCoFlex  # type: ignore[attr-defined]
+except ImportError:
+    DiCoFlex = None
+try:
+    from .local_methods import TabDCE  # type: ignore[attr-defined]
+except ImportError:
+    TabDCE = None
 
 # Backward compatibility alias for legacy Hydra targets.
 RPPCEF = PPCEF

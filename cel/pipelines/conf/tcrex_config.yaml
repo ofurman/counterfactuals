@@ -18,7 +18,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: cel.datasets.FileDataset
   config_path: config/datasets/audit.yaml
 
 disc_model:
@@ -40,7 +40,7 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.TCREx
+    _target_: cel.cf_methods.TCREx
   # TCREx specific parameters
   tau: 0.9  # Accuracy threshold for valid rules
   rho: 0.02  # Feasibility threshold for valid rules

@@ -4,8 +4,8 @@ import hydra
 import torch
 from omegaconf import DictConfig
 
-from counterfactuals.pipelines.runners.wach_runner import WACHPipelineRunner
-from counterfactuals.preprocessing import (
+from cel.pipelines.runners.wach_runner import WACHPipelineRunner
+from cel.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
     TorchDataTypeStep,
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @hydra.main(config_path="./conf", config_name="wach_config", version_base="1.2")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
     torch.manual_seed(0)
     preprocessing_pipeline = PreprocessingPipeline(
         [

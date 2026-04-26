@@ -13,8 +13,8 @@ experiment:
   num_folds: 5
 
 dataset:
-  _target_: counterfactuals.datasets.RegressionFileDataset
-  config_path: config/datasets/toy_regression.yaml
+  _target_: cel.datasets.RegressionFileDataset
+  config_path: config/datasets/concrete.yaml
 
 disc_model:
   train_model: false
@@ -34,7 +34,7 @@ gen_model:
 counterfactuals_params:
   target_change: 0.2
   cf_method:
-    _target_: counterfactuals.cf_methods.regression_ppcef.CEARM
+    _target_: cel.cf_methods.local_methods.cearm.CEARM
   epochs: 3000
   batch_size: 8096
   lr: 0.001
@@ -42,5 +42,5 @@ counterfactuals_params:
   patience: 300
   log_prob_quantile: 0.25
   disc_loss:
-    # _target_: counterfactuals.losses.MulticlassDiscLoss
-    _target_: counterfactuals.losses.ThresholdRegressionLoss
+    # _target_: cel.losses.MulticlassDiscLoss
+    _target_: cel.losses.ThresholdRegressionLoss

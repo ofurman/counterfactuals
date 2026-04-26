@@ -59,10 +59,10 @@ pip install -e .
 ### Generate Your First Counterfactual
 
 ```python
-from counterfactuals.datasets import FileDataset
-from counterfactuals.models import MLPClassifier
-from counterfactuals.models import MaskedAutoregressiveFlow
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.datasets import FileDataset
+from cel.models import MLPClassifier
+from cel.models import MaskedAutoregressiveFlow
+from cel.cf_methods.local_methods import PPCEF
 
 # 1. Load dataset
 dataset = FileDataset(config_path="config/datasets/adult.yaml")

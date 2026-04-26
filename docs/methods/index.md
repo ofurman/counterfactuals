@@ -1,6 +1,6 @@
 # Counterfactual Methods
 
-The library implements **17+ counterfactual explanation methods** organized into three categories based on their scope.
+The library implements counterfactual explanation methods organized into three categories based on their scope: local (per-instance), global (dataset-wide), and group (subgroup-level).
 
 ## Method Categories
 
@@ -28,9 +28,12 @@ Group methods generate counterfactuals for **clusters or subgroups** of similar 
 |--------|----------|--------------|-----------|---------------|-------|
 | PPCEF | Local | High | Medium | Yes | Medium |
 | DICE | Local | Medium | High | Yes | Fast |
-| DiCoFlex | Local | High | High | Yes | Medium |
+| WACH | Local | Medium | Low | Yes | Fast |
+| CCHVAE | Local | High | Medium | Yes | Medium |
 | GLOBE-CE | Global | Medium | N/A | Yes | Fast |
-| ReViCE | Group | High | Medium | Yes | Medium |
+| AReS | Global | Medium | N/A | Yes | Medium |
+| GLANCE | Group | High | Medium | Yes | Medium |
+| TCREx | Group | Medium | Medium | Yes | Fast |
 
 ## Choosing a Method
 
@@ -43,11 +46,11 @@ flowchart TD
     D -->|No| F[Group Methods]
 
     C --> G{Need plausibility?}
-    G -->|Yes| H[PPCEF, DiCoFlex]
+    G -->|Yes| H[PPCEF, CCHVAE]
     G -->|No| I[DICE, WACH]
 
     E --> J[GLOBE-CE, AReS]
-    F --> K[ReViCE, GLANCE]
+    F --> K[GLANCE, TCREx]
 ```
 
 ## Common Interface
@@ -55,7 +58,7 @@ flowchart TD
 All methods inherit from `BaseCounterfactualMethod` and share a common interface:
 
 ```python
-from counterfactuals.cf_methods import BaseCounterfactualMethod
+from cel.cf_methods import BaseCounterfactualMethod
 
 class YourMethod(BaseCounterfactualMethod):
     def fit(self, X_train, y_train, **kwargs):

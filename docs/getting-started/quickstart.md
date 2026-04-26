@@ -15,7 +15,7 @@ This tutorial walks you through:
 ## Step 1: Load a Dataset
 
 ```python
-from counterfactuals.datasets import FileDataset
+from cel.datasets import FileDataset
 import torch
 
 # Load the Adult income dataset
@@ -52,7 +52,7 @@ test_loader = DataLoader(test_dataset, batch_size=256)
 ## Step 3: Train a Classifier
 
 ```python
-from counterfactuals.models import MLPClassifier
+from cel.models import MLPClassifier
 
 # Get dimensions
 n_features = X_train.shape[1]
@@ -81,7 +81,7 @@ print(f"Test accuracy: {accuracy:.2%}")
 ## Step 4: Train a Generative Model
 
 ```python
-from counterfactuals.models import MaskedAutoregressiveFlow
+from cel.models import MaskedAutoregressiveFlow
 
 # Create and train flow model
 flow = MaskedAutoregressiveFlow(
@@ -101,7 +101,7 @@ flow.fit(
 ## Step 5: Generate Counterfactuals
 
 ```python
-from counterfactuals.cf_methods.local_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
 import torch.nn as nn
 
 # Select an instance to explain (someone denied a loan)
@@ -156,7 +156,7 @@ for i, (feat, change) in enumerate(zip(dataset.features, changes)):
 ## Step 7: Evaluate Quality
 
 ```python
-from counterfactuals.metrics import MetricsOrchestrator
+from cel.metrics import MetricsOrchestrator
 
 # Compute metrics
 orchestrator = MetricsOrchestrator(
@@ -187,10 +187,10 @@ Here's the full code in one block:
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
 
-    from counterfactuals.datasets import FileDataset
-    from counterfactuals.models import MLPClassifier
-    from counterfactuals.models import MaskedAutoregressiveFlow
-    from counterfactuals.cf_methods.local_methods import PPCEF
+    from cel.datasets import FileDataset
+    from cel.models import MLPClassifier
+    from cel.models import MaskedAutoregressiveFlow
+    from cel.cf_methods.local_methods import PPCEF
 
     # 1. Load dataset
     dataset = FileDataset(config_path="config/datasets/adult.yaml")

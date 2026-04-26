@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from counterfactuals.preprocessing.base import PreprocessingContext
-from counterfactuals.preprocessing.scalers import (
+from cel.preprocessing.base import PreprocessingContext
+from cel.preprocessing.scalers import (
     MinMaxScalingStep,
     ScalingStep,
     StandardScalingStep,
