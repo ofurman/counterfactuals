@@ -154,6 +154,21 @@ def search_counterfactuals(
         cfg.counterfactuals_params.generation_params, resolve=True
     )
     generation_params["total_CFs"] = cf_per_instance
+
+    actionable_names = getattr(dataset, "actionable_features", None)
+    dataset_features = getattr(dataset, "features", None)
+    if actionable_names and dataset_features and len(actionable_names) < len(dataset_features):
+        actionable_set = set(actionable_names)
+        features_to_vary = [
+            str(idx) for idx, name in enumerate(dataset_features) if name in actionable_set
+        ]
+        generation_params["features_to_vary"] = features_to_vary
+        logger.info(
+            "DiCE: restricting variation to %d/%d actionable features",
+            len(features_to_vary),
+            len(dataset_features),
+        )
+
     cfs = exp.generate_counterfactuals(query_instance, **generation_params)
     cf_search_time = np.mean(time() - time_start)
     logger.info("Counterfactual search completed in %.4f seconds", cf_search_time)
@@ -198,6 +213,10 @@ def search_counterfactuals(
         counterfactuals_path, index=False
     )
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
+
+    factuals_path = os.path.join(save_folder, f"factuals_{cf_method_name}_{disc_model_name}.csv")
+    query_instance.to_csv(factuals_path, index=False)
+    logger.info("Factuals saved to %s", factuals_path)
 
     return (
         (Xs_cfs_first, Xs_cfs_all),

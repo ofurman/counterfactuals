@@ -41,6 +41,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         mask_vectors: list[np.ndarray],
         params: DiCoFlexParams,
         device: Optional[str] = None,
+        monotonic_direction: Optional[np.ndarray] = None,
     ) -> None:
         super().__init__(
             gen_model=gen_model,
@@ -59,6 +60,17 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         self.mask_vectors = mask_vectors
         self.params = params
         self.device = device or "cpu"
+        n_features = mask_vectors[0].shape[0]
+        if monotonic_direction is None:
+            self.monotonic_direction = np.zeros(n_features, dtype=np.int8)
+        else:
+            direction_vec = np.asarray(monotonic_direction, dtype=np.int8).reshape(-1)
+            if direction_vec.shape[0] != n_features:
+                raise ValueError(
+                    f"monotonic_direction length {direction_vec.shape[0]} does not match "
+                    f"feature dimension {n_features}."
+                )
+            self.monotonic_direction = direction_vec
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
 
@@ -164,6 +176,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 batch_selected_valid,
                 batch_selected_logs,
             ) = self._select_topk_candidates(
+                X_batch=X_batch,
                 y_target_batch=y_target_batch,
                 candidates=samples,
                 candidate_log_probs=log_probs,
@@ -192,6 +205,25 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             np.array(group_ids, dtype=int),
         )
 
+    def _check_monotonic_constraints(
+        self, X_batch: np.ndarray, candidates: np.ndarray
+    ) -> np.ndarray:
+        """Return a (batch, num_samples) bool matrix marking direction-compliant candidates.
+
+        Features with direction_vec == +1 must not decrease; direction_vec == -1 must not
+        increase. A small numerical tolerance permits equality under float noise.
+        """
+        direction = self.monotonic_direction
+        active_idx = np.where(direction != 0)[0]
+        if active_idx.size == 0:
+            return np.ones(candidates.shape[:2], dtype=bool)
+        tol = 1e-6
+        factual_sub = X_batch[:, active_idx][:, None, :]
+        candidate_sub = candidates[:, :, active_idx]
+        signs = direction[active_idx].astype(np.float32)
+        delta = (candidate_sub - factual_sub) * signs[None, None, :]
+        return np.all(delta >= -tol, axis=2)
+
     def _build_context(self, X: np.ndarray, y_target: np.ndarray) -> np.ndarray:
         mask = self.mask_vectors[self.params.mask_index]
         mask_matrix = np.repeat(mask[None, :], repeats=len(X), axis=0)
@@ -207,6 +239,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
 
     def _select_topk_candidates(
         self,
+        X_batch: np.ndarray,
         y_target_batch: np.ndarray,
         candidates: np.ndarray,
         candidate_log_probs: np.ndarray,
@@ -225,6 +258,10 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         target_probs = np.take_along_axis(probs, expanded_targets[..., None], axis=2).squeeze(2)
         predicted_class = np.argmax(probs, axis=2)
         valid_mask_matrix = predicted_class == target_indices[:, None]
+
+        if np.any(self.monotonic_direction != 0):
+            monotonic_ok = self._check_monotonic_constraints(X_batch, candidates)
+            valid_mask_matrix = valid_mask_matrix & monotonic_ok
 
         sorted_indices = np.argsort(-target_probs, axis=1)
         top_indices = np.zeros((batch_size, top_k), dtype=int)

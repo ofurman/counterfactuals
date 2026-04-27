@@ -1,0 +1,23 @@
+{
+  "numerical_columns": [
+    "RevolvingUtilizationOfUnsecuredLines",
+    "age",
+    "DebtRatio",
+    "MonthlyIncome",
+    "NumberOfOpenCreditLinesAndLoans",
+    "NumberOfTimes90DaysLate",
+    "NumberRealEstateLoansOrLines"
+  ],
+  "numerical_bins": {},
+  "categorical_columns": [
+    "NumberOfTime30-59DaysPastDueNotWorse",
+    "NumberOfTime60-89DaysPastDueNotWorse",
+    "NumberOfDependents"
+  ],
+  "target_column": "SeriousDlqin2yrs",
+  "target_positive_value": 1,
+  "missing_values": [],
+  "immutable": [],
+  "increasing": [],
+  "decreasing": []
+}

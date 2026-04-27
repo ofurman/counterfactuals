@@ -1,0 +1,53 @@
+raw_data_path: data_train_test_val/adult/train.csv
+features:
+  - age
+  - capital_gain
+  - capital_loss
+  - hours_per_week
+  - workclass
+  - education
+  - marital_status
+  - occupation
+  - relationship
+  - race
+  - sex
+  - native_country
+continuous_features:
+  - age
+  - capital_gain
+  - capital_loss
+  - hours_per_week
+categorical_features:
+  - workclass
+  - education
+  - marital_status
+  - occupation
+  - relationship
+  - race
+  - sex
+  - native_country
+feature_config:
+  age: {actionable: false}
+  capital_gain: {actionable: true}
+  capital_loss: {actionable: true}
+  hours_per_week: {actionable: true}
+  workclass: {actionable: true}
+  education: {actionable: true}
+  marital_status: {actionable: true}
+  occupation: {actionable: true}
+  relationship: {actionable: true}
+  race: {actionable: false}
+  sex: {actionable: false}
+  native_country: {actionable: false}
+target: income
+target_mapping:
+  "<=50K": 0
+  ">50K": 1
+  " <=50K": 0
+  " >50K": 1
+initial_transforms:
+  - name: reorder_columns
+  - name: dropna
+  - name: one_hot_encode
+    params:
+      drop_first: false

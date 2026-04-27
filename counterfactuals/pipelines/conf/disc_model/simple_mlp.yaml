@@ -1,0 +1,4 @@
+model:
+  _target_: counterfactuals.models.classifier.simple_mlp.SimpleMLPClassifier
+  hidden_layers: [64, 64]
+  dropout: 0.2

@@ -177,9 +177,13 @@ class CustomData(Data):
 
     @property
     def immutables(self):
-        """Column names of immutable features (example: demographic features)"""
-        # This is application-specific - for demonstration we'll consider no features immutable
-        return []
+        """Column names of immutable features, derived from the dataset's actionability config."""
+        actionable = getattr(self._dataset, "actionable_features", None)
+        features = getattr(self._dataset, "features", None)
+        if not actionable or not features:
+            return []
+        actionable_set = set(actionable)
+        return [str(idx) for idx, name in enumerate(features) if name not in actionable_set]
 
     @property
     def target(self):

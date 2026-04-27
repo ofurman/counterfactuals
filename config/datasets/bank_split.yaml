@@ -1,0 +1,63 @@
+raw_data_path: data_train_test_val/bank/train.csv
+features:
+  - age
+  - balance
+  - day
+  - duration
+  - campaign
+  - pdays
+  - previous
+  - job
+  - marital
+  - education
+  - default
+  - housing
+  - loan
+  - contact
+  - month
+  - poutcome
+continuous_features:
+  - age
+  - balance
+  - day
+  - duration
+  - campaign
+  - pdays
+  - previous
+categorical_features:
+  - job
+  - marital
+  - education
+  - default
+  - housing
+  - loan
+  - contact
+  - month
+  - poutcome
+feature_config:
+  age: {actionable: false}
+  balance: {actionable: true}
+  day: {actionable: true}
+  duration: {actionable: true}
+  campaign: {actionable: true}
+  pdays: {actionable: true}
+  previous: {actionable: true}
+  job: {actionable: true}
+  marital: {actionable: true}
+  education: {actionable: true}
+  default: {actionable: true}
+  housing: {actionable: true}
+  loan: {actionable: true}
+  contact: {actionable: true}
+  month: {actionable: true}
+  poutcome: {actionable: true}
+target: y
+target_mapping:
+  "no": 0
+  "yes": 1
+initial_transforms:
+  - name: reorder_columns
+  - name: dropna
+  - name: one_hot_encode
+    params:
+      drop_first: false

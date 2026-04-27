@@ -25,7 +25,7 @@ from omegaconf import OmegaConf
 # Keep this list empty to include all available metrics.
 METRICS_TO_SHOW: list[str] = [
     "validity",
-    "proximity_euclidean_jaccard",
+    "proximity_l1_jaccard",
     "log_density_cf",
 ]
 

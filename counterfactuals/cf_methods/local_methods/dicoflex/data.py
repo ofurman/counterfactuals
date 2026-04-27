@@ -4,20 +4,28 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 
+from counterfactuals.datasets.base import MonotonicityDirection
 from counterfactuals.datasets.method_dataset import MethodDataset
 
 
-def build_actionability_mask(dataset: MethodDataset) -> np.ndarray:
+def build_actionability_mask(
+    dataset: MethodDataset,
+    extra_actionable: Optional[Iterable[str]] = None,
+) -> np.ndarray:
     """Construct a mask that highlights actionable features in the preprocessed space.
 
     Args:
         dataset: MethodDataset instance with fitted preprocessing pipeline.
+        extra_actionable: Additional feature names to treat as actionable
+            beyond those declared on the dataset (e.g., features subject to
+            a monotonic override that must be mutable for DiCoFlex even if
+            the shared dataset config marks them as frozen).
 
     Returns:
         np.ndarray: Vector with shape (n_features,) where actionable positions are set to 1.
@@ -25,6 +33,8 @@ def build_actionability_mask(dataset: MethodDataset) -> np.ndarray:
     n_features = dataset.X_train.shape[1]
     mask = np.zeros(n_features, dtype=np.float32)
     actionable = set(dataset.actionable_features or [])
+    if extra_actionable:
+        actionable.update(extra_actionable)
 
     # Numerical features retain a one-to-one mapping after preprocessing.
     for feature_name, feature_idx in zip(
@@ -62,6 +72,47 @@ def build_actionability_mask(dataset: MethodDataset) -> np.ndarray:
         # Fall back to allowing all features if no actionable metadata is available.
         mask[:] = 1.0
     return mask
+
+
+def build_monotonic_direction_vector(
+    dataset: MethodDataset,
+    overrides: Optional[Dict[str, str]] = None,
+) -> np.ndarray:
+    """Build a per-feature direction vector for monotonic constraints.
+
+    Entries are +1 for features that may only increase (INCREASE), -1 for
+    features that may only decrease (DECREASE), and 0 for unconstrained
+    features. Only numerical features are considered; direction on one-hot
+    categorical expansions has no natural meaning and is ignored.
+
+    Args:
+        dataset: MethodDataset instance with fitted preprocessing pipeline.
+        overrides: Optional mapping of feature name to direction string
+            ("INCREASE" / "DECREASE"), evaluated in addition to any
+            dataset-level `monotonic_features` metadata. Overrides take
+            precedence when a feature appears in both sources.
+
+    Returns:
+        np.ndarray: Int8 vector of shape (n_features,).
+    """
+    n_features = dataset.X_train.shape[1]
+    direction_vec = np.zeros(n_features, dtype=np.int8)
+    combined: Dict[str, MonotonicityDirection] = {}
+    for name, direction in (dataset.monotonic_features or {}).items():
+        combined[name] = direction
+    for name, direction_str in (overrides or {}).items():
+        combined[name] = MonotonicityDirection(str(direction_str).upper())
+    if not combined:
+        return direction_vec
+    for feature_name, feature_idx in zip(
+        dataset.numerical_features, dataset.numerical_features_indices
+    ):
+        direction = combined.get(feature_name)
+        if direction is MonotonicityDirection.INCREASE:
+            direction_vec[feature_idx] = 1
+        elif direction is MonotonicityDirection.DECREASE:
+            direction_vec[feature_idx] = -1
+    return direction_vec
 
 
 @dataclass

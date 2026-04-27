@@ -1,0 +1,25 @@
+{
+  "numerical_columns": [
+    "age",
+    "capital_gain",
+    "capital_loss",
+    "hours_per_week"
+  ],
+  "numerical_bins": {},
+  "categorical_columns": [
+    "workclass",
+    "education",
+    "marital_status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "native_country"
+  ],
+  "target_column": "income",
+  "target_positive_value": ">50K",   
+  "missing_values": ["?", "nan", "NaN"],
+  "immutable": [],
+  "increasing": [],
+  "decreasing": []
+}

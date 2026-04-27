@@ -192,9 +192,13 @@ class DatasetBase:
             cfg = yaml.safe_load(f)
 
         # Parse feature_config into FeatureParameters
-        feature_config = {
-            k: FeatureParameters(**v) for k, v in cfg.get("feature_config", {}).items()
-        }
+        feature_config: Dict[Union[str, int], FeatureParameters] = {}
+        for k, v in cfg.get("feature_config", {}).items():
+            params = dict(v)
+            direction = params.get("direction")
+            if isinstance(direction, str):
+                params["direction"] = MonotonicityDirection(direction.upper())
+            feature_config[k] = FeatureParameters(**params)
 
         return DatasetParameters(
             raw_data_path=cfg["raw_data_path"],

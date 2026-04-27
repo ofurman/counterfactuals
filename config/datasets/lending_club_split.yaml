@@ -1,0 +1,51 @@
+raw_data_path: data_train_test_val/lending-club/train.csv
+features:
+  - loan_amnt
+  - int_rate
+  - installment
+  - annual_inc
+  - dti
+  - delinq_2yrs
+  - fico_range_low
+  - fico_range_high
+  - term
+  - grade
+  - emp_length
+  - home_ownership
+continuous_features:
+  - loan_amnt
+  - int_rate
+  - installment
+  - annual_inc
+  - dti
+  - delinq_2yrs
+  - fico_range_low
+  - fico_range_high
+categorical_features:
+  - term
+  - grade
+  - emp_length
+  - home_ownership
+feature_config:
+  loan_amnt: {actionable: true}
+  int_rate: {actionable: true}
+  installment: {actionable: true}
+  annual_inc: {actionable: true}
+  dti: {actionable: true}
+  delinq_2yrs: {actionable: true}
+  fico_range_low: {actionable: true}
+  fico_range_high: {actionable: true}
+  term: {actionable: true}
+  grade: {actionable: true}
+  emp_length: {actionable: true}
+  home_ownership: {actionable: true}
+target: loan_status
+target_mapping:
+  "Charged Off": 1
+  "Fully Paid": 0
+initial_transforms:
+  - name: reorder_columns
+  - name: dropna
+  - name: one_hot_encode
+    params:
+      drop_first: false

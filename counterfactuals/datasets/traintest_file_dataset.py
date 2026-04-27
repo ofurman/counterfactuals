@@ -50,8 +50,7 @@ class TrainTestFileDataset(DatasetBase):
         train_raw = self._load_csv(self.train_data_path)
         test_raw = self._load_csv(self.test_data_path)
 
-        train_context = self._apply_initial_transforms(train_raw)
-        test_context = self._apply_initial_transforms(test_raw)
+        train_context, test_context = self._apply_initial_transforms_paired(train_raw, test_raw)
 
         if self.samples_keep > 0 and len(train_context.data) > self.samples_keep:
             train_context.data = train_context.data.sample(
@@ -106,6 +105,42 @@ class TrainTestFileDataset(DatasetBase):
             return context
         return self.initial_transform_pipeline.fit_transform(context)
 
+    def _build_transform_context(self, raw_data: pd.DataFrame) -> InitialTransformContext:
+        return InitialTransformContext(
+            data=raw_data.copy(),
+            features=list(self.config.features),
+            continuous_features=list(self.config.continuous_features),
+            categorical_features=list(self.config.categorical_features),
+            feature_config=dict(self.config.feature_config),
+            target=self.config.target,
+            task_type=self.task_type,
+        )
+
+    def _apply_initial_transforms_paired(
+        self, train_raw: pd.DataFrame, test_raw: pd.DataFrame
+    ) -> tuple[InitialTransformContext, InitialTransformContext]:
+        """Fit transforms on train, then apply to both splits so columns align."""
+        train_ctx = self._build_transform_context(train_raw)
+        test_ctx = self._build_transform_context(test_raw)
+
+        if self.initial_transform_pipeline is None:
+            return train_ctx, test_ctx
+
+        train_ctx = self.initial_transform_pipeline.fit_transform(train_ctx)
+        test_ctx = self.initial_transform_pipeline.transform(test_ctx)
+
+        train_cols = list(train_ctx.data.columns)
+        for col in train_cols:
+            if col not in test_ctx.data.columns:
+                test_ctx.data[col] = 0
+        test_ctx.data = test_ctx.data[train_cols]
+        test_ctx.features = list(train_ctx.features)
+        test_ctx.continuous_features = list(train_ctx.continuous_features)
+        test_ctx.categorical_features = list(train_ctx.categorical_features)
+        test_ctx.feature_config = dict(train_ctx.feature_config)
+        test_ctx.one_hot_feature_groups = dict(train_ctx.one_hot_feature_groups)
+        return train_ctx, test_ctx
+
     def _update_metadata_from_context(self, context: InitialTransformContext) -> None:
         """Update dataset metadata after applying initial transforms."""
         self.config.features = list(context.features)
@@ -126,6 +161,11 @@ class TrainTestFileDataset(DatasetBase):
             for feature, params in context.feature_config.items()
             if params.actionable and feature in self.features
         ]
+        self.monotonic_features = {
+            feature: params.direction
+            for feature, params in context.feature_config.items()
+            if params.direction is not None and feature in self.features
+        }
         self.one_hot_feature_groups = context.one_hot_feature_groups
 
     def split_data(

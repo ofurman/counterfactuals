@@ -57,8 +57,14 @@ class VariationalAutoencoder(nn.Module):
             )
 
         self._data_name = data_name
-        self._input_dim = layers[0]
         latent_dim = layers[-1]
+
+        # Encoder sees only mutable columns; decoder reconstructs only mutable
+        # columns (immutables are re-attached in forward()). Override layers[0]
+        # so both sides use the mutable width when features are frozen.
+        n_mutable = int(np.sum(mutable_mask))
+        layers[0] = n_mutable
+        self._input_dim = n_mutable
 
         # The VAE components
         lst_encoder = []

@@ -131,6 +131,10 @@ def search_counterfactuals(
     )
     logger.info("Counterfactuals saved to %s", counterfactuals_path)
 
+    factuals_path = os.path.join(save_folder, f"factuals_{cf_method_name}_{disc_model_name}.csv")
+    factuals_df.to_csv(factuals_path, index=False)
+    logger.info("Factuals saved to %s", factuals_path)
+
     model_returned_first = np.ones(Xs_cfs_first.shape[0], dtype=bool)
     return (
         (Xs_cfs_first, Xs_cfs_all),

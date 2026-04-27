@@ -1,0 +1,29 @@
+{
+  "numerical_columns": [
+    "age",
+    "balance",
+    "day",
+    "duration",
+    "campaign",
+    "pdays",
+    "previous"
+  ],
+  "numerical_bins": {},
+  "categorical_columns": [
+    "job",
+    "marital",
+    "education",
+    "default",
+    "housing",
+    "loan",
+    "contact",
+    "month",
+    "poutcome"
+  ],
+  "target_column": "y",
+  "target_positive_value": "yes",  
+  "missing_values": ["unknown", "nan"],
+  "immutable": [],
+  "increasing": [],
+  "decreasing": []
+}

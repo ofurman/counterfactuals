@@ -4,6 +4,7 @@ import counterfactuals.metrics.diversity  # noqa: F401
 import counterfactuals.metrics.plausibility  # noqa: F401
 
 from .metrics import (  # noqa: F401
+    CFMetrics,
     evaluate_cf,
     evaluate_cf_for_rppcef,
 )

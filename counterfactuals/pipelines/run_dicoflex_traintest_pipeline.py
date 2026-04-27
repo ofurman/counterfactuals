@@ -33,6 +33,7 @@ from counterfactuals.cf_methods.local_methods.dicoflex.context_utils import (
 )
 from counterfactuals.cf_methods.local_methods.dicoflex.data import (
     build_actionability_mask,
+    build_monotonic_direction_vector,
     create_dicoflex_dataloaders,
 )
 from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
@@ -57,8 +58,9 @@ logger = logging.getLogger(__name__)
 def build_masks(dataset: MethodDataset, cfg: DictConfig) -> List[np.ndarray]:
     """Assemble the mask catalogue used during DiCoFlex training."""
     masks: List[np.ndarray] = []
+    monotonic_overrides = dict(cfg.get("monotonic_overrides") or {})
     if cfg.use_actionability_mask:
-        masks.append(build_actionability_mask(dataset))
+        masks.append(build_actionability_mask(dataset, extra_actionable=monotonic_overrides.keys()))
     for custom_mask in cfg.get("custom_masks", []):
         mask_vec = np.asarray(custom_mask, dtype=np.float32).reshape(-1)
         if mask_vec.shape[0] != dataset.X_train.shape[1]:
@@ -304,6 +306,14 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         cf_samples_per_factual=cfg.counterfactuals_params.cf_samples_per_factual,
     )
     mask_vector = mask_vectors[params.mask_index]
+    monotonic_overrides = dict(cfg.counterfactuals_params.get("monotonic_overrides") or {})
+    monotonic_direction = build_monotonic_direction_vector(dataset, overrides=monotonic_overrides)
+    if np.any(monotonic_direction != 0):
+        logger.info(
+            "Monotonic constraints active on %d feature(s). Overrides: %s",
+            int(np.sum(monotonic_direction != 0)),
+            monotonic_overrides,
+        )
     cf_method = DiCoFlex(
         gen_model=gen_model,
         disc_model=disc_model,
@@ -311,6 +321,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         mask_vectors=mask_vectors,
         params=params,
         device=device,
+        monotonic_direction=monotonic_direction,
     )
 
     target_class = cfg.counterfactuals_params.target_class

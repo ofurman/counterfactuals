@@ -1,0 +1,25 @@
+{
+  "numerical_columns": [
+    "loan_amnt",
+    "int_rate",
+    "installment",
+    "annual_inc",
+    "dti",
+    "delinq_2yrs",
+    "fico_range_low",
+    "fico_range_high"
+  ],
+  "numerical_bins": {},
+  "categorical_columns": [
+    "term",
+    "grade",
+    "emp_length",
+    "home_ownership"
+  ],
+  "target_column": "loan_status",
+  "target_positive_value": "Charged Off", 
+  "missing_values": ["nan", "NaN", "n/a"],
+  "immutable": [],
+  "increasing": [],
+  "decreasing": []
+}

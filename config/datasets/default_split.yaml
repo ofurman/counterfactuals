@@ -1,0 +1,86 @@
+raw_data_path: data_train_test_val/default/train.csv
+features:
+  - LIMIT_BAL
+  - AGE
+  - BILL_AMT1
+  - BILL_AMT2
+  - BILL_AMT3
+  - BILL_AMT4
+  - BILL_AMT5
+  - BILL_AMT6
+  - PAY_AMT1
+  - PAY_AMT2
+  - PAY_AMT3
+  - PAY_AMT4
+  - PAY_AMT5
+  - PAY_AMT6
+  - SEX
+  - EDUCATION
+  - MARRIAGE
+  - PAY_0
+  - PAY_2
+  - PAY_3
+  - PAY_4
+  - PAY_5
+  - PAY_6
+continuous_features:
+  - LIMIT_BAL
+  - AGE
+  - BILL_AMT1
+  - BILL_AMT2
+  - BILL_AMT3
+  - BILL_AMT4
+  - BILL_AMT5
+  - BILL_AMT6
+  - PAY_AMT1
+  - PAY_AMT2
+  - PAY_AMT3
+  - PAY_AMT4
+  - PAY_AMT5
+  - PAY_AMT6
+categorical_features:
+  - SEX
+  - EDUCATION
+  - MARRIAGE
+  - PAY_0
+  - PAY_2
+  - PAY_3
+  - PAY_4
+  - PAY_5
+  - PAY_6
+feature_config:
+  LIMIT_BAL: {actionable: true}
+  AGE: {actionable: false}
+  BILL_AMT1: {actionable: true}
+  BILL_AMT2: {actionable: true}
+  BILL_AMT3: {actionable: true}
+  BILL_AMT4: {actionable: true}
+  BILL_AMT5: {actionable: true}
+  BILL_AMT6: {actionable: true}
+  PAY_AMT1: {actionable: true}
+  PAY_AMT2: {actionable: true}
+  PAY_AMT3: {actionable: true}
+  PAY_AMT4: {actionable: true}
+  PAY_AMT5: {actionable: true}
+  PAY_AMT6: {actionable: true}
+  SEX: {actionable: false}
+  EDUCATION: {actionable: true}
+  MARRIAGE: {actionable: true}
+  PAY_0: {actionable: true}
+  PAY_2: {actionable: true}
+  PAY_3: {actionable: true}
+  PAY_4: {actionable: true}
+  PAY_5: {actionable: true}
+  PAY_6: {actionable: true}
+target: default payment next month
+target_mapping:
+  "0": 0
+  "1": 1
+  0: 0
+  1: 1
+initial_transforms:
+  - name: reorder_columns
+  - name: dropna
+  - name: one_hot_encode
+    params:
+      drop_first: false

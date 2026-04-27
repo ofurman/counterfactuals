@@ -118,4 +118,9 @@ class FileDataset(DatasetBase):
             for feature, params in context.feature_config.items()
             if params.actionable and feature in self.features
         ]
+        self.monotonic_features = {
+            feature: params.direction
+            for feature, params in context.feature_config.items()
+            if params.direction is not None and feature in self.features
+        }
         self.one_hot_feature_groups = context.one_hot_feature_groups

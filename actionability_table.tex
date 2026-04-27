@@ -1,0 +1,36 @@
+\begin{table}[H]
+\label{tab:protocol_B}
+\centering
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Method} & \textbf{Validity $\uparrow$} & \textbf{Prox.-Cont $\downarrow$} & \textbf{Spars.-Cat $\downarrow$} & \textbf{$\epsilon$-Spars. $\downarrow$} & \textbf{LOF $\downarrow$} & \textbf{Diversity $\uparrow$} \\
+\midrule
+\multicolumn{7}{c}{\textit{Bank (Neural Network)}} \\
+\midrule
+DICE & \textbf{1.00} & \textbf{0.04} & 0.18 & \textbf{0.07} & 0.81 & \underline{0.10} \\
+CCHVAE & \textbf{1.00} & \underline{0.06} & \textbf{0.13} & \underline{0.28} & \textbf{0.45} & 0.02 \\
+DiCoFlex & \textbf{1.00} & 0.17 & \underline{0.14} & 0.50 & \underline{0.77} & \textbf{0.13} \\
+\multicolumn{7}{c}{\textit{Default of Credit Card (Neural Network)}} \\
+\midrule
+DICE & \textbf{1.00} & \underline{0.05} & \textbf{0.11} & \textbf{0.07} & 1.02 & \underline{0.08} \\
+CCHVAE & \textbf{1.00} & \textbf{0.03} & 0.29 & \underline{0.17} & \underline{0.96} & 0.04 \\
+DiCoFlex & \textbf{1.00} & 0.07 & \underline{0.27} & 0.34 & \textbf{0.53} & \textbf{0.12} \\
+\multicolumn{7}{c}{\textit{Adult Income (Neural Network)}} \\
+\midrule
+DICE & \textbf{1.00} & \textbf{0.01} & \textbf{0.18} & \textbf{0.02} & 1.76 & \underline{0.11} \\
+CCHVAE & \textbf{1.00} & \underline{0.05} & \underline{0.19} & \underline{0.22} & \underline{1.30} & 0.06 \\
+DiCoFlex & \textbf{1.00} & 0.18 & 0.38 & 0.76 & \textbf{1.15} & \textbf{0.23} \\
+\multicolumn{7}{c}{\textit{Give Me Some Credit (Neural Network)}} \\
+\midrule
+DICE & \textbf{1.00} & \textbf{0.03} & 0.31 & \textbf{0.06} & \underline{2.68} & \underline{0.05} \\
+CCHVAE & \textbf{1.00} & \underline{0.04} & \underline{0.21} & 0.26 & \textbf{1.06} & 0.01 \\
+DiCoFlex & \textbf{1.00} & 25471227103293982375936.00 & \textbf{0.00} & \underline{0.16} & inf & \textbf{33253980710145980628992.00} \\
+\multicolumn{7}{c}{\textit{Lending Club (Neural Network)}} \\
+\midrule
+DICE & \textbf{1.00} & \textbf{0.10} & 0.37 & \textbf{0.18} & 1.34 & \underline{0.20} \\
+CCHVAE & \textbf{1.00} & \textbf{0.10} & \underline{0.31} & \underline{0.58} & \underline{0.54} & 0.05 \\
+DiCoFlex & \textbf{1.00} & 310406784.47 & \textbf{0.25} & 0.66 & \textbf{0.22} & \textbf{413875705.07} \\
+\bottomrule
+\end{tabular}
+\end{table}
