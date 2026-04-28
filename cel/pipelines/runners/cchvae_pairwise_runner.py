@@ -74,7 +74,7 @@ class CCHVAEPairwisePipelineRunner(PairwiseMixin, PipelineRunner):
 
         with self._timed_search() as timer:
             cfs_list: list[np.ndarray] = []
-            y_target = np.abs(1 - y_test_origin)
+            y_target = np.full_like(y_test_origin, fill_value=target_class)
             for _ in range(cf_per_instance):
                 explanation_result = exp.explain_dataloader(
                     dataloader=cf_dataloader,

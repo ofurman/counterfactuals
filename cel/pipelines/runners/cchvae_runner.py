@@ -1,6 +1,7 @@
 import logging
 
 import hydra
+import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 
@@ -91,10 +92,14 @@ class CCHVAEPipelineRunner(PipelineRunner):
             CfMethodOutput with generated counterfactuals.
         """
         self.logger.info("Handling counterfactual generation")
+        target_class = self._get_target_class()
+        n_samples = len(cf_dataloader.dataset)
+        y_target = np.full(n_samples, fill_value=target_class, dtype=np.float32)
         explanation_result = cf_method.explain_dataloader(
             dataloader=cf_dataloader,
             epochs=self.cfg.counterfactuals_params.epochs,
             lr=self.cfg.counterfactuals_params.lr,
+            y_target=y_target,
         )
         return CfMethodOutput(
             x_cfs=explanation_result.x_cfs,

@@ -121,7 +121,7 @@ class DiCEPipelineRunner(PipelineRunner):
         ys_origs = np.concatenate([np.atleast_1d(y) for y in ys_origs], axis=0)
         cf_group_ids = np.concatenate([np.atleast_1d(g) for g in group_ids], axis=0)
 
-        ys_target = np.abs(1 - ys_origs)
+        ys_target = np.full_like(ys_origs, fill_value=target_class, dtype=ys_origs.dtype)
         model_returned = np.ones(Xs_cfs.shape[0], dtype=bool)
 
         self._save_counterfactuals(Xs_cfs, save_folder, self.cf_method_name, disc_model_name)
