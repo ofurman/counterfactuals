@@ -181,3 +181,7 @@ models/*
 # uv
 .uv/
 uv.lock
+
+# Slurm job logs
+slurm/logs/*
+!slurm/logs/.gitkeep

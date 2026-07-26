@@ -23,6 +23,7 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.nodes.seeding import set_global_seed
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -212,14 +213,18 @@ def run_pipeline(cfg: DictConfig) -> None:
     dataset = MethodDataset(instantiate(cfg.dataset), preprocessing_pipeline)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=0)
 
+    disc_train_start = time()
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+    disc_train_time = time() - disc_train_start
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     dequantizer.fit(dataset.X_train)
+    gen_train_start = time()
     gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+    gen_train_time = time() - gen_train_start
 
     dataset.X_train = dequantizer.transform(dataset.X_train)
     log_prob_threshold = get_log_prob_threshold(
@@ -251,13 +256,16 @@ def run_pipeline(cfg: DictConfig) -> None:
     )
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_search_time
+    df_metrics["disc_train_time"] = disc_train_time
+    df_metrics["gen_train_time"] = gen_train_time
+    df_metrics["seed"] = cfg.experiment.seed
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     df_metrics.to_csv(os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv"), index=False)
 
 
 @hydra.main(config_path="./conf", config_name="cchvae_traintest_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
-    torch.manual_seed(cfg.experiment.seed)
+    set_global_seed(cfg.experiment.seed)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     run_pipeline(cfg)
 

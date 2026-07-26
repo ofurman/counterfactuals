@@ -45,6 +45,7 @@ from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.nodes.seeding import set_global_seed
 from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
@@ -230,7 +231,9 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
     else:
         cf_gen_model_filename = f"gen_model_{gen_model_name}_dicoflex.pt"
     cf_gen_model_path = os.path.join(save_folder, cf_gen_model_filename)
+    disc_train_start = time()
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+    disc_train_time = time() - disc_train_start
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
@@ -275,6 +278,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
                 dataset_points=dataset.X_train[:, :2],
             )
     gen_model = instantiate_gen_model(cfg, dataset, context_dim, device)
+    gen_train_start = time()
     if cfg.gen_model.train_model:
         train_dicoflex_generator(
             gen_model,
@@ -286,6 +290,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         )
     else:
         gen_model.load(cf_gen_model_path)
+    gen_train_time = time() - gen_train_start
 
     full_loader = get_full_training_loader(
         train_loader, cfg.counterfactuals_params.train_batch_factuals
@@ -502,6 +507,9 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
 
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_time
+    df_metrics["disc_train_time"] = disc_train_time
+    df_metrics["gen_train_time"] = gen_train_time
+    df_metrics["seed"] = cfg.experiment.seed
     metrics_path = os.path.join(save_folder, f"cf_metrics_DiCoFlex_{disc_model_name}.csv")
     df_metrics.to_csv(metrics_path, index=False)
     logger.info("Saved metrics to %s", metrics_path)
@@ -509,7 +517,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
 
 @hydra.main(config_path="./conf", config_name="dicoflex_traintest_config", version_base="1.2")
 def main(cfg: DictConfig):
-    torch.manual_seed(cfg.experiment.seed)
+    set_global_seed(cfg.experiment.seed)
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 

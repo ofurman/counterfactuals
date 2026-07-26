@@ -33,6 +33,7 @@ from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
+from counterfactuals.pipelines.nodes.seeding import set_global_seed
 from counterfactuals.preprocessing import (
     MinMaxScalingStep,
     PreprocessingPipeline,
@@ -290,14 +291,18 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset):
     dequantizer = GroupDequantizer(dataset.categorical_features_lists)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=0)
 
+    disc_train_start = time()
     disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+    disc_train_time = time() - disc_train_start
 
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     dequantizer.fit(dataset.X_train)
+    gen_train_start = time()
     gen_model = create_gen_model(cfg, dataset, gen_model_path, dequantizer)
+    gen_train_time = time() - gen_train_start
 
     # Transform for log prob threshold calculation
     dataset.X_train = dequantizer.transform(dataset.X_train)
@@ -332,6 +337,9 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset):
 
     df_metrics = pd.DataFrame(metrics, index=[0])
     df_metrics["cf_search_time"] = cf_search_time
+    df_metrics["disc_train_time"] = disc_train_time
+    df_metrics["gen_train_time"] = gen_train_time
+    df_metrics["seed"] = cfg.experiment.get("seed", 42)
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     metrics_path = os.path.join(save_folder, f"cf_metrics_{disc_model_name}.csv")
     df_metrics.to_csv(metrics_path, index=False)
@@ -341,7 +349,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset):
 @hydra.main(config_path="./conf", config_name="dice_traintest_config", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     """Run DiCE pipeline on pre-split train/test data."""
-    torch.manual_seed(cfg.experiment.get("seed", 42))
+    set_global_seed(cfg.experiment.get("seed", 42))
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     preprocessing_pipeline = PreprocessingPipeline(
