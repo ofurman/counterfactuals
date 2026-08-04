@@ -113,6 +113,34 @@ results/<tag>/seed_<N>/<dataset>_split/<Method>/fold_0/
     cf_metrics_<...>.csv                               # the in-pipeline metric registry
 ```
 
+## Getting notified as cells finish
+
+`scripts/notify_experiments.sh` is a background shell loop that watches the
+per-cell `.status` files the runner writes and sends a notification for each
+one, plus a summary when the sweep process exits. It can be started at any
+time, including after the sweep is already running; cells that finished
+beforehand are recorded but not re-announced.
+
+```bash
+# to your phone via ntfy.sh, no account needed
+NTFY_TOPIC=some-long-unguessable-name \
+  ./scripts/notify_experiments.sh --tag dictum > notify.log 2>&1 &
+
+# to a Slack-style incoming webhook
+NOTIFY_WEBHOOK=https://hooks.slack.com/services/... \
+  ./scripts/notify_experiments.sh --tag dictum > notify.log 2>&1 &
+
+# only the end-of-sweep summary
+./scripts/notify_experiments.sh --tag dictum --final-only > notify.log 2>&1 &
+```
+
+Backends are independent and all optional; each enabled one receives every
+notification, and with none configured it still logs to stdout.
+
+An ntfy.sh topic is a **public channel** — anyone who knows or guesses the name
+can read it. Use a long random topic name, keep sensitive detail out of run
+labels, or point `NTFY_SERVER` at your own instance.
+
 ## Scoring
 
 ```bash
