@@ -25,7 +25,7 @@ class DiCoFlexParams:
     mask_index: int
     p_value: float
     num_counterfactuals: int
-    target_class: int
+    target_class: Optional[int]
     sampling_batch_size: int
     cf_samples_per_factual: int = 1
 
@@ -52,7 +52,9 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             raise ValueError("At least one mask vector must be supplied for DiCoFlex.")
         if params.mask_index >= len(mask_vectors):
             raise ValueError("mask_index exceeds available mask vectors.")
-        if params.target_class not in class_to_index:
+        # target_class None means the target is the flip of each factual's own
+        # label, so there is no single class to check against here.
+        if params.target_class is not None and params.target_class not in class_to_index:
             raise ValueError(
                 f"Target class {params.target_class} not observed in the training data."
             )
@@ -125,7 +127,10 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             ys.append(batch_y.numpy())
         X = np.vstack(xs)
         y_origin = np.concatenate(ys)
-        y_target = np.full_like(y_origin, fill_value=self.params.target_class)
+        if self.params.target_class is None:
+            y_target = np.abs(1 - y_origin)
+        else:
+            y_target = np.full_like(y_origin, fill_value=self.params.target_class)
         return self.explain(
             X=X,
             y_origin=y_origin,

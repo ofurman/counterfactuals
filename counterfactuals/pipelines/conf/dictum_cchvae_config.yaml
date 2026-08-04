@@ -1,0 +1,79 @@
+# CCHVAE under the DICTUM-aligned evaluation setup.
+# See dictum_dice_config.yaml for the list of alignment choices.
+#
+# Note on `clamp`: CCHVAE clips its search back into [0, 1], which is a MinMax
+# assumption. It is disabled here because the model space is z-scored; the
+# evaluation's in-range filter still discards degenerate counterfactuals.
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: dictum_mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: results/dictum/
+  relabel_with_disc_model: true
+  seed: 42
+  use_gpu: false
+  model_space_scaler: standard
+
+dataset:
+  _target_: counterfactuals.datasets.TrainTestFileDataset
+  config_path: config/datasets/adult_split.yaml
+  train_data_path: data_train_test_val/adult/train.csv
+  test_data_path: data_train_test_val/adult/test.csv
+  val_data_path: data_train_test_val/adult/val.csv
+
+disc_model:
+  train_model: true
+  epochs: 100
+  batch_size: 64
+  patience: 15
+  lr: 0.001
+  validation_source: val
+
+gen_model:
+  train_model: true
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.CCHVAE
+
+  disc_model_criterion:
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+
+  log_prob_quantile: 0.25
+  target_class: null
+  n_test_samples: 2000
+  epochs: 20000
+  batch_size: 4096
+  lr: 0.001
+  num_counterfactuals: 100
+
+  # CCHVAE hyperparameters dictionary
+  hyperparams:
+    data_name: null
+    n_search_samples: 300
+    p_norm: 1
+    step: 0.1
+    max_iter: 2000
+    clamp: false
+    binary_cat_features: true
+    vae_params:
+      # layers: first element will be set to input_size automatically
+      # remaining layers: [64, 32, 16]
+      layers: [64, 32, 16]
+      train: true
+      kl_weight: 0.3
+      lambda_reg: 1e-6
+      epochs: 10
+      lr: 1e-3
+      batch_size: 32

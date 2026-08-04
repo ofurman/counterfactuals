@@ -44,14 +44,14 @@ from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.factual_selection import (
+    resolve_target_labels,
+    select_factual_indices,
+)
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.seeding import set_global_seed
 from counterfactuals.pipelines.utils import apply_categorical_discretization
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from counterfactuals.preprocessing import build_model_space_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -330,25 +330,24 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
     )
 
     target_class = cfg.counterfactuals_params.target_class
-    test_mask = dataset.y_test != target_class
-    if not np.any(test_mask):
+    factual_indices = select_factual_indices(
+        dataset.y_test,
+        target_class=target_class,
+        n_test_samples=cfg.counterfactuals_params.get("n_test_samples", None),
+        seed=cfg.experiment.get("seed", 42),
+    )
+    if factual_indices.size == 0:
         logger.warning("All test samples already belong to the target class.")
         return
-    filtered_X_test = dataset.X_test[test_mask]
-    filtered_y_test = dataset.y_test[test_mask]
-    cf_loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(
-            torch.from_numpy(filtered_X_test).float(),
-            torch.from_numpy(filtered_y_test).float(),
-        ),
-        batch_size=cfg.counterfactuals_params.sampling_batch_size,
-        shuffle=False,
-    )
+    filtered_X_test = dataset.X_test[factual_indices]
+    filtered_y_test = dataset.y_test[factual_indices]
+    # explain() rather than explain_dataloader(), because the latter derives the
+    # target from params.target_class and so cannot express a per-instance flip.
     start_time = time()
-    explanation_result = cf_method.explain_dataloader(
-        cf_loader,
-        epochs=0,
-        lr=0.0,
+    explanation_result = cf_method.explain(
+        X=filtered_X_test,
+        y_origin=filtered_y_test,
+        y_target=resolve_target_labels(filtered_y_test, target_class),
     )
     cf_time = time() - start_time
     explanation_result.x_cfs = np.ascontiguousarray(
@@ -449,10 +448,15 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
                 filtered_X_test.shape[0] - 1,
             )
             factual_point = filtered_X_test[factual_idx]
+            # The contour is drawn for one class, so with per-instance targets we
+            # plot the flip of the factual being shown.
+            contour_target = (
+                int(abs(1 - filtered_y_test[factual_idx])) if target_class is None else target_class
+            )
             visualize_flow_contours(
                 gen_model=gen_model,
                 factual_point=factual_point,
-                target_label=target_class,
+                target_label=contour_target,
                 mask_vector=mask_vector,
                 p_value=params.p_value,
                 class_to_index=class_to_index,
@@ -475,6 +479,15 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
     cf_original_space = dataset.inverse_transform(x_cfs_cleaned)
     pd.DataFrame(cf_original_space).to_csv(cf_path, index=False)
     logger.info("Saved counterfactuals to %s", cf_path)
+
+    # The factuals are written in model space, aligned row-for-row with the CF
+    # blocks, so evaluation never has to reconstruct which rows were explained.
+    factuals_path = os.path.join(
+        save_folder,
+        f"factuals_DiCoFlex_{disc_model_name}.csv",
+    )
+    pd.DataFrame(filtered_X_test).to_csv(factuals_path, index=False)
+    logger.info("Saved factuals to %s", factuals_path)
 
     metrics = evaluate_cf(
         gen_model=metrics_gen_model,
@@ -522,11 +535,8 @@ def main(cfg: DictConfig):
     device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 
     file_dataset = instantiate(cfg.dataset)
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
+    preprocessing_pipeline = build_model_space_pipeline(
+        cfg.experiment.get("model_space_scaler", "minmax")
     )
     dataset = MethodDataset(file_dataset, preprocessing_pipeline)
     run_pipeline(cfg, dataset, device)

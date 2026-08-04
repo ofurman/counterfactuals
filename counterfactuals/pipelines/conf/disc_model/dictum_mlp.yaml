@@ -1,0 +1,6 @@
+# Classifier matching DICTUM's SimpleMLP (src/tabdce/loops/train_classifier.py):
+# two hidden layers of 32 units with dropout 0.2 between them.
+model:
+  _target_: counterfactuals.models.classifier.simple_mlp.SimpleMLPClassifier
+  hidden_layers: [32, 32]
+  dropout: 0.2

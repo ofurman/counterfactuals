@@ -21,14 +21,14 @@ from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.factual_selection import (
+    resolve_target_labels,
+    select_factual_indices,
+)
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.seeding import set_global_seed
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from counterfactuals.preprocessing import build_model_space_pipeline
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -87,10 +87,16 @@ def search_counterfactuals(
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
-    logger.info("Filtering out target class data for counterfactual generation")
+    logger.info("Selecting factual instances for counterfactual generation")
     target_class = cfg.counterfactuals_params.target_class
-    X_test_origin = dataset.X_test[dataset.y_test != target_class]
-    y_test_origin = dataset.y_test[dataset.y_test != target_class]
+    factual_indices = select_factual_indices(
+        dataset.y_test,
+        target_class=target_class,
+        n_test_samples=cfg.counterfactuals_params.get("n_test_samples", None),
+        seed=cfg.experiment.get("seed", 42),
+    )
+    X_test_origin = dataset.X_test[factual_indices]
+    y_test_origin = dataset.y_test[factual_indices]
 
     logger.info("Creating dataset interface")
     custom_dataset = CustomData(dataset)
@@ -122,7 +128,7 @@ def search_counterfactuals(
 
     Xs_cfs_all = np.stack(cfs_list, axis=1)
     Xs_cfs_first = Xs_cfs_all[:, 0, :]
-    y_target = np.abs(1 - y_test_origin)
+    y_target = resolve_target_labels(y_test_origin, target_class)
 
     counterfactuals_path = os.path.join(
         save_folder, f"counterfactuals_{cf_method_name}_{disc_model_name}.csv"
@@ -204,11 +210,8 @@ def calculate_metrics(
 
 
 def run_pipeline(cfg: DictConfig) -> None:
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
+    preprocessing_pipeline = build_model_space_pipeline(
+        cfg.experiment.get("model_space_scaler", "minmax")
     )
     dataset = MethodDataset(instantiate(cfg.dataset), preprocessing_pipeline)
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=0)

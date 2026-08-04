@@ -31,14 +31,14 @@ from counterfactuals.dequantization.dequantizer import GroupDequantizer
 from counterfactuals.dequantization.utils import DequantizationWrapper
 from counterfactuals.metrics.metrics import evaluate_cf
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
+from counterfactuals.pipelines.nodes.factual_selection import (
+    resolve_target_labels,
+    select_factual_indices,
+)
 from counterfactuals.pipelines.nodes.gen_model_nodes import create_gen_model
 from counterfactuals.pipelines.nodes.helper_nodes import set_model_paths
 from counterfactuals.pipelines.nodes.seeding import set_global_seed
-from counterfactuals.preprocessing import (
-    MinMaxScalingStep,
-    PreprocessingPipeline,
-    TorchDataTypeStep,
-)
+from counterfactuals.preprocessing import build_model_space_pipeline
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="dice_ml")
 
@@ -118,10 +118,16 @@ def search_counterfactuals(
     cf_method_name = cfg.counterfactuals_params.cf_method._target_.split(".")[-1]
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
 
-    logger.info("Filtering out target class data for counterfactual generation")
+    logger.info("Selecting factual instances for counterfactual generation")
     target_class = cfg.counterfactuals_params.target_class
-    X_test_origin = dataset.X_test[dataset.y_test != target_class].astype(np.float64)
-    y_test_origin = dataset.y_test[dataset.y_test != target_class].astype(np.float64)
+    factual_indices = select_factual_indices(
+        dataset.y_test,
+        target_class=target_class,
+        n_test_samples=cfg.counterfactuals_params.get("n_test_samples", None),
+        seed=cfg.experiment.get("seed", 42),
+    )
+    X_test_origin = dataset.X_test[factual_indices].astype(np.float64)
+    y_test_origin = dataset.y_test[factual_indices].astype(np.float64)
 
     logger.info("Creating dataset interface")
     X_train, y_train = dataset.X_train, dataset.y_train
@@ -158,7 +164,13 @@ def search_counterfactuals(
 
     actionable_names = getattr(dataset, "actionable_features", None)
     dataset_features = getattr(dataset, "features", None)
-    if actionable_names and dataset_features and len(actionable_names) < len(dataset_features):
+    restrict_to_actionable = cfg.counterfactuals_params.get("restrict_to_actionable", True)
+    if (
+        restrict_to_actionable
+        and actionable_names
+        and dataset_features
+        and len(actionable_names) < len(dataset_features)
+    ):
         actionable_set = set(actionable_names)
         features_to_vary = [
             str(idx) for idx, name in enumerate(dataset_features) if name in actionable_set
@@ -207,7 +219,7 @@ def search_counterfactuals(
     Xs_cfs_first = np.array(Xs_cfs_first_list)
     model_returned_first = np.array(model_returned_first_list)
     Xs_cfs_all = np.stack(Xs_cfs_all_list)  # Shape: (n_instances, cf_per_instance, n_features)
-    ys_target = np.abs(1 - y_test_origin)
+    ys_target = resolve_target_labels(y_test_origin, target_class)
 
     # Save all CFs to file (flatten for CSV)
     pd.DataFrame(Xs_cfs_all.reshape(-1, Xs_cfs_all.shape[-1])).to_csv(
@@ -352,11 +364,8 @@ def main(cfg: DictConfig) -> None:
     set_global_seed(cfg.experiment.get("seed", 42))
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-    preprocessing_pipeline = PreprocessingPipeline(
-        [
-            ("minmax", MinMaxScalingStep()),
-            ("torch_dtype", TorchDataTypeStep()),
-        ]
+    preprocessing_pipeline = build_model_space_pipeline(
+        cfg.experiment.get("model_space_scaler", "minmax")
     )
 
     file_dataset = instantiate(cfg.dataset)

@@ -1,0 +1,72 @@
+# DiCE under the DICTUM-aligned evaluation setup.
+#
+# Differences from dice_traintest_config.yaml, all chosen to match
+# DICTUM/src/tabdce (see docs/dictum_alignment.md for the full comparison):
+#   - z-score model space instead of MinMax
+#   - classifier [32, 32], 100 epochs, batch 64, patience 15
+#   - early stopping on val.csv (or a held-out 20% of train when absent)
+#   - both flip directions in one run (target_class: null)
+#   - 2000 explained test rows, sampled with a seed-local generator
+#   - seeds 42/43/44
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: dictum_mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: results/dictum/
+  relabel_with_disc_model: true
+  seed: 42
+  use_gpu: false
+  model_space_scaler: standard
+
+dataset:
+  _target_: counterfactuals.datasets.TrainTestFileDataset
+  config_path: config/datasets/adult_split.yaml
+  train_data_path: data_train_test_val/adult/train.csv
+  test_data_path: data_train_test_val/adult/test.csv
+  val_data_path: data_train_test_val/adult/val.csv
+
+disc_model:
+  train_model: true
+  epochs: 100
+  batch_size: 64
+  patience: 15
+  lr: 0.001
+  validation_source: val
+
+gen_model:
+  train_model: true
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.DiceExplainerWrapper
+
+  disc_model_criterion:
+    _target_: counterfactuals.losses.MulticlassDiscLoss
+
+  log_prob_quantile: 0.25
+  target_class: null
+  n_test_samples: 2000
+  batch_size: 4096
+  # DICTUM's main table places no actionability restriction on generation, so
+  # the immutable-feature list is left to the constraint experiments.
+  restrict_to_actionable: false
+
+  # DiCE configuration
+  backend: "PYT"
+  method: "random"
+
+  generation_params:
+    total_CFs: 100
+    desired_class: "opposite"
+    posthoc_sparsity_param: null

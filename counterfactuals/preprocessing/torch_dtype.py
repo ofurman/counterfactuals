@@ -23,16 +23,23 @@ class TorchDataTypeStep(PreprocessingStep):
     def transform(self, context: PreprocessingContext) -> PreprocessingContext:
         """Transform data in the context.
 
+        Fields left unset are skipped, so the step also works on the single-array
+        contexts used to transform one split (or new data) on its own.
+
         Args:
             context: Preprocessing context with data to transform.
 
         Returns:
             New context with transformed data.
         """
-        context.X_train = context.X_train.astype(np.float32)
-        context.X_test = context.X_test.astype(np.float32)
-        context.y_train = context.y_train.astype(np.int64)
-        context.y_test = context.y_test.astype(np.int64)
+        if context.X_train is not None:
+            context.X_train = context.X_train.astype(np.float32)
+        if context.X_test is not None:
+            context.X_test = context.X_test.astype(np.float32)
+        if context.y_train is not None:
+            context.y_train = context.y_train.astype(np.int64)
+        if context.y_test is not None:
+            context.y_test = context.y_test.astype(np.int64)
         return context
 
     def inverse_transform(self, context: PreprocessingContext) -> PreprocessingContext:

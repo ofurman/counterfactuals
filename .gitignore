@@ -185,3 +185,9 @@ uv.lock
 # Slurm job logs
 slurm/logs/*
 !slurm/logs/.gitkeep
+
+# Local seed-sweep output
+results/
+
+# Cloned reference repo, not part of this project
+DICTUM/

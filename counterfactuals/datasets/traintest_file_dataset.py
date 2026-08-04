@@ -28,6 +28,7 @@ class TrainTestFileDataset(DatasetBase):
         train_data_path: str,
         test_data_path: str,
         samples_keep: Optional[int] = None,
+        val_data_path: Optional[str] = None,
     ):
         """Initializes the dataset with separate train and test files.
 
@@ -37,10 +38,16 @@ class TrainTestFileDataset(DatasetBase):
             train_data_path: Path to the training data CSV file.
             test_data_path: Path to the test data CSV file.
             samples_keep: Optional limit on number of samples to keep from each file.
+            val_data_path: Optional path to a validation CSV. When given (and the
+                file exists) it is loaded through the same train-fitted transforms
+                and exposed as `X_val`/`y_val` for early stopping. A path that does
+                not exist is treated as absent, so callers can point at a
+                conventional location without checking first.
         """
         super().__init__(config_path=config_path)
         self.train_data_path = train_data_path
         self.test_data_path = test_data_path
+        self.val_data_path = val_data_path
         self.samples_keep = samples_keep if samples_keep is not None else self.config.samples_keep
         self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
             build_initial_transform_pipeline(self.config.initial_transforms)
@@ -51,6 +58,17 @@ class TrainTestFileDataset(DatasetBase):
         test_raw = self._load_csv(self.test_data_path)
 
         train_context, test_context = self._apply_initial_transforms_paired(train_raw, test_raw)
+
+        # The validation split has to be transformed here, while the config still
+        # holds the pre-one-hot feature names that the transforms expect;
+        # `_update_metadata_from_context` below replaces them with the expanded
+        # column names.
+        val_context = None
+        if val_data_path is not None and Path(val_data_path).exists():
+            val_context = self._build_transform_context(self._load_csv(val_data_path))
+            if self.initial_transform_pipeline is not None:
+                val_context = self.initial_transform_pipeline.transform(val_context)
+            val_context = self._align_context_to_train(val_context, train_context)
 
         if self.samples_keep > 0 and len(train_context.data) > self.samples_keep:
             train_context.data = train_context.data.sample(
@@ -68,6 +86,13 @@ class TrainTestFileDataset(DatasetBase):
 
         self.X_train, self.y_train = self._preprocess_split(self.raw_train_data)
         self.X_test, self.y_test = self._preprocess_split(self.raw_test_data)
+
+        self.raw_val_data: Optional[pd.DataFrame] = None
+        self.X_val: Optional[np.ndarray] = None
+        self.y_val: Optional[np.ndarray] = None
+        if val_context is not None:
+            self.raw_val_data = val_context.data
+            self.X_val, self.y_val = self._preprocess_split(self.raw_val_data)
 
         self.X = np.vstack([self.X_train, self.X_test])
         self.y = np.concatenate([self.y_train, self.y_test])
@@ -129,17 +154,30 @@ class TrainTestFileDataset(DatasetBase):
         train_ctx = self.initial_transform_pipeline.fit_transform(train_ctx)
         test_ctx = self.initial_transform_pipeline.transform(test_ctx)
 
+        return train_ctx, self._align_context_to_train(test_ctx, train_ctx)
+
+    def _align_context_to_train(
+        self,
+        context: InitialTransformContext,
+        train_ctx: InitialTransformContext,
+    ) -> InitialTransformContext:
+        """Give a transformed split the train split's exact column set and metadata.
+
+        One-hot columns absent from the split are filled with zeros so every split
+        lands in the same feature space regardless of which categories it happens
+        to contain.
+        """
         train_cols = list(train_ctx.data.columns)
         for col in train_cols:
-            if col not in test_ctx.data.columns:
-                test_ctx.data[col] = 0
-        test_ctx.data = test_ctx.data[train_cols]
-        test_ctx.features = list(train_ctx.features)
-        test_ctx.continuous_features = list(train_ctx.continuous_features)
-        test_ctx.categorical_features = list(train_ctx.categorical_features)
-        test_ctx.feature_config = dict(train_ctx.feature_config)
-        test_ctx.one_hot_feature_groups = dict(train_ctx.one_hot_feature_groups)
-        return train_ctx, test_ctx
+            if col not in context.data.columns:
+                context.data[col] = 0
+        context.data = context.data[train_cols]
+        context.features = list(train_ctx.features)
+        context.continuous_features = list(train_ctx.continuous_features)
+        context.categorical_features = list(train_ctx.categorical_features)
+        context.feature_config = dict(train_ctx.feature_config)
+        context.one_hot_feature_groups = dict(train_ctx.one_hot_feature_groups)
+        return context
 
     def _update_metadata_from_context(self, context: InitialTransformContext) -> None:
         """Update dataset metadata after applying initial transforms."""

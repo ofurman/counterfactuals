@@ -95,6 +95,17 @@ class MethodDataset:
             # y_train and y_test already set above from file_dataset
             # Feature indices remain unchanged from file_dataset
 
+        # An optional validation split, only present for pre-split datasets that
+        # ship a val.csv. It goes through `transform` rather than the fit context
+        # so it never influences the fitted scaler.
+        X_val_raw = getattr(self.file_dataset, "X_val", None)
+        y_val = getattr(self.file_dataset, "y_val", None)
+        self.X_val: Optional[np.ndarray] = None
+        self.y_val: Optional[np.ndarray] = None
+        if X_val_raw is not None and y_val is not None:
+            self.X_val = self.transform(X_val_raw.copy())
+            self.y_val = y_val.copy()
+
     def inverse_transform(self, X: np.ndarray) -> np.ndarray:
         """Apply inverse preprocessing to recover original feature space.
 
@@ -393,6 +404,19 @@ class MethodDataset:
     def test_dataloader(self, batch_size: int, shuffle: bool, **kwargs_dataloader):
         return DataLoader(
             TensorDataset(torch.from_numpy(self.X_test), torch.from_numpy(self.y_test)),
+            batch_size=batch_size,
+            shuffle=shuffle,
+            **kwargs_dataloader,
+        )
+
+    def val_dataloader(
+        self, batch_size: int, shuffle: bool = False, **kwargs_dataloader
+    ) -> Optional[DataLoader]:
+        """Return a loader over the validation split, or None if there is none."""
+        if self.X_val is None or self.y_val is None:
+            return None
+        return DataLoader(
+            TensorDataset(torch.from_numpy(self.X_val), torch.from_numpy(self.y_val)),
             batch_size=batch_size,
             shuffle=shuffle,
             **kwargs_dataloader,

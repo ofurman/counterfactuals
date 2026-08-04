@@ -54,6 +54,69 @@ def isntantiate_disc_model(cfg: DictConfig, dataset: DictConfig) -> torch.nn.Mod
     return disc_model
 
 
+def build_early_stopping_loaders(
+    dataset: DictConfig,
+    batch_size: int,
+    validation_source: str,
+    seed: int,
+) -> tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
+    """Build the (train, early-stopping) loader pair for discriminator training.
+
+    Args:
+        dataset: Dataset instance exposing train/test/val loaders.
+        batch_size: Batch size for both loaders.
+        validation_source: Which split early stopping selects on.
+            "test" keeps the historical behaviour of monitoring the test split.
+            "val" uses the dataset's validation split, falling back to a held-out
+            80/20 slice of train when the dataset ships no val.csv.
+        seed: Seed for the 80/20 fallback split, so the held-out rows are
+            reproducible and vary with the experiment seed.
+
+    Returns:
+        Tuple of (train_dataloader, early_stopping_dataloader).
+
+    Raises:
+        ValueError: If validation_source is not "test" or "val".
+    """
+    if validation_source == "test":
+        return (
+            dataset.train_dataloader(batch_size=batch_size, shuffle=True, noise_lvl=0),
+            dataset.test_dataloader(batch_size=batch_size, shuffle=False),
+        )
+    if validation_source != "val":
+        raise ValueError(
+            f"Unknown validation_source '{validation_source}', expected 'test' or 'val'"
+        )
+
+    val_dataloader = dataset.val_dataloader(batch_size=batch_size, shuffle=False)
+    if val_dataloader is not None:
+        logger.info("Early stopping on the dataset's validation split")
+        return (
+            dataset.train_dataloader(batch_size=batch_size, shuffle=True, noise_lvl=0),
+            val_dataloader,
+        )
+
+    logger.info("No validation split available; holding out 20%% of train for early stopping")
+    n_train = len(dataset.X_train)
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(n_train)
+    n_holdout = max(1, int(round(0.2 * n_train)))
+    holdout_idx, fit_idx = perm[:n_holdout], perm[n_holdout:]
+
+    X_fit = torch.from_numpy(dataset.X_train[fit_idx])
+    y_fit = torch.from_numpy(dataset.y_train[fit_idx])
+    X_holdout = torch.from_numpy(dataset.X_train[holdout_idx])
+    y_holdout = torch.from_numpy(dataset.y_train[holdout_idx])
+
+    train_dataloader = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(X_fit, y_fit), batch_size=batch_size, shuffle=True
+    )
+    holdout_dataloader = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(X_holdout, y_holdout), batch_size=batch_size, shuffle=False
+    )
+    return train_dataloader, holdout_dataloader
+
+
 def train_disc_model(
     disc_model: torch.nn.Module,
     dataset: DictConfig,
@@ -76,13 +139,15 @@ def train_disc_model(
         torch.nn.Module: Trained discriminative model
     """
     logger.info("Training discriminator model")
-    train_dataloader = dataset.train_dataloader(
-        batch_size=cfg.disc_model.batch_size, shuffle=True, noise_lvl=0
+    train_dataloader, early_stopping_dataloader = build_early_stopping_loaders(
+        dataset,
+        batch_size=cfg.disc_model.batch_size,
+        validation_source=cfg.disc_model.get("validation_source", "test"),
+        seed=cfg.experiment.get("seed", 42),
     )
-    test_dataloader = dataset.test_dataloader(batch_size=cfg.disc_model.batch_size, shuffle=False)
     disc_model.fit(
         train_dataloader,
-        test_dataloader,
+        early_stopping_dataloader,
         epochs=cfg.disc_model.epochs,
         lr=cfg.disc_model.lr,
         patience=cfg.disc_model.patience,
