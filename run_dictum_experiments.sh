@@ -37,6 +37,9 @@ TAG=dictum
 N_TEST_SAMPLES=2000
 DRY_RUN=0
 JOBS=1
+# Extra hydra overrides appended to every command, classifier pretrain included.
+# run_dictum_smoke.sh uses this to shrink epochs; leave empty for real runs.
+EXTRA_OVERRIDES=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -47,6 +50,7 @@ while [[ $# -gt 0 ]]; do
     --n-test-samples) N_TEST_SAMPLES="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
+    --override) EXTRA_OVERRIDES+=("$2"); shift 2 ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -109,6 +113,7 @@ for dataset in "${DATASETS[@]}"; do
       "dataset.val_data_path=data_train_test_val/${dataset}/val.csv"
       "hydra.run.dir=$OUT_ROOT/hydra/${CFG_STEM}_disc"
     )
+    if [[ ${#EXTRA_OVERRIDES[@]} -gt 0 ]]; then PRE_CMD+=("${EXTRA_OVERRIDES[@]}"); fi
 
     if [[ "$DRY_RUN" -eq 1 ]]; then
       printf 'disc %s/seed%s\n      %s\n' "$dataset" "$seed" "${PRE_CMD[*]}"
@@ -154,6 +159,7 @@ for method in "${METHODS[@]}"; do
         "++counterfactuals_params.n_test_samples=$N_TEST_SAMPLES"
         "hydra.run.dir=$OUT_ROOT/hydra/${CFG_STEM}_${method}"
       )
+      if [[ ${#EXTRA_OVERRIDES[@]} -gt 0 ]]; then CMD+=("${EXTRA_OVERRIDES[@]}"); fi
 
       if [[ "$DRY_RUN" -eq 1 ]]; then
         printf '[%d/%d] %s\n      %s\n' "$n" "$total" "$label" "${CMD[*]}"

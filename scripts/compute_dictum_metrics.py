@@ -352,7 +352,7 @@ DATASET_DISPLAY = {
 }
 
 
-def render_markdown(table: pd.DataFrame, datasets: list[str]) -> str:
+def render_markdown(table: pd.DataFrame, datasets: list[str], methods: list[tuple]) -> str:
     """Render the aggregated table as pipe-separated markdown, one block per dataset."""
     headers = ["Method"] + [key for key, _, _ in METRIC_COLUMNS] + ["seeds"]
     blocks: list[str] = []
@@ -366,7 +366,7 @@ def render_markdown(table: pd.DataFrame, datasets: list[str]) -> str:
             "| " + " | ".join(headers) + " |",
             "|" + "|".join(["---"] * len(headers)) + "|",
         ]
-        for pretty, *_ in METHODS:
+        for pretty, *_ in methods:
             row = rows[rows["method"] == pretty]
             if row.empty:
                 continue
@@ -382,7 +382,7 @@ def render_markdown(table: pd.DataFrame, datasets: list[str]) -> str:
     return "\n\n".join(blocks) + "\n"
 
 
-def render_latex(table: pd.DataFrame, datasets: list[str]) -> str:
+def render_latex(table: pd.DataFrame, datasets: list[str], methods: list[tuple]) -> str:
     """Render the aggregated table as a LaTeX table with mean ± std cells."""
     lines = [
         "\\begin{table}[H]",
@@ -405,7 +405,7 @@ def render_latex(table: pd.DataFrame, datasets: list[str]) -> str:
             f"\\multicolumn{{{len(METRIC_COLUMNS) + 1}}}{{c}}{{\\textit{{{display}}}}} \\\\"
         )
         lines.append("\\midrule")
-        for pretty, *_ in METHODS:
+        for pretty, *_ in methods:
             row = rows[rows["method"] == pretty]
             if row.empty:
                 lines.append(f"{pretty} & " + " & ".join(["--"] * len(METRIC_COLUMNS)) + " \\\\")
@@ -446,6 +446,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--cf-per-instance", type=int, default=100)
     parser.add_argument("--keep-per-factual", type=int, default=KEEP_PER_FACTUAL)
     parser.add_argument(
+        "--methods",
+        nargs="+",
+        choices=[pretty for pretty, *_ in METHODS],
+        help="Restrict scoring to these methods; defaults to all of them.",
+    )
+    parser.add_argument(
         "--output",
         default="results/dictum/dictum_metrics",
         help="Output path prefix; .csv, .md and .tex are written alongside each other.",
@@ -461,6 +467,9 @@ def main() -> None:
     results_root = Path(args.results_root)
     configs_root = Path(args.configs_root)
     data_root = Path(args.data_root)
+    selected_methods = (
+        [m for m in METHODS if m[0] in set(args.methods)] if args.methods else METHODS
+    )
 
     records: list[dict] = []
     for dataset_key in args.datasets:
@@ -483,7 +492,7 @@ def main() -> None:
                 logger.warning("Cannot build bundle for %s seed %d: %s", dataset_key, seed, exc)
                 continue
 
-            for pretty, method_dir, csv_suffix, raw_space in METHODS:
+            for pretty, method_dir, csv_suffix, raw_space in selected_methods:
                 res = evaluate_method(
                     bundle,
                     method_dir,
@@ -533,8 +542,8 @@ def main() -> None:
             json.dumps(thin[["dataset", "method", f"{METRIC_KEYS[0]}_count"]].to_dict("records")),
         )
 
-    output.with_suffix(".tex").write_text(render_latex(agg, args.datasets))
-    output.with_suffix(".md").write_text(render_markdown(agg, args.datasets))
+    output.with_suffix(".tex").write_text(render_latex(agg, args.datasets, selected_methods))
+    output.with_suffix(".md").write_text(render_markdown(agg, args.datasets, selected_methods))
     logger.info("Wrote %s.{csv,per_seed.csv,md,tex}", output)
 
 

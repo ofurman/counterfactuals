@@ -60,6 +60,28 @@ Because these definitions disagree, numbers produced by
 `scripts/compute_actionability_metrics.py` and by
 `scripts/compute_dictum_metrics.py` must never be mixed in one table.
 
+## Checking the setup first
+
+`./run_dictum_smoke.sh` runs the single cheapest cell — DiCE on lending-club at
+seed 42 — and scores it, which exercises the whole path (shared classifier, both
+flip directions, CSV layout, scorer) before the full sweep is worth starting.
+
+```bash
+./run_dictum_smoke.sh            # full fidelity, real numbers, ~2.5 min
+./run_dictum_smoke.sh --quick    # shrunken epochs, plumbing check only, ~20 s
+./run_dictum_smoke.sh --method cchvae --dataset bank --seed 43
+./run_dictum_smoke.sh --keep     # leave results/<tag> in place
+```
+
+lending-club is the cheapest dataset (31 one-hot columns against 42-91 for the
+others) and DiCE the cheapest method: it generates in one batched call, while
+CCHVAE loops its sampler 100 times per factual and DiCoFlex trains a flow.
+Measured on an M-series laptop, the full-fidelity cell takes about 150 s, of
+which roughly 47 s is the MAF, 5 s the classifier, and the rest CF search.
+
+Numbers from `--quick` are not meaningful — it trains for a handful of epochs
+and exists only to answer "does this run".
+
 ## Running the aligned experiments
 
 ```bash
@@ -71,6 +93,9 @@ Because these definitions disagree, numbers produced by
 
 # a single cell
 ./run_dictum_experiments.sh --methods dice --datasets adult --seeds 42
+
+# extra hydra overrides, applied to the classifier pretrain too
+./run_dictum_experiments.sh --override gen_model.epochs=500
 ```
 
 The runner first trains one classifier per (dataset, seed) via
