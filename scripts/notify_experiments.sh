@@ -12,6 +12,10 @@
 #   # also stop when a specific sweep process exits
 #   NTFY_TOPIC=... ./scripts/notify_experiments.sh --tag dictum --pid 48469 &
 #
+#   # email, reading SMTP settings from a file kept out of shell history
+#   set -a; . ~/.config/cf-notify.env; set +a
+#   ./scripts/notify_experiments.sh --tag dictum --final-only &
+#
 #   # post to a Slack/Discord-style incoming webhook instead
 #   NOTIFY_WEBHOOK=https://hooks.slack.com/services/... ./scripts/notify_experiments.sh &
 #
@@ -24,6 +28,8 @@
 #   ... ./scripts/notify_experiments.sh --tag dictum > notify.log 2>&1 &
 #
 #   NTFY_TOPIC       topic on ntfy.sh (or NTFY_SERVER for a self-hosted one)
+#   NOTIFY_EMAIL_TO  recipient address; see scripts/send_email_notification.py
+#                    for the SMTP_* settings it needs alongside this
 #   NOTIFY_WEBHOOK   URL receiving {"text": "..."} as JSON
 #   NOTIFY_LOCAL=1   macOS desktop notification on the machine running this
 #
@@ -34,6 +40,11 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+
+# A non-interactive shell does not source the login profile, so resolve uv
+# explicitly; the email backend runs through it.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+UV="$(command -v uv || echo uv)"
 
 TAG=dictum
 WATCH_PID=""
@@ -73,6 +84,11 @@ notify() {
       || echo "  (webhook delivery failed)" >&2
   fi
 
+  if [[ -n "${NOTIFY_EMAIL_TO:-}" ]]; then
+    "$UV" run python -m scripts.send_email_notification "$title" "$body" > /dev/null \
+      || echo "  (email delivery failed)" >&2
+  fi
+
   if [[ "${NOTIFY_LOCAL:-0}" == "1" ]] && command -v osascript > /dev/null; then
     osascript -e "display notification \"$body\" with title \"$title\"" 2> /dev/null || true
   fi
@@ -101,7 +117,8 @@ already=$(echo "$seen" | wc -w | tr -d ' ')
 echo "watching:  $LOGS"
 echo "interval:  ${INTERVAL}s"
 echo "pid:       ${WATCH_PID:-any run_dictum_experiments.sh}"
-echo "backends:  ntfy=${NTFY_TOPIC:+yes} webhook=${NOTIFY_WEBHOOK:+yes} local=${NOTIFY_LOCAL:-0}"
+echo "backends:  ntfy=${NTFY_TOPIC:+yes} email=${NOTIFY_EMAIL_TO:+yes}" \
+     "webhook=${NOTIFY_WEBHOOK:+yes} local=${NOTIFY_LOCAL:-0}"
 echo "already finished at start: $already cell(s), not re-announced"
 echo
 

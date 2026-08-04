@@ -121,17 +121,49 @@ one, plus a summary when the sweep process exits. It can be started at any
 time, including after the sweep is already running; cells that finished
 beforehand are recorded but not re-announced.
 
+### Email
+
+Put the SMTP settings in a file rather than on the command line, so the
+password stays out of shell history and out of `ps`:
+
 ```bash
-# to your phone via ntfy.sh, no account needed
+cat > ~/.config/cf-notify.env <<'EOF'
+NOTIFY_EMAIL_TO=you@gmail.com
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-16-char-app-password
+EOF
+chmod 600 ~/.config/cf-notify.env
+
+set -a; . ~/.config/cf-notify.env; set +a
+./scripts/notify_experiments.sh --tag dictum --final-only > notify.log 2>&1 &
+```
+
+Defaults target Gmail (`smtp.gmail.com:465`, implicit TLS). Gmail requires an
+**App Password**, which in turn requires 2-Step Verification on the account — a
+normal account password is rejected. Other providers work through `SMTP_HOST`,
+`SMTP_PORT` and `SMTP_SSL=0` for STARTTLS.
+
+`--final-only` is the sensible default for email: failures still arrive
+immediately, but the 45 successful cells collapse into one closing summary
+instead of 45 messages.
+
+Send one by hand to check the settings before relying on it:
+
+```bash
+set -a; . ~/.config/cf-notify.env; set +a
+uv run python -m scripts.send_email_notification "test" "from the sweep host"
+```
+
+### Other backends
+
+```bash
+# phone push via ntfy.sh, no account needed
 NTFY_TOPIC=some-long-unguessable-name \
   ./scripts/notify_experiments.sh --tag dictum > notify.log 2>&1 &
 
-# to a Slack-style incoming webhook
+# Slack-style incoming webhook
 NOTIFY_WEBHOOK=https://hooks.slack.com/services/... \
   ./scripts/notify_experiments.sh --tag dictum > notify.log 2>&1 &
-
-# only the end-of-sweep summary
-./scripts/notify_experiments.sh --tag dictum --final-only > notify.log 2>&1 &
 ```
 
 Backends are independent and all optional; each enabled one receives every
