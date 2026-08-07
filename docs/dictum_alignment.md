@@ -173,6 +173,49 @@ An ntfy.sh topic is a **public channel** — anyone who knows or guesses the nam
 can read it. Use a long random topic name, keep sensitive detail out of run
 labels, or point `NTFY_SERVER` at your own instance.
 
+## Generation space vs metric space
+
+Generating and measuring do not have to happen in the same representation, and
+for this comparison they should not.
+
+The methods here were built for a bounded min-max, one-hot model space. Forcing
+them to generate in DICTUM's z-scored space destabilises DiCoFlex's normalising
+flow: heavy-tailed continuous features reach |z| of 70-78 on lending-club, gmc
+and default while the one-hot columns stay at 0/1, and the flow diverges to NaN.
+
+Both scalers are per-feature affine maps and both encodings carry the same
+information, so a counterfactual can be moved between the two spaces exactly.
+The scorer therefore takes them separately:
+
+```bash
+uv run python -m scripts.compute_dictum_metrics \
+    --results-root results/dictum-mm \
+    --generation-scaler minmax \
+    --scaler standard \
+    --metric-encoding ordinal \
+    --seeds 42 43 44 --raw-seed 42 \
+    --output results/dictum-mm/dictum_metrics
+```
+
+That generates in min-max + one-hot — where the methods are stable and where
+their classifier was trained — then inverts to original units, applies standard
+scaling, and collapses each one-hot block to an ordinal code before any metric
+runs. The result is DICTUM's model space: z-scored numerics beside integer
+categorical codes.
+
+Which metrics this actually moves:
+
+| Metric | Effect of the conversion |
+|---|---|
+| `prox_cont` | changes with the **scaler** (z-scored rather than min-max units) |
+| `epsilon_spars` | unaffected — always computed in original units |
+| `spars_cat` | unaffected — already one code per categorical feature |
+| `div` | unaffected by encoding; the continuous term follows the scaler |
+| `lof` | changes with **both** — neighbour distances move from 62 one-hot columns to 8 ordinal ones on Adult |
+
+Validity is always evaluated in the generation space, since that is the space
+the classifier under explanation was trained in.
+
 ## Scoring
 
 ```bash
