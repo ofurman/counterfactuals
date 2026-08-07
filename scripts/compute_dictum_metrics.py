@@ -46,6 +46,7 @@ from sklearn.neighbors import LocalOutlierFactor
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.datasets.traintest_file_dataset import TrainTestFileDataset
 from counterfactuals.models.classifier.simple_mlp import SimpleMLPClassifier
+from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import build_model_space_pipeline
 
 logger = logging.getLogger(__name__)
@@ -329,6 +330,7 @@ def evaluate_method(
     seed_root: Path,
     cf_per_instance: int,
     keep_per_factual: int,
+    discretize: bool = False,
 ) -> Optional[dict[str, float]]:
     """Score one method's saved counterfactuals for one dataset and seed."""
     fold_dir = seed_root / bundle.dataset_dir_name / method_dir / "fold_0"
@@ -365,6 +367,24 @@ def evaluate_method(
     else:
         cf_gen = cf_raw
         cf_original = bundle.gen_dataset.inverse_transform(cf_raw.copy())
+
+    # DiCE and CCHVAE treat each one-hot column as an independent binary
+    # variable, so they emit blocks with several categories set at once, or
+    # none. Snapping happens in the generation space and before the classifier
+    # runs, so validity is judged on the counterfactual actually being reported.
+    n_discretized = 0
+    if discretize and bundle.cat_groups:
+        cf_snapped = apply_categorical_discretization(bundle.cat_groups, cf_gen.copy())
+        n_discretized = int(np.any(cf_snapped != cf_gen, axis=1).sum())
+        if n_discretized:
+            logger.info(
+                "%s: snapped %d of %d counterfactual rows onto valid one-hot blocks",
+                method_dir,
+                n_discretized,
+                len(cf_gen),
+            )
+        cf_gen = cf_snapped.astype(np.float32)
+        cf_original = bundle.gen_dataset.inverse_transform(cf_gen.copy())
 
     cf_model = bundle.to_metric_space(
         cf_gen if bundle.same_space else bundle.dataset.transform(cf_original.copy())
@@ -452,6 +472,7 @@ def evaluate_method(
         "n_factuals": float(n_factuals),
         "n_scored_factuals": float(len(prox_vals)),
         "n_nonfinite_cfs": float(n_nonfinite),
+        "n_discretized_cfs": float(n_discretized),
     }
 
 
@@ -667,6 +688,16 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--cf-per-instance", type=int, default=100)
     parser.add_argument("--keep-per-factual", type=int, default=KEEP_PER_FACTUAL)
     parser.add_argument(
+        "--discretize-categoricals",
+        action="store_true",
+        help=(
+            "Snap each one-hot block to a single category before scoring, and "
+            "before the validity check. DiCE and CCHVAE vary one-hot columns "
+            "independently and so emit invalid blocks; without this their "
+            "metrics and validity describe points that are not valid rows."
+        ),
+    )
+    parser.add_argument(
         "--raw-seed",
         type=int,
         default=None,
@@ -733,6 +764,7 @@ def main() -> None:
                     seed_root,
                     args.cf_per_instance,
                     args.keep_per_factual,
+                    args.discretize_categoricals,
                 )
                 if res is None:
                     continue
