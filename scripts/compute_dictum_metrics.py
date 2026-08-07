@@ -352,6 +352,71 @@ DATASET_DISPLAY = {
 }
 
 
+def render_raw_markdown(
+    per_seed: pd.DataFrame, datasets: list[str], methods: list[tuple], seed: int
+) -> str:
+    """Render one seed's values as markdown, without any averaging.
+
+    A method with no row for this seed prints as `--` rather than being dropped,
+    so a cell that failed to run stays visible in the table.
+    """
+    headers = ["Method"] + [key for key, _, _ in METRIC_COLUMNS]
+    rows_for_seed = per_seed[per_seed["seed"] == seed]
+    blocks: list[str] = []
+    for dataset_key in datasets:
+        rows = rows_for_seed[rows_for_seed["dataset"] == dataset_key]
+        lines = [
+            f"### {DATASET_DISPLAY.get(dataset_key, dataset_key)}",
+            "",
+            "| " + " | ".join(headers) + " |",
+            "|" + "|".join(["---"] * len(headers)) + "|",
+        ]
+        for pretty, *_ in methods:
+            row = rows[rows["method"] == pretty]
+            if row.empty:
+                cells = ["--"] * len(METRIC_COLUMNS)
+            else:
+                cells = [f"{row.iloc[0][key]:.3f}" for key, _, _ in METRIC_COLUMNS]
+            lines.append("| " + " | ".join([pretty, *cells]) + " |")
+        blocks.append("\n".join(lines))
+    return f"# Raw results, seed {seed}\n\n" + "\n\n".join(blocks) + "\n"
+
+
+def render_raw_latex(
+    per_seed: pd.DataFrame, datasets: list[str], methods: list[tuple], seed: int
+) -> str:
+    """Render one seed's values as a LaTeX table, without any averaging."""
+    rows_for_seed = per_seed[per_seed["seed"] == seed]
+    lines = [
+        "\\begin{table}[H]",
+        f"\\caption{{DICTUM-aligned results, seed {seed} (single run, no averaging).}}",
+        f"\\label{{tab:dictum_aligned_seed{seed}}}",
+        "\\centering",
+        "\\setlength{\\tabcolsep}{3pt}",
+        f"\\begin{{tabular}}{{l{'c' * len(METRIC_COLUMNS)}}}",
+        "\\toprule",
+        " & ".join(["\\textbf{Method}"] + [f"\\textbf{{{h}}}" for _, h, _ in METRIC_COLUMNS])
+        + " \\\\",
+        "\\midrule",
+    ]
+    for dataset_key in datasets:
+        rows = rows_for_seed[rows_for_seed["dataset"] == dataset_key]
+        display = DATASET_DISPLAY.get(dataset_key, dataset_key)
+        lines.append(
+            f"\\multicolumn{{{len(METRIC_COLUMNS) + 1}}}{{c}}{{\\textit{{{display}}}}} \\\\"
+        )
+        lines.append("\\midrule")
+        for pretty, *_ in methods:
+            row = rows[rows["method"] == pretty]
+            if row.empty:
+                cells = ["--"] * len(METRIC_COLUMNS)
+            else:
+                cells = [f"{row.iloc[0][key]:.2f}" for key, _, _ in METRIC_COLUMNS]
+            lines.append(f"{pretty} & " + " & ".join(cells) + " \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}", "\\end{table}"]
+    return "\n".join(lines)
+
+
 def render_markdown(table: pd.DataFrame, datasets: list[str], methods: list[tuple]) -> str:
     """Render the aggregated table as pipe-separated markdown, one block per dataset."""
     headers = ["Method"] + [key for key, _, _ in METRIC_COLUMNS] + ["seeds"]
@@ -369,6 +434,9 @@ def render_markdown(table: pd.DataFrame, datasets: list[str], methods: list[tupl
         for pretty, *_ in methods:
             row = rows[rows["method"] == pretty]
             if row.empty:
+                lines.append(
+                    "| " + " | ".join([pretty, *(["--"] * len(METRIC_COLUMNS)), "0"]) + " |"
+                )
                 continue
             row = row.iloc[0]
             cells = [
@@ -379,7 +447,7 @@ def render_markdown(table: pd.DataFrame, datasets: list[str], methods: list[tupl
                 "| " + " | ".join([pretty, *cells, str(int(row[f"{METRIC_KEYS[0]}_count"]))]) + " |"
             )
         blocks.append("\n".join(lines))
-    return "\n\n".join(blocks) + "\n"
+    return "# Combined results, mean ± std across seeds\n\n" + "\n\n".join(blocks) + "\n"
 
 
 def render_latex(table: pd.DataFrame, datasets: list[str], methods: list[tuple]) -> str:
@@ -445,6 +513,15 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--cf-per-instance", type=int, default=100)
     parser.add_argument("--keep-per-factual", type=int, default=KEEP_PER_FACTUAL)
+    parser.add_argument(
+        "--raw-seed",
+        type=int,
+        default=None,
+        help=(
+            "Also write an un-averaged table for this single seed, as "
+            "<output>.seed<N>.{md,tex}. Defaults to the first --seeds entry."
+        ),
+    )
     parser.add_argument(
         "--methods",
         nargs="+",
@@ -545,6 +622,16 @@ def main() -> None:
     output.with_suffix(".tex").write_text(render_latex(agg, args.datasets, selected_methods))
     output.with_suffix(".md").write_text(render_markdown(agg, args.datasets, selected_methods))
     logger.info("Wrote %s.{csv,per_seed.csv,md,tex}", output)
+
+    raw_seed = args.raw_seed if args.raw_seed is not None else args.seeds[0]
+    if raw_seed in set(per_seed["seed"]):
+        raw_md = output.with_suffix(f".seed{raw_seed}.md")
+        raw_tex = output.with_suffix(f".seed{raw_seed}.tex")
+        raw_md.write_text(render_raw_markdown(per_seed, args.datasets, selected_methods, raw_seed))
+        raw_tex.write_text(render_raw_latex(per_seed, args.datasets, selected_methods, raw_seed))
+        logger.info("Wrote %s and %s", raw_md, raw_tex)
+    else:
+        logger.warning("No results for raw seed %s; skipping the single-seed table", raw_seed)
 
 
 if __name__ == "__main__":
