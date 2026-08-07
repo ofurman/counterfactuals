@@ -33,7 +33,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -113,13 +113,31 @@ def lof_log_median(lof: LocalOutlierFactor, x_cf: np.ndarray) -> float:
     return float(np.median(np.log(-lof.score_samples(x_cf) + 1e-8)))
 
 
+def categorical_codes(X: np.ndarray, cat_groups: list[list[int]]) -> np.ndarray:
+    """Reduce each categorical feature to one integer code per row.
+
+    Handles both representations: a multi-column group is a one-hot block and
+    collapses by argmax, while a single-column group already holds the code.
+
+    Args:
+        X: Rows in model space.
+        cat_groups: Column indices belonging to each categorical feature.
+
+    Returns:
+        Array of shape (len(X), len(cat_groups)) of integer codes.
+    """
+    codes = np.zeros((len(X), len(cat_groups)), dtype=int)
+    for j, group in enumerate(cat_groups):
+        codes[:, j] = X[:, group[0]].astype(int) if len(group) == 1 else np.argmax(X[:, group], 1)
+    return codes
+
+
 def diversity_mixed(x_cf: np.ndarray, num_idx: list[int], cat_groups: list[list[int]]) -> float:
     """Mean pairwise mixed distance within one factual's counterfactual set.
 
     Continuous features contribute cityblock distance; categorical features are
-    collapsed to one code per one-hot group and contribute Hamming distance
-    scaled back to a count of differing groups. Sets smaller than two pairs
-    score zero.
+    reduced to one code each and contribute Hamming distance scaled back to a
+    count of differing features. Sets smaller than two pairs score zero.
     """
     n_features = len(num_idx) + len(cat_groups)
     if n_features == 0 or len(x_cf) < 2:
@@ -129,14 +147,32 @@ def diversity_mixed(x_cf: np.ndarray, num_idx: list[int], cat_groups: list[list[
     d_cont = pdist(x_cf[:, num_idx], metric="cityblock") if num_idx else np.zeros(n_pairs)
 
     if cat_groups:
-        codes = np.zeros((len(x_cf), len(cat_groups)), dtype=int)
-        for j, group in enumerate(cat_groups):
-            codes[:, j] = np.argmax(x_cf[:, group], axis=1)
-        d_cat = pdist(codes, metric="hamming") * len(cat_groups)
+        d_cat = pdist(categorical_codes(x_cf, cat_groups), metric="hamming") * len(cat_groups)
     else:
         d_cat = np.zeros(n_pairs)
 
     return float(np.mean((d_cont + d_cat) / n_features))
+
+
+def to_ordinal_space(X: np.ndarray, num_idx: list[int], cat_groups: list[list[int]]) -> np.ndarray:
+    """Rewrite a one-hot model matrix into DICTUM's ordinal model space.
+
+    The result is `[numerics | one integer code per categorical feature]`, which
+    is the representation DICTUM's metrics — LOF in particular — operate on.
+
+    Args:
+        X: Rows in the one-hot model space.
+        num_idx: Column indices of the continuous features.
+        cat_groups: One-hot column indices per categorical feature.
+
+    Returns:
+        Array of shape (len(X), len(num_idx) + len(cat_groups)).
+    """
+    numeric_block = X[:, num_idx] if num_idx else np.zeros((len(X), 0), dtype=X.dtype)
+    if not cat_groups:
+        return numeric_block.astype(np.float32)
+    codes = categorical_codes(X, cat_groups).astype(np.float32)
+    return np.hstack([numeric_block.astype(np.float32), codes])
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +200,17 @@ class DatasetBundle:
     cat_groups: list[list[int]]
     num_ranges: np.ndarray
     dataset_dir_name: str
+    # Applied to metric-space rows before any metric reads them. Identity for
+    # one-hot metrics, or the collapse to ordinal codes for DICTUM parity.
+    metric_encoding: str = "onehot"
+    metric_num_idx: list[int] = field(default_factory=list)
+    metric_cat_groups: list[list[int]] = field(default_factory=list)
+
+    def to_metric_space(self, X: np.ndarray) -> np.ndarray:
+        """Project one-hot model-space rows into the space metrics are read in."""
+        if self.metric_encoding == "onehot":
+            return X
+        return to_ordinal_space(X, self.num_idx, self.cat_groups)
 
 
 def config_stem(dataset_key: str) -> str:
@@ -179,6 +226,7 @@ def build_bundle(
     scaler: str,
     hidden_layers: list[int],
     gen_scaler: Optional[str] = None,
+    metric_encoding: str = "onehot",
 ) -> DatasetBundle:
     """Rebuild the dataset and classifier exactly as the run saw them.
 
@@ -186,6 +234,9 @@ def build_bundle(
         scaler: Model space the metrics are reported in.
         gen_scaler: Model space the run generated in, and trained its classifier
             in. Defaults to `scaler`, i.e. generated and measured in one space.
+        metric_encoding: "onehot" keeps the repository's representation for the
+            metrics; "ordinal" collapses each one-hot block to a single code,
+            matching the space DICTUM computes its metrics in.
     """
     cfg_stem = config_stem(dataset_key)
     val_path = data_root / dataset_key / "val.csv"
@@ -228,8 +279,20 @@ def build_bundle(
     disc_model.load(str(disc_path))
     disc_model.eval()
 
+    # In the ordinal metric space the columns are re-laid out as
+    # [numerics | one code per categorical], so the metric indices differ from
+    # the one-hot ones the model space uses.
+    if metric_encoding == "ordinal":
+        metric_num_idx = list(range(len(num_idx)))
+        metric_cat_groups = [[len(num_idx) + j] for j in range(len(cat_groups))]
+        lof_train = to_ordinal_space(X_train, num_idx, cat_groups)
+    else:
+        metric_num_idx = num_idx
+        metric_cat_groups = cat_groups
+        lof_train = X_train
+
     lof = LocalOutlierFactor(n_neighbors=LOF_N_NEIGHBORS, novelty=True)
-    lof.fit(X_train)
+    lof.fit(lof_train)
 
     return DatasetBundle(
         dataset=dataset,
@@ -241,6 +304,9 @@ def build_bundle(
         cat_groups=cat_groups,
         num_ranges=num_ranges,
         dataset_dir_name=cfg_stem,
+        metric_encoding=metric_encoding,
+        metric_num_idx=metric_num_idx,
+        metric_cat_groups=metric_cat_groups,
     )
 
 
@@ -300,11 +366,9 @@ def evaluate_method(
         cf_gen = cf_raw
         cf_original = bundle.gen_dataset.inverse_transform(cf_raw.copy())
 
-    cf_model = (
-        cf_gen
-        if bundle.same_space
-        else bundle.dataset.transform(cf_original.copy()).astype(np.float32)
-    )
+    cf_model = bundle.to_metric_space(
+        cf_gen if bundle.same_space else bundle.dataset.transform(cf_original.copy())
+    ).astype(np.float32)
 
     n_factuals = len(factuals)
     expected = n_factuals * cf_per_instance
@@ -322,11 +386,9 @@ def evaluate_method(
     # reads; the metrics need them alongside the counterfactuals in the metric
     # space, so they are converted through original units the same way.
     factuals_original = bundle.gen_dataset.inverse_transform(factuals.copy())
-    factuals_model = (
-        factuals
-        if bundle.same_space
-        else bundle.dataset.transform(factuals_original.copy()).astype(np.float32)
-    )
+    factuals_model = bundle.to_metric_space(
+        factuals if bundle.same_space else bundle.dataset.transform(factuals_original.copy())
+    ).astype(np.float32)
 
     # The target is the flip of the classifier's own call on each factual, which
     # is what the aligned runs generate towards in both directions.
@@ -368,13 +430,13 @@ def evaluate_method(
         origs = np.tile(factuals_model[i], (len(cfs), 1))
         origs_original = np.tile(factuals_original[i], (len(cfs), 1))
 
-        prox_vals.append(proximity_continuous(origs, cfs, bundle.num_idx))
-        spars_cat_vals.append(sparsity_categorical(origs, cfs, bundle.cat_groups))
+        prox_vals.append(proximity_continuous(origs, cfs, bundle.metric_num_idx))
+        spars_cat_vals.append(sparsity_categorical(origs, cfs, bundle.metric_cat_groups))
         eps_spars_vals.append(
             epsilon_sparsity(origs_original, cfs_original, bundle.num_idx, bundle.num_ranges)
         )
         lof_vals.append(lof_log_median(bundle.lof, cfs))
-        div_vals.append(diversity_mixed(cfs, bundle.num_idx, bundle.cat_groups))
+        div_vals.append(diversity_mixed(cfs, bundle.metric_num_idx, bundle.metric_cat_groups))
 
     def _mean(values: list[float]) -> float:
         return float(np.mean(values)) if values else float("nan")
@@ -585,6 +647,17 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--metric-encoding",
+        choices=("onehot", "ordinal"),
+        default="onehot",
+        help=(
+            "Categorical representation the metrics are computed in. 'ordinal' "
+            "collapses each one-hot block to a single integer code, which is the "
+            "space DICTUM measures in and changes LOF materially; 'onehot' keeps "
+            "this repository's representation."
+        ),
+    )
+    parser.add_argument(
         "--hidden-layers",
         nargs="+",
         type=int,
@@ -645,6 +718,7 @@ def main() -> None:
                     args.scaler,
                     args.hidden_layers,
                     args.generation_scaler,
+                    args.metric_encoding,
                 )
             except FileNotFoundError as exc:
                 logger.warning("Cannot build bundle for %s seed %d: %s", dataset_key, seed, exc)
