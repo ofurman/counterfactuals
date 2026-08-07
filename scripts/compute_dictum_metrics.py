@@ -246,6 +246,21 @@ def evaluate_method(
     cf_raw = pd.read_csv(cf_path).to_numpy(dtype=np.float32)
     factuals = pd.read_csv(factuals_path).to_numpy(dtype=np.float32)
 
+    # A generator whose training diverged can emit inf/NaN rows. Those are not
+    # counterfactuals, so they are forced invalid below; they are zeroed first
+    # only so the scaler and the classifier have finite input to work on.
+    finite_rows = np.all(np.isfinite(cf_raw), axis=1)
+    n_nonfinite = int((~finite_rows).sum())
+    if n_nonfinite:
+        logger.warning(
+            "%s: %d of %d counterfactual rows are non-finite; counting them invalid",
+            method_dir,
+            n_nonfinite,
+            len(cf_raw),
+        )
+        cf_raw = cf_raw.copy()
+        cf_raw[~finite_rows] = 0.0
+
     cf_model = (
         bundle.dataset.transform(cf_raw.copy()).astype(np.float32)
         if cf_in_original_units
@@ -271,6 +286,7 @@ def evaluate_method(
 
     cf_preds = _predict(bundle.disc_model, cf_model)
     pool_valid = cf_preds.reshape(n_factuals, cf_per_instance) == y_target[:, None]
+    pool_valid &= finite_rows.reshape(n_factuals, cf_per_instance)
 
     cf_blocks = cf_model.reshape(n_factuals, cf_per_instance, -1)
     cf_blocks_original = bundle.dataset.inverse_transform(cf_model.copy()).reshape(
@@ -327,6 +343,7 @@ def evaluate_method(
         "div": _mean(div_vals),
         "n_factuals": float(n_factuals),
         "n_scored_factuals": float(len(prox_vals)),
+        "n_nonfinite_cfs": float(n_nonfinite),
     }
 
 
