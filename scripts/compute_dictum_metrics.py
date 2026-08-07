@@ -146,9 +146,18 @@ def diversity_mixed(x_cf: np.ndarray, num_idx: list[int], cat_groups: list[list[
 
 @dataclass
 class DatasetBundle:
-    """Everything needed to score one dataset at one seed."""
+    """Everything needed to score one dataset at one seed.
+
+    Two model spaces are tracked because they need not be the same one. The run
+    generated its counterfactuals in `gen_dataset`'s space, which is also the
+    space its classifier was trained in, while the metrics are reported in
+    `dataset`'s space. Keeping them apart lets a numerically awkward metric
+    space be measured without forcing the generators to search in it.
+    """
 
     dataset: MethodDataset
+    gen_dataset: MethodDataset
+    same_space: bool
     disc_model: SimpleMLPClassifier
     lof: LocalOutlierFactor
     num_idx: list[int]
@@ -169,18 +178,36 @@ def build_bundle(
     seed_root: Path,
     scaler: str,
     hidden_layers: list[int],
+    gen_scaler: Optional[str] = None,
 ) -> DatasetBundle:
-    """Rebuild the dataset and classifier exactly as the run saw them."""
+    """Rebuild the dataset and classifier exactly as the run saw them.
+
+    Args:
+        scaler: Model space the metrics are reported in.
+        gen_scaler: Model space the run generated in, and trained its classifier
+            in. Defaults to `scaler`, i.e. generated and measured in one space.
+    """
     cfg_stem = config_stem(dataset_key)
     val_path = data_root / dataset_key / "val.csv"
+    gen_scaler = gen_scaler or scaler
+    same_space = gen_scaler == scaler
 
-    file_ds = TrainTestFileDataset(
-        config_path=str(configs_root / f"{cfg_stem}.yaml"),
-        train_data_path=str(data_root / dataset_key / "train.csv"),
-        test_data_path=str(data_root / dataset_key / "test.csv"),
-        val_data_path=str(val_path),
-    )
+    def _load() -> TrainTestFileDataset:
+        return TrainTestFileDataset(
+            config_path=str(configs_root / f"{cfg_stem}.yaml"),
+            train_data_path=str(data_root / dataset_key / "train.csv"),
+            test_data_path=str(data_root / dataset_key / "test.csv"),
+            val_data_path=str(val_path),
+        )
+
+    file_ds = _load()
     dataset = MethodDataset(file_ds, build_model_space_pipeline(scaler))
+    # A second MethodDataset over its own file dataset: MethodDataset writes the
+    # feature indices back onto the file dataset it wraps, so the two cannot
+    # share one.
+    gen_dataset = (
+        dataset if same_space else MethodDataset(_load(), build_model_space_pipeline(gen_scaler))
+    )
 
     num_idx = list(dataset.numerical_features_indices)
     cat_groups = [list(g) for g in dataset.categorical_features_lists]
@@ -206,6 +233,8 @@ def build_bundle(
 
     return DatasetBundle(
         dataset=dataset,
+        gen_dataset=gen_dataset,
+        same_space=same_space,
         disc_model=disc_model,
         lof=lof,
         num_idx=num_idx,
@@ -261,10 +290,20 @@ def evaluate_method(
         cf_raw = cf_raw.copy()
         cf_raw[~finite_rows] = 0.0
 
+    # Original units are the pivot between the two spaces. The classifier only
+    # ever sees generation-space values, because that is what it was trained on;
+    # the quality metrics only ever see metric-space values.
+    if cf_in_original_units:
+        cf_original = cf_raw
+        cf_gen = bundle.gen_dataset.transform(cf_raw.copy()).astype(np.float32)
+    else:
+        cf_gen = cf_raw
+        cf_original = bundle.gen_dataset.inverse_transform(cf_raw.copy())
+
     cf_model = (
-        bundle.dataset.transform(cf_raw.copy()).astype(np.float32)
-        if cf_in_original_units
-        else cf_raw
+        cf_gen
+        if bundle.same_space
+        else bundle.dataset.transform(cf_original.copy()).astype(np.float32)
     )
 
     n_factuals = len(factuals)
@@ -279,20 +318,27 @@ def evaluate_method(
         )
         return None
 
+    # Factuals are saved in the generation space, which is what the classifier
+    # reads; the metrics need them alongside the counterfactuals in the metric
+    # space, so they are converted through original units the same way.
+    factuals_original = bundle.gen_dataset.inverse_transform(factuals.copy())
+    factuals_model = (
+        factuals
+        if bundle.same_space
+        else bundle.dataset.transform(factuals_original.copy()).astype(np.float32)
+    )
+
     # The target is the flip of the classifier's own call on each factual, which
     # is what the aligned runs generate towards in both directions.
     factual_preds = _predict(bundle.disc_model, factuals)
     y_target = np.abs(1 - factual_preds)
 
-    cf_preds = _predict(bundle.disc_model, cf_model)
+    cf_preds = _predict(bundle.disc_model, cf_gen)
     pool_valid = cf_preds.reshape(n_factuals, cf_per_instance) == y_target[:, None]
     pool_valid &= finite_rows.reshape(n_factuals, cf_per_instance)
 
     cf_blocks = cf_model.reshape(n_factuals, cf_per_instance, -1)
-    cf_blocks_original = bundle.dataset.inverse_transform(cf_model.copy()).reshape(
-        n_factuals, cf_per_instance, -1
-    )
-    factuals_original = bundle.dataset.inverse_transform(factuals.copy())
+    cf_blocks_original = cf_original.reshape(n_factuals, cf_per_instance, -1)
 
     keep = min(keep_per_factual, cf_per_instance)
     # Valid counterfactuals first, original order preserved within each class.
@@ -319,7 +365,7 @@ def evaluate_method(
 
         cfs = kept_cf[i][valid_mask]
         cfs_original = kept_cf_original[i][valid_mask]
-        origs = np.tile(factuals[i], (len(cfs), 1))
+        origs = np.tile(factuals_model[i], (len(cfs), 1))
         origs_original = np.tile(factuals_original[i], (len(cfs), 1))
 
         prox_vals.append(proximity_continuous(origs, cfs, bundle.num_idx))
@@ -520,7 +566,24 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--seeds", nargs="+", type=int, default=[42, 43, 44])
     parser.add_argument("--configs-root", default="config/datasets")
     parser.add_argument("--data-root", default="data_train_test_val")
-    parser.add_argument("--scaler", choices=("standard", "minmax"), default="standard")
+    parser.add_argument(
+        "--scaler",
+        choices=("standard", "minmax"),
+        default="standard",
+        help="Model space the metrics are reported in.",
+    )
+    parser.add_argument(
+        "--generation-scaler",
+        choices=("standard", "minmax"),
+        default=None,
+        help=(
+            "Model space the run generated in, which is also the space its "
+            "classifier was trained in. Defaults to --scaler. Set it when a run "
+            "generated in one space but should be measured in another, e.g. "
+            "generating in minmax for numerical stability while reporting "
+            "DICTUM-comparable z-scored metrics."
+        ),
+    )
     parser.add_argument(
         "--hidden-layers",
         nargs="+",
@@ -581,6 +644,7 @@ def main() -> None:
                     seed_root,
                     args.scaler,
                     args.hidden_layers,
+                    args.generation_scaler,
                 )
             except FileNotFoundError as exc:
                 logger.warning("Cannot build bundle for %s seed %d: %s", dataset_key, seed, exc)
