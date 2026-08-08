@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: cel.datasets.FileDataset
   config_path: config/datasets/heloc.yaml
 
 disc_model:
@@ -33,14 +33,14 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.glance.GlobalGLANCE
+    _target_: cel.cf_methods.glance.GlobalGLANCE
     k: 50
     m: 10
     s: 1
 
   disc_model_criterion:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: cel.losses.MulticlassDiscLoss
+    # _target_: cel.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0

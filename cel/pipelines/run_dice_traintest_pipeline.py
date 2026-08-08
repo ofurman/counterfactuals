@@ -5,7 +5,7 @@ where train and test splits are provided as separate files, rather than using
 cross-validation.
 
 Usage:
-    uv run python -m counterfactuals.pipelines.run_dice_traintest_pipeline \
+    uv run python -m cel.pipelines.run_dice_traintest_pipeline \
         dataset.train_data_path=data/my_train.csv \
         dataset.test_data_path=data/my_test.csv
 """
@@ -252,8 +252,7 @@ def calculate_metrics(
         y_test=y_test,
         median_log_prob=median_log_prob,
         y_target=y_target,
-        metrics_conf_path=metrics_conf_path
-        or "counterfactuals/pipelines/conf/metrics/default.yaml",
+        metrics_conf_path=metrics_conf_path or "cel/pipelines/conf/metrics/default.yaml",
     )
 
     # Calculate pairwise distance on all CFs

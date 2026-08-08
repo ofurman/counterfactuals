@@ -219,8 +219,7 @@ def calculate_metrics(
         y_test=y_test,
         median_log_prob=median_log_prob,
         y_target=y_target,
-        metrics_conf_path=metrics_conf_path
-        or "counterfactuals/pipelines/conf/metrics/default.yaml",
+        metrics_conf_path=metrics_conf_path or "cel/pipelines/conf/metrics/default.yaml",
     )
 
     # Calculate pairwise distance on all CFs

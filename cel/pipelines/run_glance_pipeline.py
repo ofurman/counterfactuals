@@ -136,7 +136,7 @@ def calculate_metrics(
         y_target=y_target,
         median_log_prob=median_log_prob,
         cf_group_ids=cf_group_ids,
-        metrics_conf_path="counterfactuals/pipelines/conf/metrics/default.yaml",
+        metrics_conf_path="cel/pipelines/conf/metrics/default.yaml",
     )
     logger.info("Metrics calculated: %s", metrics)
     return metrics

@@ -363,7 +363,7 @@ def evaluate_cf(
     median_log_prob: np.ndarray,
     y_target: np.ndarray = None,
     cf_group_ids: np.ndarray | None = None,
-    metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/default.yaml",
+    metrics_conf_path: str = "cel/pipelines/conf/metrics/default.yaml",
 ):
     y_target = torch.abs(1 - torch.from_numpy(y_test)) if y_target is None else y_target
     y_target = y_target.numpy() if isinstance(y_target, torch.Tensor) else y_target
@@ -402,7 +402,7 @@ def evaluate_cf_for_glance(
     y_target: np.ndarray,
     median_log_prob: np.ndarray,
     cf_group_ids: np.ndarray | None = None,
-    metrics_conf_path: str = "counterfactuals/pipelines/conf/metrics/group_metrics.yaml",
+    metrics_conf_path: str = "cel/pipelines/conf/metrics/group_metrics.yaml",
 ):
     metrics = evaluate_cf(
         disc_model=disc_model,
