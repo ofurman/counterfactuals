@@ -9,6 +9,10 @@ set -euo pipefail
 : "${PLG_LOGIN:?Set PLG_LOGIN to your PLGrid login}"
 PLG_HOST="${PLG_HOST:-login01.helios.cyfronet.pl}"
 PROJECT_NAME="${PROJECT_NAME:-counterfactuals}"
+# Destination path on the remote, relative to the login home. Helios uses the
+# projects/<name> layout; override for any other host (e.g. a workstation that
+# already keeps the repo at genwro/counterfactuals).
+REMOTE_PATH="${REMOTE_PATH:-projects/$PROJECT_NAME}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -23,7 +27,7 @@ cd "$REPO_ROOT"
 # remove results already written on the cluster.
 #
 # The remote parent must exist; openrsync has no --mkpath.
-ssh "$PLG_LOGIN@$PLG_HOST" "mkdir -p projects/$PROJECT_NAME"
+ssh "$PLG_LOGIN@$PLG_HOST" "mkdir -p $REMOTE_PATH"
 
 # The heavy directories are anchored with a leading slash so they only match
 # at the transfer root. An unanchored 'models' also matches the Python package
@@ -47,7 +51,7 @@ rsync -av \
   --exclude '/dice_results' \
   --exclude '/notebooks' \
   --exclude '/methods_notebooks' \
-  ./ "$PLG_LOGIN@$PLG_HOST:projects/$PROJECT_NAME/"
+  ./ "$PLG_LOGIN@$PLG_HOST:$REMOTE_PATH/"
 
 printf '\nSynced to %s:projects/%s\n' "$PLG_HOST" "$PROJECT_NAME"
 printf 'Next, on the login node:\n'

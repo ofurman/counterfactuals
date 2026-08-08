@@ -75,16 +75,20 @@ export XDG_CACHE_HOME="$HEAVY/cache"
 export UV_CACHE_DIR="$HEAVY/cache/uv"
 export TORCH_HOME="$HEAVY/cache/torch"
 
-# Pin thread counts so wall-clock timings are reproducible and comparable
-# across methods. Without this, BLAS thread heuristics vary by node and the
-# Time column becomes meaningless.
+module purge
+module load ML-bundle/25.10
+
+# Thread pinning MUST come after `module load`. ML-bundle/25.10 forces
+# OMP_NUM_THREADS=1 ("Due to performance issues OMP_NUM_THREADS is set to 1"),
+# so setting it beforehand is silently discarded: the 2026-07-27 sweep ran
+# every task single-threaded on 8 allocated CPUs, which pushed DiCoFlex to
+# ~4 min/epoch and killed 7 of 15 runs on the 12h wall.
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export MKL_NUM_THREADS="$OMP_NUM_THREADS"
 export OPENBLAS_NUM_THREADS="$OMP_NUM_THREADS"
 export NUMEXPR_NUM_THREADS="$OMP_NUM_THREADS"
+echo "threads: OMP_NUM_THREADS=$OMP_NUM_THREADS (cpus-per-task=${SLURM_CPUS_PER_TASK:-unset})"
 
-module purge
-module load ML-bundle/25.10
 cd "$PROJECT"
 
 mkdir -p "$OUT_ROOT"

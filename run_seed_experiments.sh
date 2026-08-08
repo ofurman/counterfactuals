@@ -22,12 +22,22 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
+# A non-interactive ssh session does not source the login profile, so uv may
+# not be on PATH even when it is installed. Resolve it explicitly.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+UV="$(command -v uv || true)"
+if [[ -z "$UV" ]]; then
+  echo "uv not found on PATH ($PATH)" >&2
+  exit 1
+fi
+
 METHODS=(dice cchvae dicoflex)
 DATASETS=(adult bank default gmc lending-club)
 SEEDS=(0 1 2)
 TAG=seeds
 TARGET_CLASS=""
 DRY_RUN=0
+JOBS=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -36,6 +46,7 @@ while [[ $# -gt 0 ]]; do
     --seeds) shift; SEEDS=(); while [[ $# -gt 0 && "$1" != --* ]]; do SEEDS+=("$1"); shift; done ;;
     --tag) TAG="$2"; shift 2 ;;
     --target-class) TARGET_CLASS="$2"; shift 2 ;;
+    --jobs) JOBS="$2"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
@@ -81,7 +92,7 @@ for method in "${METHODS[@]}"; do
       log="$LOGS/${method}_${CFG_STEM}_seed${seed}.log"
 
       CMD=(
-        uv run python -m "$PIPELINE"
+        "$UV" run python -m "$PIPELINE"
         disc_model=simple_mlp
         disc_model.train_model=true
         gen_model.train_model=true
@@ -99,22 +110,39 @@ for method in "${METHODS[@]}"; do
         continue
       fi
 
-      printf '[%d/%d] %s  (log: %s)\n' "$n" "$total" "$label" "$log"
-      start=$SECONDS
-      if "${CMD[@]}" > "$log" 2>&1; then
-        printf '      done in %ds\n' "$(( SECONDS - start ))"
-      else
-        printf '      FAILED after %ds - see %s\n' "$(( SECONDS - start ))" "$log"
-        failed+=("$label")
-      fi
+      # Wait for a free slot. bash 3.2 (macOS) has no `wait -n`, so poll.
+      while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$JOBS" ]; do sleep 5; done
+
+      printf '[%d/%d] start %-28s log: %s\n' "$n" "$total" "$label" "$log"
+      rm -f "$log.status"
+      (
+        start=$SECONDS
+        if "${CMD[@]}" > "$log" 2>&1; then
+          printf 'ok %s %ds\n' "$label" "$(( SECONDS - start ))" > "$log.status"
+        else
+          printf 'FAILED %s %ds\n' "$label" "$(( SECONDS - start ))" > "$log.status"
+        fi
+      ) &
     done
   done
 done
 
+wait
+
 echo
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  exit 0
+fi
+
+for st in "$LOGS"/*.status; do
+  [[ -f "$st" ]] || continue
+  read -r state rest < "$st"
+  if [[ "$state" == "FAILED" ]]; then failed+=("$rest"); fi
+done
+
 if [[ ${#failed[@]} -gt 0 ]]; then
   echo "${#failed[@]} of $total runs failed:"
   printf '  %s\n' "${failed[@]}"
   exit 1
 fi
-[[ "$DRY_RUN" -eq 1 ]] || echo "all $total runs completed"
+echo "all $total runs completed"

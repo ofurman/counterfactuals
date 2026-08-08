@@ -49,13 +49,17 @@ SETUP="${SWEEP_SETUPS[$setup_idx]}"
 
 export XDG_CACHE_HOME="$HEAVY/cache"
 export TORCH_HOME="$HEAVY/cache/torch"
+module purge
+module load ML-bundle/25.10
+
+# After `module load`: ML-bundle/25.10 forces OMP_NUM_THREADS=1, so exporting
+# it earlier is silently overwritten. See run-baselines.sbatch.
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-8}"
 export MKL_NUM_THREADS="$OMP_NUM_THREADS"
 export OPENBLAS_NUM_THREADS="$OMP_NUM_THREADS"
 export NUMEXPR_NUM_THREADS="$OMP_NUM_THREADS"
+echo "threads: OMP_NUM_THREADS=$OMP_NUM_THREADS (cpus-per-task=${SLURM_CPUS_PER_TASK:-unset})"
 
-module purge
-module load ML-bundle/25.10
 cd "$PROJECT"
 
 mkdir -p "$RESULTS"

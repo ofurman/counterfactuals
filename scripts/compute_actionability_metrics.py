@@ -96,6 +96,97 @@ def _epsilon_sparsity(
     return float(np.mean(np.sum(significant, axis=1) / D_num))
 
 
+# ---------------------------------------------------------------------------
+# Reference metric definitions.
+#
+# Verbatim ports of ``cel/metrics/dicoflex_metrics.py`` (commit b9715ef on
+# ``origin/ofurman/CFN_baselines``), selected by
+# ``cel/pipelines/conf/metrics/dicoflex.yaml``. That module is the authoritative
+# source of the paper's six Table 1 column names (``proximity_l1_continuous``,
+# ``sparsity_categorical``, ``eps_sparsity``, ``lof_score_median_log``,
+# ``pairwise_diversity_mixed``), so these — not the ``_legacy`` variants above —
+# define the published metrics.
+#
+# Three substantive differences from the legacy implementations:
+#   * eps-sparsity thresholds the RELATIVE change |dx| / (|x| + 1e-8), not the
+#     absolute change against 0.05 * feature_range.
+#   * categorical sparsity averages over the ONE-HOT COLUMNS (62 on Adult), not
+#     over the one-hot groups (8 on Adult).
+#   * diversity uses Euclidean distance on the continuous block (legacy used
+#     cityblock) and Hamming over the raw one-hot columns (legacy first collapsed
+#     each group to an argmax code).
+# The reference metrics also aggregate as a single pooled mean/median over all
+# valid counterfactuals, rather than averaging per-factual values.
+# ---------------------------------------------------------------------------
+
+
+def _ref_proximity_continuous_l1(x_orig: np.ndarray, x_cf: np.ndarray, num_idx: list[int]) -> float:
+    if x_orig.size == 0 or not num_idx:
+        return 0.0
+    return float(np.abs(x_orig[:, num_idx] - x_cf[:, num_idx]).mean())
+
+
+def _ref_sparsity_categorical(x_orig: np.ndarray, x_cf: np.ndarray, cat_idx: list[int]) -> float:
+    if x_orig.size == 0 or not cat_idx:
+        return 0.0
+    return float((x_orig[:, cat_idx] != x_cf[:, cat_idx]).astype(float).mean())
+
+
+def _ref_epsilon_sparsity(
+    x_orig: np.ndarray,
+    x_cf: np.ndarray,
+    num_idx: list[int],
+    threshold: float = 0.05,
+    epsilon: float = 1e-8,
+) -> float:
+    if x_orig.size == 0 or not num_idx:
+        return 0.0
+    rel = np.abs(x_orig[:, num_idx] - x_cf[:, num_idx]) / (np.abs(x_orig[:, num_idx]) + epsilon)
+    return float((rel > threshold).mean())
+
+
+def _ref_lof_score_median_log(lof: LocalOutlierFactor, x_cf: np.ndarray) -> float:
+    if x_cf.size == 0:
+        return 0.0
+    return float(np.median(np.log(-lof.score_samples(x_cf) + 1e-8)))
+
+
+def _ref_pairwise_diversity_mixed(
+    x_cf: np.ndarray,
+    x_orig: np.ndarray,
+    num_idx: list[int],
+    cat_idx: list[int],
+) -> float:
+    if x_cf.size == 0:
+        return 0.0
+    n_features = len(num_idx) + len(cat_idx)
+    if n_features == 0:
+        return 0.0
+
+    groups: dict[tuple, list[np.ndarray]] = {}
+    for orig_row, cf_row in zip(x_orig, x_cf):
+        groups.setdefault(tuple(orig_row.tolist()), []).append(cf_row.astype(np.float32))
+
+    group_diversities: list[float] = []
+    for cf_group in groups.values():
+        K = len(cf_group)
+        if K < 2:
+            continue
+        X_cf_group = np.vstack(cf_group)
+        num_pairs = K * (K - 1) // 2
+        d_cont = (
+            pdist(X_cf_group[:, num_idx], metric="euclidean") if num_idx else np.zeros(num_pairs)
+        )
+        d_cat = (
+            pdist(X_cf_group[:, cat_idx], metric="hamming") * len(cat_idx)
+            if cat_idx
+            else np.zeros(num_pairs)
+        )
+        group_diversities.append(float(np.mean((d_cont + d_cat) / n_features)))
+
+    return float(np.mean(group_diversities)) if group_diversities else 0.0
+
+
 def _diversity_mixed(
     x_cf_model: np.ndarray,
     cf_group_ids: np.ndarray,
@@ -235,6 +326,11 @@ def build_bundle(
 
 KEEP_PER_FACTUAL = 10
 
+# "reference" = the formulas from cel/metrics/dicoflex_metrics.py that define the
+# paper's Table 1 columns. "legacy" = the earlier reimplementation kept for
+# back-comparison against previously generated tables.
+FORMULA_MODE = "reference"
+
 
 METHODS: list[tuple[str, str, str, bool, int]] = [
     # (pretty_name, method_dir, csv_suffix, cf_saved_in_raw_space, target_class)
@@ -343,7 +439,31 @@ def evaluate_method(
     per_factual_validity = selected_valid.mean(axis=1)
     validity = float(per_factual_validity.mean())
 
-    # Per-factual metrics, then mean across factuals.
+    if FORMULA_MODE == "reference":
+        # Reference aggregation: one pooled mean/median over all VALID CFs.
+        orig_rep = np.repeat(factuals[:, None, :], keep, axis=1)
+        flat_cf = selected_cf.reshape(-1, selected_cf.shape[-1])
+        flat_orig = orig_rep.reshape(-1, orig_rep.shape[-1])
+        flat_valid = selected_valid.reshape(-1)
+        x_cf_valid = flat_cf[flat_valid]
+        x_orig_valid = flat_orig[flat_valid]
+        cat_idx = [c for group in bundle.cat_groups for c in group]
+
+        return {
+            "validity": validity,
+            "prox_cont": _ref_proximity_continuous_l1(x_orig_valid, x_cf_valid, bundle.num_idx),
+            "spars_cat": _ref_sparsity_categorical(x_orig_valid, x_cf_valid, cat_idx),
+            "epsilon_spars": _ref_epsilon_sparsity(x_orig_valid, x_cf_valid, bundle.num_idx),
+            "lof": _ref_lof_score_median_log(bundle.lof, x_cf_valid),
+            "diversity": _ref_pairwise_diversity_mixed(
+                x_cf_valid, x_orig_valid, bundle.num_idx, cat_idx
+            ),
+            "valid_count": int(per_cf_valid.sum()),
+            "n_factuals": n_factuals,
+            "keep_per_factual": keep,
+        }
+
+    # Legacy: per-factual metrics, then mean across factuals.
     prox_vals: list[float] = []
     spars_cat_vals: list[float] = []
     eps_spars_vals: list[float] = []
@@ -351,7 +471,6 @@ def evaluate_method(
     diversity_vals: list[float] = []
 
     n_num = len(bundle.num_idx)
-    D = cf_model.shape[1]
 
     for i in range(n_factuals):
         cfs_i = selected_cf[i]  # (keep, D)
@@ -494,6 +613,17 @@ def _parse_args() -> argparse.Namespace:
             "are preferred; if fewer are available, invalid CFs fill the rest."
         ),
     )
+    parser.add_argument(
+        "--formula",
+        choices=("reference", "legacy"),
+        default=FORMULA_MODE,
+        help=(
+            "'reference' uses the formulas from cel/metrics/dicoflex_metrics.py, "
+            "which define the paper's Table 1 columns. 'legacy' uses the earlier "
+            "reimplementation (absolute eps-sparsity, group-wise categorical "
+            "sparsity, cityblock diversity, per-factual aggregation)."
+        ),
+    )
     parser.add_argument("--output", default="scripts/actionability_table.tex")
     return parser.parse_args()
 
@@ -502,8 +632,10 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
     args = _parse_args()
 
-    global KEEP_PER_FACTUAL
+    global KEEP_PER_FACTUAL, FORMULA_MODE
     KEEP_PER_FACTUAL = args.keep_per_factual
+    FORMULA_MODE = args.formula
+    logger.info("Metric formula mode: %s", FORMULA_MODE)
 
     configs_root = Path(args.configs_root)
     data_root = Path(args.data_root)

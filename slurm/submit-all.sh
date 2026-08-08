@@ -49,10 +49,15 @@ MAX_CONCURRENT="${MAX_CONCURRENT:-8}"
 
 # Walltime per method. CCHVAE dominates: 3.2 h of CF search on adult locally,
 # before any model retraining.
+# DiCoFlex trains its flow for 200 epochs (dicoflex_traintest_config.yaml:31).
+# On the 2026-07-27 sweep that took ~4 min/epoch (~13.3h) because the module
+# had forced single-threaded BLAS, so 7 of 15 runs died at epochs 153-188
+# against a 12h wall. With thread pinning restored the per-epoch cost should
+# drop sharply, but the wall is raised anyway so a slow node cannot repeat it.
 declare -A WALLTIME=(
   [dice]="08:00:00"
   [cchvae]="24:00:00"
-  [dicoflex]="12:00:00"
+  [dicoflex]="24:00:00"
 )
 
 submit_or_test() {
