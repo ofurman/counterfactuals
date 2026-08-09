@@ -102,44 +102,43 @@ def merge_default_parameters(hyperparams: Optional[Dict], default: Dict) -> Dict
 
 
 def reconstruct_encoding_constraints(
-    x: torch.Tensor, feature_pos: List[int], binary_cat: bool
+    x: torch.Tensor, feature_groups: List[List[int]]
 ) -> torch.Tensor:
     """
-    Reconstructing one-hot-encoded data, such that its values are either 0 or 1,
-    and features do not contradict (e.g., sex_female = 1, sex_male = 1)
+    Project one-hot-encoded categorical blocks back onto valid vertices, so that
+    each categorical group has exactly one active column (sum == 1) and no
+    contradictions (e.g., sex_female = 1 and sex_male = 1 at the same time).
+
+    The decoder produces soft values per column; rounding each column
+    independently can yield multiple active columns or an all-zero group. Taking
+    the argmax within each group guarantees a valid one-hot vector.
 
     Parameters
     ----------
     x:
-        Instance where we want to reconstruct categorical constraints.
-    feature_pos:
-        List with positions of categorical features in x.
-    binary_cat:
-        If True, categorical datas are encoded with drop_if_binary.
+        Instance(s) whose categorical blocks should be made one-hot-valid.
+    feature_groups:
+        List of column-index groups, one per original categorical feature (as
+        produced by ``categorical_features_lists``). A single-column group is
+        treated as a binary indicator and simply rounded.
 
     Returns
     -------
-    Tensor with reconstructed constraints
+    Tensor with each categorical group snapped to a valid one-hot vector.
     """
     x_enc = x.clone()
 
-    if binary_cat:
-        for pos in feature_pos:
-            x_enc[:, pos] = torch.round(x_enc[:, pos])
-    else:
-        binary_pairs = list(zip(feature_pos[:-1], feature_pos[1:]))[0::2]
-        for pair in binary_pairs:
-            # avoid overwritten inconsistent results
-            temp = (x_enc[:, pair[0]] >= x_enc[:, pair[1]]).float()
+    for group in feature_groups:
+        if not group:
+            continue
+        if len(group) == 1:
+            x_enc[:, group[0]] = torch.round(x_enc[:, group[0]])
+            continue
 
-            x_enc[:, pair[1]] = (x_enc[:, pair[0]] < x_enc[:, pair[1]]).float()
-            x_enc[:, pair[0]] = temp
-
-            if (x_enc[:, pair[0]] == x_enc[:, pair[1]]).any():
-                raise ValueError(
-                    "Reconstructing encoded features lead to an error. Feature {} and {} have the same value".format(
-                        pair[0], pair[1]
-                    )
-                )
+        idx = torch.as_tensor(group, device=x_enc.device, dtype=torch.long)
+        winner = torch.argmax(x_enc[:, idx], dim=1)
+        one_hot = torch.zeros((x_enc.shape[0], len(group)), dtype=x_enc.dtype, device=x_enc.device)
+        one_hot[torch.arange(x_enc.shape[0]), winner] = 1.0
+        x_enc[:, idx] = one_hot
 
     return x_enc
