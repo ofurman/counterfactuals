@@ -163,7 +163,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         return candidate_counterfactuals, dist
 
     def _counterfactual_search(
-        self, step: int, factual: torch.Tensor, cat_features_indices: list
+        self, step: int, factual: torch.Tensor, cat_feature_groups: list[list[int]]
     ) -> pd.DataFrame:
         """Searches for a counterfactual by expanding a hypersphere in latent space.
 
@@ -175,7 +175,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         Args:
           step: Increment used to expand the search radius after unsuccessful attempts.
           factual: Single factual instance as a tensor of shape `(1, d)`.
-          cat_features_indices: Column indices for encoded categorical features.
+          cat_feature_groups: One-hot column-index groups, one per categorical feature.
 
         Returns:
           A single counterfactual instance as a 1D NumPy array of shape `(d,)`.
@@ -230,9 +230,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
             temp[:, self._generative_model.mutable_mask] = x_ce.to(temp.dtype)
             x_ce = temp
 
-            x_ce = reconstruct_encoding_constraints(
-                x_ce, cat_features_indices, self._params["binary_cat_features"]
-            )
+            x_ce = reconstruct_encoding_constraints(x_ce, cat_feature_groups)
             x_ce = x_ce.detach().cpu().numpy()
             x_ce = x_ce.clip(0, 1) if self._clamp else x_ce
 
@@ -276,14 +274,11 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
-        encoded_feature_names = self._mlmodel.data.categorical
-        cat_features_indices = [
-            factuals.columns.get_loc(feature) for feature in encoded_feature_names
-        ]
+        cat_feature_groups = self._mlmodel.data._dataset.categorical_features_lists
 
         df_cfs = factuals.apply(
             lambda x: self._counterfactual_search(
-                self._step, x.reshape((1, -1)), cat_features_indices
+                self._step, x.reshape((1, -1)), cat_feature_groups
             ),
             raw=True,
             axis=1,
@@ -307,14 +302,11 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
-        encoded_feature_names = self._mlmodel.data.categorical
-        cat_features_indices = [
-            factuals.columns.get_loc(feature) for feature in encoded_feature_names
-        ]
+        cat_feature_groups = self._mlmodel.data._dataset.categorical_features_lists
 
         df_cfs = factuals.apply(
             lambda x: self._counterfactual_search(
-                self._step, x.reshape((1, -1)), cat_features_indices
+                self._step, x.reshape((1, -1)), cat_feature_groups
             ),
             raw=True,
             axis=1,
