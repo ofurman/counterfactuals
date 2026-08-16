@@ -18,7 +18,12 @@ experiment:
   relabel_with_disc_model: true
   seed: 42
   use_gpu: false
-  model_space_scaler: standard
+  # Original DiCoFlex generation space (ofurman/DiCoFlex): MinMax on numeric
+  # features + QuantileTransformer on the one-hot categoricals. StandardScaler is
+  # used ONLY for metric computation (compute_dictum_metrics --scaler standard
+  # --generation-scaler minmax_qt), so explanations are found in the original
+  # space and reported in DICTUM's z-scored space.
+  model_space_scaler: minmax_qt
 
 dataset:
   _target_: counterfactuals.datasets.TrainTestFileDataset
@@ -65,6 +70,10 @@ counterfactuals_params:
   num_counterfactuals: 100
   cf_samples_per_factual: 100
   sampling_batch_size: 256
+  # Sampling temperature scaling the flow's base Gaussian, as in the original
+  # DiCoFlex (ofurman/DiCoFlex): temp < 1 shrinks the base draw and bounds the
+  # sampled tail. Our re-implementation had dropped this (sampled at 1.0).
+  temperature: 0.8
   inference_mask_index: 0
   # Unconstrained, to match DiCE's restrict_to_actionable: false — the
   # immutable-feature list belongs to the constraint experiments, not here.

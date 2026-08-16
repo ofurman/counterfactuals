@@ -28,6 +28,7 @@ class DiCoFlexParams:
     target_class: Optional[int]
     sampling_batch_size: int
     cf_samples_per_factual: int = 1
+    temperature: float = 1.0
 
 
 class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
@@ -172,7 +173,9 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 continue
             context = self._build_context(X_batch, y_target_batch)
             samples, log_probs = self.gen_model.sample_and_log_proba(
-                n_samples=self.params.num_counterfactuals, context=context
+                n_samples=self.params.num_counterfactuals,
+                context=context,
+                temp=self.params.temperature,
             )
 
             (
@@ -268,7 +271,16 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             monotonic_ok = self._check_monotonic_constraints(X_batch, candidates)
             valid_mask_matrix = valid_mask_matrix & monotonic_ok
 
-        sorted_indices = np.argsort(-target_probs, axis=1)
+        # Rank candidates by PROXIMITY to the factual (closest first), not by
+        # classifier confidence. Ranking by ``-target_probs`` prefers the samples
+        # the classifier is most sure about, which sit deepest in the target
+        # region and are therefore the FARTHEST from the factual — the opposite
+        # of what a counterfactual should be. The reference DiCoFlex / DICTUM
+        # select by distance to the factual, so we do too. L1 over all
+        # (generation-space) features matches the Prox.-Cont metric's cityblock
+        # form; validity is still enforced first via ``valid_mask_matrix`` below.
+        distances = np.abs(candidates - X_batch[:, None, :]).sum(axis=2)
+        sorted_indices = np.argsort(distances, axis=1)
         top_indices = np.zeros((batch_size, top_k), dtype=int)
         for i in range(batch_size):
             chosen: list[int] = []

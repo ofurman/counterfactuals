@@ -309,6 +309,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         target_class=cfg.counterfactuals_params.target_class,
         sampling_batch_size=cfg.counterfactuals_params.sampling_batch_size,
         cf_samples_per_factual=cfg.counterfactuals_params.cf_samples_per_factual,
+        temperature=cfg.counterfactuals_params.get("temperature", 1.0),
     )
     mask_vector = mask_vectors[params.mask_index]
     monotonic_overrides = dict(cfg.counterfactuals_params.get("monotonic_overrides") or {})
@@ -379,6 +380,17 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
     x_cfs_cleaned = apply_categorical_discretization(
         dataset.categorical_features_lists, x_cfs_cleaned
     )
+
+    # Hard backstop against the flow's unbounded sampling tail: clip the numeric
+    # (MinMax) columns to the training data box [0, 1] in generation space before
+    # inverse-transform. Temperature already shrinks most of the tail; this bounds
+    # the residual few-percent of samples that a Gaussian base can still push far
+    # outside the data range, which otherwise dominate the mean-based proximity
+    # and diversity metrics. Categorical columns are left to the argmax snap above.
+    if cfg.experiment.get("clamp_numeric_to_box", True):
+        num_idx = dataset.numerical_features_indices
+        if len(num_idx) > 0:
+            x_cfs_cleaned[:, num_idx] = np.clip(x_cfs_cleaned[:, num_idx], 0.0, 1.0)
 
     # Handle multiple CFs per instance: extract first CF for metrics
     cf_per_instance = params.cf_samples_per_factual
@@ -531,7 +543,10 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
 @hydra.main(config_path="./conf", config_name="dicoflex_traintest_config", version_base="1.2")
 def main(cfg: DictConfig):
     set_global_seed(cfg.experiment.seed)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    # Only hide the GPU when we are not asked to use it. Previously this was
+    # unconditionally "-1", which forced CPU even on a GPU node.
+    if not cfg.experiment.get("use_gpu", False):
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 
     file_dataset = instantiate(cfg.dataset)
