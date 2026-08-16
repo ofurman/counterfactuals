@@ -141,17 +141,53 @@ class MaskedAutoregressiveFlow(PytorchBase, GenerativePytorchMixin):
         assert len(dataloader.dataset) == len(results)
         return results
 
-    def sample_and_log_proba(self, n_samples: int, context: Optional[np.ndarray] = None):
-        """Sample from the model and return (samples, log_probs) as numpy arrays."""
+    def sample_and_log_proba(
+        self, n_samples: int, context: Optional[np.ndarray] = None, temp: float = 1.0
+    ):
+        """Sample from the model and return (samples, log_probs) as numpy arrays.
+
+        Args:
+            n_samples: Number of samples to draw per context row.
+            context: Optional conditioning context.
+            temp: Sampling temperature. The base Gaussian noise is scaled by
+                ``temp`` before the inverse transform, mirroring the original
+                DiCoFlex flow (``ofurman/DiCoFlex``, ``generative_models/maf.py``).
+                ``temp < 1`` shrinks the base draw toward the mean, which bounds
+                the sampled tail; ``temp == 1.0`` reproduces the stock nflows path.
+        """
+        model_device = next(self.model.parameters()).device
         if context is not None and self.context_features is not None:
             if isinstance(context, np.ndarray):
                 context = torch.from_numpy(context).float()
-            context = context.view(-1, self.context_features)
+            context = context.view(-1, self.context_features).to(model_device)
         self.eval()
         with torch.no_grad():
-            samples, log_probs = self.model.sample_and_log_prob(
-                num_samples=n_samples, context=context
-            )
+            if temp == 1.0:
+                samples, log_probs = self.model.sample_and_log_prob(
+                    num_samples=n_samples, context=context
+                )
+                return samples.cpu().numpy(), log_probs.cpu().numpy()
+
+            # Temperature path: replicate nflows Flow._sample but scale the base
+            # noise by ``temp`` before the inverse transform.
+            from nflows.utils import torchutils
+
+            flow = self.model
+            embedded_context = flow._embedding_net(context)
+            noise = flow._distribution.sample(n_samples, context=embedded_context)
+            noise = noise * temp
+            if embedded_context is not None:
+                noise = torchutils.merge_leading_dims(noise, num_dims=2)
+                context_repeat = torchutils.repeat_rows(embedded_context, num_reps=n_samples)
+            else:
+                context_repeat = None
+            samples, _ = flow._transform.inverse(noise, context=context_repeat)
+            # Log-prob of the actually-produced samples (used only for logging /
+            # plausibility, never for selection).
+            log_probs = flow.log_prob(samples, context=context_repeat)
+            if embedded_context is not None:
+                samples = torchutils.split_leading_dim(samples, shape=[-1, n_samples])
+                log_probs = torchutils.split_leading_dim(log_probs, shape=[-1, n_samples])
             return samples.cpu().numpy(), log_probs.cpu().numpy()
 
     def predict_log_proba(
