@@ -3,7 +3,6 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:1
 #SBATCH --time=12:00:00
 #SBATCH --output=slurm/logs/%x-%A_%a.out
 #SBATCH --error=slurm/logs/%x-%A_%a.err
@@ -24,6 +23,12 @@
 # Environment:
 #   CF_SEED          seed, default 42
 #   CF_RESULTS_TAG   subdirectory under $HEAVY/results/, default dictum-longtrain
+#   CF_MODE          gpu-train (default): flow training only, needs --gres=gpu:1
+#                    at submit time; generation runs later on the experiment
+#                    machine.
+#                    cpu-full: full pipeline (train + generation) on CPU, submit
+#                    WITHOUT --gres and with a longer --time; use a separate
+#                    CF_RESULTS_TAG so the two variants never share an OUT_ROOT.
 
 set -euo pipefail
 
@@ -35,6 +40,13 @@ source "$HERE/cluster.env"
 
 CF_SEED="${CF_SEED:-42}"
 CF_RESULTS_TAG="${CF_RESULTS_TAG:-dictum-longtrain}"
+CF_MODE="${CF_MODE:-gpu-train}"
+
+case "$CF_MODE" in
+  gpu-train) MODE_OVERRIDES=("experiment.use_gpu=true" "++experiment.train_only=true") ;;
+  cpu-full)  MODE_OVERRIDES=() ;;
+  *) echo "Unknown CF_MODE '$CF_MODE'" >&2; exit 1 ;;
+esac
 
 PROJECT="$HOME/projects/$PROJECT_NAME"
 HEAVY="$PLG_GROUPS_STORAGE/$PLG_GROUP/$USER/$PROJECT_NAME"
@@ -100,17 +112,16 @@ cat > "$META" <<META_EOF
 }
 META_EOF
 
-echo "dicoflex TRAIN dataset=$DATASET seed=$CF_SEED out=$OUT_ROOT"
+echo "dicoflex mode=$CF_MODE dataset=$DATASET seed=$CF_SEED out=$OUT_ROOT"
 "$PY" -c "import torch; print('cuda available:', torch.cuda.is_available())"
 
 srun "$PY" -m counterfactuals.pipelines.run_dicoflex_traintest_pipeline \
   "--config-name=dictum_dicoflex_config" \
   "${COMMON_DATA[@]}" \
   "disc_model.train_model=false" \
-  "experiment.use_gpu=true" \
-  "++experiment.train_only=true" \
   "gen_model.epochs=10000" \
   "gen_model.patience=50" \
+  "${MODE_OVERRIDES[@]}" \
   "hydra.run.dir=$OUT_ROOT/hydra/${CFG_STEM}_dicoflex"
 
-echo "done TRAIN dataset=$DATASET seed=$CF_SEED"
+echo "done mode=$CF_MODE dataset=$DATASET seed=$CF_SEED"
