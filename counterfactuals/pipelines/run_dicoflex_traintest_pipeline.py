@@ -292,6 +292,17 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         gen_model.load(cf_gen_model_path)
     gen_train_time = time() - gen_train_start
 
+    if cfg.experiment.get("train_only", False):
+        # Train-the-flow-elsewhere split: the checkpoint at cf_gen_model_path is
+        # all a later generation run (gen_model.train_model=false) needs; the
+        # log-prob threshold is recomputed there from the same data.
+        logger.info(
+            "train_only=true: flow saved to %s after %.1fs, skipping generation",
+            cf_gen_model_path,
+            gen_train_time,
+        )
+        return
+
     full_loader = get_full_training_loader(
         train_loader, cfg.counterfactuals_params.train_batch_factuals
     )
