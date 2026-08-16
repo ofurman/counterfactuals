@@ -2,9 +2,82 @@ from typing import Optional
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler as SklearnMinMaxScaler
+from sklearn.preprocessing import QuantileTransformer as SklearnQuantileTransformer
 from sklearn.preprocessing import StandardScaler as SklearnStandardScaler
 
 from counterfactuals.preprocessing.base import PreprocessingContext, PreprocessingStep
+
+
+class QuantileTransformCategoricalStep(PreprocessingStep):
+    """Quantile-transform the (one-hot) categorical columns only.
+
+    Mirrors the original DiCoFlex generation space
+    (``ofurman/DiCoFlex``, ``datasets/DCENF/*.py``): small Gaussian tie-breaking
+    noise is added to the one-hot columns so the ``QuantileTransformer`` sees a
+    non-degenerate distribution, then a ``QuantileTransformer`` is fit on those
+    columns. Numerical columns are left untouched (a MinMax step run alongside
+    this one handles them). Inverse-transform clips samples back into the fitted
+    quantile range, which bounds the categorical block before the downstream
+    argmax one-hot discretisation.
+
+    The noise is applied only while FITTING (to fit a smooth quantile map); at
+    transform time clean 0/1 blocks map near the extremes of the output range,
+    which is the intended behaviour for one-hot inputs.
+    """
+
+    def __init__(self, noise_std: float = 0.05):
+        self.noise_std = noise_std
+        self.transformer: Optional[SklearnQuantileTransformer] = None
+        self._categorical_indices: Optional[list[int]] = None
+
+    def fit(self, context: PreprocessingContext) -> "QuantileTransformCategoricalStep":
+        self._categorical_indices = context.categorical_indices
+        if len(self._categorical_indices) > 0:
+            X_cat = context.X_train[:, self._categorical_indices].astype(np.float64, copy=True)
+            # Gaussian tie-breaking noise so the quantile map is not degenerate on
+            # binary 0/1 columns (matches the reference implementation).
+            X_cat = X_cat + np.random.normal(0.0, self.noise_std, size=X_cat.shape)
+            self.transformer = SklearnQuantileTransformer()
+            self.transformer.fit(X_cat)
+        return self
+
+    def transform(self, context: PreprocessingContext) -> PreprocessingContext:
+        if len(self._categorical_indices) == 0 or self.transformer is None:
+            return context
+        return PreprocessingContext(
+            X_train=self._transform_array(context.X_train),
+            X_test=None if context.X_test is None else self._transform_array(context.X_test),
+            y_train=context.y_train,
+            y_test=context.y_test,
+            categorical_indices=context.categorical_indices,
+            continuous_indices=context.continuous_indices,
+        )
+
+    def inverse_transform(self, context: PreprocessingContext) -> PreprocessingContext:
+        if len(self._categorical_indices) == 0 or self.transformer is None:
+            return context
+        return PreprocessingContext(
+            X_train=self._inverse_transform_array(context.X_train),
+            X_test=None
+            if context.X_test is None
+            else self._inverse_transform_array(context.X_test),
+            y_train=context.y_train,
+            y_test=context.y_test,
+            categorical_indices=context.categorical_indices,
+            continuous_indices=context.continuous_indices,
+        )
+
+    def _transform_array(self, X: np.ndarray) -> np.ndarray:
+        out = X.copy()
+        cat = X[:, self._categorical_indices].astype(np.float64)
+        out[:, self._categorical_indices] = self.transformer.transform(cat)
+        return out
+
+    def _inverse_transform_array(self, X: np.ndarray) -> np.ndarray:
+        out = X.copy()
+        cat = X[:, self._categorical_indices].astype(np.float64)
+        out[:, self._categorical_indices] = self.transformer.inverse_transform(cat)
+        return out
 
 
 class MinMaxScalingStep(PreprocessingStep):

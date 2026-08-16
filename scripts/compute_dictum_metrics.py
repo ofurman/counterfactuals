@@ -651,13 +651,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--data-root", default="data_train_test_val")
     parser.add_argument(
         "--scaler",
-        choices=("standard", "minmax"),
+        choices=("standard", "minmax", "minmax_qt"),
         default="standard",
         help="Model space the metrics are reported in.",
     )
     parser.add_argument(
         "--generation-scaler",
-        choices=("standard", "minmax"),
+        choices=("standard", "minmax", "minmax_qt"),
         default=None,
         help=(
             "Model space the run generated in, which is also the space its "
