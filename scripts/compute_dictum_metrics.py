@@ -46,6 +46,7 @@ from sklearn.neighbors import LocalOutlierFactor
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.datasets.traintest_file_dataset import TrainTestFileDataset
 from counterfactuals.models.classifier.simple_mlp import SimpleMLPClassifier
+from counterfactuals.models.space_adapter import SpaceAdapterClassifier
 from counterfactuals.pipelines.utils import apply_categorical_discretization
 from counterfactuals.preprocessing import build_model_space_pipeline
 
@@ -195,7 +196,7 @@ class DatasetBundle:
     dataset: MethodDataset
     gen_dataset: MethodDataset
     same_space: bool
-    disc_model: SimpleMLPClassifier
+    disc_model: SimpleMLPClassifier | SpaceAdapterClassifier
     lof: LocalOutlierFactor
     num_idx: list[int]
     cat_groups: list[list[int]]
@@ -228,20 +229,26 @@ def build_bundle(
     hidden_layers: list[int],
     gen_scaler: Optional[str] = None,
     metric_encoding: str = "onehot",
+    disc_scaler: Optional[str] = None,
 ) -> DatasetBundle:
     """Rebuild the dataset and classifier exactly as the run saw them.
 
     Args:
         scaler: Model space the metrics are reported in.
-        gen_scaler: Model space the run generated in, and trained its classifier
-            in. Defaults to `scaler`, i.e. generated and measured in one space.
+        gen_scaler: Model space the run generated in. Defaults to `scaler`,
+            i.e. generated and measured in one space.
         metric_encoding: "onehot" keeps the repository's representation for the
             metrics; "ordinal" collapses each one-hot block to a single code,
             matching the space DICTUM computes its metrics in.
+        disc_scaler: Model space the classifier was trained in. Defaults to
+            `gen_scaler`. When it differs, the classifier is wrapped so that
+            generation-space rows are converted into its space before every
+            prediction, mirroring SpaceAdapterClassifier in the run itself.
     """
     cfg_stem = config_stem(dataset_key)
     val_path = data_root / dataset_key / "val.csv"
     gen_scaler = gen_scaler or scaler
+    disc_scaler = disc_scaler or gen_scaler
     same_space = gen_scaler == scaler
 
     def _load() -> TrainTestFileDataset:
@@ -279,6 +286,19 @@ def build_bundle(
     )
     disc_model.load(str(disc_path))
     disc_model.eval()
+    if disc_scaler != gen_scaler:
+        # The classifier reads a third space; the adapter converts each
+        # generation-space row through original units into it.
+        disc_dataset = (
+            dataset
+            if disc_scaler == scaler
+            else MethodDataset(_load(), build_model_space_pipeline(disc_scaler))
+        )
+        disc_model = SpaceAdapterClassifier(
+            base_model=disc_model,
+            caller_dataset=gen_dataset,
+            model_dataset=disc_dataset,
+        )
 
     # In the ordinal metric space the columns are re-laid out as
     # [numerics | one code per categorical], so the metric indices differ from
@@ -311,7 +331,7 @@ def build_bundle(
     )
 
 
-def _predict(disc_model: SimpleMLPClassifier, X: np.ndarray) -> np.ndarray:
+def _predict(disc_model: SimpleMLPClassifier | SpaceAdapterClassifier, X: np.ndarray) -> np.ndarray:
     with torch.no_grad():
         logits = disc_model(torch.from_numpy(np.asarray(X, dtype=np.float32)))
         return torch.argmax(logits, dim=1).cpu().numpy()
@@ -668,6 +688,17 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--disc-scaler",
+        choices=("standard", "minmax", "minmax_qt"),
+        default=None,
+        help=(
+            "Model space the classifier under explanation was trained in. "
+            "Defaults to --generation-scaler. Set it for runs that used "
+            "experiment.disc_model_space_scaler, e.g. the shared DICTUM "
+            "classifier (standard) explained by a minmax_qt DiCoFlex run."
+        ),
+    )
+    parser.add_argument(
         "--metric-encoding",
         choices=("onehot", "ordinal"),
         default="onehot",
@@ -750,6 +781,7 @@ def main() -> None:
                     args.hidden_layers,
                     args.generation_scaler,
                     args.metric_encoding,
+                    args.disc_scaler,
                 )
             except FileNotFoundError as exc:
                 logger.warning("Cannot build bundle for %s seed %d: %s", dataset_key, seed, exc)

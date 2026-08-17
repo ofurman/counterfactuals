@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -211,10 +212,31 @@ def create_disc_model(
     disc_model_name = cfg.disc_model.model._target_.split(".")[-1]
     disc_model = isntantiate_disc_model(cfg, dataset)
 
+    # The model space this classifier reads. A checkpoint silently loaded into a
+    # different space produces garbage predictions (the DiCoFlex minmax_qt runs
+    # once loaded a standard-space classifier this way), so the space is recorded
+    # next to the checkpoint at train time and verified at load time.
+    disc_space = cfg.experiment.get("disc_model_space_scaler") or cfg.experiment.get(
+        "model_space_scaler", "minmax"
+    )
+    space_sidecar = disc_model_path + ".space.json"
     if cfg.disc_model.train_model:
         disc_model = train_disc_model(disc_model, dataset, disc_model_path, cfg)
+        with open(space_sidecar, "w") as f:
+            json.dump({"model_space_scaler": disc_space}, f)
     else:
         logger.info("Loading discriminator model")
+        if os.path.exists(space_sidecar):
+            with open(space_sidecar) as f:
+                recorded_space = json.load(f)["model_space_scaler"]
+            if recorded_space != disc_space:
+                raise RuntimeError(
+                    f"Classifier checkpoint {disc_model_path} was trained in the "
+                    f"'{recorded_space}' model space but this run feeds it "
+                    f"'{disc_space}'. Set experiment.disc_model_space_scaler="
+                    f"{recorded_space} (or retrain) instead of loading it into a "
+                    "space it never saw."
+                )
         disc_model.load(disc_model_path)
 
     disc_model.eval()

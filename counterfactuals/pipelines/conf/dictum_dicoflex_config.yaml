@@ -24,6 +24,12 @@ experiment:
   # --generation-scaler minmax_qt), so explanations are found in the original
   # space and reported in DICTUM's z-scored space.
   model_space_scaler: minmax_qt
+  # The shared DICTUM classifier (scripts/train_shared_disc_model.py, run with
+  # dictum_dice_config) is trained in `standard` space. Naming its space here
+  # makes the pipeline wrap it in SpaceAdapterClassifier, so every prediction
+  # converts minmax_qt -> original units -> standard instead of feeding the
+  # classifier a space it never saw (which collapsed adult to one class).
+  disc_model_space_scaler: standard
 
 dataset:
   _target_: counterfactuals.datasets.TrainTestFileDataset

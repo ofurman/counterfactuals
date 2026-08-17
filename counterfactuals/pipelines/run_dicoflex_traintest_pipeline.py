@@ -43,6 +43,7 @@ from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.models.space_adapter import SpaceAdapterClassifier
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.factual_selection import (
     resolve_target_labels,
@@ -218,8 +219,21 @@ def compute_pairwise_mean_distance(samples: np.ndarray, group_ids: np.ndarray) -
     return float(np.mean(min_dists)) if min_dists else float("nan")
 
 
-def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
-    """Run the DiCoFlex pipeline on a single train-test split."""
+def run_pipeline(
+    cfg: DictConfig,
+    dataset: MethodDataset,
+    device: str,
+    disc_dataset: MethodDataset | None = None,
+):
+    """Run the DiCoFlex pipeline on a single train-test split.
+
+    Args:
+        disc_dataset: When the classifier lives in a different model space than
+            the generation space (`experiment.disc_model_space_scaler`), the
+            dataset fitted with the classifier's space. The classifier is then
+            trained/loaded and evaluated in its own space and wrapped so every
+            downstream call converts generation-space rows into it.
+    """
     logger.info("Running DiCoFlex pipeline on train-test split")
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=0)
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
@@ -232,7 +246,13 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         cf_gen_model_filename = f"gen_model_{gen_model_name}_dicoflex.pt"
     cf_gen_model_path = os.path.join(save_folder, cf_gen_model_filename)
     disc_train_start = time()
-    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+    disc_model = create_disc_model(cfg, disc_dataset or dataset, disc_model_path, save_folder)
+    if disc_dataset is not None:
+        disc_model = SpaceAdapterClassifier(
+            base_model=disc_model,
+            caller_dataset=dataset,
+            model_dataset=disc_dataset,
+        )
     disc_train_time = time() - disc_train_start
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
@@ -560,12 +580,19 @@ def main(cfg: DictConfig):
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 
-    file_dataset = instantiate(cfg.dataset)
-    preprocessing_pipeline = build_model_space_pipeline(
-        cfg.experiment.get("model_space_scaler", "minmax")
+    gen_scaler = cfg.experiment.get("model_space_scaler", "minmax")
+    dataset = MethodDataset(instantiate(cfg.dataset), build_model_space_pipeline(gen_scaler))
+    # The classifier under explanation may live in a different model space than
+    # the one DiCoFlex generates in (e.g. the shared DICTUM classifier is
+    # trained in `standard` while the flow needs `minmax_qt`). A MethodDataset
+    # mutates the file dataset it wraps, so the second space gets its own.
+    disc_scaler = cfg.experiment.get("disc_model_space_scaler", gen_scaler)
+    disc_dataset = (
+        None
+        if disc_scaler == gen_scaler
+        else MethodDataset(instantiate(cfg.dataset), build_model_space_pipeline(disc_scaler))
     )
-    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    run_pipeline(cfg, dataset, device)
+    run_pipeline(cfg, dataset, device, disc_dataset=disc_dataset)
 
 
 if __name__ == "__main__":
