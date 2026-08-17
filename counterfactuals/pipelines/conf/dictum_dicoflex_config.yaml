@@ -18,12 +18,13 @@ experiment:
   relabel_with_disc_model: true
   seed: 42
   use_gpu: false
-  # Original DiCoFlex generation space (ofurman/DiCoFlex): MinMax on numeric
-  # features + QuantileTransformer on the one-hot categoricals. StandardScaler is
-  # used ONLY for metric computation (compute_dictum_metrics --scaler standard
-  # --generation-scaler minmax_qt), so explanations are found in the original
-  # space and reported in DICTUM's z-scored space.
-  model_space_scaler: minmax_qt
+  # Flow generation space: MinMax on numeric features, one-hot categoricals kept
+  # as raw 0/1 — matching the brinpow/dicoflex_repro reproduction (its
+  # feature_transformer is MinMax + plain OneHotEncoder, no QuantileTransformer).
+  # StandardScaler is used ONLY for metric computation (compute_dictum_metrics
+  # --scaler standard --generation-scaler minmax), so explanations are found in
+  # the generation space and reported in DICTUM's z-scored space.
+  model_space_scaler: minmax
   # The shared DICTUM classifier (scripts/train_shared_disc_model.py, run with
   # dictum_dice_config) is trained in `standard` space. Naming its space here
   # makes the pipeline wrap it in SpaceAdapterClassifier, so every prediction
@@ -69,8 +70,10 @@ counterfactuals_params:
   n_test_samples: 2000
   p_values: [2.0]
   inference_p_value: 2.0
-  n_neighbors: 16
-  noise_level: 0.02
+  # 32 neighbors and 0.01 noise match the brinpow/dicoflex_repro tabular runs
+  # (train_generic_counterfactual.py: n_nearest=32, noise_level=0.01).
+  n_neighbors: 32
+  noise_level: 0.01
   train_batch_factuals: 4
   val_ratio: 0.2
   num_counterfactuals: 100
