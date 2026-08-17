@@ -86,16 +86,14 @@ COMMON_DATA=(
   "dataset.val_data_path=data_train_test_val/${DATASET}/val.csv"
 )
 
-# Shared classifier, one per (dataset, seed), reused by every method scored in
-# this results root. Same recipe as run_dictum_experiments.sh.
-DISC_PT="$OUT_ROOT/$CFG_STEM/fold_0/disc_model_SimpleMLPClassifier.pt"
-if [[ ! -f "$DISC_PT" ]]; then
-  echo "training shared classifier for $DATASET seed $CF_SEED"
-  srun "$PY" -m scripts.train_shared_disc_model \
-    "--config-name=dictum_dice_config" \
-    "${COMMON_DATA[@]}" \
-    "hydra.run.dir=$OUT_ROOT/hydra/${CFG_STEM}_disc"
-fi
+# No shared standard-space classifier here, on purpose. DiCoFlex generates in
+# minmax_qt space, and both the pipeline (relabel, validity ordering) and the
+# scorer ("the classifier only ever sees generation-space values") expect the
+# fold_0 classifier to be trained in the GENERATION space. Pre-training it with
+# dictum_dice_config (standard space) poisoned the 2026-08-16 batch: on adult
+# the space-mismatched classifier predicted one class for everything and the
+# relabel collapsed. The pipeline trains its own classifier below
+# (disc_model.train_model=true from dictum_dicoflex_config).
 
 META="$OUT_ROOT/${CFG_STEM}_dicoflex_run.json"
 cat > "$META" <<META_EOF
@@ -118,7 +116,6 @@ echo "dicoflex mode=$CF_MODE dataset=$DATASET seed=$CF_SEED out=$OUT_ROOT"
 srun "$PY" -m counterfactuals.pipelines.run_dicoflex_traintest_pipeline \
   "--config-name=dictum_dicoflex_config" \
   "${COMMON_DATA[@]}" \
-  "disc_model.train_model=false" \
   "gen_model.epochs=10000" \
   "gen_model.patience=50" \
   "${MODE_OVERRIDES[@]}" \
