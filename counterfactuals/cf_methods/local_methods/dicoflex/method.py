@@ -255,7 +255,28 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         batch_size, num_samples, _ = candidates.shape
         flat_candidates = candidates.reshape(batch_size * num_samples, -1)
-        probs = self.disc_model.predict_proba(flat_candidates).reshape(batch_size, num_samples, -1)
+        # The flow occasionally samples non-finite or astronomically large rows;
+        # they are dead candidates, and feeding them to the classifier crashes
+        # space-converting adapters (inverting minmax on a huge value overflows
+        # float32 to inf, which sklearn transforms reject). Legit generation-space
+        # values sit in ~[0, 1], so the magnitude bound is generous. Score only
+        # sane rows and mark the rest invalid below.
+        finite_rows = np.isfinite(flat_candidates).all(axis=1) & (
+            np.abs(flat_candidates) < 1e6
+        ).all(axis=1)
+        if finite_rows.all():
+            flat_probs = self.disc_model.predict_proba(flat_candidates)
+        elif finite_rows.any():
+            finite_probs = self.disc_model.predict_proba(flat_candidates[finite_rows])
+            flat_probs = np.zeros(
+                (flat_candidates.shape[0], finite_probs.shape[1]), dtype=finite_probs.dtype
+            )
+            flat_probs[finite_rows] = finite_probs
+        else:
+            flat_probs = np.zeros(
+                (flat_candidates.shape[0], len(self.class_to_index)), dtype=np.float32
+            )
+        probs = flat_probs.reshape(batch_size, num_samples, -1)
         num_classes = probs.shape[-1]
         target_indices = np.vectorize(self.class_to_index.get, otypes=[int])(
             y_target_batch.reshape(-1).astype(int)
@@ -266,6 +287,9 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         target_probs = np.take_along_axis(probs, expanded_targets[..., None], axis=2).squeeze(2)
         predicted_class = np.argmax(probs, axis=2)
         valid_mask_matrix = predicted_class == target_indices[:, None]
+        # A zero-filled prob row argmaxes to class 0, which would wrongly count
+        # as valid whenever the target is 0 — exclude non-finite rows explicitly.
+        valid_mask_matrix &= finite_rows.reshape(batch_size, num_samples)
 
         if np.any(self.monotonic_direction != 0):
             monotonic_ok = self._check_monotonic_constraints(X_batch, candidates)

@@ -399,12 +399,15 @@ def run_pipeline(
     if model_returned_mask.size == 0:
         model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
 
-    # Replace NaN rows (where counterfactuals couldn't be found) with original factuals
+    # Replace failed counterfactual rows with the original factuals. NaN means the
+    # method produced nothing; inf or absurd magnitudes are flow samples that
+    # would overflow the space conversions downstream (legit generation-space
+    # values sit in ~[0, 1]).
     x_cfs_cleaned = explanation_result.x_cfs.copy()
-    nan_rows = np.any(np.isnan(x_cfs_cleaned), axis=1)
+    nan_rows = ~np.isfinite(x_cfs_cleaned).all(axis=1) | (np.abs(x_cfs_cleaned) >= 1e6).any(axis=1)
     if np.any(nan_rows):
         logger.info(
-            "Replacing %d rows with NaN (failed counterfactuals) with original factuals",
+            "Replacing %d rows with NaN/non-finite (failed counterfactuals) with original factuals",
             np.sum(nan_rows),
         )
         x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
