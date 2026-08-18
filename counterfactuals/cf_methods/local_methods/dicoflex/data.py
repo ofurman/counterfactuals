@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -12,6 +13,8 @@ from torch.utils.data import DataLoader, Dataset, random_split
 
 from counterfactuals.datasets.base import MonotonicityDirection
 from counterfactuals.datasets.method_dataset import MethodDataset
+
+logger = logging.getLogger(__name__)
 
 
 def build_actionability_mask(
@@ -126,6 +129,12 @@ class DiCoFlexDatasetConfig:
     factual_chunk_size: int | None = None
     target_chunk_size: int | None = None
     seed: int | None = None
+    # Boolean mask over rows of X: only True rows may serve as neighbor TARGETS
+    # (the counterfactual points the flow is trained to reproduce). Factuals are
+    # unaffected. None means every row is eligible. Mirrors the reproduction's
+    # prob_threshold filter, which drops target candidates the classifier is not
+    # confident about.
+    target_eligibility: np.ndarray | None = None
 
 
 class DiCoFlexTrainingDataset(Dataset):
@@ -169,10 +178,30 @@ class DiCoFlexTrainingDataset(Dataset):
         # Pre-separate data by class to reduce memory usage during neighbor computation
         self._X_by_class: Dict[int, np.ndarray] = {}
         self._indices_by_class: Dict[int, np.ndarray] = {}
+        # Target-side pools, possibly thinned by config.target_eligibility.
+        self._X_target_by_class: Dict[int, np.ndarray] = {}
+        self._target_indices_by_class: Dict[int, np.ndarray] = {}
+        eligibility = (
+            None
+            if config.target_eligibility is None
+            else np.asarray(config.target_eligibility, dtype=bool).reshape(-1)
+        )
+        if eligibility is not None and eligibility.shape[0] != self.X.shape[0]:
+            raise ValueError("target_eligibility must have one entry per row of X.")
         for cls in self.classes:
             class_mask = self.y == cls
             self._X_by_class[cls] = self.X[class_mask]
             self._indices_by_class[cls] = np.where(class_mask)[0]
+            target_mask = class_mask if eligibility is None else class_mask & eligibility
+            if not np.any(target_mask):
+                logger.warning(
+                    "target_eligibility removed every point of class %s; "
+                    "falling back to the full class as neighbor targets.",
+                    cls,
+                )
+                target_mask = class_mask
+            self._X_target_by_class[cls] = self.X[target_mask]
+            self._target_indices_by_class[cls] = np.where(target_mask)[0]
         self._neighbor_map = self._precompute_neighbors()
         self._factual_entries = self._build_factual_entries()
         if not self._factual_entries:
@@ -245,8 +274,8 @@ class DiCoFlexTrainingDataset(Dataset):
                             # Skip same-class pairs (counterfactuals must be different class)
                             continue
 
-                        X_target = self._X_by_class[target_class]
-                        target_global_indices = self._indices_by_class[target_class]
+                        X_target = self._X_target_by_class[target_class]
+                        target_global_indices = self._target_indices_by_class[target_class]
 
                         if X_target.size == 0:
                             continue
@@ -396,12 +425,15 @@ def create_dicoflex_dataloaders(
     categorical_indices: Sequence[int],
     factual_chunk_size: int | None = None,
     target_chunk_size: int | None = None,
+    target_eligibility: np.ndarray | None = None,
 ) -> Tuple[DataLoader, DataLoader, Dict[int, int], List[np.ndarray], int]:
     """Create train/validation loaders for DiCoFlex flow training.
 
     Args:
         factual_chunk_size: Chunk size for factual samples in neighbor search.
         target_chunk_size: Chunk size for target samples in neighbor search.
+        target_eligibility: Optional boolean row mask; only True rows may serve
+            as neighbor targets (see DiCoFlexDatasetConfig.target_eligibility).
     """
     config = DiCoFlexDatasetConfig(
         masks=masks,
@@ -411,6 +443,7 @@ def create_dicoflex_dataloaders(
         factual_chunk_size=factual_chunk_size,
         target_chunk_size=target_chunk_size,
         seed=seed,
+        target_eligibility=target_eligibility,
     )
     dataset = DiCoFlexTrainingDataset(
         X=X,

@@ -259,6 +259,26 @@ def run_pipeline(
         dataset.y_test = disc_model.predict(dataset.X_test)
 
     masks = build_masks(dataset, cfg.counterfactuals_params)
+    # Reproduction-parity neighbor filter (train_generic_counterfactual.py,
+    # prob_threshold): a training point may serve as a neighbor TARGET only when
+    # the classifier assigns its (relabeled) class at least this probability, so
+    # the flow learns to land in confidently-classified regions. 0 disables.
+    neighbor_prob_threshold = float(
+        cfg.counterfactuals_params.get("neighbor_prob_threshold", 0.0) or 0.0
+    )
+    target_eligibility = None
+    if neighbor_prob_threshold > 0.0:
+        train_probs = disc_model.predict_proba(dataset.X_train)
+        own_class_conf = np.take_along_axis(
+            train_probs, dataset.y_train.reshape(-1, 1).astype(int), axis=1
+        ).reshape(-1)
+        target_eligibility = own_class_conf >= neighbor_prob_threshold
+        logger.info(
+            "Neighbor target filter: %d of %d training points pass prob >= %.2f",
+            int(target_eligibility.sum()),
+            len(target_eligibility),
+            neighbor_prob_threshold,
+        )
     (
         train_loader,
         val_loader,
@@ -279,6 +299,7 @@ def run_pipeline(
         categorical_indices=dataset.categorical_features_indices,
         factual_chunk_size=cfg.counterfactuals_params.get("neighbor_factual_chunk_size"),
         target_chunk_size=cfg.counterfactuals_params.get("neighbor_target_chunk_size"),
+        target_eligibility=target_eligibility,
     )
     vis_cfg = cfg.get("visualization")
     if vis_cfg and vis_cfg.get("enable_training_batch", False):

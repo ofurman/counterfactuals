@@ -74,6 +74,9 @@ counterfactuals_params:
   # (train_generic_counterfactual.py: n_nearest=32, noise_level=0.01).
   n_neighbors: 32
   noise_level: 0.01
+  # Repro parity (prob_threshold=0.55): neighbor targets restricted to training
+  # points the classifier assigns >= this probability for their class. 0 = off.
+  neighbor_prob_threshold: 0.55
   train_batch_factuals: 4
   val_ratio: 0.2
   num_counterfactuals: 100
