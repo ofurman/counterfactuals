@@ -76,7 +76,9 @@ counterfactuals_params:
   noise_level: 0.01
   # Repro parity (prob_threshold=0.55): neighbor targets restricted to training
   # points the classifier assigns >= this probability for their class. 0 = off.
-  neighbor_prob_threshold: 0.55
+  # Off by default so in-flight sweeps stay comparable; enable per run with
+  # counterfactuals_params.neighbor_prob_threshold=0.55.
+  neighbor_prob_threshold: 0.0
   train_batch_factuals: 4
   val_ratio: 0.2
   num_counterfactuals: 100

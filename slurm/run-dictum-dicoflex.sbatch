@@ -48,6 +48,10 @@ case "$CF_MODE" in
   *) echo "Unknown CF_MODE '$CF_MODE'" >&2; exit 1 ;;
 esac
 
+# Optional space-separated extra hydra overrides, e.g.
+# CF_EXTRA_OVERRIDES="counterfactuals_params.neighbor_prob_threshold=0.55"
+read -r -a EXTRA_OVERRIDES <<< "${CF_EXTRA_OVERRIDES:-}"
+
 PROJECT="$HOME/projects/$PROJECT_NAME"
 HEAVY="$PLG_GROUPS_STORAGE/$PLG_GROUP/$USER/$PROJECT_NAME"
 OUT_ROOT="$HEAVY/results/$CF_RESULTS_TAG/seed_$CF_SEED"
@@ -119,6 +123,7 @@ srun "$PY" -m counterfactuals.pipelines.run_dicoflex_traintest_pipeline \
   "gen_model.epochs=10000" \
   "gen_model.patience=50" \
   "${MODE_OVERRIDES[@]}" \
+  ${EXTRA_OVERRIDES[@]+"${EXTRA_OVERRIDES[@]}"} \
   "hydra.run.dir=$OUT_ROOT/hydra/${CFG_STEM}_dicoflex"
 
 echo "done mode=$CF_MODE dataset=$DATASET seed=$CF_SEED"
