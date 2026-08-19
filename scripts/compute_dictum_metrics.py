@@ -63,7 +63,16 @@ METHODS: list[tuple[str, str, str, bool]] = [
     ("DiCoFlex", "DiCoFlex", "DiCoFlex_SimpleMLPClassifier", True),
 ]
 
-METRIC_KEYS = ["validity", "pool_validity", "prox_cont", "spars_cat", "epsilon_spars", "lof", "div"]
+METRIC_KEYS = [
+    "validity",
+    "pool_validity",
+    "prox_cont",
+    "spars_cat",
+    "epsilon_spars",
+    "lof",
+    "div",
+    "dir_div",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +163,30 @@ def diversity_mixed(x_cf: np.ndarray, num_idx: list[int], cat_groups: list[list[
         d_cat = np.zeros(n_pairs)
 
     return float(np.mean((d_cont + d_cat) / n_features))
+
+
+def directional_diversity_cosine(x_orig: np.ndarray, x_cf: np.ndarray) -> float:
+    """Angular diversity of the change vectors ``v_i = c_i - x``: 1 - mean cos.
+
+    Vectors live in the classifier's input space (standardized numericals +
+    one-hot categoricals), so the score only reflects *where* each CF moves,
+    not how far. 0 = all CFs push in the same direction, 1 = orthogonal, up to
+    2 for opposing directions. CFs identical to the query carry no direction
+    and are dropped; sets with fewer than two directed CFs score 0.
+    """
+    if len(x_cf) == 0:
+        return 0.0
+    vectors = x_cf - x_orig
+    norms = np.linalg.norm(vectors, axis=1)
+    vectors = vectors[norms > 1e-12]
+    norms = norms[norms > 1e-12]
+    k = len(vectors)
+    if k < 2:
+        return 0.0
+    unit = vectors / norms[:, None]
+    cos = unit @ unit.T
+    mean_cos = (cos.sum() - np.trace(cos)) / (k * (k - 1))
+    return 1.0 - float(mean_cos)
 
 
 def to_ordinal_space(X: np.ndarray, num_idx: list[int], cat_groups: list[list[int]]) -> np.ndarray:
@@ -406,9 +439,10 @@ def evaluate_method(
         cf_gen = cf_snapped.astype(np.float32)
         cf_original = bundle.gen_dataset.inverse_transform(cf_gen.copy())
 
-    cf_model = bundle.to_metric_space(
+    cf_onehot = (
         cf_gen if bundle.same_space else bundle.dataset.transform(cf_original.copy())
     ).astype(np.float32)
+    cf_model = bundle.to_metric_space(cf_onehot).astype(np.float32)
 
     n_factuals = len(factuals)
     expected = n_factuals * cf_per_instance
@@ -426,9 +460,10 @@ def evaluate_method(
     # reads; the metrics need them alongside the counterfactuals in the metric
     # space, so they are converted through original units the same way.
     factuals_original = bundle.gen_dataset.inverse_transform(factuals.copy())
-    factuals_model = bundle.to_metric_space(
+    factuals_onehot = (
         factuals if bundle.same_space else bundle.dataset.transform(factuals_original.copy())
     ).astype(np.float32)
+    factuals_model = bundle.to_metric_space(factuals_onehot).astype(np.float32)
 
     # The target is the flip of the classifier's own call on each factual, which
     # is what the aligned runs generate towards in both directions.
@@ -441,6 +476,7 @@ def evaluate_method(
 
     cf_blocks = cf_model.reshape(n_factuals, cf_per_instance, -1)
     cf_blocks_original = cf_original.reshape(n_factuals, cf_per_instance, -1)
+    cf_blocks_onehot = cf_onehot.reshape(n_factuals, cf_per_instance, -1)
 
     keep = min(keep_per_factual, cf_per_instance)
     # Valid counterfactuals first, original order preserved within each class.
@@ -448,6 +484,7 @@ def evaluate_method(
     rows = np.arange(n_factuals)[:, None]
     kept_cf = cf_blocks[rows, order]
     kept_cf_original = cf_blocks_original[rows, order]
+    kept_cf_onehot = cf_blocks_onehot[rows, order]
     kept_valid = pool_valid[rows, order]
 
     prox_vals: list[float] = []
@@ -455,6 +492,7 @@ def evaluate_method(
     eps_spars_vals: list[float] = []
     lof_vals: list[float] = []
     div_vals: list[float] = []
+    dir_div_vals: list[float] = []
     kept_validity: list[float] = []
 
     for i in range(n_factuals):
@@ -477,6 +515,9 @@ def evaluate_method(
         )
         lof_vals.append(lof_log_median(bundle.lof, cfs))
         div_vals.append(diversity_mixed(cfs, bundle.metric_num_idx, bundle.metric_cat_groups))
+        dir_div_vals.append(
+            directional_diversity_cosine(factuals_onehot[i], kept_cf_onehot[i][valid_mask])
+        )
 
     def _mean(values: list[float]) -> float:
         return float(np.mean(values)) if values else float("nan")
@@ -489,6 +530,7 @@ def evaluate_method(
         "epsilon_spars": _mean(eps_spars_vals),
         "lof": _mean(lof_vals),
         "div": _mean(div_vals),
+        "dir_div": _mean(dir_div_vals),
         "n_factuals": float(n_factuals),
         "n_scored_factuals": float(len(prox_vals)),
         "n_nonfinite_cfs": float(n_nonfinite),
@@ -507,6 +549,7 @@ METRIC_COLUMNS = [
     ("epsilon_spars", "$\\epsilon$-Spars. $\\downarrow$", "min"),
     ("lof", "LOF $\\downarrow$", "min"),
     ("div", "Diversity $\\uparrow$", "max"),
+    ("dir_div", "Dir.-Div $\\uparrow$", "max"),
 ]
 
 DATASET_DISPLAY = {
