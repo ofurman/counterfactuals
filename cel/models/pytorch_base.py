@@ -45,8 +45,13 @@ class PytorchBase(torch.nn.Module, ABC):
         torch.save(self.state_dict(), path)
 
     def load(self, path: str) -> None:
-        """Load model state from file."""
-        self.load_state_dict(torch.load(path))
+        """Load model state from file onto the device the model currently lives on.
+
+        The explicit ``map_location`` lets a checkpoint trained on GPU be loaded
+        into a CPU-resident model (and vice versa), which the train-on-GPU /
+        generate-on-CPU split relies on.
+        """
+        self.load_state_dict(torch.load(path, map_location=next(self.parameters()).device))
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
