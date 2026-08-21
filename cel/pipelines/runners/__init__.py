@@ -25,6 +25,7 @@ _RUNNERS = {
     "CEMPipelineRunner": "cel.pipelines.runners.cem_runner",
     "CETPipelineRunner": "cel.pipelines.runners.cet_runner",
     "DiCEPipelineRunner": "cel.pipelines.runners.dice_runner",
+    "DiCoFlexPipelineRunner": "cel.pipelines.runners.dicoflex_runner",
     "GLANCEPipelineRunner": "cel.pipelines.runners.glance_runner",
     "GLOBECEPipelineRunner": "cel.pipelines.runners.globe_ce_runner",
     "GroupGLOBECEPipelineRunner": "cel.pipelines.runners.group_globe_ce_runner",

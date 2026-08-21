@@ -155,7 +155,10 @@ class PipelineRunner(ABC):
 
     def run(self) -> None:
         """Orchestrate the full pipeline across all CV folds."""
-        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+        # Hide the GPU unless a run asks for it, so the default stays CPU-only
+        # as before. Methods that train their own model can then use it.
+        if not self.cfg.experiment.get("use_gpu", False):
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         self.logger.info("Loading dataset")
         dataset = self.load_dataset()
         dequantizer = GroupDequantizer(dataset.categorical_features_lists)

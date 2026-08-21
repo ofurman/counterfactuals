@@ -1,0 +1,79 @@
+# DiCoFlex on the standard five-fold cross-validation protocol.
+#
+# The counterfactuals_params below are experimental findings, not defaults.
+# They come from the reproduction of brinpow/dicoflex_repro and are what makes
+# the conditional flow usable at all; sampling at full variance with the stock
+# hyperparameters produces numeric proximity of order 1e17 and infinite LOF.
+# Please do not "tidy" them without rerunning the sanity check.
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+  seed: 42
+  # Flow training benefits from a GPU; every other stage is cheap. Left off so
+  # the default run behaves like the other pipelines.
+  use_gpu: false
+  # Clip numeric columns to the MinMax training box before scoring. The flow is
+  # bounded in practice by the sampling temperature but not in principle, and a
+  # few far samples otherwise dominate the mean-based proximity metrics.
+  clamp_numeric_to_box: true
+
+dataset:
+  _target_: cel.datasets.FileDataset
+  config_path: config/datasets/bank_marketing.yaml
+
+disc_model:
+  train_model: true
+  epochs: 100
+  batch_size: 64
+  patience: 15
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  # The flow is trained to convergence under early stopping rather than to a
+  # fixed epoch count; an undertrained flow was the identified cause of poor
+  # target coverage.
+  epochs: 10000
+  patience: 50
+  batch_size: 256
+  lr: 0.001
+
+counterfactuals_params:
+  cf_method:
+    _target_: cel.cf_methods.DiCoFlex
+
+  log_prob_quantile: 0.25
+  target_class: 0
+  batch_size: 4096
+
+  # Neighbour mining: each factual is paired with its nearest target-class
+  # points, so the flow learns to generate nearby counterfactuals.
+  n_neighbors: 32
+  noise_level: 0.01
+  p_values: [2.0]
+  train_batch_factuals: 4
+  val_ratio: 0.2
+
+  # Sampling. temperature < 1 shrinks the flow's base Gaussian draw, which is
+  # the mechanism that bounds the sampled tail.
+  temperature: 0.8
+  num_counterfactuals: 100
+  cf_samples_per_factual: 100
+  sampling_batch_size: 256
+
+  # Candidates are ranked closest-valid-first, so the leading counterfactual of
+  # each block is the one metrics read.
+  inference_mask_index: 0
+  inference_p_value: 2.0
+  use_actionability_mask: false
+  custom_masks: []
+  monotonic_overrides: {}
