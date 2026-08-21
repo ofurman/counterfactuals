@@ -26,19 +26,19 @@ class PytorchBase(torch.nn.Module, ABC):
         self.num_inputs = num_inputs
         self.num_targets = num_targets
 
-    @staticmethod
-    def _to_tensor(X: np.ndarray | torch.Tensor) -> torch.Tensor:
-        """Convert numpy array to float32 tensor if needed.
+    def _to_tensor(self, X: np.ndarray | torch.Tensor) -> torch.Tensor:
+        """Convert input to a float32 tensor on the model's device.
 
         Args:
             X: Input data as numpy array or tensor.
 
         Returns:
-            Float32 tensor.
+            Float32 tensor on the same device as the model parameters, so
+            prediction helpers keep working after the model is moved to GPU.
         """
         if isinstance(X, np.ndarray):
-            return torch.from_numpy(X).float()
-        return X
+            X = torch.from_numpy(X).float()
+        return X.to(next(self.parameters()).device)
 
     def save(self, path: str) -> None:
         """Save model state to file."""
