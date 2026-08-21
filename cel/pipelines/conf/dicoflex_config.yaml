@@ -18,8 +18,10 @@ experiment:
   output_folder: models/
   relabel_with_disc_model: true
   seed: 42
-  # Flow training benefits from a GPU; every other stage is cheap. Left off so
-  # the default run behaves like the other pipelines.
+  # GPU accelerates flow training only; the trained flow moves back to CPU and
+  # generation, the classifier, and metrics all run on CPU. Checkpoints are
+  # written CPU-loadable. Off by default so the run behaves like the other
+  # pipelines.
   use_gpu: false
   # Clip numeric columns to the MinMax training box before scoring. The flow is
   # bounded in practice by the sampling temperature but not in principle, and a

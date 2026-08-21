@@ -197,7 +197,12 @@ class DiCoFlexPipelineRunner(PipelineRunner):
     def __init__(
         self, cfg: DictConfig, logger: logging.Logger, preprocessing_pipeline=None
     ) -> None:
-        """Initialise the runner and resolve the training device.
+        """Initialise the runner and resolve the flow-training device.
+
+        The GPU, when requested via ``experiment.use_gpu``, accelerates flow
+        training only. The trained flow is moved back to CPU before anything
+        else touches it, so generation, the classifier, and metrics all run on
+        CPU and checkpoints are CPU-loadable by default.
 
         Args:
             cfg: Hydra configuration for the pipeline run.
@@ -206,7 +211,9 @@ class DiCoFlexPipelineRunner(PipelineRunner):
         """
         super().__init__(cfg, logger, preprocessing_pipeline)
         use_gpu = cfg.experiment.get("use_gpu", False)
-        self.device = torch.device("cuda" if use_gpu and torch.cuda.is_available() else "cpu")
+        self._train_device = torch.device(
+            "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
+        )
         self._flow: torch.nn.Module | None = None
         self._train_loader: torch.utils.data.DataLoader | None = None
         self._class_to_index: dict[int, int] = {}
@@ -256,12 +263,18 @@ class DiCoFlexPipelineRunner(PipelineRunner):
             self.cfg.gen_model.model,
             features=dataset.X_train.shape[1],
             context_features=context_dim,
-        ).to(self.device)
+        )
 
         if self.cfg.gen_model.train_model:
+            gen_model.to(self._train_device)
             train_dicoflex_generator(
-                gen_model, self._train_loader, val_loader, self.cfg, path, self.device
+                gen_model, self._train_loader, val_loader, self.cfg, path, self._train_device
             )
+            # Inference is CPU-only: bring the flow back and rewrite the best
+            # checkpoint with CPU tensors so it loads anywhere without
+            # map_location gymnastics.
+            gen_model.to(torch.device("cpu"))
+            gen_model.save(path)
         else:
             gen_model.load(path)
         self._flow = gen_model
@@ -286,7 +299,7 @@ class DiCoFlexPipelineRunner(PipelineRunner):
         cf_params = self.cfg.counterfactuals_params
         loader = full_training_loader(self._train_loader, cf_params.train_batch_factuals)
         threshold = flow_log_prob_threshold(
-            gen_model, loader, cf_params.log_prob_quantile, self.device
+            gen_model, loader, cf_params.log_prob_quantile, next(gen_model.parameters()).device
         )
         self.logger.info(f"log_prob_threshold: {threshold:.4f}")
         return threshold
@@ -357,7 +370,7 @@ class DiCoFlexPipelineRunner(PipelineRunner):
             class_to_index=self._class_to_index,
             mask_vectors=self._mask_vectors,
             params=params,
-            device=str(self.device),
+            device="cpu",
             monotonic_direction=monotonic_direction,
         )
 
