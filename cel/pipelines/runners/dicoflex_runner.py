@@ -215,9 +215,59 @@ class DiCoFlexPipelineRunner(PipelineRunner):
             "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
         )
         self._flow: torch.nn.Module | None = None
+        self._disc_model: torch.nn.Module | None = None
         self._train_loader: torch.utils.data.DataLoader | None = None
         self._class_to_index: dict[int, int] = {}
         self._mask_vectors: list[np.ndarray] = []
+
+    def create_disc_model(
+        self, dataset: MethodDataset, path: str, save_folder: str
+    ) -> torch.nn.Module:
+        """Create the classifier and keep a handle for the neighbour filter.
+
+        Args:
+            dataset: The current fold's dataset.
+            path: Path used to save/load the model checkpoint.
+            save_folder: Directory for auxiliary outputs.
+
+        Returns:
+            Trained discriminative model.
+        """
+        self._disc_model = super().create_disc_model(dataset, path, save_folder)
+        return self._disc_model
+
+    def _neighbor_target_eligibility(self, dataset: MethodDataset) -> np.ndarray | None:
+        """Mask of training points confident enough to serve as neighbour targets.
+
+        Mirrors the reference implementation's ``prob_threshold``: a training
+        point may be mined as a neighbour target only when the classifier
+        assigns its (relabeled) class at least ``neighbor_prob_threshold``
+        probability, so the flow learns to land in confidently-classified
+        regions. A threshold of 0 disables the filter.
+
+        Args:
+            dataset: The current fold's dataset, already relabeled.
+
+        Returns:
+            Boolean mask over the training rows, or None when disabled.
+        """
+        threshold = float(
+            self.cfg.counterfactuals_params.get("neighbor_prob_threshold", 0.0) or 0.0
+        )
+        if threshold <= 0.0 or self._disc_model is None:
+            return None
+        train_probs = self._disc_model.predict_proba(dataset.X_train)
+        own_class_conf = np.take_along_axis(
+            train_probs, dataset.y_train.reshape(-1, 1).astype(int), axis=1
+        ).reshape(-1)
+        eligibility = own_class_conf >= threshold
+        self.logger.info(
+            "Neighbor target filter: %d of %d training points pass prob >= %.2f",
+            int(eligibility.sum()),
+            len(eligibility),
+            threshold,
+        )
+        return eligibility
 
     def create_gen_model(
         self, dataset: MethodDataset, path: str, dequantizer: GroupDequantizer
@@ -257,6 +307,7 @@ class DiCoFlexPipelineRunner(PipelineRunner):
             categorical_indices=dataset.categorical_features_indices,
             factual_chunk_size=cf_params.get("neighbor_factual_chunk_size"),
             target_chunk_size=cf_params.get("neighbor_target_chunk_size"),
+            target_eligibility=self._neighbor_target_eligibility(dataset),
         )
 
         gen_model = instantiate(

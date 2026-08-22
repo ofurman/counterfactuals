@@ -58,7 +58,11 @@ counterfactuals_params:
   batch_size: 4096
 
   # Neighbour mining: each factual is paired with its nearest target-class
-  # points, so the flow learns to generate nearby counterfactuals.
+  # points, so the flow learns to generate nearby counterfactuals. Targets are
+  # additionally restricted to training points the classifier assigns at least
+  # neighbor_prob_threshold probability for their own class (reference
+  # prob_threshold=0.55); 0 disables the filter.
+  neighbor_prob_threshold: 0.55
   n_neighbors: 32
   noise_level: 0.01
   p_values: [2.0]
