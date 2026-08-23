@@ -41,6 +41,7 @@ from cel.datasets.method_dataset import MethodDataset
 from cel.dequantization.dequantizer import GroupDequantizer
 from cel.metrics.metrics import evaluate_cf
 from cel.pipelines.base_runner import CfMethodOutput, PipelineRunner, SearchResult
+from cel.pipelines.nodes.factual_selection import resolve_target_labels, select_factual_indices
 from cel.pipelines.utils import apply_categorical_discretization
 
 logger = logging.getLogger(__name__)
@@ -445,8 +446,9 @@ class DiCoFlexPipelineRunner(PipelineRunner):
         """
         X_test = np.concatenate([batch[0].numpy() for batch in cf_dataloader])
         y_test = np.concatenate([batch[1].numpy() for batch in cf_dataloader])
-        target_class = self._get_target_class()
-        y_target = np.full(y_test.shape[0], target_class, dtype=y_test.dtype)
+        # target_class None flips each factual's own label, so one run covers
+        # both directions; an integer pushes every factual to that class.
+        y_target = resolve_target_labels(y_test, self._get_target_class())
 
         result = cf_method.explain(X=X_test, y_origin=y_test, y_target=y_target)
         model_returned = np.asarray(result.logs.get("model_returned_mask", []), dtype=bool)
@@ -460,6 +462,30 @@ class DiCoFlexPipelineRunner(PipelineRunner):
             y_targets=result.y_cf_targets,
             model_returned=model_returned,
         )
+
+    def _filter_test_data(
+        self, dataset: MethodDataset, target_class: int | None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Select the query set: seeded, optionally capped, both-direction aware.
+
+        Overrides the base filter so ``target_class: null`` explains every test
+        row towards its own flip, and ``n_test_samples`` caps the query set with
+        a dedicated generator, keeping it identical across reruns of a seed.
+
+        Args:
+            dataset: The current fold's dataset, already relabelled.
+            target_class: Fixed target class, or None for per-instance flips.
+
+        Returns:
+            Tuple of (X_test, y_test) restricted to the selected rows.
+        """
+        indices = select_factual_indices(
+            dataset.y_test,
+            target_class=target_class,
+            n_test_samples=self.cfg.counterfactuals_params.get("n_test_samples"),
+            seed=self.cfg.experiment.get("seed", 42),
+        )
+        return dataset.X_test[indices], dataset.y_test[indices]
 
     def postprocess_cf_output(
         self, output: CfMethodOutput, dataset: MethodDataset

@@ -54,7 +54,12 @@ counterfactuals_params:
     _target_: cel.cf_methods.DiCoFlex
 
   log_prob_quantile: 0.25
-  target_class: 0
+  # null flips each factual's own label so one run covers both directions;
+  # an integer pushes every factual to that class.
+  target_class: null
+  # Seeded cap on the number of explained test rows, for comparable metrics and
+  # bounded runtime. null explains every eligible row.
+  n_test_samples: 2000
   batch_size: 4096
 
   # Neighbour mining: each factual is paired with its nearest target-class
