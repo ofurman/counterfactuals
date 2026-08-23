@@ -301,6 +301,7 @@ class DiCoFlexPipelineRunner(PipelineRunner):
             p_values=list(cf_params.p_values),
             n_neighbors=cf_params.n_neighbors,
             noise_level=cf_params.noise_level,
+            categorical_noise_level=cf_params.get("categorical_noise_level", 0.08),
             factual_batch_size=cf_params.train_batch_factuals,
             val_ratio=cf_params.val_ratio,
             seed=self.cfg.experiment.get("seed", 42),

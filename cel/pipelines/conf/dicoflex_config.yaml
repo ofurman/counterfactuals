@@ -7,7 +7,7 @@
 # Please do not "tidy" them without rerunning the sanity check.
 defaults:
   - _self_
-  - gen_model: large_maf
+  - gen_model: orig_maf
   - disc_model: mlp
 
 hydra:
@@ -70,6 +70,10 @@ counterfactuals_params:
   neighbor_prob_threshold: 0.55
   n_neighbors: 32
   noise_level: 0.01
+  # Fixed sigma of the noise on one-hot categorical target columns; the
+  # reproduction uses 0.08 independent of noise_level. The conditioning
+  # factual's numeric columns are additionally jittered with noise_level/10.
+  categorical_noise_level: 0.08
   p_values: [2.0]
   train_batch_factuals: 4
   val_ratio: 0.2

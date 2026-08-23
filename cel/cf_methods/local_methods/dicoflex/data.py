@@ -126,6 +126,11 @@ class DiCoFlexDatasetConfig:
     p_values: List[float]
     n_neighbors: int
     noise_level: float
+    # Fixed sigma of the Gaussian noise on one-hot categorical columns of the
+    # counterfactual targets. The reproduction uses 0.08 regardless of
+    # noise_level; without it the flow's density collapses onto the discrete
+    # one-hot corners and sampling misses them.
+    categorical_noise_level: float = 0.08
     factual_chunk_size: int | None = None
     target_chunk_size: int | None = None
     seed: int | None = None
@@ -159,6 +164,7 @@ class DiCoFlexTrainingDataset(Dataset):
         self.p_values = [float(p) for p in config.p_values]
         self.n_neighbors = max(1, config.n_neighbors)
         self.noise_level = max(0.0, config.noise_level)
+        self.categorical_noise_level = max(0.0, config.categorical_noise_level)
         self._rng = np.random.default_rng(config.seed)
         self.numerical_indices = np.array(numerical_indices, dtype=int)
         self.categorical_indices = np.array(categorical_indices, dtype=int)
@@ -225,7 +231,7 @@ class DiCoFlexTrainingDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         mask_idx, p_value, factual_idx, neighbor_records = self._factual_entries[idx]
-        factual = self.X[factual_idx]
+        factual = self._noised_condition(self.X[factual_idx])
         cf_samples: List[np.ndarray] = []
         contexts: List[np.ndarray] = []
         for cf_idx, target_class in neighbor_records:
@@ -401,13 +407,29 @@ class DiCoFlexTrainingDataset(Dataset):
                 self.noise_level,
                 size=self.numerical_indices.size,
             ).astype(np.float32)
-        if self.noise_level > 0 and self.categorical_indices.size > 0:
+        if self.categorical_noise_level > 0 and self.categorical_indices.size > 0:
             sample[self.categorical_indices] += self._rng.normal(
                 0.0,
-                self.noise_level * 0.1,
+                self.categorical_noise_level,
                 size=self.categorical_indices.size,
             ).astype(np.float32)
         return sample
+
+    def _noised_condition(self, factual: np.ndarray) -> np.ndarray:
+        """Return the conditioning copy of a factual with numeric jitter.
+
+        The reproduction perturbs the numeric part of the conditioning vector
+        with a tenth of the target noise, so the flow generalises over nearby
+        factuals instead of memorising the exact training points.
+        """
+        conditioned = factual.copy()
+        if self.noise_level > 0 and self.numerical_indices.size > 0:
+            conditioned[self.numerical_indices] += self._rng.normal(
+                0.0,
+                self.noise_level / 10.0,
+                size=self.numerical_indices.size,
+            ).astype(np.float32)
+        return conditioned
 
 
 def create_dicoflex_dataloaders(
@@ -417,6 +439,7 @@ def create_dicoflex_dataloaders(
     p_values: List[float],
     n_neighbors: int,
     noise_level: float,
+    categorical_noise_level: float,
     factual_batch_size: int,
     val_ratio: float,
     seed: int,
@@ -439,6 +462,7 @@ def create_dicoflex_dataloaders(
         p_values=p_values,
         n_neighbors=n_neighbors,
         noise_level=noise_level,
+        categorical_noise_level=categorical_noise_level,
         factual_chunk_size=factual_chunk_size,
         target_chunk_size=target_chunk_size,
         seed=seed,
