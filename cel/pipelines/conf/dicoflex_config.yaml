@@ -1,0 +1,94 @@
+# DiCoFlex on the standard five-fold cross-validation protocol.
+#
+# The counterfactuals_params below are experimental findings, not defaults.
+# They come from the reproduction of brinpow/dicoflex_repro and are what makes
+# the conditional flow usable at all; sampling at full variance with the stock
+# hyperparameters produces numeric proximity of order 1e17 and infinite LOF.
+# Please do not "tidy" them without rerunning the sanity check.
+defaults:
+  - _self_
+  - gen_model: orig_maf
+  - disc_model: mlp
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+  seed: 42
+  # GPU accelerates flow training only; the trained flow moves back to CPU and
+  # generation, the classifier, and metrics all run on CPU. Checkpoints are
+  # written CPU-loadable. Off by default so the run behaves like the other
+  # pipelines.
+  use_gpu: false
+  # Clip numeric columns to the MinMax training box before scoring. The flow is
+  # bounded in practice by the sampling temperature but not in principle, and a
+  # few far samples otherwise dominate the mean-based proximity metrics.
+  clamp_numeric_to_box: true
+
+dataset:
+  _target_: cel.datasets.FileDataset
+  config_path: config/datasets/bank_marketing.yaml
+
+disc_model:
+  train_model: true
+  epochs: 100
+  batch_size: 64
+  patience: 15
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  # The flow is trained to convergence under early stopping rather than to a
+  # fixed epoch count; an undertrained flow was the identified cause of poor
+  # target coverage.
+  epochs: 10000
+  patience: 50
+  batch_size: 256
+  lr: 0.001
+
+counterfactuals_params:
+  cf_method:
+    _target_: cel.cf_methods.DiCoFlex
+
+  log_prob_quantile: 0.25
+  # null flips each factual's own label so one run covers both directions;
+  # an integer pushes every factual to that class.
+  target_class: null
+  # Seeded cap on the number of explained test rows, for comparable metrics and
+  # bounded runtime. null explains every eligible row.
+  n_test_samples: 2000
+  batch_size: 4096
+
+  # Neighbour mining: each factual is paired with its nearest target-class
+  # points, so the flow learns to generate nearby counterfactuals. Targets are
+  # additionally restricted to training points the classifier assigns at least
+  # neighbor_prob_threshold probability for their own class (reference
+  # prob_threshold=0.55); 0 disables the filter.
+  neighbor_prob_threshold: 0.55
+  n_neighbors: 32
+  noise_level: 0.01
+  # Fixed sigma of the noise on one-hot categorical target columns; the
+  # reproduction uses 0.08 independent of noise_level. The conditioning
+  # factual's numeric columns are additionally jittered with noise_level/10.
+  categorical_noise_level: 0.08
+  p_values: [2.0]
+  train_batch_factuals: 4
+  val_ratio: 0.2
+
+  # Sampling. temperature < 1 shrinks the flow's base Gaussian draw, which is
+  # the mechanism that bounds the sampled tail.
+  temperature: 0.8
+  num_counterfactuals: 100
+  cf_samples_per_factual: 100
+  sampling_batch_size: 256
+
+  # Candidates are ranked closest-valid-first, so the leading counterfactual of
+  # each block is the one metrics read.
+  inference_mask_index: 0
+  inference_p_value: 2.0
+  use_actionability_mask: false
+  custom_masks: []
+  monotonic_overrides: {}

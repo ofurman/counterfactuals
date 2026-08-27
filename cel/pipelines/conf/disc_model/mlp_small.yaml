@@ -1,0 +1,4 @@
+model:
+  _target_: cel.models.classifier.multilayer_perceptron.MLPClassifier
+  hidden_layer_sizes: [32, 32]
+  dropout: 0.2

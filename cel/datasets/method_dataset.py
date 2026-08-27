@@ -182,6 +182,14 @@ class MethodDataset:
         return self.file_dataset.actionable_features
 
     @property
+    def monotonic_features(self):
+        """Return a mapping of feature name to :class:`MonotonicityDirection`.
+
+        Datasets that declare no monotonic constraints yield an empty mapping.
+        """
+        return getattr(self.file_dataset, "monotonic_features", {}) or {}
+
+    @property
     def config(self):
         """Return dataset configuration."""
         return self.file_dataset.config

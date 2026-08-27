@@ -1,0 +1,9 @@
+# The conditional-flow architecture of the original DiCoFlex implementation
+# (ofurman/DiCoFlex, brinpow/dicoflex_repro): wide and shallow. Used as the
+# METHOD's generation flow; density-estimation models elsewhere in the library
+# keep their own configs.
+model:
+  _target_: cel.models.generative.maf.maf.MaskedAutoregressiveFlow
+  hidden_features: 64
+  num_blocks_per_layer: 2
+  num_layers: 5
