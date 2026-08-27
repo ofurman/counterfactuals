@@ -2,11 +2,6 @@
 
 Generate your first counterfactual explanation in just a few steps.
 
-!!! note "Multiple Methods Available"
-    This tutorial demonstrates **PPCEF**, one of 14 counterfactual methods available in CEL. 
-    The same workflow applies to other methods like DiCE, WACH, and CEM—just import a different class from `counterfactuals.cf_methods.local_methods`.
-    [Explore all methods &rarr;](../methods/index.md)
-
 ## Overview
 
 This tutorial walks you through:
@@ -14,7 +9,7 @@ This tutorial walks you through:
 1. Loading a dataset
 2. Training a classifier
 3. Training a generative model (flow)
-4. Generating counterfactual explanations (using PPCEF)
+4. Generating counterfactual explanations
 5. Evaluating the results
 
 ## Step 1: Load a Dataset
@@ -57,7 +52,7 @@ test_loader = DataLoader(test_dataset, batch_size=256)
 ## Step 3: Train a Classifier
 
 ```python
-from cel.models.classifiers import MLPClassifier
+from cel.models import MLPClassifier
 
 # Get dimensions
 n_features = X_train.shape[1]
@@ -65,9 +60,10 @@ n_classes = len(set(y_train))
 
 # Create and train classifier
 classifier = MLPClassifier(
-    input_dim=n_features,
-    hidden_dims=[128, 64],
-    output_dim=n_classes
+    num_inputs=n_features,
+    num_targets=n_classes,
+    hidden_layer_sizes=[128, 64],
+    dropout=0.2,
 )
 
 classifier.fit(
@@ -85,13 +81,13 @@ print(f"Test accuracy: {accuracy:.2%}")
 ## Step 4: Train a Generative Model
 
 ```python
-from cel.models.generators import MaskedAutoregressiveFlow
+from cel.models import MaskedAutoregressiveFlow
 
 # Create and train flow model
 flow = MaskedAutoregressiveFlow(
-    input_dim=n_features,
-    hidden_dims=[128, 128],
-    n_layers=5
+    features=n_features,
+    hidden_features=128,
+    num_layers=5,
 )
 
 flow.fit(
@@ -110,7 +106,7 @@ import torch.nn as nn
 
 # Select an instance to explain (someone denied a loan)
 idx = (y_test == 0).nonzero()[0][0]  # First instance with class 0
-instance = X_test_t[idx:idx + 1]
+instance = X_test_t[idx:idx+1]
 original_class = y_test[idx]
 target_class = 1  # We want to find what would get approval
 
@@ -191,10 +187,10 @@ Here's the full code in one block:
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
 
-    from counterfactuals.datasets import FileDataset
-    from counterfactuals.models.classifiers import MLPClassifier
-    from counterfactuals.models.generators import MaskedAutoregressiveFlow
-    from counterfactuals.cf_methods.local_methods import PPCEF
+    from cel.datasets import FileDataset
+    from cel.models import MLPClassifier
+    from cel.models import MaskedAutoregressiveFlow
+    from cel.cf_methods.local_methods import PPCEF
 
     # 1. Load dataset
     dataset = FileDataset(config_path="config/datasets/adult.yaml")
@@ -221,17 +217,18 @@ Here's the full code in one block:
 
     # 3. Train classifier
     classifier = MLPClassifier(
-        input_dim=n_features,
-        hidden_dims=[128, 64],
-        output_dim=n_classes
+        num_inputs=n_features,
+        num_targets=n_classes,
+        hidden_layer_sizes=[128, 64],
+        dropout=0.2,
     )
     classifier.fit(train_loader, test_loader, epochs=50, lr=0.001)
 
     # 4. Train flow
     flow = MaskedAutoregressiveFlow(
-        input_dim=n_features,
-        hidden_dims=[128, 128],
-        n_layers=5
+        features=n_features,
+        hidden_features=128,
+        num_layers=5,
     )
     flow.fit(train_loader, test_loader, epochs=100, lr=0.0001)
 
@@ -264,27 +261,4 @@ Here's the full code in one block:
 
 - [Core Concepts](concepts.md) - Understand the theory behind counterfactuals
 - [User Guide](../user-guide/index.md) - Detailed usage instructions
-- [Methods](../methods/index.md) - Explore all 17+ available methods
-
-### Try Other Methods
-
-CEL supports many counterfactual methods. To use a different method, simply change the import:
-
-```python
-# Instead of:
-from cel.cf_methods.local_methods import PPCEF
-
-method = PPCEF(...)
-
-# Try:
-from cel.cf_methods.local_methods import DICE
-
-method = DICE(...)
-
-# Or:
-from cel.cf_methods.local_methods import WACH
-
-method = WACH(...)
-```
-
-Each method has different strengths—experiment to find the best fit for your use case!
+- [Methods](../methods/index.md) - Explore all available methods

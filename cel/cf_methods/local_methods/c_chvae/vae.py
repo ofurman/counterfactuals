@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -36,7 +35,7 @@ def get_home(models_home=None):
 
 
 class VariationalAutoencoder(nn.Module):
-    def __init__(self, data_name: str, layers: List, mutable_mask):
+    def __init__(self, data_name: str, layers: list, mutable_mask):
         """
 
         Parameters
@@ -44,7 +43,7 @@ class VariationalAutoencoder(nn.Module):
         data_name:
             Name of the dataset, used for the name when saving and loading the model.
         layers:
-            List of layer sizes.
+            list of layer sizes.
         mutable_mask:
             Mask that indicates which feature columns are mutable, and which are immutable. Setting
             all columns to mutable, results in the standard case.
@@ -127,7 +126,7 @@ class VariationalAutoencoder(nn.Module):
 
     def fit(
         self,
-        xtrain: Union[pd.DataFrame, np.ndarray],
+        xtrain: pd.DataFrame | np.ndarray,
         kl_weight=0.3,
         lambda_reg=1e-6,
         epochs=5,
@@ -136,6 +135,18 @@ class VariationalAutoencoder(nn.Module):
     ):
         if isinstance(xtrain, pd.DataFrame):
             xtrain = xtrain.values
+
+        xtrain = np.asarray(xtrain, dtype=np.float32)
+        x_min = np.nanmin(xtrain)
+        x_max = np.nanmax(xtrain)
+        if x_min < 0.0 or x_max > 1.0:
+            logger.warning(
+                "VAE input out of [0, 1] range (min=%.4f, max=%.4f). "
+                "Clipping to [0, 1]. Ensure preprocessing includes min-max scaling.",
+                x_min,
+                x_max,
+            )
+            xtrain = np.clip(xtrain, 0.0, 1.0)
 
         train_loader = torch.utils.data.DataLoader(xtrain, batch_size=batch_size, shuffle=True)
 

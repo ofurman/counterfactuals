@@ -12,7 +12,7 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
+  _target_: cel.datasets.FileDataset
   config_path: config/datasets/blobs.yaml
 
 disc_model:
@@ -32,7 +32,7 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.CEM.CEM_CF
+    _target_: cel.cf_methods.CEM.CEM_CF
   # CEM specific parameters
   mode: "PN"  # 'PN' (pertinent negative) or 'PP' (pertinent positive)
   kappa: 0.2
@@ -41,6 +41,9 @@ counterfactuals_params:
   c_steps: 5
   max_iterations: 200
   learning_rate_init: 0.01
+  fit_no_info_type: "median"
+  feature_range: [0.0, 1.0]
+  clip_range: [-1000.0, 1000.0]
   
   # General parameters
   target_class: 0

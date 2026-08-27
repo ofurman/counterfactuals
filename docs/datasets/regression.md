@@ -7,10 +7,10 @@ Pre-configured datasets for regression tasks.
 | Dataset | Features | Size | Description |
 |---------|----------|------|-------------|
 | `concrete.yaml` | 8 | 1,030 | Concrete compressive strength |
+| `wine_quality_regression.yaml` | 11 | 6,497 | Wine quality score |
 | `diabetes.yaml` | 10 | 442 | Diabetes progression |
 | `yacht.yaml` | 6 | 308 | Yacht hydrodynamics |
-| `synthetic.yaml` | 2 | 1,000 | Synthetic regression dataset |
-| `scm20d.yaml` | 61 | 8,966 | SCM20D multi-target regression |
+| `toy_regression.yaml` | varies | synthetic | Synthetic regression task |
 
 ## Usage Example
 
@@ -24,3 +24,9 @@ print(f"Training samples: {len(dataset.X_train)}")
 print(f"Test samples: {len(dataset.X_test)}")
 print(f"Target range: [{dataset.y.min():.2f}, {dataset.y.max():.2f}]")
 ```
+
+## Regression-Specific Methods
+
+For regression tasks, use:
+- **PPCEFR**: PPCEF for Regression
+- Regression-specific metrics via `RegressionCFMetrics`

@@ -1,0 +1,22 @@
+raw_data_path: data/law.csv
+features:
+- lsat
+- gpa
+- zfygpa
+continuous_features:
+- lsat
+- gpa
+- zfygpa
+categorical_features: []
+feature_config:
+  lsat:
+    actionable: true
+  gpa:
+    actionable: true
+  zfygpa:
+    actionable: true
+target: pass_bar
+initial_transforms:
+- name: dropna
+- name: reorder_columns
+- name: downsample

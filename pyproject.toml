@@ -7,10 +7,17 @@ requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
-    { name = "Anonymous" },
+    { name = "Patryk Wielopolski" },
+    { name = "Oleksii Furman" },
+    { name = "Lukasz Lenkiewicz" },
+    { name = "Marcel Musialek" },
+    { name = "Jerzy Stefanowski" },
+    { name = "Maciej Zieba" },
 ]
 maintainers = [
-    { name = "Anonymous" },
+    { name = "Oleksii Furman" },
+    { name = "Lukasz Lenkiewicz" },
+    { name = "Marcel Musialek" },
 ]
 keywords = [
     "counterfactual-explanations",
@@ -36,56 +43,54 @@ classifiers = [
 ]
 
 dependencies = [
-    "torchdiffeq",
-    "numpy",
-    "scipy",
-    "cvxpy",
-    "scikit-learn",
-    "hydra-core",
-    "mlflow",
-    "umap-learn",
-    "cel-nflows>=0.14.1",
-    "UMNN",
-    "pandas",
-    "torch",
-    "tqdm",
-    "matplotlib",
-    "plotly",
-    "dice-ml>=0.12",
-    "mlxtend>=0.23.4",
-    "pulp>=3.3.0",
-    "lingam>=1.11.0",
-    "networkx>=2.8,<3.0",
-    "pytorch-tabnet",
-    "pyfpgrowth",
-    "scikit-image",
-    "requests",
-    "attrs",
-    "dill",
-    "transformers>=4.7.0,<5.0.0",
-    "onnx<1.16.0",
-    "ml-dtypes<0.5.0",
-    "pyomo",
-    "omlt",
-    "tensorflow>=2.18.1",
-    "alibi>=0.9.6",
+  "torchdiffeq",
+  "numpy",
+  "scipy",
+  "cvxpy",
+  "scikit-learn",
+  "hydra-core",
+  "mlflow",
+  "umap-learn",
+  "nflows @ git+https://github.com/pfilo8/nflows.git",
+  "UMNN",
+  "pandas",
+  "torch",
+  "tqdm",
+  "matplotlib",
+  "plotly",
+  "ipykernel",
+  "dice-ml>=0.12",
+  "mlxtend>=0.23.4",
+  "pulp>=3.3.0",
+  "lingam>=1.11.0",
+  "networkx>=2.8,<3.0",
+  "pytorch-tabnet",
+  "pyfpgrowth",
+  "scikit-image",
+  "requests",
+  "attrs",
+  "dill",
+  "transformers>=4.7.0,<5.0.0",
+  "onnx<1.16.0",
+  "ml-dtypes<0.5.0",
+  "pyomo",
+  "omlt",
+  "tensorflow>=2.18.1",
+  "alibi>=0.9.6",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.7.1",
+  "mkdocstrings[python]>=1.0.0",
+  "mkdocs-gen-files>=0.6.0",
+  "mkdocs-literate-nav>=0.6.2",
+  "mkdocs-section-index>=0.3.10",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "ruff",
-    "pre-commit",
-    "pytest",
-    "ipykernel",
-]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.7.1",
-    "mkdocs-material-extensions",
-    "mkdocstrings[python]>=1.0.0",
-    "mkdocs-gen-files>=0.6.0",
-    "mkdocs-literate-nav>=0.6.2",
-    "mkdocs-section-index>=0.3.10",
+cearm = [
+  "GPyOpt==1.2.6; python_version < '3.13'",
+  "GPy==1.13.2; python_version < '3.13'",
+  "numpy>=1.26,<2.0; python_version < '3.13'",
+  "scipy>=1.3.0,<=1.12.0; python_version < '3.13'",
 ]
 
 [project.urls]
@@ -97,14 +102,6 @@ Issues = "https://github.com/ofurman/counterfactuals/issues"
 [build-system]
 requires = ["setuptools >= 77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.uv]
-dev-dependencies = [
-    "ruff",
-    "pre-commit",
-    "pytest",
-    "ipykernel",
-]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -118,8 +115,14 @@ line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"cel/cf_methods/ares/ares.py" = ["F841"]
-"cel/cf_methods/globe_ce/globe_ce.py" = ["F841"]
+"cel/cf_methods/global_methods/ares/ares.py" = ["F841"]
+"cel/cf_methods/global_methods/globe_ce/globe_ce.py" = ["F841"]
+
+[tool.pytest.ini_options]
+markers = [
+    "smoke: lightweight regression guards (all runners, fast)",
+    "slow: marks tests as slow (distinguished during test selection)",
+]
 
 [dependency-groups]
 dev = [

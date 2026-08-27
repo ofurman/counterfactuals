@@ -57,7 +57,6 @@ for metric, value in scores.items():
 ```python
 from cel.metrics import Metric, register_metric
 
-
 @register_metric
 class MyMetric(Metric):
     name = "my_metric"

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from cel.preprocessing.base import PreprocessingContext, PreprocessingStep
 
 
@@ -10,14 +8,14 @@ class PreprocessingPipeline(PreprocessingStep):
     maintaining a consistent context-based interface.
 
     Attributes:
-        steps: List of (name, step) tuples defining the pipeline.
+        steps: list of (name, step) tuples defining the pipeline.
     """
 
     def __init__(self, steps: list[tuple[str, PreprocessingStep]]):
         """Initialize the preprocessing pipeline.
 
         Args:
-            steps: List of (name, step) tuples where step implements PreprocessingStep.
+            steps: list of (name, step) tuples where step implements PreprocessingStep.
         """
         self.steps = steps
         self._validate_steps()
@@ -91,7 +89,7 @@ class PreprocessingPipeline(PreprocessingStep):
         """
         return self.fit(context).transform(context)
 
-    def get_step(self, name: str) -> Optional[PreprocessingStep]:
+    def get_step(self, name: str) -> PreprocessingStep | None:
         """Retrieve a specific step from the pipeline by name.
 
         Args:

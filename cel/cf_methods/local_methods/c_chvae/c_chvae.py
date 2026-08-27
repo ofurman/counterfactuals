@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -48,8 +47,8 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
       - `"max_iter"` (int, default: 2000): Maximum iterations per factual instance.
       - `"clamp"` (bool, default: True): If True, feature values are clamped to [0, 1].
       - `"binary_cat_features"` (bool, default: True): If True, categorical encoding uses drop-if-binary.
-      - `"vae_params"` (Dict): Parameters for the VAE:
-        - `"layers"` (List[int]): Number of neurons per layer.
+      - `"vae_params"` (dict): Parameters for the VAE:
+        - `"layers"` (list[int]): Number of neurons per layer.
         - `"train"` (bool, default: True): Whether to train a new VAE.
         - `"kl_weight"` (float, default: 0.3): KL divergence weight for the VAE loss.
         - `"lambda_reg"` (float, default: 1e-6): Regularization weight for VAE.
@@ -63,7 +62,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
       In *Proceedings of The Web Conference 2020*.
     """
 
-    def __init__(self, mlmodel: MLModel, hyperparams: Dict = None) -> None:
+    def __init__(self, mlmodel: MLModel, hyperparams: dict = None) -> None:
         """Initializes the CCHVAE method.
 
         Args:
@@ -93,7 +92,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         )
 
     def _load_vae(
-        self, data: pd.DataFrame, vae_params: Dict, mlmodel: MLModel, data_name: str
+        self, data: pd.DataFrame, vae_params: dict, mlmodel: MLModel, data_name: str
     ) -> VariationalAutoencoder:
         """Creates or loads the Variational Autoencoder used by CCHVAE.
 
@@ -135,7 +134,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
 
     def _hyper_sphere_coordindates(
         self, instance, high: int, low: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Samples points on a p-norm hypersphere shell around an instance.
 
         The method draws random directions, scales them to lie within the shell
@@ -148,7 +147,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
           low: Lower bound (inclusive) of the radius; must be `>= 0` and `low < high`.
 
         Returns:
-          Tuple[np.ndarray, np.ndarray]:
+          tuple[np.ndarray, np.ndarray]:
             - Candidate counterfactuals as an array of shape `(n_search_samples, d)`.
             - Corresponding distances (radii) as an array of shape `(n_search_samples,)`.
 
@@ -164,7 +163,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         return candidate_counterfactuals, dist
 
     def _counterfactual_search(
-        self, step: int, factual: torch.Tensor, cat_features_indices: List
+        self, step: int, factual: torch.Tensor, cat_feature_groups: list[list[int]]
     ) -> pd.DataFrame:
         """Searches for a counterfactual by expanding a hypersphere in latent space.
 
@@ -176,7 +175,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         Args:
           step: Increment used to expand the search radius after unsuccessful attempts.
           factual: Single factual instance as a tensor of shape `(1, d)`.
-          cat_features_indices: Column indices for encoded categorical features.
+          cat_feature_groups: One-hot column-index groups, one per categorical feature.
 
         Returns:
           A single counterfactual instance as a 1D NumPy array of shape `(d,)`.
@@ -213,8 +212,8 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         # make copy such that we later easily combine the immutables and the reconstructed mutables
         fact_rep = torch_fact.reshape(1, -1).repeat_interleave(self._n_search_samples, dim=0)
 
-        candidate_dist: List = []
-        x_ce: Union[np.ndarray, torch.Tensor] = np.array([])
+        candidate_dist: list = []
+        x_ce: np.ndarray | torch.Tensor = np.array([])
         while count <= self._max_iter or len(candidate_dist) <= 0:
             count = count + counter_step
             if count > self._max_iter:
@@ -231,9 +230,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
             temp[:, self._generative_model.mutable_mask] = x_ce.to(temp.dtype)
             x_ce = temp
 
-            x_ce = reconstruct_encoding_constraints(
-                x_ce, cat_features_indices, self._params["binary_cat_features"]
-            )
+            x_ce = reconstruct_encoding_constraints(x_ce, cat_feature_groups)
             x_ce = x_ce.detach().cpu().numpy()
             x_ce = x_ce.clip(0, 1) if self._clamp else x_ce
 
@@ -277,14 +274,11 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
-        encoded_feature_names = self._mlmodel.data.categorical
-        cat_features_indices = [
-            factuals.columns.get_loc(feature) for feature in encoded_feature_names
-        ]
+        cat_feature_groups = self._mlmodel.data._dataset.categorical_features_lists
 
         df_cfs = factuals.apply(
             lambda x: self._counterfactual_search(
-                self._step, x.reshape((1, -1)), cat_features_indices
+                self._step, x.reshape((1, -1)), cat_feature_groups
             ),
             raw=True,
             axis=1,
@@ -308,14 +302,11 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         """
         factuals = self._mlmodel.get_ordered_features(factuals)
 
-        encoded_feature_names = self._mlmodel.data.categorical
-        cat_features_indices = [
-            factuals.columns.get_loc(feature) for feature in encoded_feature_names
-        ]
+        cat_feature_groups = self._mlmodel.data._dataset.categorical_features_lists
 
         df_cfs = factuals.apply(
             lambda x: self._counterfactual_search(
-                self._step, x.reshape((1, -1)), cat_features_indices
+                self._step, x.reshape((1, -1)), cat_feature_groups
             ),
             raw=True,
             axis=1,
@@ -329,8 +320,8 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         X: np.ndarray,
         y_origin: np.ndarray,
         y_target: np.ndarray,
-        X_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
+        X_train: np.ndarray | None = None,
+        y_train: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for given instances.
@@ -369,7 +360,7 @@ class CCHVAE(BaseCounterfactualMethod, LocalCounterfactualMixin):
         epochs: int = None,
         lr: float = None,
         patience_eps: float = 1e-5,
-        y_target: Optional[np.ndarray] = None,
+        y_target: np.ndarray | None = None,
         **kwargs,
     ) -> ExplanationResult:
         """Generate counterfactual explanations for data provided via DataLoader.

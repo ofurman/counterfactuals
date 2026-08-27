@@ -12,7 +12,7 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.WineDataset
+  _target_: cel.datasets.WineDataset
 
 gen_model:
   batch_size: 256

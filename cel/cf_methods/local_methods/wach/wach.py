@@ -1,8 +1,8 @@
 import numpy as np
-import tensorflow as tf
-from alibi.explainers import Counterfactual
+import torch
+import torch.optim as optim
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from cel.cf_methods.counterfactual_base import (
     BaseCounterfactualMethod,
@@ -18,35 +18,36 @@ class WACH(BaseCounterfactualMethod, LocalCounterfactualMixin):
     def __init__(
         self,
         disc_model: PytorchBase,
-        target_class: int = "other",  # any class other than origin will do
-        **kwargs,  # ignore other arguments
+        disc_model_criterion,
+        device: str | None = None,
     ) -> None:
-        tf.compat.v1.disable_eager_execution()
-        target_proba = 1.0
-        tol = 0.51  # want counterfactuals with p(class)>0.99
-        self.target_class = target_class
-        max_iter = 1000
-        lam_init = 1e-1
-        max_lam_steps = 10
-        learning_rate_init = 0.1
-        predict_proba = lambda x: disc_model.predict_proba(x).numpy()  # noqa: E731
-        num_features = disc_model.num_inputs
+        self.disc_model_criterion = disc_model_criterion
+        self.disc_model = disc_model
+        self.device = device if device is not None else "cpu"
+        self.disc_model.to(self.device)
 
-        # TODO: Change in future to allow for different feature ranges
-        feature_range = (0, 1)
+    def _search_step(
+        self, delta, x_origin, contexts_origin, context_target, **search_step_kwargs
+    ) -> dict:
+        alpha = search_step_kwargs.get("alpha", None)
+        if alpha is None:
+            raise ValueError("Parameter 'alpha' should be in kwargs")
 
-        self.cf = Counterfactual(
-            predict_proba,
-            shape=(1, num_features),
-            target_proba=target_proba,
-            tol=tol,
-            target_class=target_class,
-            max_iter=max_iter,
-            lam_init=lam_init,
-            max_lam_steps=max_lam_steps,
-            learning_rate_init=learning_rate_init,
-            feature_range=feature_range,
+        dist = torch.linalg.vector_norm(delta, dim=1, ord=2)
+
+        disc_logits = self.disc_model.forward(x_origin + delta)
+        disc_logits = disc_logits.reshape(-1) if disc_logits.shape[0] == 1 else disc_logits
+        context_target = (
+            context_target.reshape(-1) if context_target.shape[0] == 1 else context_target
         )
+        loss_disc = self.disc_model_criterion(disc_logits, context_target.float())
+
+        loss = dist + alpha * (loss_disc)
+        return {
+            "loss": loss,
+            "dist": dist,
+            "loss_disc": loss_disc,
+        }
 
     def explain(
         self,
@@ -55,41 +56,79 @@ class WACH(BaseCounterfactualMethod, LocalCounterfactualMixin):
         y_target: np.ndarray,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        **kwargs,
-    ) -> ExplanationResult:
-        try:
-            X = X.reshape((1,) + X.shape)
-            explanation = self.cf.explain(X).cf
-        except Exception as e:
-            explanation = None
-            print(e)
-        return explanation, X, y_origin, y_target
-        # return ExplanationResult(
-        #     x_cfs=explanation, y_cf_targets=y_target, x_origs=X, y_origs=y_origin
-        # )
+    ):
+        raise NotImplementedError("This method is not implemented for this class.")
 
     def explain_dataloader(
-        self, dataloader: DataLoader, target_class: int, *args, **kwargs
+        self,
+        dataloader: DataLoader,
+        epochs: int = 1000,
+        lr: float = 0.0005,
+        patience_eps: float = 1e-5,
+        **search_step_kwargs,
     ) -> ExplanationResult:
-        Xs, ys = dataloader.dataset.tensors
-        # create ys_target numpy array same shape as ys but with target class
-        ys_target = np.full(ys.shape, target_class)
-        Xs_cfs = []
-        model_returned = []
-        for X, y in tqdm(zip(Xs, ys), total=len(Xs)):
-            try:
-                X = X.reshape((1,) + X.shape)
-                explanation = self.cf.explain(X).cf["X"]
-                model_returned.append(True)
-            except Exception as e:
-                explanation = [None, None]
-                print(e)
-                model_returned.append(False)
-            Xs_cfs.append(explanation)
+        if self.disc_model:
+            self.disc_model.eval()
+            for param in self.disc_model.parameters():
+                param.requires_grad = False
 
-        Xs_cfs = np.array(Xs_cfs).squeeze()
-        Xs = np.array(Xs)
-        ys = np.array(ys)
-        ys_target = np.array(ys_target)
-        return Xs_cfs, Xs, ys, ys_target, model_returned
-        # return ExplanationResult(x_cfs=Xs_cfs, y_cf_targets=ys, x_origs=Xs, y_origs=ys)
+        deltas: list = []
+        target_class: list = []
+        original: list = []
+        original_class: list = []
+        loss_components_logging: dict = {}
+
+        for xs_origin, contexts_origin in dataloader:
+            xs_origin = xs_origin.to(self.device)
+            contexts_origin = contexts_origin.to(self.device)
+
+            contexts_origin = contexts_origin.reshape(-1, 1)
+            contexts_target = torch.abs(1 - contexts_origin)
+
+            xs_origin = torch.as_tensor(xs_origin)
+            xs_origin.requires_grad = False
+            delta = torch.zeros_like(xs_origin, requires_grad=True)
+
+            optimizer = optim.Adam([delta], lr=lr)
+
+            for _ in (epoch_pbar := tqdm(range(epochs))):
+                optimizer.zero_grad()
+                loss_components = self._search_step(
+                    delta,
+                    xs_origin,
+                    contexts_origin,
+                    contexts_target,
+                    **search_step_kwargs,
+                )
+                mean_loss = loss_components["loss"].mean()
+                mean_loss.backward()
+                optimizer.step()
+
+                for loss_name, loss in loss_components.items():
+                    loss_components_logging.setdefault(f"cf_search/{loss_name}", []).append(
+                        loss.mean().detach().cpu().item()
+                    )
+
+                disc_loss = loss_components["loss_disc"].detach().cpu().mean().item()
+                epoch_pbar.set_description(f"Discriminator loss: {disc_loss:.4f}")
+                if disc_loss < patience_eps:
+                    break
+
+            deltas.append(delta.detach().cpu().numpy())
+            original.append(xs_origin.detach().cpu().numpy())
+            original_class.append(contexts_origin.detach().cpu().numpy())
+            target_class.append(contexts_target.detach().cpu().numpy())
+
+        deltas_arr = np.concatenate(deltas, axis=0)
+        original_arr = np.concatenate(original, axis=0)
+        original_class_arr = np.concatenate(original_class, axis=0)
+        target_class_arr = np.concatenate(target_class, axis=0)
+        x_cfs = deltas_arr + original_arr
+
+        return ExplanationResult(
+            x_cfs=x_cfs,
+            y_cf_targets=target_class_arr,
+            x_origs=original_arr,
+            y_origs=original_class_arr,
+            logs=loss_components_logging,
+        )

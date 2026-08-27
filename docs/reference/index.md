@@ -10,25 +10,31 @@ The API reference documentation is auto-generated from source code docstrings.
 
 The main counterfactual explanation methods.
 
-::: counterfactuals.cf_methods.counterfactual_base
+::: cel.cf_methods.counterfactual_base
+
+### Pipelines
+
+#### Base runner
+
+::: cel.pipelines.base_runner
 
 ### Datasets
 
 Dataset loading and configuration utilities.
 
-::: counterfactuals.datasets.file_dataset
+::: cel.datasets.file_dataset
 
 ### Models
 
 #### Classifiers
 
-::: counterfactuals.models.classifier.logistic_regression
+::: cel.models.classifier.logistic_regression
 
-::: counterfactuals.models.classifier.multilayer_perceptron
+::: cel.models.classifier.multilayer_perceptron
 
 #### Generative Models
 
-::: counterfactuals.models.generative.kde
+::: cel.models.generative.kde
 
 ## Quick Links
 
@@ -38,3 +44,5 @@ For method-specific API documentation, see:
 - [DICE](../methods/local/dice.md#api-reference)
 - [GLOBE-CE](../methods/global/globe-ce.md#api-reference)
 - [ReViCE](../methods/group/revice.md#api-reference)
+
+For pipeline usage, see the [Pipelines user guide](../user-guide/pipelines.md).

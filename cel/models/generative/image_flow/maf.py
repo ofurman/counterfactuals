@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 import torch
 import torch.nn as nn
 from batch_norm_layer import BatchNormLayer
@@ -8,12 +6,12 @@ from torch import Tensor
 
 
 class MAF(nn.Module):
-    def __init__(self, dim: int, n_layers: int, hidden_dims: List[int], use_reverse: bool = True):
+    def __init__(self, dim: int, n_layers: int, hidden_dims: list[int], use_reverse: bool = True):
         """
         Args:
             dim: Dimension of input. E.g.: dim = 784 when using MNIST.
             n_layers: Number of layers in the MAF (= number of stacked MADEs).
-            hidden_dims: List with of sizes of the hidden layers in each MADE.
+            hidden_dims: list with of sizes of the hidden layers in each MADE.
             use_reverse: Whether to reverse the input vector in each MADE.
         """
         super().__init__()
@@ -25,7 +23,7 @@ class MAF(nn.Module):
             self.layers.append(MAFLayer(dim, hidden_dims, reverse=use_reverse))
             self.layers.append(BatchNormLayer(dim))
 
-    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         log_det_sum = torch.zeros(x.shape[0])
         # Forward pass.
         for layer in self.layers:
@@ -34,7 +32,7 @@ class MAF(nn.Module):
 
         return x, log_det_sum
 
-    def backward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+    def backward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         log_det_sum = torch.zeros(x.shape[0])
         # Backward pass.
         for layer in reversed(self.layers):

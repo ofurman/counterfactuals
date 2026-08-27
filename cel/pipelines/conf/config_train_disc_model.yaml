@@ -10,7 +10,7 @@ experiment:
   output_folder: models/
 
 dataset:
-  _target_: counterfactuals.datasets.DigitsDataset
+  _target_: cel.datasets.DigitsDataset
 
 disc_model:
   epochs: 500

@@ -5,7 +5,7 @@ from cel.datasets.base import (
 )
 from cel.datasets.file_dataset import FileDataset
 from cel.datasets.method_dataset import MethodDataset
-from cel.datasets.traintest_file_dataset import TrainTestFileDataset
+from cel.datasets.regression_file_dataset import RegressionFileDataset
 
 __all__ = [
     "DatasetBase",
@@ -13,5 +13,5 @@ __all__ = [
     "FeatureParameters",
     "FileDataset",
     "MethodDataset",
-    "TrainTestFileDataset",
+    "RegressionFileDataset",
 ]

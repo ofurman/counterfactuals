@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Generator
 
 import numpy as np
 import pandas as pd
@@ -28,9 +28,9 @@ class FeatureParameters:
     """
 
     actionable: bool
-    top_limit: Optional[float] = None
-    bottom_limit: Optional[float] = None
-    direction: Optional[MonotonicityDirection] = None
+    top_limit: float | None = None
+    bottom_limit: float | None = None
+    direction: MonotonicityDirection | None = None
 
 
 @dataclass
@@ -39,22 +39,22 @@ class DatasetParameters:
 
     Attributes:
         raw_data_path: Path to the raw dataset file.
-        features: List of feature names or indices used as input variables.
-        continuous_features: List of continuous feature names or indices.
-        categorical_features: List of categorical feature names or indices.
+        features: list of feature names or indices used as input variables.
+        continuous_features: list of continuous feature names or indices.
+        categorical_features: list of categorical feature names or indices.
         feature_config: Mapping of feature name/index to FeatureParameters.
         target: Name of the target column.
     """
 
     raw_data_path: str
-    features: List[Union[str, int]]
-    continuous_features: List[Union[str, int]]
-    categorical_features: List[Union[str, int]]
-    feature_config: Dict[Union[str, int], FeatureParameters]
+    features: list[str | int]
+    continuous_features: list[str | int]
+    categorical_features: list[str | int]
+    feature_config: dict[str | int, FeatureParameters]
     target: str
-    target_mapping: Dict[str, int]
+    target_mapping: dict[str, int]
     samples_keep: int = -1
-    initial_transforms: List[Dict[str, Any]] = field(default_factory=list)
+    initial_transforms: list[dict[str, Any]] = field(default_factory=list)
 
 
 class DatasetBase:
@@ -71,23 +71,23 @@ class DatasetBase:
             config_path: Path to the YAML config file.
         """
         self.config = self._load_config(config_path)
-        self.X: Optional[np.ndarray] = None
-        self.y: Optional[np.ndarray] = None
-        self.features: List[Any] = self.config.features
-        self.numerical_features: List[Any] = self.config.continuous_features
-        self.numerical_features_indices: List[int] = [
+        self.X: np.ndarray | None = None
+        self.y: np.ndarray | None = None
+        self.features: list[Any] = self.config.features
+        self.numerical_features: list[Any] = self.config.continuous_features
+        self.numerical_features_indices: list[int] = [
             self.features.index(f) for f in self.numerical_features
         ]
-        self.categorical_features: List[Any] = self.config.categorical_features
-        self.categorical_features_indices: List[int] = [
+        self.categorical_features: list[Any] = self.config.categorical_features
+        self.categorical_features_indices: list[int] = [
             self.features.index(f) for f in self.categorical_features
         ]
-        self.actionable_features: List[Any] = [
+        self.actionable_features: list[Any] = [
             k for k, v in self.config.feature_config.items() if v.actionable
         ]
         self.task_type: str = "classification"
 
-    def preprocess(self, raw_data: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    def preprocess(self, raw_data: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         """Extracts input features and target from raw data.
 
         Args:
@@ -101,7 +101,7 @@ class DatasetBase:
         self.X, self.y = X, y
         return X, y
 
-    def _resolve_data_path(self, file_path: Union[str, Path]) -> Path:
+    def _resolve_data_path(self, file_path: str | Path) -> Path:
         project_root = Path(__file__).resolve().parent.parent.parent
         return project_root / Path(file_path)
 
@@ -117,7 +117,7 @@ class DatasetBase:
         y: np.ndarray,
         train_ratio: float = 0.8,
         stratify: bool = True,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Splits data into train and test sets.
 
         Args:
@@ -139,7 +139,7 @@ class DatasetBase:
 
     def get_cv_splits(
         self, n_splits: int = 5, shuffle: bool = True
-    ) -> Generator[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
+    ) -> Generator[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
         """Generates stratified cross-validation splits.
 
         Args:

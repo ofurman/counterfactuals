@@ -1,7 +1,6 @@
 """Implementations of various mixture models."""
 
 import abc
-from typing import Optional
 
 import numpy as np
 import torch
@@ -252,7 +251,7 @@ class KDE(PytorchBase, GenerativePytorchMixin):
         return preds
 
     def predict_log_proba(
-        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+        self, X_test: np.ndarray, context: np.ndarray | None = None
     ) -> np.ndarray:
         """Predict log probabilities for input data."""
         # Convert to torch tensor if needed
@@ -265,12 +264,6 @@ class KDE(PytorchBase, GenerativePytorchMixin):
             preds[i] = model(X_test[i].unsqueeze(0))
         return preds.cpu().numpy()
 
-    def sample_and_log_proba(self, n_samples: int, context: Optional[np.ndarray] = None) -> tuple:
+    def sample_and_log_proba(self, n_samples: int, context: np.ndarray | None = None) -> tuple:
         """Sample from KDE and return log probabilities."""
         raise NotImplementedError("Sampling from KDE is not implemented")
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))

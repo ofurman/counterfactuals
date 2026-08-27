@@ -1,22 +1,19 @@
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
-def log_parameters(cfg: DictConfig) -> Dict[str, Any]:
+def log_parameters(cfg: DictConfig) -> dict[str, Any]:
     """Collect and log selected parameters from the Hydra config.
 
     Returns a plain dict with key configuration values for optional persistence.
     """
     logger.info("Logging parameters")
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     params["experiment"] = cfg.experiment
     params["dataset"] = cfg.dataset._target_.split(".")[-1]
 
@@ -44,7 +41,7 @@ def set_model_paths(cfg: DictConfig, fold: str = None):
     output_folder/dataset_name/_gen_model_name.pt
     output_folder/dataset_name/method_name/results
     """
-    # Set paths for saving models
+    # set paths for saving models
     logger.info("Setting model paths")
     dataset_name = cfg.dataset.config_path.split("/")[-1].split(".")[0]
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]

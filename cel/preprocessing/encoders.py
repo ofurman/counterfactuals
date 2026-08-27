@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
@@ -20,11 +18,11 @@ class OneHotEncodingStep(PreprocessingStep):
 
     def __init__(self):
         """Initialize OneHotEncoder."""
-        self.encoder: Optional[OneHotEncoder] = None
-        self.n_features_in: Optional[int] = None
-        self.n_features_out: Optional[int] = None
-        self._categorical_indices: Optional[list[int]] = None
-        self._continuous_indices: Optional[list[int]] = None
+        self.encoder: OneHotEncoder | None = None
+        self.n_features_in: int | None = None
+        self.n_features_out: int | None = None
+        self._categorical_indices: list[int] | None = None
+        self._continuous_indices: list[int] | None = None
 
     def fit(self, context: PreprocessingContext) -> "OneHotEncodingStep":
         """Fit the encoder on categorical features from training data.
@@ -211,7 +209,7 @@ class LabelOneHotEncodingStep(PreprocessingStep):
     """One-hot encode labels (y) using sklearn OneHotEncoder."""
 
     def __init__(self) -> None:
-        self.encoder: Optional[OneHotEncoder] = None
+        self.encoder: OneHotEncoder | None = None
 
     def fit(self, context: PreprocessingContext) -> "LabelOneHotEncodingStep":
         """Fit the encoder on available labels."""

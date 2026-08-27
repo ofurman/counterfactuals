@@ -1,34 +1,49 @@
 # WACH
 
-**Weighted Actionable Counterfactual Explanations**
+**Wachter et al. counterfactual explanations**
 
-WACH focuses on generating actionable counterfactuals with weighted feature importance.
+WACH implements the classic gradient-based counterfactual objective: minimize L2 distance to the input subject to the classifier predicting the target class.
 
 ## Overview
 
-WACH emphasizes actionability by weighting features based on their modifiability.
+For each batch, a per-instance perturbation `delta` is optimized with Adam to minimize:
+
+```
+loss = ||delta||_2 + alpha * disc_loss(disc_model(x + delta), y_target)
+```
+
+`explain` is not implemented; pipelines use `explain_dataloader`.
 
 ## Usage
 
 ```python
+import torch
 from cel.cf_methods.local_methods import WACH
 
 method = WACH(
-    gen_model=gen_model,
     disc_model=classifier,
-    disc_model_criterion=criterion,
-    device="cuda"
+    disc_model_criterion=torch.nn.BCEWithLogitsLoss(),
+    device="cpu",
 )
 
-result = method.explain(
-    X=instance,
-    y_origin=0,
-    y_target=1,
-    X_train=X_train,
-    y_train=y_train
+result = method.explain_dataloader(
+    dataloader=train_loader,
+    epochs=1000,
+    lr=5e-4,
+    alpha=1.0,
 )
 ```
 
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `disc_model` | `PytorchBase` | required | Trained classifier. |
+| `disc_model_criterion` | callable | required | Loss between discriminator logits and target context. |
+| `device` | `str \| None` | `"cpu"` | Torch device. |
+
+`explain_dataloader` requires `alpha` in `search_step_kwargs`. Stops early when `disc_loss < patience_eps`.
+
 ## API Reference
 
-::: counterfactuals.cf_methods.local_methods.wach.wach.WACH
+::: cel.cf_methods.local_methods.wach.wach.WACH

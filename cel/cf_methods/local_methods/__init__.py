@@ -3,10 +3,15 @@
 from .artelt import Artelt
 from .c_chvae.c_chvae import CCHVAE
 from .cadex.cadex import CadexEngine as CADEX
-from .cearm import CEARM
+
+try:
+    from .cearm import CEARM
+except ImportError:
+    CEARM = None
 from .cegp.cegp import CEGP
 from .cem.cem import CEM_CF
 from .dice.dice import DICE
+from .dicoflex import DiCoFlex, DiCoFlexParams
 from .ppcef.ppcef import PPCEF
 from .sace.sace import SACE
 from .wach.wach import WACH
@@ -19,6 +24,8 @@ __all__ = [
     "CEGP",
     "CEM_CF",
     "DICE",
+    "DiCoFlex",
+    "DiCoFlexParams",
     "PPCEF",
     "SACE",
     "WACH",

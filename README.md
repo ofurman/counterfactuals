@@ -30,7 +30,7 @@ The library includes multiple counterfactual methods, from gradient-based approa
 - **Normalizing Flow Integration**: State-of-the-art density estimation for plausibility
 - **Comprehensive Metrics**: 17+ evaluation metrics for counterfactual quality
 - **Hydra Configuration**: Flexible experiment management with YAML configs
-- **18 Built-in Datasets**: Classification and regression tasks
+- **21 Built-in Datasets**: Classification and regression tasks
 - **Extensible Architecture**: Easy to add new methods, models, and metrics
 - **PyTorch-based**: Modern deep learning framework
 - **Cross-validation Support**: Robust evaluation with k-fold CV
@@ -42,7 +42,7 @@ Clone the repository and set up the environment:
 
 ```shell
 git clone git@github.com:ofurman/cel.git
-cd cel
+cd counterfactuals
 ./setup_env.sh
 ```
 
@@ -58,39 +58,54 @@ uv sync
 
 ```python
 import torch
+
 from cel.datasets import FileDataset, MethodDataset
-from cel.cf_methods import PPCEF
+from cel.cf_methods.local_methods import PPCEF
 from cel.models import MaskedAutoregressiveFlow, MLPClassifier
 from cel.losses import BinaryDiscLoss
-from cel.metrics.orchestrator import MetricsOrchestrator
-import numpy as np
-
-# Note: You may need to convert data to float32 for PyTorch compatibility
-# X_train = dataset.X_train.astype(np.float32)
-# y_train = dataset.y_train.astype(np.float32)
+from cel.metrics import evaluate_cf
+from cel.preprocessing import (
+    MinMaxScalingStep,
+    PreprocessingPipeline,
+    TorchDataTypeStep,
+)
 
 # Load dataset with preprocessing
-file_dataset = FileDataset(config_path="config/datasets/moons.yaml")
-dataset = MethodDataset(file_dataset=file_dataset)
+dataset = MethodDataset.from_config("config/datasets/moons.yaml")
 train_loader = dataset.train_dataloader(batch_size=128, shuffle=True)
 test_loader = dataset.test_dataloader(batch_size=128, shuffle=False)
 
-# Train discriminative model (classifier)
+file_dataset = FileDataset(config_path="config/datasets/moons.yaml")
+preprocessing = PreprocessingPipeline([
+    ("minmax", MinMaxScalingStep()),
+    ("torch_dtype", TorchDataTypeStep()),
+])
+dataset = MethodDataset(file_dataset, preprocessing)
+train_dataloader = dataset.train_dataloader(batch_size=128, shuffle=True)
+test_dataloader = dataset.test_dataloader(batch_size=128, shuffle=False)
+
 disc_model = MLPClassifier(
     num_inputs=dataset.X_train.shape[1],
     num_targets=1,
     hidden_layer_sizes=[256, 256],
     dropout=0.2,
 )
+disc_model.fit(
+    train_dataloader,
+    test_dataloader,
+    epochs=5000,
+    patience=300,
+    lr=1e-3,
+)
 disc_model.fit(train_loader, test_loader, epochs=5000, patience=300, lr=1e-3)
 
 # Train generative model (normalizing flow)
 gen_model = MaskedAutoregressiveFlow(
-    features=dataset.X_train.shape[1],
+    features=dataset.input_size,
     hidden_features=8,
     context_features=1,
 )
-gen_model.fit(train_loader, test_loader, epochs=1000)
+gen_model.fit(train_loader, test_loader, num_epochs=1000)
 
 # Generate counterfactuals
 cf_method = PPCEF(
@@ -106,53 +121,77 @@ result = cf_method.explain_dataloader(
     epochs=4000,
 )
 
-# Evaluate results using MetricsOrchestrator
-orchestrator = MetricsOrchestrator(
-    X_cf=result.x_cfs,
-    y_target=result.y_cf_targets,
+# Evaluate results
+X_cf = result.x_origs + result.x_cfs
+metrics = evaluate_cf(
+    disc_model=disc_model,
+    gen_model=gen_model,
+    X_cf=X_cf,
+    model_returned=np.ones(X_cf.shape[0]),
+    continuous_features=dataset.numerical_features_indices,
+    categorical_features=dataset.categorical_features_indices,
     X_train=dataset.X_train,
     y_train=dataset.y_train,
     X_test=result.x_origs,
     y_test=result.y_origs,
-    gen_model=gen_model,
-    disc_model=disc_model,
-    continuous_features=dataset.numerical_features_indices,
-    categorical_features=dataset.categorical_features_indices,
-    prob_plausibility_threshold=log_prob_threshold,
-    metrics_conf_path="cel/pipelines/conf/metrics/default.yaml",
+    y_target=result.y_cf_targets,
+    continuous_features=dataset.numerical_features,
+    categorical_features=dataset.categorical_features,
+    median_log_prob=log_prob_threshold,
 )
-metrics = orchestrator.calculate_all_metrics()
 ```
 
 ## Library Structure
 
 ```
-counterfactuals/
-├── cf_methods/           # Counterfactual explanation methods
-│   ├── local/            # Instance-level methods (PPCEF, DiCE, WACH, etc.)
-│   ├── global_/          # Model-level methods (GLOBE-CE, AReS)
-│   └── group/            # Cohort-level methods (GLANCE, T-CREx)
-├── models/               # ML models
-│   ├── discriminative/   # Classifiers (MLP, LogisticRegression, NODE)
-│   ├── generative/       # Density estimators (MAF, RealNVP, NICE, KDE)
-│   └── regression/       # Regressors (MLP, LinearRegression)
-├── datasets/             # Dataset loading and configuration
-├── preprocessing/        # Feature transformation pipeline
-├── dequantization/       # Categorical feature handling for flows
-├── losses/               # Loss functions for CF optimization
-├── metrics/              # Evaluation metrics
-├── pipelines/            # Experiment orchestration
-│   ├── nodes/            # Pipeline components
-│   └── conf/             # Hydra configuration files
-├── plotting/             # Visualization utilities
-└── utils.py              # Helper functions
-
-config/
-└── datasets/             # Dataset YAML configurations (18 datasets)
-
-docs/
-├── library_overview.md   # Comprehensive package documentation
-└── ppcef_pipeline.md     # Pipeline guide
+├── config/                # Dataset configuration YAML files
+├── data/                  # Datasets
+├── models/                # Pre-trained models
+├── notebooks/             # Jupyter notebooks for analysis and examples
+├── docs/                  # MkDocs documentation
+├── tests/                 # Test suite
+├── counterfactuals/       # Source code for the framework
+│   ├── cf_methods/        # Counterfactual methods
+│   │   ├── global_methods/
+│   │   │   ├── ares/
+│   │   │   └── globe_ce/
+│   │   ├── group_methods/
+│   │   │   ├── glance/
+│   │   │   ├── pumal/
+│   │   │   └── tcrex/
+│   │   └── local_methods/
+│   │       ├── artelt/
+│   │       ├── c_chvae/
+│   │       ├── cadex/
+│   │       ├── casebased_sace/
+│   │       ├── ceflow/
+│   │       ├── cegp/
+│   │       ├── cem/
+│   │       ├── cet/
+│   │       ├── dice/
+│   │       ├── dicoflex/
+│   │       ├── lice/
+│   │       ├── ppcef/
+│   │       ├── regression_ppcef/
+│   │       ├── sace/
+│   │       ├── tabdce/
+│   │       └── wach/
+│   ├── models/            # Neural network models
+│   │   ├── classifier/    # Discriminative models (MLP, LR, NODE)
+│   │   ├── generative/    # Generative models (MAF, RealNVP, NICE, KDE, CNF)
+│   │   └── regression/    # Regression models (LinearRegression, MLPRegressor)
+│   ├── datasets/          # Dataset loading and preprocessing
+│   ├── preprocessing/     # Preprocessing pipeline (scaling, encoding, torch dtype)
+│   ├── dequantization/    # Dequantization utilities for categorical features
+│   ├── losses/            # Loss functions (BinaryDiscLoss, MulticlassDiscLoss)
+│   ├── metrics/           # Evaluation metrics (validity, proximity, plausibility, etc.)
+│   ├── pipelines/         # End-to-end experiment pipelines
+│   │   ├── runners/       # Method-specific pipeline runners
+│   │   ├── conf/          # Hydra configuration files
+│   │   └── nodes/         # Pipeline building blocks
+│   └── plotting/          # Visualization utilities
+├── README.md              # This document
+└── ...
 ```
 
 ## Counterfactual Methods
@@ -161,16 +200,18 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
-| **WACH** | `WACH` | Wachter-style gradient-based CF |
-| **Artelt** | `Artelt` | Heuristic-based CF method |
-| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
-| **CCHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
 | **PPCEF** | `PPCEF` | Probabilistically Plausible CF with normalizing flows |
+| **PPCEFR** | `PPCEFR` | PPCEF for regression tasks |
+| **DiCE** | `DICE` | Diverse Counterfactual Explanations |
 | **CEM** | `CEM_CF` | Contrastive Explanation Method |
-| **CEGP** | `CEGP` | Counterfactual with Gaussian Processes |
-| **CADEX** | `CADEX` | Counterfactual explanations via optimization |
-| **SACE** | `SACE` | Several SACE variants |
-| **CEARM** | `CEARM` | Counterfactual explanation through association rule mining |
+| **CET** | `CET` | Counterfactual Explanation Tree |
+| **WACH** | `WACH` | Wachter-style gradient-based CF |
+| **Artelt** | `Artelt` | Artelt's CF method |
+| **SACE** | `SACE`, `CaseBasedSACE` | (Case-based) SACE methods |
+| **CEGP** | `CEGP` | CF with Gaussian Processes |
+| **C-CHVAE** | `CCHVAE` | Conditional Heterogeneous VAE |
+| **DiCoFlex** | `DiCoFlex` | Diverse Counterfactual Flex |
+| **LiCE** | `LiCE` | LIME-style CF (requires pyomo/onnx/omlt) |
 
 ### Global Methods (Model-level)
 
@@ -183,18 +224,18 @@ docs/
 
 | Method | Class | Description |
 |--------|-------|-------------|
+| **RPPCEF** | `RPPCEF` | Regional PPCEF with shared interventions |
 | **GLANCE** | `GLANCE` | Group-level CF method |
-| **T-CREx** | `TCREx` | Temporal Counterfactual Rule Extraction |
 
 ## Datasets
 
-The library includes 18 pre-configured datasets:
+The library includes 21 pre-configured datasets:
 
-**Classification (13):**
-`adult_census`, `audit`, `bank_marketing`, `blobs`, `credit_default`, `digits`, `german_credit`, `give_me_some_credit` (GMC), `heloc`, `law`, `lending_club`, `moons`, `wine`
+**Classification:**
+`adult`, `adult_census`, `audit`, `bank_marketing`, `compas`, `credit_default`, `diabetes`, `digits`, `german_credit`, `give_me_some_credit`, `heloc`, `law`, `lending_club`, `mnist`, `moons`, `wine`, `blobs`
 
-**Regression (5):**
-`concrete`, `diabetes`, `yacht`, `synthetic`, `scm20d`
+**Regression:**
+`concrete`, `toy_regression`, `wine_quality_regression`, `yacht`
 
 Dataset configurations are in `config/datasets/*.yaml` and support:
 - Automatic feature type detection (continuous/categorical)
@@ -246,57 +287,32 @@ The library provides comprehensive evaluation metrics:
 ### Using Hydra Pipelines
 
 ```shell
-# Run PPCEF pipeline
-uv run python cel/pipelines/run_ppcef_pipeline.py
-
-# With custom configuration
-uv run python cel/pipelines/run_ppcef_pipeline.py \
-  dataset.config_path=config/datasets/heloc.yaml \
-  disc_model.model=disc_model/mlp_large \
-  counterfactuals_params.target_class=1
+uv run python -m cel.pipelines.run_ppcef_pipeline
 ```
-
-### Available Pipelines
-
-| Pipeline | Method |
-|----------|--------|
-| `run_ppcef_pipeline.py` | PPCEF |
-| `run_dice_pipeline.py` | DiCE |
-| `run_cem_pipeline.py` | CEM |
-| `run_cchvae_pipeline.py` | C-CHVAE |
-| `run_wach_pipeline.py` | WACH |
-| `run_artelt_pipeline.py` | Artelt |
-| `run_cegp_pipeline.py` | CEGP |
-| `run_cadex_pipeline.py` | CADEX |
-| `run_sace_pipeline.py` | SACE |
-| `run_cearm_pipeline.py` | CEARM |
-| `run_globe_ce_pipeline.py` | GLOBE-CE |
-| `run_ares_pipeline.py` | AReS |
-| `run_glance_pipeline.py` | GLANCE |
-| `run_tcrex_pipeline.py` | T-CREx |
 
 ## Documentation
 
-**Live Docs**: https://ofurman.github.io/counterfactuals/
+Full documentation is available via MkDocs. To build and serve locally:
+
+```shell
+uv run mkdocs serve
+```
+
+Key sections:
+
+- **[User Guide](docs/user-guide/index.md)** — datasets, models, generating counterfactuals, evaluation, pipelines.
+- **[Methods](docs/methods/index.md)** — per-method descriptions for local, global, and group methods.
+- **[Pipelines](docs/user-guide/pipelines.md)** — how `PipelineRunner` orchestrates CV folds, Hydra config structure, and how to add new runners.
 
 ## Contributing
 
 Contributions are welcome! Before opening a PR:
 
-1. Read [`AGENTS.md`](AGENTS.md) and [`docs/ppcef_pipeline.md`](docs/ppcef_pipeline.md) to understand the workflow
-2. Use `uv` for all operations:
-   ```shell
-   uv sync                     # Install dependencies
-   uv run ruff check --fix     # Lint and fix
-   uv run pytest               # Run tests
-   ```
-3. Follow the coding standards:
-   - Python 3.10+, PEP 8 compliant
-   - Full type hints everywhere
-   - Google-style docstrings
-   - Line length: 100 characters
-4. Keep patches small and well-documented
-5. Update or add tests when behavior changes
+- Read `AGENTS.md` and `docs/user-guide/pipelines.md` to understand the workflow, required typing,
+  docstrings, and logging conventions.
+- Use `uv` for everything (`uv sync`, `uv run ruff check --fix`, `uv run pytest`).
+- Keep patches small, fully type-hinted, and Ruff-clean (line length 100, Google docstrings).
+- Update or add documentation/tests whenever behavior or configuration changes.
 
 To add new dependencies:
 ```shell

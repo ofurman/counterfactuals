@@ -77,8 +77,13 @@ class TCREx(BaseCounterfactualMethod):
                 y_true = self.y_[node_indices]
                 y_pred = self.target_model.predict(self.X_[node_indices])
                 if isinstance(y_pred, torch.Tensor):
-                    y_pred = y_pred.numpy().reshape(-1)
-                accuracy = accuracy_score(y_true, y_pred)
+                    y_pred = y_pred.numpy()
+                y_pred = np.atleast_1d(np.asarray(y_pred)).reshape(-1)
+                y_true_arr = np.atleast_1d(np.asarray(y_true)).reshape(-1)
+                if y_true_arr.size == 0 or y_pred.size == 0:
+                    accuracy = 0.0
+                else:
+                    accuracy = accuracy_score(y_true_arr, y_pred)
                 rules.append(CounterfactualRule(Hyperrectangle(bounds), accuracy, feasibility))
         return rules
 

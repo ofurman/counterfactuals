@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generator, Optional, Tuple
+from typing import Generator
 
 import numpy as np
 import torch
@@ -36,7 +36,7 @@ class MethodDataset:
     def __init__(
         self,
         file_dataset: FileDataset,
-        preprocessing_pipeline: Optional[PreprocessingStep] = None,
+        preprocessing_pipeline: PreprocessingStep | None = None,
     ):
         """Initialize MethodDataset.
 
@@ -46,7 +46,7 @@ class MethodDataset:
                 preprocessing is applied and raw data is returned.
         """
         self.file_dataset = file_dataset
-        self.initial_transform_pipeline: Optional[InitialTransformPipeline] = (
+        self.initial_transform_pipeline: InitialTransformPipeline | None = (
             file_dataset.initial_transform_pipeline
         )
 
@@ -56,7 +56,11 @@ class MethodDataset:
             X_test,
             y_train,
             y_test,
-        ) = self.file_dataset.split_data(self.file_dataset.X, self.file_dataset.y)
+        ) = self.file_dataset.split_data(
+            self.file_dataset.X,
+            self.file_dataset.y,
+            stratify=self.file_dataset.task_type == "classification",
+        )
         self.X_train_raw = X_train.copy()
         self.X_test_raw = X_test.copy()
         self.y_train = y_train.copy()
@@ -108,9 +112,13 @@ class MethodDataset:
             # No preprocessing was applied, return as is
             return X
 
-        # Create context with the data to inverse transform
+        # Mirror X across all slots so individual steps can assume populated fields.
+        y_placeholder = np.zeros(X.shape[0], dtype=self.y_train.dtype)
         context = PreprocessingContext(
             X_train=X,
+            X_test=X,
+            y_train=y_placeholder,
+            y_test=y_placeholder,
             categorical_indices=self.file_dataset.categorical_features_indices,
             continuous_indices=self.file_dataset.numerical_features_indices,
         )
@@ -174,6 +182,14 @@ class MethodDataset:
         return self.file_dataset.actionable_features
 
     @property
+    def monotonic_features(self):
+        """Return a mapping of feature name to :class:`MonotonicityDirection`.
+
+        Datasets that declare no monotonic constraints yield an empty mapping.
+        """
+        return getattr(self.file_dataset, "monotonic_features", {}) or {}
+
+    @property
     def config(self):
         """Return dataset configuration."""
         return self.file_dataset.config
@@ -205,7 +221,7 @@ class MethodDataset:
         the structure after refitting in cross-validation folds.
 
         Returns:
-            list: List of lists, where each inner list contains the indices of
+            list: list of lists, where each inner list contains the indices of
                   one-hot encoded features for each original categorical variable.
 
         Raises:
@@ -245,7 +261,7 @@ class MethodDataset:
 
     def get_cv_splits(
         self, n_splits: int = 5, shuffle: bool = True
-    ) -> Generator[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
+    ) -> Generator[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None, None]:
         """Generates stratified cross-validation splits.
 
         Note: This method updates instance variables (X_train, X_test, y_train, y_test)

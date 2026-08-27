@@ -46,7 +46,7 @@ for path in sorted(src.rglob("*.py")):
     if should_skip(path):
         continue
 
-    # Build module path (e.g., counterfactuals/datasets/base.py -> counterfactuals.datasets.base)
+    # Build module path (e.g., counterfactuals/datasets/base.py -> cel.datasets.base)
     module_path = path.relative_to(src.parent).with_suffix("")
 
     # Build documentation path

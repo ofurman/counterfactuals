@@ -22,6 +22,22 @@ from .local_methods import (
     Artelt,
 )
 
+try:
+    from .local_methods import CeFlow  # type: ignore[attr-defined]
+except ImportError:
+    CeFlow = None
+try:
+    from .local_methods import DiCoFlex  # type: ignore[attr-defined]
+except ImportError:
+    DiCoFlex = None
+try:
+    from .local_methods import TabDCE  # type: ignore[attr-defined]
+except ImportError:
+    TabDCE = None
+
+# Backward compatibility alias for legacy Hydra targets.
+RPPCEF = PPCEF
+
 # Import from subpackages
 
 __all__ = [
@@ -32,16 +48,15 @@ __all__ = [
     "GlobalCounterfactualMixin",
     "GroupCounterfactualMixin",
     # Local methods
-    "CADEX",
-    "CEARM",
+    "RPPCEF",
     "PPCEF",
     "DICE",
     "WACH",
     "Artelt",
     "CEM_CF",
     "CCHVAE",
-    "CEGP",
-    "SACE",
+    "TabDCE",
+    "CeFlow",
     # Global methods
     "AReS",
     "GLOBE_CE",

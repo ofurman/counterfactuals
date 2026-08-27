@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterable, List, Union
+from typing import Iterable
 
 import numpy as np
 import torch
@@ -78,7 +78,7 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
             dataset=TensorDataset(X, y), shuffle=False, batch_size=batch_size
         )
 
-        logpxs: List[torch.Tensor] = [
+        logpxs: list[torch.Tensor] = [
             self._log_prob(X=x_batch, y=y_batch) for x_batch, y_batch in dataset_loader
         ]
         logpx: torch.Tensor = torch.cat(logpxs, dim=0)
@@ -102,7 +102,7 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
             dataset=TensorDataset(X), shuffle=False, batch_size=batch_size
         )
 
-        all_samples: List[torch.Tensor] = []
+        all_samples: list[torch.Tensor] = []
 
         for x in dataset_loader:
             sample: torch.Tensor = self._sample(x[0], num_samples)
@@ -125,8 +125,8 @@ class ContinuousNormalizingFlowRegressor(BaseEstimator, RegressorMixin, nn.Modul
     def fit(
         self,
         dataset_loader_train,
-        X_val: Union[np.ndarray, None] = None,
-        y_val: Union[np.ndarray, None] = None,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
         n_epochs: int = 100,
         batch_size: int = 128,
         max_patience: int = 50,

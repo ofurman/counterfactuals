@@ -6,8 +6,9 @@ Group counterfactual methods generate explanations for **clusters or subgroups**
 
 | Method | Description | Key Feature |
 |--------|-------------|-------------|
-| [GLANCE](glance.md) | Group-level anchor counterfactuals | Anchor-based grouping |
-| [T-CREx](tcrex.md) | Temporal counterfactual rule extraction | Rule-based group explanations |
+| [GLANCE](glance.md) | Cluster-and-merge group counterfactuals | Action averaging over k-means clusters |
+| [TCREx](tcrex.md) | Tree-based counterfactual rules | Hyperrectangle rules via surrogate tree |
+| [Group GLOBE-CE](group-globe-ce.md) | Per-cluster GLOBE-CE | KMeans partition + per-cluster global translations |
 
 ## When to Use Group Methods
 
@@ -20,16 +21,14 @@ Group methods are ideal when you need to:
 
 ## How Groups Are Formed
 
-Group methods typically cluster instances based on:
+Group methods in this package form groups via:
 
-- Feature similarity
-- Prediction confidence
-- Demographic attributes
-- Custom grouping criteria
+- k-means clustering followed by greedy merging (GLANCE)
+- Decision-tree leaves filtered by accuracy and feasibility (TCREx)
 
 ```mermaid
 flowchart LR
-    A[Dataset] --> B[Clustering]
+    A[Dataset] --> B[Grouping]
     B --> C[Group 1]
     B --> D[Group 2]
     B --> E[Group N]
@@ -43,22 +42,23 @@ flowchart LR
 ```python
 from cel.cf_methods.group_methods import GLANCE
 
-# Initialize method
 method = GLANCE(
-    gen_model=flow_model,
-    disc_model=classifier,
-    disc_model_criterion=criterion,
-    device="cuda"
+    X_test=X_test,
+    y_test=y_test,
+    model=classifier,
+    features=feature_names,
+    k=-1,
+    s=4,
+    m=1,
+    target_class=1,
 )
 
-# Generate group counterfactuals
 result = method.explain(
     X=X_test,
     y_origin=y_test,
-    y_target=target_class,
+    y_target=y_target,
     X_train=X_train,
     y_train=y_train,
-    n_groups=5  # Number of groups
 )
 
 # Each instance is assigned to a group

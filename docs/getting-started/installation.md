@@ -16,8 +16,8 @@ This guide covers installing the Counterfactuals library and its dependencies.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ofurman/counterfactuals.git
-cd cel
+git clone https://github.com/ofurman/cel.git
+cd counterfactuals
 
 # Install all dependencies
 uv sync
@@ -27,8 +27,8 @@ uv sync
 
 ```bash
 # Clone the repository
-git clone https://github.com/ofurman/counterfactuals.git
-cd cel
+git clone https://github.com/ofurman/cel.git
+cd counterfactuals
 
 # Create virtual environment
 python -m venv .venv
@@ -130,7 +130,7 @@ print(cel.__version__)
 
 # Test imports
 from cel.datasets import FileDataset
-from cel.models.classifiers import MLPClassifier
+from cel.models import MLPClassifier
 from cel.cf_methods.local_methods import PPCEF
 
 print("Installation successful!")

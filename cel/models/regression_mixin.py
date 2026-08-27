@@ -1,39 +1,35 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 import numpy as np
+import torch
 
 
 class RegressionPytorchMixin(ABC):
-    """
-    Mixin class providing regression interface for PyTorch models.
+    """Mixin providing regression interface for PyTorch models.
 
-    This mixin defines the standard interface for regression models,
-    providing abstract methods for prediction and probability estimation.
+    Subclasses must define:
+        - forward(x: torch.Tensor) -> torch.Tensor
     """
 
-    @abstractmethod
     def predict(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Make predictions on test data.
+        """Make predictions on test data.
 
         Args:
-            X_test: Input data as numpy array of shape (n_samples, n_features)
+            X_test: Input data as numpy array of shape (n_samples, n_features).
 
         Returns:
-            np.ndarray: Predicted values of shape (n_samples,) or (n_samples, n_outputs)
+            Predicted values of shape (n_samples,) or (n_samples, n_outputs).
         """
-        pass
+        X_test = self._to_tensor(X_test)
+        self.eval()
+        with torch.no_grad():
+            preds = self.forward(X_test)
+            return preds.cpu().numpy()
 
-    @abstractmethod
     def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Return probabilities for each class on test data.
+        """Not applicable for regression models.
 
-        Args:
-            X_test: Input data as numpy array of shape (n_samples, n_features)
-
-        Returns:
-            np.ndarray: Class probabilities of shape (n_samples, n_classes)
-                       Each row sums to 1.0 and represents probabilities for each class
+        Raises:
+            NotImplementedError: This method is not applicable for regression.
         """
-        pass
+        raise NotImplementedError("predict_proba is not applicable for regression models")

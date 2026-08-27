@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -21,7 +19,7 @@ class LinearRegression(PytorchBase, RegressionPytorchMixin):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.003,
         patience: int = 100,
@@ -60,19 +58,3 @@ class LinearRegression(PytorchBase, RegressionPytorchMixin):
             pbar.set_description(
                 f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}, Test Loss: {np.mean(test_losses):.4f}, Patience: {patience_counter}"
             )
-
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        if not isinstance(X_test, torch.Tensor):
-            X_test = torch.from_numpy(X_test).type(torch.float32)
-        with torch.no_grad():
-            preds = self.forward(X_test)
-            return preds.cpu().numpy()
-
-    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))

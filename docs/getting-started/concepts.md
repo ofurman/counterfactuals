@@ -60,7 +60,7 @@ Instance x → Method → Counterfactual x'
 - Debugging specific predictions
 - Personalized recommendations
 
-**Examples:** PPCEF, DICE, WACH
+**Examples:** PPCEF, DICE, DiCoFlex
 
 ### Global Methods
 
@@ -92,7 +92,7 @@ Each group → Method → Group counterfactual
 - Demographic subgroups
 - Scalable explanations
 
-**Examples:** GLANCE, T-CREx
+**Examples:** ReViCE, GLANCE
 
 ## The Role of Generative Models
 

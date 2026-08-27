@@ -21,8 +21,8 @@ def plot_x_point(x: torch.Tensor, x_origin: torch.Tensor, model: torch.nn.Module
     dist = np.linalg.norm(x_res - x_origin)
 
     with torch.no_grad():
-        samples_zero, log_probs = model.sample_and_log_prob(512, context=torch.Tensor([[0]]))
-        samples_one, log_probs = model.sample_and_log_prob(512, context=torch.ones(1, 1))
+        samples_zero, _ = model.sample_and_log_prob(512, context=torch.Tensor([[0]]))
+        samples_one, _ = model.sample_and_log_prob(512, context=torch.ones(1, 1))
 
     ax.set_title(f"{x.detach().numpy()}, dist: {dist}")
     ax.scatter(samples_zero.squeeze()[:, 0], samples_zero.squeeze()[:, 1], c="g")
@@ -169,13 +169,9 @@ def plot_distributions(
 
         zgrid1 = optim_function(xyinput, x_orig, model, alpha).reshape(200, 200)
 
-    # zgrid1 = ma.masked_where(zgrid1 <= 0, zgrid1)
-    # zgrid1[zgrid1 > 2] = 2
     ax[0].contourf(xgrid.numpy(), ygrid.numpy(), zgrid0.numpy(), levels=20, cmap=cm.PuBu_r)
-    cs = ax[1].contourf(
-        xgrid.numpy(), ygrid.numpy(), zgrid1, levels=50, cmap=cm.PuBu_r
-    )  # locator=ticker.LogLocator()
-    cbar = fig.colorbar(cs)  # noqa: F841
+    cs = ax[1].contourf(xgrid.numpy(), ygrid.numpy(), zgrid1, levels=50, cmap=cm.PuBu_r)
+    fig.colorbar(cs)
     ax[0].scatter(x_orig[0, 0], x_orig[0, 1], c="r")
     ax[1].scatter(x_orig[0, 0], x_orig[0, 1], c="r")
 

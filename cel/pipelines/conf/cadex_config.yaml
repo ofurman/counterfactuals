@@ -12,8 +12,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/law.yaml
+  _target_: cel.datasets.FileDataset
+  config_path: config/datasets/heloc.yaml
 
 disc_model:
   train_model: false
@@ -32,7 +32,7 @@ gen_model:
 
 counterfactuals_params:
   cf_method:
-    _target_: counterfactuals.cf_methods.CADEX
+    _target_: cel.cf_methods.CADEX
 
   log_prob_quantile: 0.25
   target_class: 0

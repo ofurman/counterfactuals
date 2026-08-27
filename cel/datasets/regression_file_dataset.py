@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 
 from cel.datasets.base import DatasetBase
+from cel.datasets.initial_transforms import (
+    InitialTransformPipeline,
+    build_initial_transform_pipeline,
+)
 
 
 class RegressionFileDataset(DatasetBase):
@@ -18,7 +22,12 @@ class RegressionFileDataset(DatasetBase):
             config_path: Path to the dataset configuration file.
         """
         super().__init__(config_path=config_path)
+        self.task_type = "regression"
         self.samples_keep = self.config.samples_keep
+        self.initial_transform_pipeline: InitialTransformPipeline | None = (
+            build_initial_transform_pipeline(self.config.initial_transforms)
+        )
+        self.one_hot_feature_groups: dict[str, list[str]] = {}
 
         self.raw_data = self._load_csv(self.config.raw_data_path)
         self.X, self.y = self.preprocess(self.raw_data)
@@ -50,7 +59,7 @@ class RegressionFileDataset(DatasetBase):
         Args:
             raw_data: Raw dataset as a pandas DataFrame.
         Returns:
-            Tuple (X, y) as numpy arrays.
+            tuple (X, y) as numpy arrays.
         """
         raw_data = raw_data.dropna(subset=self.config.features)
         raw_data = raw_data.head(self.samples_keep)

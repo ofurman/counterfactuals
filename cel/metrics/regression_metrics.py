@@ -1,5 +1,3 @@
-from typing import List, Optional, Union
-
 import numpy as np
 import torch
 
@@ -14,18 +12,18 @@ class RegressionCFMetrics(CFMetrics):
 
     def __init__(
         self,
-        X_cf: Union[np.ndarray, torch.Tensor],
-        y_target: Union[np.ndarray, torch.Tensor],
-        X_train: Union[np.ndarray, torch.Tensor],
-        y_train: Union[np.ndarray, torch.Tensor],
-        X_test: Union[np.ndarray, torch.Tensor],
-        y_test: Union[np.ndarray, torch.Tensor],
+        X_cf: np.ndarray | torch.Tensor,
+        y_target: np.ndarray | torch.Tensor,
+        X_train: np.ndarray | torch.Tensor,
+        y_train: np.ndarray | torch.Tensor,
+        X_test: np.ndarray | torch.Tensor,
+        y_test: np.ndarray | torch.Tensor,
         gen_model: torch.nn.Module,
         disc_model: torch.nn.Module,
-        continuous_features: List[int],
-        categorical_features: List[int],
-        ratio_cont: Optional[float] = None,
-        prob_plausibility_threshold: Optional[float] = None,
+        continuous_features: list[int],
+        categorical_features: list[int],
+        ratio_cont: float | None = None,
+        prob_plausibility_threshold: float | None = None,
         target_tolerance: float = 0.05,
     ):
         """
@@ -93,7 +91,7 @@ class RegressionCFMetrics(CFMetrics):
         Returns:
             float: Proportion of valid counterfactuals
         """
-        y_cf_pred = self.disc_model.predict(self.X_cf).numpy().reshape(-1)
+        y_cf_pred = self._convert_to_numpy(self.disc_model.predict(self.X_cf)).reshape(-1)
         relative_diff = np.abs(y_cf_pred - self.y_test)
         return np.mean(relative_diff)
 
@@ -104,7 +102,7 @@ class RegressionCFMetrics(CFMetrics):
         Returns:
             float: Mean relative difference between predicted and target values
         """
-        y_cf_pred = self.disc_model.predict(self.X_cf).numpy().reshape(-1)
+        y_cf_pred = self._convert_to_numpy(self.disc_model.predict(self.X_cf)).reshape(-1)
         relative_diff = np.abs(y_cf_pred - self.y_target)
         return np.mean(relative_diff)
 

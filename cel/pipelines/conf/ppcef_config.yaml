@@ -12,8 +12,8 @@ experiment:
   relabel_with_disc_model: true
 
 dataset:
-  _target_: counterfactuals.datasets.FileDataset
-  config_path: config/datasets/law.yaml
+  _target_: cel.datasets.FileDataset
+  config_path: config/datasets/blobs.yaml
 
 disc_model:
   train_model: true
@@ -33,16 +33,16 @@ gen_model:
 counterfactuals_params:
   cf_method:
     # specific parameters besides standard ones should be passed here
-    _target_: counterfactuals.cf_methods.PPCEF
+    _target_: cel.cf_methods.PPCEF
 
   disc_model_criterion:
-    _target_: counterfactuals.losses.MulticlassDiscLoss
-    # _target_: counterfactuals.losses.BinaryDiscLoss
+    _target_: cel.losses.MulticlassDiscLoss
+    # _target_: cel.losses.BinaryDiscLoss
 
   log_prob_quantile: 0.25
   target_class: 0
-  epochs: 5000
-  # epochs: 20000
+  # epochs: 5000
+  epochs: 20000
   batch_size: 4096
   lr: 0.001
   alpha: 1000

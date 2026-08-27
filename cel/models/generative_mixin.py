@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
 
 import numpy as np
 
@@ -14,7 +13,7 @@ class GenerativePytorchMixin(ABC):
 
     @abstractmethod
     def predict_log_proba(
-        self, X_test: np.ndarray, context: Optional[np.ndarray] = None
+        self, X_test: np.ndarray, context: np.ndarray | None = None
     ) -> np.ndarray:
         """
         Predict log probabilities for input data.
@@ -29,8 +28,8 @@ class GenerativePytorchMixin(ABC):
 
     @abstractmethod
     def sample_and_log_proba(
-        self, n_samples: int, context: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, n_samples: int, context: np.ndarray | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Sample from the generative model and return log probabilities.
 
@@ -39,7 +38,7 @@ class GenerativePytorchMixin(ABC):
             context: Context data as numpy array of shape (n_samples, n_features)
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]:
+            tuple[np.ndarray, np.ndarray]:
                 - Generated samples of shape (n_samples, n_features)
                 - Log probabilities of shape (n_samples,)
         """

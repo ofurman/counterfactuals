@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
@@ -26,13 +26,32 @@ class PytorchBase(torch.nn.Module, ABC):
         self.num_inputs = num_inputs
         self.num_targets = num_targets
 
+    def _to_tensor(self, X: np.ndarray | torch.Tensor) -> torch.Tensor:
+        """Convert input to a float32 tensor on the model's device.
+
+        Args:
+            X: Input data as numpy array or tensor.
+
+        Returns:
+            Float32 tensor on the same device as the model parameters, so
+            prediction helpers keep working after the model is moved to GPU.
+        """
+        if isinstance(X, np.ndarray):
+            X = torch.from_numpy(X).float()
+        return X.to(next(self.parameters()).device)
+
     def save(self, path: str) -> None:
         """Save model state to file."""
         torch.save(self.state_dict(), path)
 
     def load(self, path: str) -> None:
-        """Load model state from file."""
-        self.load_state_dict(torch.load(path))
+        """Load model state from file onto the device the model currently lives on.
+
+        The explicit ``map_location`` lets a checkpoint trained on GPU be loaded
+        into a CPU-resident model (and vice versa), which the train-on-GPU /
+        generate-on-CPU split relies on.
+        """
+        self.load_state_dict(torch.load(path, map_location=next(self.parameters()).device))
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -51,7 +70,7 @@ class PytorchBase(torch.nn.Module, ABC):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.003,
         **kwargs,

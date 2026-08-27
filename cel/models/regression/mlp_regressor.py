@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -22,7 +20,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
         self,
         num_inputs: int,
         num_targets: int,
-        hidden_layer_sizes: List[int] = [128, 128],
+        hidden_layer_sizes: list[int] = [128, 128],
         dropout: float = 0.2,
     ):
         """
@@ -31,7 +29,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
         Args:
             num_inputs: Number of input features
             num_targets: Number of output targets
-            hidden_layer_sizes: List of hidden layer sizes
+            hidden_layer_sizes: list of hidden layer sizes
             dropout: Dropout rate for regularization
         """
         super(MLPRegressor, self).__init__(num_inputs, num_targets)
@@ -59,7 +57,7 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
     def fit(
         self,
         train_loader: DataLoader,
-        test_loader: Optional[DataLoader] = None,
+        test_loader: DataLoader | None = None,
         epochs: int = 200,
         lr: float = 0.001,
         patience: int = 20,
@@ -128,33 +126,3 @@ class MLPRegressor(PytorchBase, RegressionPytorchMixin):
                 )
             else:
                 pbar.set_description(f"Epoch {epoch}, Train Loss: {np.mean(losses):.4f}")
-
-    def predict(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Make predictions on test data.
-
-        Args:
-            X_test: Input data as numpy array
-
-        Returns:
-            Predictions as numpy array
-        """
-        if not isinstance(X_test, torch.Tensor):
-            X_test = torch.from_numpy(X_test).type(torch.float32)
-
-        self.eval()
-        with torch.no_grad():
-            preds = self.forward(X_test)
-            return preds.cpu().numpy()
-
-    def predict_proba(self, X_test: np.ndarray) -> np.ndarray:
-        """
-        Predict probabilities (not implemented for regression).
-
-        Args:
-            X_test: Input data as numpy array
-
-        Raises:
-            NotImplementedError: This method is not applicable for regression
-        """
-        raise NotImplementedError("predict_proba is not applicable for regression models")
