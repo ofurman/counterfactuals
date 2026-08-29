@@ -1,0 +1,13 @@
+{
+  "plan": "cel-scientific-benchmark-poster",
+  "created": "2026-08-29",
+  "stages": [
+    {"id": 1, "title": "Freeze poster claims and identity", "file": "stages/01-freeze-claims-and-identity.md", "status": "PENDING", "depends_on": [], "commit": null, "note": null, "blocked_by": []},
+    {"id": 2, "title": "Collect NeurIPS poster references", "file": "stages/02-collect-neurips-references.md", "status": "PENDING", "depends_on": [], "commit": null, "note": null, "blocked_by": []},
+    {"id": 3, "title": "Synthesize guidelines and storyboard", "file": "stages/03-synthesize-guidelines-and-storyboard.md", "status": "PENDING", "depends_on": [1, 2], "commit": null, "note": null, "blocked_by": []},
+    {"id": 4, "title": "Scaffold the A0 web artifact", "file": "stages/04-scaffold-a0-web-artifact.md", "status": "PENDING", "depends_on": [3], "commit": null, "note": null, "blocked_by": []},
+    {"id": 5, "title": "Implement evidence graphics and poster content", "file": "stages/05-implement-evidence-poster.md", "status": "PENDING", "depends_on": [4], "commit": null, "note": null, "blocked_by": []},
+    {"id": 6, "title": "Audit facts, print layout, and readability", "file": "stages/06-audit-print-and-content.md", "status": "PENDING", "depends_on": [5], "commit": null, "note": null, "blocked_by": []},
+    {"id": 7, "title": "Bundle and package deliverables", "file": "stages/07-bundle-and-package.md", "status": "PENDING", "depends_on": [6], "commit": null, "note": null, "blocked_by": []}
+  ]
+}
