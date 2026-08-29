@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "id": "openxai-2022",
+      "filename": "openxai-2022.png",
+      "requestedUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/70c639df5e30bdee440e4cdf599fec2b.png",
+      "finalUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/70c639df5e30bdee440e4cdf599fec2b.png",
+      "mediaType": "image/png",
+      "observedFormat": "PNG",
+      "widthPx": 4320,
+      "heightPx": 2880,
+      "byteSize": 4553335,
+      "sha256": "cd1306e37bbb4110f49cd2eafa033ece1cfcd8edbe0d756211c8d9d385541cd0"
+    },
+    {
+      "id": "m4-2023",
+      "filename": "m4-2023.png",
+      "requestedUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202023/73690.png",
+      "finalUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202023/73690.png",
+      "mediaType": "image/png",
+      "observedFormat": "PNG",
+      "widthPx": 3900,
+      "heightPx": 2600,
+      "byteSize": 2191086,
+      "sha256": "d483b40d15284fd3af9edc7a098c41315d8b3d638ef616fc76062e6429b5ff2a"
+    },
+    {
+      "id": "tabular-dl-2022",
+      "filename": "tabular-dl-2022.png",
+      "requestedUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/55627.png",
+      "finalUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/55627.png",
+      "mediaType": "image/png",
+      "observedFormat": "PNG",
+      "widthPx": 3744,
+      "heightPx": 2807,
+      "byteSize": 2199651,
+      "sha256": "a9d6276ad5db50e0298bc4ccf7e1be9bc6a94e4c9e6f4e4447fcbd561ebeeba1"
+    },
+    {
+      "id": "adbench-2022",
+      "filename": "adbench-2022.png",
+      "requestedUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/9766527f2b5d3e95d4a733fcfb77bd7e.png",
+      "finalUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/9766527f2b5d3e95d4a733fcfb77bd7e.png",
+      "mediaType": "image/png",
+      "observedFormat": "PNG",
+      "widthPx": 4320,
+      "heightPx": 2880,
+      "byteSize": 967150,
+      "sha256": "50f0f33703a74a07d9665582c45955c53ccf3a700ee9639244662b942defcb77"
+    },
+    {
+      "id": "human-centered-xai-2022",
+      "filename": "human-centered-xai-2022.png",
+      "requestedUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/55282.png",
+      "finalUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/55282.png",
+      "mediaType": "image/png",
+      "observedFormat": "PNG",
+      "widthPx": 4817,
+      "heightPx": 2870,
+      "byteSize": 3711307,
+      "sha256": "097cc49898405e4d287c431680b6689bb34c6c609b55ab30a519bd339d671841"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "openxai-2022",
+      "title": "OpenXAI: Towards a Transparent Evaluation of Model Explanations",
+      "year": 2022,
+      "pageUrl": "https://neurips.cc/virtual/2022/poster/55636",
+      "assetUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/70c639df5e30bdee440e4cdf599fec2b.png",
+      "role": "Closest XAI library-and-benchmark analogue",
+      "observedFormat": "PNG"
+    },
+    {
+      "id": "m4-2023",
+      "title": "M4: A Unified XAI Benchmark for Faithfulness Evaluation of Feature Attribution Methods across Metrics, Modalities and Models",
+      "year": 2023,
+      "pageUrl": "https://neurips.cc/virtual/2023/poster/73690",
+      "assetUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202023/73690.png",
+      "role": "Metric taxonomy, pipeline, and matrix-to-heatmap analogue",
+      "observedFormat": "PNG"
+    },
+    {
+      "id": "tabular-dl-2022",
+      "title": "Why do tree-based models still outperform deep learning on typical tabular data?",
+      "year": 2022,
+      "pageUrl": "https://neurips.cc/virtual/2022/poster/55627",
+      "assetUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/55627.png",
+      "role": "Evidence-first tabular benchmark storytelling",
+      "observedFormat": "PNG"
+    },
+    {
+      "id": "adbench-2022",
+      "title": "ADBench: Anomaly Detection Benchmark",
+      "year": 2022,
+      "pageUrl": "https://neurips.cc/virtual/2022/poster/55709",
+      "assetUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/9766527f2b5d3e95d4a733fcfb77bd7e.png",
+      "role": "Broad benchmark design and findings structure",
+      "observedFormat": "PNG"
+    },
+    {
+      "id": "human-centered-xai-2022",
+      "title": "What I Cannot Predict, I Do Not Understand: A Human-Centered Evaluation Framework for Explainability Methods",
+      "year": 2022,
+      "pageUrl": "https://neurips.cc/virtual/2022/poster/55282",
+      "assetUrl": "https://neurips.cc/media/PosterPDFs/NeurIPS%202022/55282.png",
+      "role": "Question-led hierarchy and summary treatment",
+      "observedFormat": "PNG"
+    }
+  ]
+}
