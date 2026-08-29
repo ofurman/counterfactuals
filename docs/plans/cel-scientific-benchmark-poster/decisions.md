@@ -21,3 +21,9 @@ Append-only. **<=15 lines per entry** — detail goes in `resources/`.
 **Options**: A) retain anonymous manuscript identity B) use camera-ready metadata already present in source
 **Chosen**: Use the commented camera-ready authors/affiliation, `XKDD 2026`, the repository URL in `pyproject.toml`, and A0 landscape unless a newer repository-tracked brief overrides them before Stage 1.
 **Rationale**: This avoids placeholders and keeps unattended execution possible without inventing metadata.
+
+### D-4: Omit comparative sparsity claims
+**Date**: 2026-08-29 — **Stage**: 1
+**Options**: A) choose one direction B) reproduce the manuscript wording C) omit the comparison
+**Chosen**: Omit comparative sparsity claims; retain the contradiction as a non-poster ledger caveat.
+**Rationale**: The live metric definition, table arrows, and prose do not support one unambiguous direction.

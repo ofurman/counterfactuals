@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "methods": [
+    {"display": "Wachter", "aliases": ["WACH", "Wachter"], "sourceKey": "wachter2017counterfactual"},
+    {"display": "T-CREx", "aliases": ["TCREx", "T-CREx", "TCREX"], "sourceKey": "bewley2024tcrex"},
+    {"display": "DiCE", "aliases": ["DICE", "DiCE"], "sourceKey": "mothilal2020explaining"},
+    {"display": "GLANCE", "aliases": ["GLANCE", "GlobalGLANCE"], "sourceKey": "kavouras2024glance"},
+    {"display": "Give Me Some Credit", "aliases": ["GMC", "Give Me Some Credit"], "sourceKey": "dataset.give-me-some-credit"}
+  ]
+}

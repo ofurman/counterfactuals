@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "title": "CEL: Comprehensive Counterfactual Explanations Library and Benchmark",
+  "authors": [
+    {"name": "Oleksii Furman", "orcid": "0009-0001-2184-3096"},
+    {"name": "Łukasz Lenkiewicz", "orcid": "0009-0006-6282-8649"},
+    {"name": "Marcel Musiałek", "orcid": "0009-0009-4964-0547"},
+    {"name": "Maciej Zięba", "orcid": "0000-0003-4217-7712"}
+  ],
+  "affiliation": "Wrocław University of Science and Technology, Wrocław, Poland",
+  "venue": "XKDD 2026",
+  "links": {
+    "repository": "https://github.com/ofurman/counterfactuals",
+    "documentation": "https://ofurman.github.io/counterfactuals/"
+  },
+  "qr": {
+    "label": "Code & project",
+    "url": "https://github.com/ofurman/counterfactuals"
+  },
+  "paperUrl": null,
+  "output": {
+    "format": "A0 landscape",
+    "widthMm": 1189,
+    "heightMm": 841,
+    "deliverables": ["self-contained HTML", "one-page PDF", "PNG preview"]
+  },
+  "sources": {
+    "titleAuthorsAffiliationVenue": "manuscript/main_lncs.tex",
+    "repository": "pyproject.toml#[project.urls]",
+    "documentation": "README.md#Documentation"
+  }
+}

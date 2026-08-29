@@ -2,7 +2,7 @@
   "plan": "cel-scientific-benchmark-poster",
   "created": "2026-08-29",
   "stages": [
-    {"id": 1, "title": "Freeze poster claims and identity", "file": "stages/01-freeze-claims-and-identity.md", "status": "PENDING", "depends_on": [], "commit": null, "note": null, "blocked_by": []},
+    {"id": 1, "title": "Freeze poster claims and identity", "file": "stages/01-freeze-claims-and-identity.md", "status": "DONE", "depends_on": [], "commit": "this commit", "note": "22 claims validated; Python suite collection deferred as B-1.", "blocked_by": []},
     {"id": 2, "title": "Collect NeurIPS poster references", "file": "stages/02-collect-neurips-references.md", "status": "PENDING", "depends_on": [], "commit": null, "note": null, "blocked_by": []},
     {"id": 3, "title": "Synthesize guidelines and storyboard", "file": "stages/03-synthesize-guidelines-and-storyboard.md", "status": "PENDING", "depends_on": [1, 2], "commit": null, "note": null, "blocked_by": []},
     {"id": 4, "title": "Scaffold the A0 web artifact", "file": "stages/04-scaffold-a0-web-artifact.md", "status": "PENDING", "depends_on": [3], "commit": null, "note": null, "blocked_by": []},

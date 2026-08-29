@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": [
+    "manuscript/main_lncs.tex",
+    "manuscript/supplementary.tex",
+    "manuscript/tables/results_categorical.tex",
+    "manuscript/tables/results_numerical.tex",
+    "manuscript/tables/results_global.tex",
+    "manuscript/tables/results_group.tex",
+    "manuscript/tables/results_regression.tex"
+  ],
+  "claims": [
+    {
+      "id": "scope.datasets",
+      "claimKind": "scope-count",
+      "posterWording": "18 datasets: 13 classification + 5 regression",
+      "value": {
+        "kind": "finite",
+        "classification": 13,
+        "regression": 5,
+        "total": 18
+      },
+      "unit": "datasets",
+      "verdict": "CEL spans both classification and regression benchmarks.",
+      "source": {
+        "file": "manuscript/main_lncs.tex",
+        "anchor": "Benchmark > Datasets: ‘CEL includes 18 pre-configured datasets…’"
+      },
+      "extractionRule": "Regex-extract total and task counts from the Datasets subsection.",
+      "direction": "scope",
+      "qualifier": "Dataset counts, not the number of train/test folds.",
+      "status": "publishable"
+    },
+    {
+      "id": "scope.methods",
+      "claimKind": "scope-count",
+      "posterWording": "14 methods across local, global, and group-wise explanations",
+      "value": {
+        "kind": "finite",
+        "total": 14,
+        "local": 10,
+        "global": 2,
+        "groupWise": 2
+      },
+      "unit": "methods",
+      "verdict": "All three counterfactual paradigms share one benchmark protocol.",
+      "source": {
+        "file": "manuscript/main_lncs.tex",
+        "anchor": "Benchmark > Methods and tab:methods"
+      },
+      "extractionRule": "Read the declared method total and count the method rows under each tab:methods category.",
+      "direction": "scope",
+      "qualifier": "GLANCE also appears in the global experiment configured as one group; the 14 unique-method count follows tab:methods.",
+      "status": "qualified"
+    },
+    {
+      "id": "scope.protocol",
+      "claimKind": "qualitative",
+      "posterWording": "One controlled protocol: fixed splits, preprocessing, predictors, constraints, and metrics",
+      "value": {
+        "kind": "qualitative"
+      },
+      "unit": null,
+      "verdict": "CEL reduces experimental setup as a confounder in method comparisons.",
+      "source": {
+        "file": "manuscript/main_lncs.tex",
+        "anchor": "Benchmark opening paragraph"
+      },
+      "extractionRule": "Require the standardized-evaluation-protocol paragraph and its enumerated controls.",
+      "direction": "qualitative",
+      "qualifier": "A design objective of the benchmark, not a statistical guarantee that every source of variation is eliminated.",
+      "status": "qualified"
+    },
+    {
+      "id": "scope.folds",
+      "claimKind": "scope-count",
+      "posterWording": "Results averaged over 5-fold cross-validation",
+      "value": {
+        "kind": "finite",
+        "total": 5
+      },
+      "unit": "folds",
+      "verdict": "Reported table values summarize 5 folds.",
+      "source": {
+        "file": "manuscript/supplementary.tex",
+        "anchor": "Full Results opening paragraph"
+      },
+      "extractionRule": "Regex-extract the fold count from the Full Results introduction.",
+      "direction": "scope",
+      "qualifier": "The displayed ± values are those printed in the manuscript tables.",
+      "status": "publishable"
+    },
+    {
+      "id": "conclusion.tradeoffs",
+      "claimKind": "qualitative",
+      "posterWording": "No method wins every metric",
+      "value": {
+        "kind": "qualitative"
+      },
+      "unit": null,
+      "verdict": "Counterfactual quality is a trade-off among success, change size, plausibility, applicability, and runtime.",
+      "source": {
+        "file": "manuscript/main_lncs.tex",
+        "anchor": "Conclusions: ‘no single method uniformly dominates; each excels on some quality dimensions at the expense of others’"
+      },
+      "extractionRule": "Require the conclusion sentence and retain its multi-dimensional qualification.",
+      "direction": "qualitative",
+      "qualifier": "Do not convert this conclusion into an aggregate ranking.",
+      "status": "qualified"
+    },
+    {
+      "id": "local.adult.sace.pp",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / local: SACE plausibility 0.93 ± 0.04",
+      "value": {
+        "kind": "finite",
+        "display": "0.93 ± 0.04",
+        "mean": 0.93,
+        "std": 0.04,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "SACE has the highest displayed probabilistic-plausibility mean among 4 methods (0.93 ± 0.04; next is CCHVAE at 0.77 ± 0.04).",
+      "source": {
+        "file": "manuscript/tables/results_categorical.tex",
+        "anchor": "tab:cat_metrics_mlp / Adult Census / SACE / probabilistic_plausibility"
+      },
+      "extractionRule": "Parse the probabilistic_plausibility cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Adult Census, MLP; comparison is within this dataset/model only.",
+      "status": "publishable"
+    },
+    {
+      "id": "local.adult.cadex.validity",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / local: CADEX validity 0.51 ± 0.02",
+      "value": {
+        "kind": "finite",
+        "display": "0.51 ± 0.02",
+        "mean": 0.51,
+        "std": 0.02,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "CADEX's displayed validity mean is 0.51 ± 0.02, roughly half, in this configuration.",
+      "source": {
+        "file": "manuscript/tables/results_categorical.tex",
+        "anchor": "tab:cat_metrics_mlp / Adult Census / CADEX / validity"
+      },
+      "extractionRule": "Parse the validity cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Adult Census, MLP. Validity must be read with coverage.",
+      "status": "publishable"
+    },
+    {
+      "id": "local.blobs.ppcef.pp",
+      "claimKind": "benchmark-result",
+      "posterWording": "Blobs / local: PPCEF plausibility 1.00 ± 0.00",
+      "value": {
+        "kind": "finite",
+        "display": "1.00 ± 0.00",
+        "mean": 1,
+        "std": 0,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "PPCEF has the highest displayed probabilistic-plausibility mean among 9 methods (1.00 ± 0.00; next is SACE at 0.20 ± 0.45).",
+      "source": {
+        "file": "manuscript/tables/results_numerical.tex",
+        "anchor": "tab:num_metrics_mlp / Blobs / PPCEF / probabilistic_plausibility"
+      },
+      "extractionRule": "Parse the probabilistic_plausibility cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Blobs, MLP; compare only within this dataset/model.",
+      "status": "publishable"
+    },
+    {
+      "id": "local.blobs.ppcef.l2",
+      "claimKind": "benchmark-result",
+      "posterWording": "Blobs / local: PPCEF distance 0.48 ± 0.03",
+      "value": {
+        "kind": "finite",
+        "display": "0.48 ± 0.03",
+        "mean": 0.48,
+        "std": 0.03,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "PPCEF's displayed distance (0.48 ± 0.03) is larger than the row-group minimum, 0.34 ± 0.03 for CADEX.",
+      "source": {
+        "file": "manuscript/tables/results_numerical.tex",
+        "anchor": "tab:num_metrics_mlp / Blobs / PPCEF / l2_hamming"
+      },
+      "extractionRule": "Parse the l2_hamming cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Blobs has numerical features; the source table heading is L2.",
+      "status": "publishable"
+    },
+    {
+      "id": "global.adult.globe.validity",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / global: GLOBE-CE validity 1.00 ± 0.00",
+      "value": {
+        "kind": "finite",
+        "display": "1.00 ± 0.00",
+        "mean": 1,
+        "std": 0,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "GLOBE-CE has the highest displayed validity mean among 3 methods (1.00 ± 0.00; next is AReS at 0.17 ± 0.11).",
+      "source": {
+        "file": "manuscript/tables/results_global.tex",
+        "anchor": "tab:global_metrics_mlp / Adult Census / GLOBE-CE / validity"
+      },
+      "extractionRule": "Parse the validity cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Adult Census, MLP; validity is conditional on the experiment's result semantics.",
+      "status": "publishable"
+    },
+    {
+      "id": "global.adult.globe.distance",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / global: GLOBE-CE distance 0.00 ± 0.00",
+      "value": {
+        "kind": "finite",
+        "display": "0.00 ± 0.00",
+        "mean": 0,
+        "std": 0,
+        "roundedZero": true
+      },
+      "unit": null,
+      "verdict": "GLOBE-CE distance's displayed mean rounds to zero.",
+      "source": {
+        "file": "manuscript/tables/results_global.tex",
+        "anchor": "tab:global_metrics_mlp / Adult Census / GLOBE-CE / l2_hamming"
+      },
+      "extractionRule": "Parse the l2_hamming cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Adult Census, MLP. Reported as 0.00 ± 0.00 after rounding; not asserted to be an exact zero.",
+      "status": "publishable"
+    },
+    {
+      "id": "global.blobs.ares.missing",
+      "claimKind": "benchmark-result",
+      "posterWording": "Blobs / global: AReS result not reported",
+      "value": {
+        "kind": "missing",
+        "display": "—",
+        "mean": null,
+        "std": null
+      },
+      "unit": null,
+      "verdict": "The table does not report a coverage result for AReS in this configuration.",
+      "source": {
+        "file": "manuscript/tables/results_global.tex",
+        "anchor": "tab:global_metrics_mlp / Blobs / AReS / coverage"
+      },
+      "extractionRule": "Parse the coverage cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Blobs, MLP. The source reports an em dash; this is missing output, not proof of method inapplicability.",
+      "status": "qualified"
+    },
+    {
+      "id": "group.adult.tcrex.validity",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / group-wise: T-CREx validity 0.23 ± 0.02",
+      "value": {
+        "kind": "finite",
+        "display": "0.23 ± 0.02",
+        "mean": 0.23,
+        "std": 0.02,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "T-CREx's smaller displayed shift (0.00) accompanies lower validity (0.23 ± 0.02) than GLANCE (0.99 ± 0.01).",
+      "source": {
+        "file": "manuscript/tables/results_group.tex",
+        "anchor": "tab:group_metrics_mlp / Adult Census / TCREx / validity"
+      },
+      "extractionRule": "Parse the validity cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Adult Census, MLP.",
+      "status": "publishable"
+    },
+    {
+      "id": "group.adult.tcrex.distance",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / group-wise: T-CREx distance 0.00 ± 0.00",
+      "value": {
+        "kind": "finite",
+        "display": "0.00 ± 0.00",
+        "mean": 0,
+        "std": 0,
+        "roundedZero": true
+      },
+      "unit": null,
+      "verdict": "T-CREx distance's displayed mean rounds to zero.",
+      "source": {
+        "file": "manuscript/tables/results_group.tex",
+        "anchor": "tab:group_metrics_mlp / Adult Census / TCREx / l2_hamming"
+      },
+      "extractionRule": "Parse the l2_hamming cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Adult Census, MLP. Reported as 0.00 ± 0.00 after rounding; not asserted to be an exact zero.",
+      "status": "publishable"
+    },
+    {
+      "id": "group.adult.glance.validity",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / group-wise: GLANCE validity 0.99 ± 0.01",
+      "value": {
+        "kind": "finite",
+        "display": "0.99 ± 0.01",
+        "mean": 0.99,
+        "std": 0.01,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "GLANCE's displayed validity (0.99 ± 0.01) is higher than T-CREx's (0.23 ± 0.02).",
+      "source": {
+        "file": "manuscript/tables/results_group.tex",
+        "anchor": "tab:group_metrics_mlp / Adult Census / GLANCE / validity"
+      },
+      "extractionRule": "Parse the validity cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Adult Census, MLP.",
+      "status": "publishable"
+    },
+    {
+      "id": "group.adult.glance.distance",
+      "claimKind": "benchmark-result",
+      "posterWording": "Adult / group-wise: GLANCE distance 0.41 ± 0.02",
+      "value": {
+        "kind": "finite",
+        "display": "0.41 ± 0.02",
+        "mean": 0.41,
+        "std": 0.02,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "GLANCE's higher-validity result changes more (0.41 ± 0.02) than T-CREx (0.00 ± 0.00).",
+      "source": {
+        "file": "manuscript/tables/results_group.tex",
+        "anchor": "tab:group_metrics_mlp / Adult Census / GLANCE / l2_hamming"
+      },
+      "extractionRule": "Parse the l2_hamming cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Adult Census, MLP.",
+      "status": "publishable"
+    },
+    {
+      "id": "regression.concrete.cearm.mae",
+      "claimKind": "benchmark-result",
+      "posterWording": "Concrete: CEARM target MAE 0.04 ± 0.01",
+      "value": {
+        "kind": "finite",
+        "display": "0.04 ± 0.01",
+        "mean": 0.04,
+        "std": 0.01,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "CEARM's displayed target-error mean is 0.01 higher than Wachter's on Concrete.",
+      "source": {
+        "file": "manuscript/tables/results_regression.tex",
+        "anchor": "tab:regression_all_dnn / Concrete / CEARM / mae"
+      },
+      "extractionRule": "Parse the mae cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Concrete, MLP regressor; regression validity is MAE, so lower is better.",
+      "status": "publishable"
+    },
+    {
+      "id": "regression.concrete.wachter.mae",
+      "claimKind": "benchmark-result",
+      "posterWording": "Concrete: Wachter target MAE 0.03 ± 0.00",
+      "value": {
+        "kind": "finite",
+        "display": "0.03 ± 0.00",
+        "mean": 0.03,
+        "std": 0,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "Wachter's displayed target-error mean is 0.01 lower than CEARM's on Concrete.",
+      "source": {
+        "file": "manuscript/tables/results_regression.tex",
+        "anchor": "tab:regression_all_dnn / Concrete / WACH / mae"
+      },
+      "extractionRule": "Parse the mae cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Concrete, MLP regressor; regression validity is MAE, so lower is better.",
+      "status": "publishable"
+    },
+    {
+      "id": "regression.concrete.cearm.l2",
+      "claimKind": "benchmark-result",
+      "posterWording": "Concrete: CEARM L2 1.16 ± 0.02",
+      "value": {
+        "kind": "finite",
+        "display": "1.16 ± 0.02",
+        "mean": 1.16,
+        "std": 0.02,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "CEARM's displayed perturbation is 12.9× Wachter's on Concrete.",
+      "source": {
+        "file": "manuscript/tables/results_regression.tex",
+        "anchor": "tab:regression_all_dnn / Concrete / CEARM / l2"
+      },
+      "extractionRule": "Parse the l2 cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Concrete, MLP regressor.",
+      "status": "publishable"
+    },
+    {
+      "id": "regression.concrete.wachter.l2",
+      "claimKind": "benchmark-result",
+      "posterWording": "Concrete: Wachter L2 0.09 ± 0.00",
+      "value": {
+        "kind": "finite",
+        "display": "0.09 ± 0.00",
+        "mean": 0.09,
+        "std": 0,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "Wachter's displayed perturbation is 12.9× smaller than CEARM's on Concrete.",
+      "source": {
+        "file": "manuscript/tables/results_regression.tex",
+        "anchor": "tab:regression_all_dnn / Concrete / WACH / l2"
+      },
+      "extractionRule": "Parse the l2 cell from the named TeX table row.",
+      "direction": "lower",
+      "qualifier": "Concrete, MLP regressor.",
+      "status": "publishable"
+    },
+    {
+      "id": "regression.concrete.wachter.pp",
+      "claimKind": "benchmark-result",
+      "posterWording": "Concrete: Wachter plausibility 0.24 ± 0.02",
+      "value": {
+        "kind": "finite",
+        "display": "0.24 ± 0.02",
+        "mean": 0.24,
+        "std": 0.02,
+        "roundedZero": false
+      },
+      "unit": null,
+      "verdict": "Wachter's displayed plausibility mean (0.24 ± 0.02) is higher than CEARM's (0.00 ± 0.00).",
+      "source": {
+        "file": "manuscript/tables/results_regression.tex",
+        "anchor": "tab:regression_all_dnn / Concrete / WACH / probabilistic_plausibility"
+      },
+      "extractionRule": "Parse the probabilistic_plausibility cell from the named TeX table row.",
+      "direction": "higher",
+      "qualifier": "Concrete, MLP regressor.",
+      "status": "publishable"
+    },
+    {
+      "id": "caveat.sparsity-direction",
+      "claimKind": "caveat",
+      "posterWording": "Sparsity omitted pending metric-direction reconciliation",
+      "value": {
+        "kind": "contradictory",
+        "definition": "fraction of features modified",
+        "definitionPreferredDirection": "lower",
+        "tableHeadingDirection": "higher",
+        "prosePreferredDirection": "lower"
+      },
+      "unit": null,
+      "verdict": "Do not make a comparative sparsity claim on the poster.",
+      "source": {
+        "file": "manuscript/supplementary.tex",
+        "anchor": "metric definition vs. table Sparse.↑ headings and prose interpretation"
+      },
+      "extractionRule": "Compare the sparsity definition with the table direction markers and manuscript prose.",
+      "direction": "contradictory",
+      "qualifier": "Resolution: omit sparsity comparisons from the poster; retain only the caveat in the research ledger.",
+      "status": "contradictory"
+    }
+  ]
+}
