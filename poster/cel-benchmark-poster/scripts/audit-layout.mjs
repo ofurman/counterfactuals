@@ -65,7 +65,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       minimumFontPx: {
         body: minimum('.section-copy'),
         caption: minimum('.source-note, figcaption'),
-        chartLabel: minimum('.metric-bar__label, .metric-bar__value, .group-result, .group-metric, .regression-head, .regression-row, .selection-row'),
+        chartLabel: minimum('.manuscript-figure figcaption'),
       },
     }
   })

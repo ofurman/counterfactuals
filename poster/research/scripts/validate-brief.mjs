@@ -229,11 +229,18 @@ const qrOwners = content.sections.filter((section) => section.assetRoles.include
 if (qrOwners.length !== 1 || qrOwners[0].id !== "header" || qrOwners[0].owner !== "header") fail("Exactly one project QR must be owned by the header section");
 const headerSection = content.sections.find((section) => section.id === "header");
 if (/hold\s+the\s+protocol\s+constant/i.test([headerSection.heading, ...headerSection.copy].join(" ")) && !headerSection.claimIds.includes("scope.protocol")) fail("Header protocol-constant copy must map to scope.protocol");
-const qualifierClaimIds = ["local.adult.cadex.validity", "local.blobs.ppcef.pp", "group.adult.tcrex.distance", "global.adult.globe.validity"];
 const guidanceSection = content.sections.find((section) => section.id === "guidance-limitations");
-for (const id of qualifierClaimIds) {
-  if (!guidanceSection.claimIds.includes(id)) fail(`Guidance/limitations lacks qualifier-owning claim: ${id}`);
-  if (!storyboardTags.some((tag) => tag[1].split(",").map((value) => value.trim()).includes(id))) fail(`Storyboard lacks qualifier-owning claim mapping: ${id}`);
+for (const id of ["contribution.protocol", "contribution.benchmark", "contribution.library"]) {
+  if (!guidanceSection.claimIds.includes(id)) fail(`Contribution section lacks manuscript contribution claim: ${id}`);
+}
+for (const [sectionId, claimId] of [
+  ["local-tradeoff", "result.local.overview"],
+  ["applicability", "result.global.overview"],
+  ["group-tradeoff", "result.group.overview"],
+  ["regression-tradeoff", "result.regression.overview"],
+]) {
+  if (!content.sections.find((section) => section.id === sectionId)?.claimIds.includes(claimId)) fail(`${sectionId} lacks manuscript result claim: ${claimId}`);
+  if (!storyboardTags.some((tag) => tag[1].split(",").map((value) => value.trim()).includes(claimId))) fail(`Storyboard lacks manuscript result mapping: ${claimId}`);
 }
 
 // Numeric provenance scan. Source IDs, citation metadata, and ordered-list markers are structural;

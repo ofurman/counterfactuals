@@ -9,17 +9,24 @@ describe('rendered evidence provenance', () => {
   it('binds every rendered claim marker to the live generated ledger', () => {
     const { container } = render(<App />)
     const markers = Array.from(container.querySelectorAll<HTMLElement>('[data-claim-id]'))
-    expect(markers.length).toBeGreaterThan(20)
+    expect(markers.length).toBeGreaterThan(12)
     for (const marker of markers) {
       expect(liveClaimIds.has(marker.dataset.claimId ?? ''), marker.outerHTML).toBe(true)
     }
     expect(container.querySelectorAll('[data-finding]')).toHaveLength(posterData.resultVisuals.length)
-    const taxonomy = container.querySelector('.pipeline-node[data-claim-id="scope.methods"]')
-    expect(taxonomy?.textContent).toMatch(/Local.*Global.*Group-wise/s)
-    const pipelineLabels = Array.from(container.querySelectorAll('.pipeline-node'))
-      .map((node) => node.textContent)
-    expect(pipelineLabels.some((label) => label?.includes('Metrics'))).toBe(true)
-    expect(pipelineLabels.some((label) => label?.includes('Reports'))).toBe(true)
+    const manuscriptSources = Array.from(container.querySelectorAll<HTMLElement>('[data-manuscript-source]'))
+      .map((element) => element.dataset.manuscriptSource)
+    expect(manuscriptSources).toEqual(expect.arrayContaining([
+      'manuscript/figures/teaser.pdf',
+      'manuscript/figures/metrics_boxplot_local.png',
+      'manuscript/figures/metrics_boxplot_global.png',
+      'manuscript/figures/metrics_boxplot_group_wise.png',
+      'manuscript/figures/regression_metrics_boxplot.png',
+    ]))
+    expect(new Set(manuscriptSources).size).toBe(5)
+    for (const image of container.querySelectorAll<HTMLImageElement>('.manuscript-figure img')) {
+      expect(image.alt.length).toBeGreaterThan(30)
+    }
   })
 
   it('does not render a visible result numeral outside a claim-owned element', () => {

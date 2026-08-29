@@ -1,6 +1,6 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `263b6177fc0ffd754e3b967f035324d8f74e9a63`
+Source revision: `0fa927c9408e92fcdc812d17c24b04ba3a5bc373`
 
 ## Contents
 
@@ -26,12 +26,12 @@ cd deliverables
 shasum -a 256 -c SHA256SUMS
 ```
 
-The full check validates manuscript-derived claims, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
+The full check validates manuscript-derived claims and graphics, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
 
 Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.github.io/counterfactuals/
 
 ## Known limitations
 
-- Supplemental provenance/footer source text is near the lower comfortable viewing size, but it is not essential content.
-- The lower evidence row uses repeated `BOTTOM` owner labels; its spatial order remains clear.
-- Sparsity comparisons are intentionally omitted until the manuscript's direction convention is reconciled.
+- The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
+- Raster result panels preserve the manuscript's published plotting style and are intended for A0 print or zoomed digital inspection.
+- Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.

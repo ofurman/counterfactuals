@@ -25,15 +25,15 @@ const text = spawnSync('pdftotext', [pdfPath, '-'], { encoding: 'utf8' })
 if (text.status !== 0) throw new Error(`pdftotext failed:\n${text.stdout}${text.stderr}`)
 const normalizedText = text.stdout.replace(/\s+/g, ' ').trim()
 const requiredSectionText = [
-  'CEL: controlled comparisons, visible trade-offs',
+  'CEL: a controlled benchmark for counterfactual explanations',
   'One broad benchmark',
-  'Protocol differences can confound comparisons',
-  'CEL standardizes a shared protocol',
-  'Plausibility can cost more change',
-  'Shared shifts trade reach for size',
-  'Similar targets, different perturbations',
-  'Missing output is part of the evidence',
-  'Choose by task, metric, and applicability',
+  'Why CE results are hard to compare',
+  'A benchmark, not just a library',
+  'Local methods: quality is multi-dimensional',
+  'Group-wise: effectiveness versus minimal change',
+  'Regression: target accuracy is not enough',
+  'Global methods expose failure modes',
+  'Three contributions',
   'Reproduce and extend',
 ]
 for (const expected of requiredSectionText) if (!normalizedText.includes(expected)) throw new Error(`PDF text is missing required section content: ${expected}`)

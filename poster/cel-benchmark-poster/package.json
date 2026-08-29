@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --config vitest.config.ts",
-    "bundle": "bash /Users/ofurman/.agents/skills/web-artifacts-builder/scripts/bundle-artifact.sh",
+    "bundle": "node scripts/bundle-artifact.mjs",
     "render": "node scripts/render.mjs",
     "audit:claims": "node scripts/audit-claims.mjs",
     "audit:layout": "node scripts/audit-layout.mjs",

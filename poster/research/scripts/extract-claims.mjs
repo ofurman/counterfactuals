@@ -256,6 +256,41 @@ export async function buildClaims() {
     /\\section\{Conclusions\}[\s\S]*?Our benchmark of (\d+) methods on (\d+) datasets reveals that no single method uniformly dominates; each excels on some quality dimensions at the expense of others\./,
     "trade-off conclusion"
   );
+  requireMatch(
+    main,
+    /\\item \\textbf\{A controlled evaluation protocol\} for counterfactual explanations that standardizes datasets, preprocessing, predictive backbones, constraint handling, and metric definitions, enabling fair and reproducible comparison\./,
+    "controlled-protocol contribution"
+  );
+  requireMatch(
+    main,
+    /\\item \\textbf\{A benchmark including\} 18 datasets and 14 counterfactual generation methods implemented within a unified framework, supporting evaluation across local, global, and group-wise paradigms\./,
+    "benchmark-breadth contribution"
+  );
+  requireMatch(
+    main,
+    /\\item \\textbf\{An open-source programming library\} designed to facilitate future method integration, transparent reporting, and community-driven benchmarking\./,
+    "open-source contribution"
+  );
+  requireMatch(
+    main,
+    /The consistency of CCHVAE and PPCEF makes them suitable for applications where validity is the primary concern\.[\s\S]*?CADEX generates the closest counterfactuals[\s\S]*?PPCEF and CCHVAE demonstrate the high log-density/,
+    "local benchmark result summary"
+  );
+  requireMatch(
+    main,
+    /For regression tasks[\s\S]*?WACH consistently outperforms CEARM\.[\s\S]*?WACH produces significantly more plausible counterfactuals[\s\S]*?nearly 9[\s\S]{0,20}faster/,
+    "regression benchmark result summary"
+  );
+  requireMatch(
+    main,
+    /GLOBE-CE and GLANCE achieve perfect or near-perfect validity while AReS shows only moderate success rates[\s\S]*?AReS shows the lowest log-density/,
+    "global benchmark result summary"
+  );
+  requireMatch(
+    main,
+    /GLANCE consistently achieves higher validity, but T-CREx, when applicable, produces closer and more plausible counterfactuals, however with very low success rates\./,
+    "group-wise benchmark result summary"
+  );
   const sparsityDefinition = requireMatch(
     supplementary,
     /\\item \\textbf\{Sparsity:\} The average proportion of features modified to achieve the counterfactual\.[\s\S]*?\\text\{Sparsity\}\(x, x'\) = \\frac\{1\}\{d\} \\sum_\{i=1\}\^\{d\} \\mathbb\{I\}\(x_i \\neq x'_i\)/,
@@ -392,6 +427,97 @@ export async function buildClaims() {
       direction: "qualitative",
       qualifier: "Do not convert this conclusion into an aggregate ranking.",
       status: "qualified"
+    },
+    {
+      id: "contribution.protocol",
+      claimKind: "qualitative",
+      posterWording: "Controlled evaluation protocol",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "CEL standardizes datasets, preprocessing, predictive backbones, constraints, and metric definitions for fairer CE comparison.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Introduction > Our main contributions > controlled evaluation protocol"},
+      extractionRule: "Require the first contribution item and its complete standardized-control list.",
+      direction: "qualitative",
+      qualifier: "This is the benchmark design contribution, not a guarantee that all external variation is removed.",
+      status: "publishable"
+    },
+    {
+      id: "contribution.benchmark",
+      claimKind: "qualitative",
+      posterWording: "Broad benchmark across CE paradigms",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "CEL benchmarks local, global, and group-wise counterfactual explanations inside one framework.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Introduction > Our main contributions > benchmark"},
+      extractionRule: "Require the second contribution item and its dataset, method, and paradigm scope.",
+      direction: "qualitative",
+      qualifier: "Exact dataset and method totals remain owned by the scope-count claims.",
+      status: "publishable"
+    },
+    {
+      id: "contribution.library",
+      claimKind: "qualitative",
+      posterWording: "Extensible open-source benchmark workbench",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "The CEL library supports method integration, transparent reporting, and community-driven benchmarking.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Introduction > Our main contributions > open-source programming library"},
+      extractionRule: "Require the third contribution item and its extension and reporting objectives.",
+      direction: "qualitative",
+      qualifier: "An implementation and extensibility contribution alongside the benchmark protocol.",
+      status: "publishable"
+    },
+    {
+      id: "result.local.overview",
+      claimKind: "qualitative",
+      posterWording: "Local CE quality is multi-dimensional",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "Local methods trade validity and proximity against plausibility and runtime; high performance on one axis does not imply dominance elsewhere.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Results > Local Methods and fig:local_methods"},
+      extractionRule: "Require the local-results paragraph that contrasts validity, proximity, density, sparsity, and runtime.",
+      direction: "qualitative",
+      qualifier: "Summary of the manuscript figure and narrative across the representative local-method datasets and both classification backbones.",
+      status: "qualified"
+    },
+    {
+      id: "result.regression.overview",
+      claimKind: "qualitative",
+      posterWording: "Regression CE performance separates target error from recourse cost",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "In the manuscript regression comparison, Wachter pairs comparable target accuracy with smaller changes, stronger plausibility, and lower runtime than CEARM.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Results > Regression Methods and fig:regression_methods"},
+      extractionRule: "Require the regression-results paragraph comparing accuracy, change size, plausibility, and runtime.",
+      direction: "qualitative",
+      qualifier: "Aggregate manuscript result across the representative regression datasets; inspect per-dataset panels for variation.",
+      status: "qualified"
+    },
+    {
+      id: "result.global.overview",
+      claimKind: "qualitative",
+      posterWording: "Global CE methods expose validity and applicability failure modes",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "The manuscript reports stronger validity for GLOBE-CE and GlobalGLANCE, while AReS is less reliable and frequently lacks results.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Results > Global Methods and fig:global_methods"},
+      extractionRule: "Require the global-results paragraph contrasting validity, distance, density, and method success.",
+      direction: "qualitative",
+      qualifier: "Aggregate manuscript result across representative datasets and both classification backbones; missing output is not interpreted as zero.",
+      status: "qualified"
+    },
+    {
+      id: "result.group.overview",
+      claimKind: "qualitative",
+      posterWording: "Group-wise CEs trade effectiveness for minimally disruptive shifts",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "GLANCE achieves higher validity, whereas T-CREx produces closer and more plausible shifts when it applies, but with very low success rates.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Results > Group-wise Methods and fig:group_methods"},
+      extractionRule: "Require the group-wise-results sentence that contrasts validity, proximity, plausibility, and applicability.",
+      direction: "qualitative",
+      qualifier: "Aggregate manuscript result across representative datasets and both classification backbones.",
+      status: "qualified"
     }
   ];
 
@@ -484,7 +610,7 @@ export async function buildClaims() {
     source: {file: "manuscript/supplementary.tex", anchor: "metric definition vs. table Sparse.↑ headings and prose interpretation"},
     extractionRule: "Compare the sparsity definition with the table direction markers and manuscript prose.",
     direction: "contradictory",
-    qualifier: "Resolution: omit sparsity comparisons from the poster; retain only the caveat in the research ledger.",
+    qualifier: "Resolution: omit any poster sparsity ranking; retain the manuscript figure without adding a comparative sparsity claim.",
     status: "contradictory"
   });
 

@@ -23,22 +23,22 @@
       "rect": {
         "top": 145,
         "right": 1812,
-        "bottom": 359.328125,
+        "bottom": 416.15625,
         "left": 108,
         "width": 1704,
-        "height": 214.328125
+        "height": 271.15625
       },
       "clientWidth": 1704,
       "scrollWidth": 1704,
-      "clientHeight": 211,
-      "scrollHeight": 211
+      "clientHeight": 268,
+      "scrollHeight": 268
     },
     {
       "id": "scope",
       "rect": {
-        "top": 379.328125,
+        "top": 436.15625,
         "right": 1812,
-        "bottom": 475.828125,
+        "bottom": 532.65625,
         "left": 108,
         "width": 1704,
         "height": 96.5
@@ -51,107 +51,107 @@
     {
       "id": "problem",
       "rect": {
-        "top": 495.828125,
-        "right": 520,
-        "bottom": 910.484375,
+        "top": 552.65625,
+        "right": 522,
+        "bottom": 828.984375,
         "left": 108,
-        "width": 412,
-        "height": 414.65625
+        "width": 414,
+        "height": 276.328125
       },
-      "clientWidth": 412,
-      "scrollWidth": 412,
-      "clientHeight": 411,
-      "scrollHeight": 412
-    },
-    {
-      "id": "protocol",
-      "rect": {
-        "top": 495.828125,
-        "right": 1372,
-        "bottom": 910.484375,
-        "left": 548,
-        "width": 824,
-        "height": 414.65625
-      },
-      "clientWidth": 824,
-      "scrollWidth": 824,
-      "clientHeight": 415,
-      "scrollHeight": 415
-    },
-    {
-      "id": "local-tradeoff",
-      "rect": {
-        "top": 495.828125,
-        "right": 1812,
-        "bottom": 910.484375,
-        "left": 1400,
-        "width": 412,
-        "height": 414.65625
-      },
-      "clientWidth": 412,
-      "scrollWidth": 412,
-      "clientHeight": 411,
-      "scrollHeight": 411
-    },
-    {
-      "id": "group-tradeoff",
-      "rect": {
-        "top": 930.484375,
-        "right": 483.359375,
-        "bottom": 1259.5,
-        "left": 108,
-        "width": 375.359375,
-        "height": 329.015625
-      },
-      "clientWidth": 375,
-      "scrollWidth": 375,
-      "clientHeight": 325,
-      "scrollHeight": 325
-    },
-    {
-      "id": "regression-tradeoff",
-      "rect": {
-        "top": 930.484375,
-        "right": 948,
-        "bottom": 1259.5,
-        "left": 507.359375,
-        "width": 440.640625,
-        "height": 329.015625
-      },
-      "clientWidth": 441,
-      "scrollWidth": 441,
-      "clientHeight": 325,
-      "scrollHeight": 325
-    },
-    {
-      "id": "applicability",
-      "rect": {
-        "top": 930.484375,
-        "right": 1216.796875,
-        "bottom": 1259.5,
-        "left": 972,
-        "width": 244.796875,
-        "height": 329.015625
-      },
-      "clientWidth": 245,
-      "scrollWidth": 245,
-      "clientHeight": 325,
-      "scrollHeight": 325
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 276,
+      "scrollHeight": 276
     },
     {
       "id": "guidance-limitations",
       "rect": {
-        "top": 930.484375,
-        "right": 1812,
+        "top": 844.984375,
+        "right": 522,
         "bottom": 1259.5,
-        "left": 1240.796875,
-        "width": 571.203125,
-        "height": 329.015625
+        "left": 108,
+        "width": 414,
+        "height": 414.515625
       },
-      "clientWidth": 571,
-      "scrollWidth": 571,
-      "clientHeight": 325,
-      "scrollHeight": 325
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 411,
+      "scrollHeight": 411
+    },
+    {
+      "id": "protocol",
+      "rect": {
+        "top": 552.65625,
+        "right": 1374,
+        "bottom": 972.578125,
+        "left": 546,
+        "width": 828,
+        "height": 419.921875
+      },
+      "clientWidth": 828,
+      "scrollWidth": 828,
+      "clientHeight": 420,
+      "scrollHeight": 420
+    },
+    {
+      "id": "local-tradeoff",
+      "rect": {
+        "top": 988.578125,
+        "right": 1374,
+        "bottom": 1259.5,
+        "left": 546,
+        "width": 828,
+        "height": 270.921875
+      },
+      "clientWidth": 828,
+      "scrollWidth": 828,
+      "clientHeight": 267,
+      "scrollHeight": 267
+    },
+    {
+      "id": "applicability",
+      "rect": {
+        "top": 552.65625,
+        "right": 1812,
+        "bottom": 748.625,
+        "left": 1398,
+        "width": 414,
+        "height": 195.96875
+      },
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 192,
+      "scrollHeight": 192
+    },
+    {
+      "id": "group-tradeoff",
+      "rect": {
+        "top": 764.625,
+        "right": 1812,
+        "bottom": 960.609375,
+        "left": 1398,
+        "width": 414,
+        "height": 195.984375
+      },
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 192,
+      "scrollHeight": 192
+    },
+    {
+      "id": "regression-tradeoff",
+      "rect": {
+        "top": 976.609375,
+        "right": 1812,
+        "bottom": 1259.484375,
+        "left": 1398,
+        "width": 414,
+        "height": 282.875
+      },
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 279,
+      "scrollHeight": 279
     },
     {
       "id": "reproducibility",
@@ -171,40 +171,34 @@
   ],
   "figures": [
     {
-      "clientWidth": 412,
-      "scrollWidth": 412,
-      "clientHeight": 227,
-      "scrollHeight": 227
+      "clientWidth": 792,
+      "scrollWidth": 792,
+      "clientHeight": 282,
+      "scrollHeight": 282
     },
     {
-      "clientWidth": 780,
-      "scrollWidth": 780,
-      "clientHeight": 208,
-      "scrollHeight": 208
-    },
-    {
-      "clientWidth": 412,
-      "scrollWidth": 412,
-      "clientHeight": 124,
-      "scrollHeight": 124
-    },
-    {
-      "clientWidth": 375,
-      "scrollWidth": 375,
-      "clientHeight": 160,
-      "scrollHeight": 160
-    },
-    {
-      "clientWidth": 441,
-      "scrollWidth": 441,
-      "clientHeight": 157,
-      "scrollHeight": 157
-    },
-    {
-      "clientWidth": 245,
-      "scrollWidth": 245,
+      "clientWidth": 828,
+      "scrollWidth": 828,
       "clientHeight": 142,
       "scrollHeight": 142
+    },
+    {
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 74,
+      "scrollHeight": 74
+    },
+    {
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 74,
+      "scrollHeight": 74
+    },
+    {
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 122,
+      "scrollHeight": 122
     }
   ],
   "safeBounds": {
@@ -213,7 +207,33 @@
     "bottom": 1324,
     "left": 108
   },
-  "images": [],
+  "images": [
+    {
+      "src": "http://127.0.0.1:50509/architecture.bded2544.png",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:50509/local-mixed.fafc5dac.jpg",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:50509/global-adult.e5956f6a.jpg",
+      "complete": true,
+      "naturalWidth": 1000
+    },
+    {
+      "src": "http://127.0.0.1:50509/group-adult.2e6b275a.jpg",
+      "complete": true,
+      "naturalWidth": 1000
+    },
+    {
+      "src": "http://127.0.0.1:50509/regression.ee8ae60a.jpg",
+      "complete": true,
+      "naturalWidth": 1100
+    }
+  ],
   "fonts": {
     "status": "loaded"
   },

@@ -28,6 +28,10 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
     qr: document.querySelector('[data-qr-destination]')?.getAttribute('data-qr-destination'),
     header: document.querySelector('.poster-header')?.textContent ?? '',
     scope: [...document.querySelectorAll('.scope-strip li')].map((element) => ({ id: element.getAttribute('data-claim-id'), text: element.textContent?.trim() ?? '' })),
+    manuscriptFigures: [...document.querySelectorAll('[data-manuscript-source]')].map((element) => ({
+      source: element.getAttribute('data-manuscript-source'),
+      alt: element.querySelector('img')?.getAttribute('alt') ?? '',
+    })),
   }))
 })
 
@@ -56,4 +60,17 @@ for (const link of rendered.links) if (!allowedLinks.has(link)) throw new Error(
 if (rendered.qr !== identity.qr.url) throw new Error('Rendered QR destination does not match identity')
 for (const text of [identity.venue, identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)
 
-console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source notes=${rendered.sources.length}`)
+const expectedManuscriptFigures = [
+  'manuscript/figures/teaser.pdf',
+  'manuscript/figures/metrics_boxplot_local.png',
+  'manuscript/figures/metrics_boxplot_global.png',
+  'manuscript/figures/metrics_boxplot_group_wise.png',
+  'manuscript/figures/regression_metrics_boxplot.png',
+]
+if (JSON.stringify(rendered.manuscriptFigures.map((figure) => figure.source).sort()) !== JSON.stringify(expectedManuscriptFigures.sort())) throw new Error('Rendered manuscript figure inventory is incomplete or substituted')
+for (const figure of rendered.manuscriptFigures) {
+  await readFile(path.join(repositoryDir, figure.source))
+  if (figure.alt.length < 30) throw new Error(`Manuscript figure lacks meaningful alt text: ${figure.source}`)
+}
+
+console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source notes=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}`)
