@@ -5,8 +5,17 @@ export function PosterFooter({ section }: { section: ResolvedSection }) {
     <footer className="poster-footer" data-section={section.id}>
       <div>
         <strong>{section.heading}</strong>
-        <span>{section.copy.join(' · ')}</span>
+        <code>{section.copy[0]}</code>
+        <span>{section.copy[1]}</span>
       </div>
+      <p className="precedent-citations">
+        Benchmark context&nbsp;·&nbsp;
+        {posterData.precedents.map((precedent, index) => (
+          <span data-source-citation={precedent.sourceCitation} key={precedent.citationKey}>
+            {index > 0 ? ' · ' : ''}{precedent.label} [{precedent.citationKey}]
+          </span>
+        ))}
+      </p>
       <nav aria-label="Project links">
         <a href={posterData.identity.links.repository}>{posterData.links.repository.label}</a>
         <a href={posterData.identity.links.documentation}>{posterData.links.documentation.label}</a>

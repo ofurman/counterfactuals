@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "label": "CARLA",
+      "citationKey": "pawelczyk2021carla",
+      "sourceCitation": "manuscript/main_lncs.tex#Related Works"
+    },
+    {
+      "label": "RobustX",
+      "citationKey": "jiang2025robustx",
+      "sourceCitation": "manuscript/main_lncs.tex#Related Works"
+    }
+  ]
+}

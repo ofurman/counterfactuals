@@ -244,6 +244,7 @@ export async function buildClaims() {
 
   const datasetScope = requireMatch(main, /CEL includes (\d+) pre-configured datasets covering classification \((\d+)\) and regression \((\d+)\) tasks/, "dataset scope");
   const methodScope = requireMatch(main, /The library implements (\d+) counterfactual explanation methods, categorized into local, global, and group-wise approaches/, "method scope");
+  const backboneScope = requireMatch(main, /using (\w+) predictive backbones per task type/, "predictive backbone scope");
   const foldScope = requireMatch(supplementary, /averaged over (\d+)-fold cross-validation/, "cross-validation scope");
   requireMatch(
     main,
@@ -283,6 +284,9 @@ export async function buildClaims() {
     throw new Error("Dataset task counts do not sum to the declared total");
   }
   const declaredMethodTotal = Number(methodScope[1]);
+  const numberWords = new Map([["one", 1], ["two", 2], ["three", 3], ["four", 4], ["five", 5]]);
+  const backboneCount = numberWords.get(backboneScope[1].toLowerCase());
+  if (!backboneCount) throw new Error(`Unsupported predictive backbone count: ${backboneScope[1]}`);
   const methodTable = tableBlock(main, "tab:methods");
   const methodCategoryCounts = {Local: 0, Global: 0, "Group-wise": 0};
   let currentMethodCategory = null;
@@ -349,6 +353,19 @@ export async function buildClaims() {
       direction: "qualitative",
       qualifier: "A design objective of the benchmark, not a statistical guarantee that every source of variation is eliminated.",
       status: "qualified"
+    },
+    {
+      id: "scope.backbones",
+      claimKind: "scope-count",
+      posterWording: `${backboneCount} predictive backbones per task type`,
+      value: {kind: "finite", total: backboneCount},
+      unit: "backbones",
+      verdict: `Each task type is evaluated with ${backboneCount} predictive backbones.`,
+      source: {file: "manuscript/main_lncs.tex", anchor: "Benchmark opening paragraph"},
+      extractionRule: "Regex-extract the predictive-backbone count from the benchmark scope statement.",
+      direction: "scope",
+      qualifier: "Classification and regression use task-appropriate backbone pairs.",
+      status: "publishable"
     },
     {
       id: "scope.folds",

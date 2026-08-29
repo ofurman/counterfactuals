@@ -72,6 +72,25 @@
       "status": "qualified"
     },
     {
+      "id": "scope.backbones",
+      "claimKind": "scope-count",
+      "posterWording": "2 predictive backbones per task type",
+      "value": {
+        "kind": "finite",
+        "total": 2
+      },
+      "unit": "backbones",
+      "verdict": "Each task type is evaluated with 2 predictive backbones.",
+      "source": {
+        "file": "manuscript/main_lncs.tex",
+        "anchor": "Benchmark opening paragraph"
+      },
+      "extractionRule": "Regex-extract the predictive-backbone count from the benchmark scope statement.",
+      "direction": "scope",
+      "qualifier": "Classification and regression use task-appropriate backbone pairs.",
+      "status": "publishable"
+    },
+    {
       "id": "scope.folds",
       "claimKind": "scope-count",
       "posterWording": "Results averaged over 5-fold cross-validation",

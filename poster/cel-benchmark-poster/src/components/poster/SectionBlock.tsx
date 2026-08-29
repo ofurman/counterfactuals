@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { ResolvedSection } from '@/data/posterData'
+import { SourceNote } from './SourceNote'
 
 type Props = {
   section: ResolvedSection
@@ -24,6 +25,7 @@ export function SectionBlock({ section, className = '', children, showClaims = t
         </ul>
       )}
       {children}
+      <SourceNote section={section} />
     </section>
   )
 }

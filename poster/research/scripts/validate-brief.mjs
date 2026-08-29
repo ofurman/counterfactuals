@@ -12,7 +12,7 @@ const fail = (message) => { throw new Error(message); };
 
 const localReferencePath = "docs/plans/cel-scientific-benchmark-poster/resources/planning-findings.md";
 const localReferenceHref = `../../${localReferencePath}`;
-const [sources, notes, claims, identity, guidelines, visual, storyboard, content, localReference] = await Promise.all([
+const [sources, notes, claims, identity, guidelines, visual, storyboard, content, precedents, localReference] = await Promise.all([
   readJson(path.join(researchDir, "neurips/sources.json")),
   readFile(path.join(researchDir, "neurips/notes.md"), "utf8"),
   readJson(path.join(researchDir, "claims/claims.generated.json")),
@@ -21,6 +21,7 @@ const [sources, notes, claims, identity, guidelines, visual, storyboard, content
   readJson(path.join(researchDir, "visual-spec.json")),
   readFile(path.join(researchDir, "storyboard.md"), "utf8"),
   readJson(path.join(researchDir, "poster-content.json")),
+  readJson(path.join(researchDir, "precedents.json")),
   readFile(path.join(repositoryDir, localReferencePath), "utf8")
 ]);
 
@@ -136,6 +137,17 @@ const validateClaimMapping = async (ids, citations, owner, {required = true} = {
     if (required && !citedFiles.has(claim.source.file)) fail(`${owner} does not cite the source file for claim ${id}: ${claim.source.file}`);
   }
 };
+
+const precedentKeys = new Set();
+for (const precedent of precedents.items ?? []) {
+  if (!precedent.label || !precedent.citationKey || !precedent.sourceCitation) fail("Incomplete benchmark precedent citation");
+  if (precedentKeys.has(precedent.citationKey)) fail(`Duplicate benchmark precedent: ${precedent.citationKey}`);
+  precedentKeys.add(precedent.citationKey);
+  const sourceFile = await validateCitation(precedent.sourceCitation, `benchmark precedent ${precedent.label}`);
+  const sourceText = await readFile(path.join(repositoryDir, sourceFile), "utf8");
+  if (!sourceText.includes(`${precedent.label} \\cite{${precedent.citationKey}}`)) fail(`Benchmark precedent is not source-derived: ${precedent.label}`);
+}
+if (precedentKeys.size < 2) fail("Poster lacks benchmark precedent citations");
 
 // Gate 3: require actual narrative bodies, not headings or an appended paper/table dump.
 const sectionBody = (heading) => {

@@ -22,7 +22,7 @@ table.
 ## Left — why and how broad
 
 1. **Why protocol matters:** CEL standardizes splits, preprocessing, predictors, constraints, and metrics to reduce experimental setup as a comparison confounder. <!-- claims: scope.protocol | sources: manuscript/main_lncs.tex#Benchmark -->
-2. **Scope strip:** show the benchmark's dataset, method-paradigm, and cross-validation scope from the claim ledger. <!-- claims: scope.datasets, scope.methods, scope.folds | sources: manuscript/main_lncs.tex#Datasets, manuscript/main_lncs.tex#Methods, manuscript/supplementary.tex#app:full_results -->
+2. **Scope strip:** show the benchmark's dataset, method-paradigm, backbone, and cross-validation scope from the claim ledger. <!-- claims: scope.datasets, scope.methods, scope.backbones, scope.folds | sources: manuscript/main_lncs.tex#Datasets, manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Benchmark, manuscript/supplementary.tex#app:full_results -->
 3. **What CEL standardizes:** one compact checklist leads visually into the center protocol. <!-- claims: scope.protocol | sources: manuscript/main_lncs.tex#Benchmark -->
 
 ## Center — controlled protocol

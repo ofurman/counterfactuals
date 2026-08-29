@@ -1,4 +1,6 @@
 import type { ResolvedSection } from '@/data/posterData'
+import { posterData } from '@/data/posterData'
+import { SourceNote } from './SourceNote'
 
 export function ScopeStrip({ section }: { section: ResolvedSection }) {
   return (
@@ -7,9 +9,15 @@ export function ScopeStrip({ section }: { section: ResolvedSection }) {
         <p className="section-kicker">Benchmark scope</p>
         <h2 id={`${section.id}-heading`}>{section.heading}</h2>
       </div>
-      <ul>
-        {section.claims.map((claim) => <li key={claim.id}>{claim.posterWording}</li>)}
+      <ul data-result-surface="scope">
+        {posterData.scopeFacts.map((fact) => (
+          <li key={`${fact.claimId}-${fact.label}`} data-claim-id={fact.claimId}>
+            <strong>{fact.value}</strong>
+            <span>{fact.label}</span>
+          </li>
+        ))}
       </ul>
+      <SourceNote section={section} />
     </section>
   )
 }

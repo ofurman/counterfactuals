@@ -3,6 +3,7 @@ import identityJson from '../../../research/identity.json'
 import methodNamesJson from '../../../research/method-names.json'
 import contentJson from '../../../research/poster-content.json'
 import visualSpecJson from '../../../research/visual-spec.json'
+import precedentsJson from '../../../research/precedents.json'
 
 export type ClaimValue =
   | { kind: 'finite'; [key: string]: string | number }
@@ -53,6 +54,31 @@ export function resolveSection(sectionId: string): ResolvedSection {
   return { ...section, claims: section.claimIds.map(resolveClaim) }
 }
 
+export function claimDisplay(claimId: string): string {
+  const claim = resolveClaim(claimId)
+  if ('display' in claim.value && typeof claim.value.display === 'string') return claim.value.display
+  return claim.posterWording
+}
+
+export function claimMean(claimId: string): number | null {
+  const claim = resolveClaim(claimId)
+  if ('mean' in claim.value && typeof claim.value.mean === 'number') return claim.value.mean
+  return null
+}
+
+export function resultDescriptor(claimId: string) {
+  const claim = resolveClaim(claimId)
+  const display = claimDisplay(claimId)
+  const wording = claim.posterWording.endsWith(display)
+    ? claim.posterWording.slice(0, -display.length).trim()
+    : claim.posterWording
+  const separator = wording.indexOf(': ')
+  return {
+    context: separator >= 0 ? wording.slice(0, separator) : '',
+    label: separator >= 0 ? wording.slice(separator + 2) : wording,
+  }
+}
+
 const placeholderPattern = /\b(?:todo|tbd|lorem ipsum|placeholder)\b/i
 const allFrozenText = JSON.stringify({ claims, sections, identityJson, methodNamesJson })
 if (placeholderPattern.test(allFrozenText)) {
@@ -65,6 +91,10 @@ const protocolControls = protocolClaim.posterWording
   .replace(/^.*?:\s*/, '')
   .replace(/, and /, ', ')
   .split(', ')
+const datasetScope = resolveClaim('scope.datasets').value as Extract<ClaimValue, { kind: 'finite' }>
+const methodScope = resolveClaim('scope.methods').value as Extract<ClaimValue, { kind: 'finite' }>
+const backboneScope = resolveClaim('scope.backbones').value as Extract<ClaimValue, { kind: 'finite' }>
+const foldScope = resolveClaim('scope.folds').value as Extract<ClaimValue, { kind: 'finite' }>
 
 export const posterData = {
   claims,
@@ -75,6 +105,7 @@ export const posterData = {
   identity: identityJson,
   methodNames: methodNamesJson,
   visualSpec: visualSpecJson,
+  precedents: precedentsJson.items,
   links: contentJson.links,
   resultVisuals: contentJson.resultVisuals,
   argument: argumentClaims
@@ -84,4 +115,15 @@ export const posterData = {
     caption: protocolClaim.posterWording,
     controls: protocolControls,
   },
+  scopeFacts: [
+    { claimId: 'scope.datasets', value: datasetScope.total, label: 'datasets' },
+    { claimId: 'scope.methods', value: methodScope.total, label: 'methods' },
+    {
+      claimId: 'scope.methods',
+      value: ['local', 'global', 'groupWise'].filter((key) => typeof methodScope[key] === 'number').length,
+      label: 'paradigms',
+    },
+    { claimId: 'scope.backbones', value: backboneScope.total, label: 'backbones / task' },
+    { claimId: 'scope.folds', value: foldScope.total, label: 'folds' },
+  ],
 } as const

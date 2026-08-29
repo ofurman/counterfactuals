@@ -38,7 +38,7 @@
       "order": 3,
       "heading": "One broad benchmark",
       "copy": ["Classification and regression. Local, global, and group-wise explanations. Repeated evaluation."],
-      "claimIds": ["scope.datasets", "scope.methods", "scope.folds"],
+      "claimIds": ["scope.datasets", "scope.methods", "scope.backbones", "scope.folds"],
       "sourceCitations": ["manuscript/main_lncs.tex#Datasets", "manuscript/main_lncs.tex#Methods", "manuscript/supplementary.tex#Full-Results"],
       "linkIds": [],
       "assetRoles": ["scope-strip"]

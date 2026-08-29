@@ -10,7 +10,7 @@ describe('poster scaffold', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument()
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getByRole('toolbar', { name: /Poster controls/i })).toBeInTheDocument()
-    expect(screen.getByRole('figure')).toBeInTheDocument()
+    expect(screen.getAllByRole('figure')).toHaveLength(6)
     expect(screen.getAllByRole('region')).toHaveLength(8)
     const { widthPx, heightPx } = posterData.visualSpec.canvas
     expect(screen.getByText(new RegExp(`${widthPx} × ${heightPx}`))).toBeInTheDocument()
