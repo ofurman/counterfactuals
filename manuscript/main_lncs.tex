@@ -1,0 +1,401 @@
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\IfFileExists{ifsym.sty}{\usepackage[misc]{ifsym}}{\providecommand{\Letter}{\ensuremath{\boxtimes}}}
+\newcommand{\corr}{(\Letter)}
+% N.B.: do not change anything above this line. If you require additional
+% packages, please load them directly after this line.
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{realboxes} % Required to safely colorbox verbatim text
+\usepackage{url}
+
+\definecolor{artelt}{RGB}{31, 119, 180}
+\definecolor{dice}{RGB}{174, 199, 232}
+\definecolor{cchvae}{RGB}{255, 127, 14}
+\definecolor{ppcef}{RGB}{255, 187, 120}
+\definecolor{cegp}{RGB}{44, 160, 44}
+\definecolor{cadex}{RGB}{152, 223, 138}
+\definecolor{sace}{RGB}{214, 39, 40}
+\definecolor{ares}{RGB}{196, 156, 148}
+\definecolor{globece}{RGB}{140, 86, 75}
+\definecolor{globalglance}{RGB}{227, 119, 194}
+\definecolor{glance}{RGB}{247, 182, 210}
+\definecolor{tcrex}{RGB}{127, 127, 127}
+\definecolor{cearm}{RGB}{31, 119, 180}
+\definecolor{wach}{RGB}{255, 127, 14}
+
+\definecolor{lightblue}{RGB}{230, 240, 255}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{lightblue},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{red},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=4pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=ltb,
+    framerule=0pt,
+    keywordstyle={\bfseries \color{blue}}
+}
+\lstset{style=mystyle}
+\newcommand{\code}[1]{\Colorbox{lightblue}{\lstinline{#1}}}
+
+\begin{document}
+
+\title{CEL: Comprehensive Counterfactual Explanations Library and Benchmark}
+\titlerunning{CEL: Counterfactual Explanations Library and Benchmark}
+
+%% ===== DOUBLE-BLIND REVIEW VERSION (XKDD 2026 submission) =====
+\author{Author information scrubbed for double-blind reviewing}
+\institute{}
+% \authorrunning{} is intentionally omitted for the double-blind version.
+
+%% ===== CAMERA-READY VERSION =====
+%% For the camera-ready paper, comment out the two lines above and
+%% uncomment the block below.
+%
+% \author{Oleksii Furman\inst{1}\orcidID{0009-0001-2184-3096} \and
+% {\L}ukasz Lenkiewicz\inst{1}\orcidID{0009-0006-6282-8649} \and
+% Marcel Musia{\l}ek\inst{1}\orcidID{0009-0009-4964-0547} \and
+% Maciej Zi{\k e}ba\inst{1}\orcidID{0000-0003-4217-7712}}
+% \authorrunning{O. Furman et al.}
+% \institute{Wroc{\l}aw University of Science and Technology, Wroc{\l}aw, Poland\\
+% \email{\{oleksii.furman,lukasz.lenkiewicz,maciej.zieba\}@pwr.edu.pl}}
+
+\maketitle
+
+\begin{abstract}
+Counterfactual explanations are a prominent approach in explainable artificial intelligence (xAI), providing actionable guidance on what input changes would alter a model’s prediction to a desired outcome. While early methods primarily focused on minimal feature changes, recent work incorporates additional properties such as sparsity, actionability and plausibility. Despite this progress, fair and systematic evaluation remains challenging. Existing studies often rely on different data splits, predictive models, and evaluation metrics, which limits objective comparison across methods. To fill this gap, we introduce CEL (\textbf{C}ounterfactual \textbf{E}xplanations \textbf{L}ibrary), a unified library and benchmark for counterfactual explanations designed to support consistent implementation and evaluation. CEL includes 18 datasets of varying size and complexity and provides implementations or reimplementations of 14 widely used counterfactual methods. Using this standardized setup, we conduct a comprehensive quantitative comparison across a variety of methods on datasets that differ in size, number, and types of attributes. The evaluation protocol incorporates multiple complementary metrics capturing validity, coverage, sparsity, proximity, and distributional plausibility, including density- and outlier-based measures to assess the realism of generated counterfactuals. To the best of our knowledge, this is the first comprehensive benchmark that systematically evaluates recent counterfactual explanation methods within a unified and reproducible framework. Whereas prior libraries are often outdated, limited in scope, or lack consistent protocols, CEL aims to improve reproducibility, enable fair comparison, and provide a workbench for developing future counterfactual explanation methods.\footnote{Authors wish to opt out of publication in the post-proceedings.}
+
+\keywords{Counterfactual Explanations \and Explainable Artificial Intelligence \and Benchmarking \and Machine Learning}
+\end{abstract}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/teaser.pdf}
+    \caption{Overview of the CEL architecture. It consists of four interconnected modules: (i) a Data Module handling dataset loading, preprocessing, and constraint specification; (ii) a Model Module providing predictive and probabilistic backbones; (iii) an Explanation Engine supporting local, global, and group-wise counterfactual methods; and (iv) a Metrics Orchestrator computing validity, proximity, sparsity, and plausibility measures. Arrows indicate data flow between components.}
+    \label{fig:teaser}
+\end{figure}
+
+\section{Introduction}
+Machine learning models are increasingly deployed in high-stakes applications, where transparency and accountability are critical. Counterfactual explanations have emerged as a prominent approach in explainable AI, offering actionable insights by identifying minimal changes required to alter a model’s prediction. Early formulations, most notably by Wachter et al.~\cite{wachter2017counterfactual}, focused primarily on two criteria: validity (the counterfactual must achieve the desired prediction) and proximity (the modification from the original instance should be minimal). While intuitive, these constraints alone often lead to unrealistic or impractical explanations.
+
+% Machine learning models are increasingly deployed in high-stakes real-world applications. Recent advances have enabled their use in complex domains such as medical image analysis \cite{ronneberger2015u}, recommender systems \cite{pitoura2021fairness}, finance \cite{xie2023pixiu}, and autonomous systems \cite{sancaktar2022curious}. Despite their strong predictive performance, many of these systems rely on highly expressive black-box architectures whose internal decision processes are difficult to interpret. This lack of transparency poses challenges at multiple stages of the model lifecycle: it complicates debugging and validation during development, and it raises regulatory and ethical concerns in deployment. In particular, legal frameworks such as the European Union’s General Data Protection Regulation (GDPR) emphasize the need for meaningful explanations of automated decisions \cite{wachter2017counterfactual}. These challenges have led to the rapid growth of Explainable Artificial Intelligence (XAI), a field devoted to developing methods that provide human-understandable insights into model behavior and decision-making processes.
+
+Subsequent work has expanded the set of desirable properties for counterfactual explanations. In addition to validity and proximity, researchers have emphasized plausibility, requiring counterfactuals to lie in high-density regions of the data distribution; sparsity, encouraging modifications to as few features as possible; and actionability, ensuring that only features that can be feasibly changed in practice are modified \cite{guidotti2024counterfactual}. As a result, modern counterfactual generation methods typically optimize for multiple, and sometimes competing, criteria. This growing set of constraints has significantly increased the complexity of both method design and evaluation. 
+
+% Counterfactual methods can be categorized into local, global, and group-wise approaches, which generate instance-level, dataset-level, or subgroup-level explanations, respectively.
+
+% Counterfactual explanation methods can be broadly categorized into three paradigms: local, global, and group-wise approaches. Local methods generate instance-specific perturbations tailored to individual data points \cite{karimi2020model,wachter2017counterfactual,mothilal2020explaining,pawelczyk2020learning}. While highly actionable at the individual level, they do not provide aggregated insights into overall model behavior. In contrast, global methods aim to identify a single transformation or shift that alters predictions for an entire class \cite{rawal2020beyond,ley2023globe}. These approaches offer a more holistic perspective but may sacrifice instance-level precision. Group-wise methods occupy an intermediate position by discovering multiple perturbations that apply to subgroups within a class \cite{bewley2024counterfactual,kavouras2024glance,furman2024unifying}. This formulation enables structured, segment-level understanding of model behavior while retaining more flexibility than fully global approaches.
+
+Since their introduction, the evaluation of counterfactual methods has remained fundamentally under-specified. For a given instance, multiple valid counterfactuals may exist, each satisfying different subsets of desirable properties \cite{mothilal2020explaining}. Modern methods therefore optimize trade-offs among criteria such as validity, proximity, plausibility, sparsity, robustness, and actionability, requiring a multi-dimensional assessment rather than a single scalar metric \cite{guidotti2024counterfactual}.
+
+In practice, studies use inconsistent evaluation setups: metrics are defined differently, different subsets of properties are emphasized, and experimental protocols vary in data splits, preprocessing, feature encodings, constraints, and the predictive models being explained \cite{de2021framework,pineau2021improving}. Because counterfactuals are inherently model-dependent, such variation can substantially affect feasibility and quality, so observed differences may reflect experimental configuration rather than methodological advances. This lack of standardization makes fair comparison difficult, yields unstable method rankings, and hinders reliable measurement of progress.
+
+To address this fragmentation, we introduce CEL, a unified benchmark and reproducible evaluation framework. Rather than serving solely as an implementation library, CEL establishes a controlled protocol that standardizes datasets, predictive backbones, preprocessing pipelines, feature constraints, and evaluation metrics, enabling systematic and fair comparison across counterfactual paradigms. Figure~\ref{fig:teaser} overviews the CEL architecture, connecting data management, predictive and generative modeling, explanation generation, and standardized evaluation.
+
+CEL includes 18 curated datasets spanning diverse domains and 14 widely used counterfactual generation methods implemented or reimplemented within a common interface. All methods are evaluated under harmonized training splits, shared predictive models, and a consistent metric taxonomy. The library is publicly available via \code{pip install ce-library} and the source code is hosted on GitHub\footnote{Repository URL omitted for double-blind review.}.
+
+\smallskip
+\noindent
+Our main contributions are:
+
+\begin{itemize}
+\item \textbf{A controlled evaluation protocol} for counterfactual explanations that standardizes datasets, preprocessing, predictive backbones, constraint handling, and metric definitions, enabling fair and reproducible comparison.
+\item \textbf{A benchmark including} 18 datasets and 14 counterfactual generation methods implemented within a unified framework, supporting evaluation across local, global, and group-wise paradigms.
+\item \textbf{An open-source programming library} designed to facilitate future method integration, transparent reporting, and community-driven benchmarking.
+\end{itemize}
+
+
+\section{Related Works}
+
+Research on counterfactual explanations has led to several libraries and benchmarking efforts designed to support implementation and evaluation. However, despite these contributions, a fully controlled and protocol-standardized benchmark for counterfactual explanations is still lacking.
+
+CARLA \cite{pawelczyk2021carla} is among the earliest and most widely adopted benchmarking libraries for counterfactual explanations and algorithmic recourse, providing multiple generation methods, integrated evaluation measures, and several datasets within a unified Python framework. While it greatly improved accessibility and comparability, it does not enforce a fully fixed experimental protocol across predictive backbones, preprocessing choices, and constraint configurations.
+
+More recently, RobustX \cite{jiang2025robustx} targets the robustness of counterfactual explanations under model and data perturbations, offering standardized tools for this property. While valuable for analyzing stability, its scope is narrow and does not cover multiple counterfactual paradigms under a unified experimental protocol.
+
+In contrast to prior libraries, CEL emphasizes protocol-level control across datasets, predictive backbones, preprocessing steps, constraint handling, and metric definitions, enabling systematic and fair comparison across local, global, and group-wise counterfactual paradigms.
+
+\section{CEL: Counterfactual Explanations Library}
+
+CEL is built from modular components that separate models, datasets, counterfactual methods, and evaluation metrics. This structure allows flexible composition and simplifies extension with new methods, datasets, and metrics, while typed interfaces ensure consistent data handling.
+
+
+\subsection{Architecture and Design Principles}
+
+CEL enforces a strict separation of concerns, so that data preprocessing, model training, explanation generation, and evaluation operate as decoupled yet interoperable components. It employs a \textbf{configuration-driven} workflow, letting researchers define experiments---model hyperparameters, dataset constraints, and metric selection---via hierarchical configuration files rather than hard-coded scripts.
+
+\subsection{Unified Method Interfaces}
+
+A key challenge in benchmarking is the heterogeneity of counterfactual algorithms. CEL unifies them under a common abstraction, \code{BaseCounterfactualMethod}, which defines a standardized interface for explanation generation. All methods return a structured \code{ExplanationResult}, enabling consistent evaluation and direct comparison across approaches.
+
+To support diverse explanation paradigms, CEL adopts a Mixin-based design that unifies local, global, and group-wise methods under a common interface, enabling consistent integration and evaluation.
+
+% To accommodate diverse explanation strategies, CEL employs a \textbf{Mixin design pattern}:
+% \begin{itemize}
+%     \item \textbf{\code{LocalCounterfactualMixin}}: For methods that optimize perturbations for individual instances (e.g., Wachter, DiCE, PPCEF).
+%     \item \textbf{\code{GlobalCounterfactualMixin}}: For methods that learn global translation rules or directions applicable to the entire dataset (e.g., AReS, GLOBE-CE).
+%     \item \textbf{\code{GroupCounterfactualMixin}}: For approaches that generate explanations for specific subgroups or clusters (e.g., GLANCE, TCREx).
+% \end{itemize}
+
+\subsection{Data Management and Preprocessing}
+
+Valid counterfactual evaluation requires rigorous data handling to ensuring that generated instances remain within valid feature domains. CEL implements a robust \code{DatasetBase} architecture that manages feature metadata, including actionability constraints, mutability, and feature bounds.
+
+The library features a flexible \code{PreprocessingPipeline}, allowing users to chain transformations such as scalers (Standard, MinMax, Robust) and encoders (OneHot, Ordinal). Crucially, the pipeline supports precise inverse transformations, ensuring that counterfactuals generated in processed space can be accurately mapped back to the original input space for evaluation.
+
+For methods requiring continuous density estimation (e.g., normalizing flows), CEL includes a specialized \code{Dequantization} module. This module converts discrete categorical features into continuous values using variational or noise-based dequantizers, bridging the gap between discrete tabular data and continuous generative models.
+
+\subsection{Predictive and Generative Backbones}
+
+CEL supports a wide range of model architectures via a unified \code{PytorchBase} interface, categorized into task-specific mixins.
+
+\textbf{Discriminative Models.} To ensure broad compatibility, the library implements \code{ClassifierPytorchMixin} and \code{RegressionPytorchMixin}. Implemented architectures range from standard Multi-Layer Perceptrons (MLP) and Logistic Regression to advanced Neural Oblivious Decision Ensembles (NODE), allowing researchers to test counterfactual generation against models of varying complexity and interpretability and easily extend their code with new implementations.
+
+\textbf{Generative Models.} Some of modern counterfactual methods and metrics rely on density estimation to ensure the plausibility of generated explanations. CEL integrates a \code{GenerativePytorchMixin} that standardizes likelihood estimation and sampling interfaces. The library provides implementations of state-of-the-art Normalizing Flows, including Masked Autoregressive Flow (MAF) \cite{papamakarios2017masked}, along with RealNVP and NICE. Additionally, it supports Kernel Density Estimation (KDE) and Gaussian Mixture Models (GMM) for baseline comparisons. These models allow users to estimate the likelihood of generated counterfactuals, a key component in assessing plausibility.
+
+\subsection{Evaluation Orchestration}
+
+CEL introduces a \code{MetricsOrchestrator} which allows to use existing metrics or define custom ones. This component leverages a registry-based system to dynamically instantiate and compute metrics defined in the experiment configuration. The orchestrator handles input validation and compute a comprehensive suite of metrics covering validity, proximity, sparsity, and density-based plausibility scores. Metrics are detailed in the supplementary material.
+
+\vspace{1em}
+
+CEL modular workflow is demonstrated in Listing \ref{lst:code_snippet}, which illustrates how the Dataset, Model, Method, and MetricsOrchestrator components interact. As shown, the framework abstracts the complexity of training and optimization, allowing users to generate and evaluate counterfactuals with minimal boilerplate code.
+
+
+\begin{lstlisting}[float=tp, belowskip=-1em, language=Python, backgroundcolor=\color{lightblue}, caption={Code snippet showing CEL modular workflow.}, label={lst:code_snippet}]
+from cel.datasets import FileDataset
+from cel.models.classifiers import MLPClassifier
+from cel.cf_methods.local_methods import PPCEF
+from cel.metrics import MetricsOrchestrator
+
+# 1. Configuration-driven Data Loading
+dataset = FileDataset(config_path="dataset.yaml")
+
+# 2. Model Training (Unified PytorchBase Interface)
+classifier = MLPClassifier(...)
+classifier.fit(dataset.train_dataloader())
+
+# 3. Counterfactual Generation (LocalMixin)
+method = PPCEF(classifier, gen_model=flow_model, ...)
+result = method.explain_dataloader(dataset.test_dataloader())
+
+# 4. Standardized Evaluation
+metrics = MetricsOrchestrator(conf_path="default.yaml")
+scores = metrics.compute(result)
+\end{lstlisting}
+
+
+\section{Benchmark}
+
+A good counterfactual benchmark rests on three principles \cite{pawelczyk2021carla,de2021framework}. First, a \textbf{standardized evaluation protocol}---a fixed suite of diverse datasets, pre-defined predictive models, and consistent preprocessing pipelines---eliminates experimental variation as a confounding factor, a common issue in prior studies \cite{pineau2021improving}. Second, \textbf{comprehensiveness}: broad coverage of methods spanning local, group-wise, and global paradigms, evaluated with multi-faceted metrics that capture validity, proximity, sparsity, and plausibility \cite{guidotti2024counterfactual}. Third, \textbf{reproducibility and extensibility}: an open-source design that lets researchers replicate results and integrate their own methods, datasets, and metrics. CEL is built around these principles.
+
+\subsection{Datasets}
+CEL includes 18 pre-configured datasets covering classification (13) and regression (5) tasks, spanning domains such as finance and social sciences to test methods across different distributions and complexities. Table~\ref{tab:datasets_complete} summarizes their characteristics.
+
+\begin{table}[!ht]
+\centering
+\footnotesize 
+\setlength{\tabcolsep}{2pt} 
+\caption{Datasets included in CEL with feature types, distribution and references.}
+\label{tab:datasets_complete}
+\begin{tabular}{l l r r r r r}
+\toprule
+\textbf{Dataset} & \textbf{Task} & \textbf{$N$} & \textbf{Cat} & \textbf{Num} & \textbf{$C$} & \textbf{Label Distribution} \\
+\midrule
+Adult Census \cite{adult} & Clf. & 32,561 & 8 & 4 & 2 & 0: 75.9\%, 1: 24.1\% \\
+Audit \cite{audit} & Clf. & 775 & 0 & 23 & 2 & 0: 60.6\%, 1: 39.4\% \\
+Bank Marketing \cite{moro2014bank} & Clf. & 40,004 & 9 & 7 & 2 & 0: 88.3\%, 1: 11.7\% \\
+Blobs & Clf. & 1,500 & 0 & 2 & 3 & 0, 1, 2: 33.3\% each \\
+Credit Default \cite{credit_default_data} & Clf. & 30,000 & 9 & 14 & 2 & 0: 77.9\%, 1: 22.1\% \\
+Digits \cite{digits} & Clf. & 1,797 & 0 & 64 & 10 & Balanced ($\sim$10\% each) \\
+German Credit \cite{german_credit_data} & Clf. & 1,000 & 11 & 7 & 2 & 0: 70.0\%, 1: 30.0\% \\
+GMC \cite{pawelczyk2020learning} & Clf. & 16,714 & 3 & 7 & 2 & 0: 50.0\%, 1: 50.0\% \\
+HELOC \cite{heloc} & Clf. & 10,459 & 0 & 23 & 2 & 0: 52.2\%, 1: 47.8\% \\
+Law \cite{law} & Clf. & 2,216 & 2 & 3 & 2 & 0: 50.0\%, 1: 50.0\% \\
+Lending Club \cite{jagtiani2019roles} & Clf. & 93,888 & 4 & 8 & 2 & 0: 29.6\%, 1: 70.4\% \\
+Moons & Clf. & 1,024 & 0 & 2 & 2 & 0: 50.0\%, 1: 50.0\% \\
+Wine \cite{wine} & Clf. & 178 & 0 & 13 & 3 & 0: 33.1, 1: 39.9, 2: 27\% \\
+\midrule
+Synthetic & Regr. & 1,000 & 0 & 2 & Cont. & [0, 1] \\
+Concrete \cite{concrete_compressive_strength_data} & Regr. & 1,030 & 0 & 8 & Cont. & [0, 1]\\
+Diabetes \cite{diabetes_data} & Regr. & 442 & 0 & 10 & Cont. & [0, 1] \\
+Yacht \cite{yacht_hydrodynamics_data} & Regr. & 308 & 0 & 6 & Cont. & [0, 1] \\
+SCM20D \cite{scm20d_data} & Regr. & 8,966 & 0 & 61 & Cont. (16) & $[0, 1]^{16}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% The benchmark handles data preprocessing, and splitting automatically. It supports distinct feature types (numerical, categorical) and allows users to define actionability constraints (immutable features) and feature bounds, which are critical for generating realistic counterfactuals.
+
+Consistent preprocessing is applied across all datasets. Continuous features are scaled to the $[0, 1]$ range using Min-Max normalization. Categorical features are handled based on the method's requirements For discriminative models and CF methods, categorical features are maintained in their original encoded format. to facilitate training of density estimator we apply variational dequantization to discrete features, mapping them into a continuous latent space  while maintaining the discrete structure during inverse transformations.
+
+\subsection{Models}
+CEL integrates distinct types of predictive and generative models implemented in PyTorch, which are essential for generating and evaluating counterfactual explanations. To ensure rigorous evaluation, CEL implements several predictors that we used in our benchmark. \textbf{Classification Models:} The library includes implementations of Multi-Layer Perceptrons (MLP), Logistic Regression. \textbf{Regression Models:} For continuous target variables, CEL provides Linear Regression and MLP Regressor models. \textbf{Density Estimator:} To support plausibility evaluation and methods that rely on density estimation we utilise Masked Autoregressive Flow, accordingly to Wielopolski et al.~\cite{wielopolski2024probabilistically}. 
+
+
+\subsection{Methods}
+The library implements 14 counterfactual explanation methods, categorized into local, global, and group-wise approaches. All methods adhere to a common interface, facilitating direct comparison.
+
+\begin{table}[h!]
+\centering
+\caption{Counterfactual explanation methods included in the CEL benchmark.}
+\label{tab:methods}
+\begin{tabular}{l l l}
+\toprule
+\textbf{Category} & \textbf{Method} & \textbf{Citation} \\
+\midrule
+\multirow{9}{*}{Local} & Wachter & \cite{wachter2017counterfactual} \\
+& Artelt & \cite{artelt2020convex} \\
+& DiCE & \cite{mothilal2020explaining} \\
+& CCHVAE & \cite{karimi2020model} \\
+& PPCEF & \cite{wielopolski2024probabilistically} \\
+& CEM & \cite{DhurandharCLTTS18} \\
+& CEGP & \cite{LooverenK21} \\
+& CADEX & \cite{moore2019explaining} \\
+& SACE & \cite{keane2020good} \\
+& CEARM & \cite{spooner2021counterfactual} \\
+\midrule
+\multirow{2}{*}{Global} & AReS & \cite{rawal2020beyond} \\
+& GLOBE-CE & \cite{ley2023globe} \\
+\midrule
+\multirow{2}{*}{Group-wise} & GLANCE & \cite{kavouras2024glance} \\
+& T-CREx & \cite{bewley2024tcrex} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Local Methods}
+Local methods generate explanations for individual instances. CEL includes classic optimization-based approaches such as Wachter et al. \cite{wachter2017counterfactual} and DiCE \cite{mothilal2020explaining}, which solve optimization problems to generate counterfactuals. The library also supports several methods that focus on plausibility via density-based constraints and generative models, including the method of Artelt et al.~\cite{artelt2020convex} (Artelt); CCHVAE \cite{karimi2020model}, which leverages variational autoencoders for manifold-constrained generation; PPCEF \cite{wielopolski2024probabilistically}, a flow-based approach with an explicit probabilistic formulation; and CEGP \cite{LooverenK21}, which guides perturbations toward prototype-based counterfactuals. CEM \cite{DhurandharCLTTS18} uses autoencoders to verify the plausibility of perturbed instances. The case-based method SACE \cite{keane2020good} and CADEX \cite{moore2019explaining} (constrained adversarial examples) are also included. Additionally, CEL implements CEARM \cite{spooner2021counterfactual}, a Bayesian optimization-based method designed for regression models with a globally convergent search algorithm.
+
+\subsubsection{Global Methods}
+Global methods provide dataset-level insights. CEL implements AReS \cite{rawal2020beyond}, which generates global recourse rules, and GLOBE-CE \cite{ley2023globe}, which learns global translation directions. Additionally, we include GLANCE \cite{kavouras2024glance} in our comparison by configuring it with a single group, effectively adapting this group-wise method for a global evaluation. These methods are essential for understanding high-level model behavior and identifying systemic biases.
+
+\subsubsection{Group-wise Methods}
+Bridging the gap between local and global, group-wise methods generate explanations for subgroups of data. CEL includes GLANCE \cite{kavouras2024glance} and TCREX \cite{bewley2024tcrex}, which allow users to inspect counterfactuals for specific clusters or demographic groups.
+
+\subsection{Metrics}
+\label{sec:metrics}
+To ensure a holistic evaluation, CEL provides a comprehensive suite of metrics covering key counterfactual properties: Validity, Proximity, Sparsity, Plausibility. To ensure rigor evaluation we selected such metrics to evaluate each property:
+\begin{itemize}
+    \item \textbf{Validity:} Measures the success rate of generated counterfactuals in achieving the target prediction. For continuous targets, validity is measured as the mean absolute error (MAE) between the predicted value of the counterfactual and the target value. 
+    \item \textbf{Proximity:} Quantifies the distance between the original instance and the counterfactual using \textit{Euclidean} distance for continuous features. For mixed data we apply combined \textit{Euclidean-Hamming} distance, weighted proportionally by number of continuous and discrete features.
+    \item \textbf{Sparsity:} Evaluates the fraction of modified features, encouraging simpler explanations.
+    \item \textbf{Plausibility:} Assesses how well counterfactuals fit the data distribution using Log-Likelihood from density estimation model. We use MAF \cite{papamakarios2017masked} for this benchmark, due to its superiority verified by Wielopolski et al.~\cite{wielopolski2024probabilistically}.
+\end{itemize}
+This evaluation ensures that methods are not just optimized for a single criterion (e.g., validity) but produce high-quality, actionable, and realistic explanations. We include a detailed explanation of all metrics in the supplementary material.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{figures/metrics_boxplot_local.png}
+    \caption{Performance of local counterfactual methods across seven classification datasets. Rows represent datasets and columns represent evaluation metrics (Validity, Euclidean-Hamming Distance, Sparsity, Log-Density, Computation Time). Each boxplot shows the distribution of metric values across methods: \textcolor{artelt}{\textbf{Artelt}} (blue), \textcolor{dice}{\textbf{DiCE}} (light blue), \textcolor{cchvae}{\textbf{CCHVAE}} (orange), \textcolor{ppcef}{\textbf{PPCEF}} (light orange), \textcolor{cegp}{\textbf{CEGP}} (green), \textcolor{cadex}{\textbf{CADEX}} (red), and \textcolor{glance}{\textbf{SACE}} (pink).}
+    \label{fig:local_methods}
+\end{figure}
+
+\subsection{Experimental Setup}
+Our evaluation systematically compares counterfactual methods across local, global, and group-wise paradigms under identical conditions, isolating methodological differences from confounding factors. We evaluate all methods on 18 datasets of varying size, dimensionality, and feature composition, using two predictive backbones per task type, and assess validity, proximity, sparsity, and plausibility to reveal both absolute performance and the trade-offs and failure modes that emerge across diverse settings.
+
+We adopt a standardized protocol using 5-fold cross-validation. For each fold we train the discriminative model on the training split, then fit a generative density estimator on data labeled by that model's predictions, so conditional density is estimated against the appropriate class distribution. We model class-conditional densities with masked autoregressive flows (MAF) \cite{papamakarios2017masked}, which flexibly estimate complex distributions while preserving tractable likelihood computation.
+
+For each dataset we define a target class and explain test instances whose prediction differs from it. For multiclass datasets we restrict evaluation to a binary setting between a selected class pair, aligning generation and density estimation with a well-defined decision boundary and enabling consistent comparison across datasets.
+
+For regression tasks, we set the problem to increasing the predicted value. The desired target value is defined as the original prediction increased by 20\% of the overall range of the target variable. We measure validity as the Mean Absolute Error (MAE) between the counterfactual's prediction and this target value.
+
+\subsection{Results}
+
+In this section, we present representative results from our benchmark. The complete evaluation across all datasets and models is provided in the supplementary material. Our benchmark reports multiple metrics capturing different properties of counterfactual explanations, including validity, proximity, and plausibility. This multi-dimensional evaluation enables analysis of trade-offs between competing objectives. For presentation, we selected a representative subset of datasets that covers the key data characteristics encountered in our full benchmark: purely numerical features (Digits, Wine, HELOC, Moons), mixed categorical and numerical features (Give Me Some Credit, Credit Default, Adult Census), and regression targets (Concrete, Diabetes, Synthetic). All reported results are averaged across both Logistic Regression and MLP classifiers to ensure robustness across different model architectures.
+
+\subsubsection{Local Methods}
+
+Figure~\ref{fig:local_methods} presents the performance of local methods across seven datasets. Most of the methods achieve perfect validity across all datasets, while CADEX shows moderate performance for mixed data and Artelt demonstrates the highest variance. The consistency of CCHVAE and PPCEF makes them suitable for applications where validity is the primary concern. CADEX generates the closest counterfactuals, followed by PPCEF and CCHVAE. SACE produces significantly more distant counterfactuals, suggesting counterfactual explanations with higher cost. DICE achieves the lowest sparsity, followed by CEGP and CADEX. PPCEF and CCHVAE demonstrate the high log-density, indicating its counterfactuals align well with the data manifold. DICE and CADEX show moderate plausibility with lower densities, suggesting their counterfactuals may be less realistic. CCHVAE is the fastest method (11.70 s on average), followed by CADEX, while CEGP is the slowest (474.4 s), making it impractical for large-scale applications.
+
+\paragraph{Regression Methods}
+For regression tasks (Figure~\ref{fig:regression_methods}), where validity is measured by Mean Absolute Error (MAE), WACH consistently outperforms CEARM. While both methods achieve comparable accuracy (MAE $\sim$0.1) and high sparsity, WACH produces significantly more plausible counterfactuals (positive log-density of 8.50) and is nearly 9$\times$ faster (7.4s vs. 69.5s). This makes WACH the clear preferred method for regression.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=1.0\textwidth]{figures/regression_metrics_boxplot.png}
+    \caption{Performance of counterfactual methods on regression tasks. Rows represent regression datasets and columns represent metrics (MAE, Sparsity, Log-Density, Computation Time). Methods: \textcolor{cearm}{\textbf{CEARM}} (blue), \textcolor{wach}{\textbf{WACH}} (orange).}
+    \label{fig:regression_methods}
+\end{figure}
+
+\subsubsection{Global Methods}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/metrics_boxplot_global.png}
+    \caption{Performance of global counterfactual methods. Rows represent datasets and columns represent metrics. Methods: \textcolor{globalglance}{\textbf{AReS}} (pink), \textcolor{globece}{\textbf{GLOBE-CE}} (dark brown), \textcolor{ares}{\textbf{GlobalGLANCE}} (brown).}
+    \label{fig:global_methods}
+\end{figure}
+
+Global methods provide dataset-level insights by learning transformations applicable to entire classes. Figure~\ref{fig:global_methods} compares AReS, GLOBE-CE, and GLANCE (with 1 group), aggregated across Logistic Regression and MLP models. GLOBE-CE and GLANCE achieve perfect or near-perfect validity while AReS shows only moderate success rates: GLOBE-CE and GLANCE aggregate explanations by direction with varying magnitude, whereas AReS seeks a single universal fixed change. AReS generates closer counterfactuals when successful but modifies more features, while GLANCE produces more distant counterfactuals with higher sparsity. AReS shows the lowest log-density, though all methods exhibit high variance, reflecting the difficulty of maintaining distributional alignment across diverse instances with a single global transformation.
+
+\subsubsection{Group-wise Methods}
+
+Group-wise methods bridge the gap between local and global approaches by generating explanations for subgroups. Figure~\ref{fig:group_methods} presents results for GLANCE and T-CREx, averaged across Logistic Regression and MLP classifiers. This comparison reveals how these methods balance the personalization of local approaches with the efficiency of global methods.
+
+GLANCE consistently achieves higher validity, but T-CREx, when applicable, produces closer and more plausible counterfactuals, however with very low success rates. This highlights a clear trade-off between generating effective and minimally disruptive explanations for subgroups.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/metrics_boxplot_group_wise.png}
+    \caption{Performance of group-wise counterfactual methods. Rows represent datasets and columns represent metrics. Methods: \textcolor{globalglance}{\textbf{GLANCE}} (dark pink), \textcolor{glance}{\textbf{T-CREx}} (light pink).}
+    \label{fig:group_methods}
+\end{figure}
+
+Compared to global methods like AReS, group-wise approaches mitigate \textit{validity collapse}. Global methods attempt to find a single recourse rule for the entire population, often resulting in poor generalization (e.g., AReS yields only $0.17$ validity on Adult). By constraining the scope to subgroups, GLANCE recovers the high validity typically associated with local methods while maintaining the interpretability of broad rules. Furthermore, subgroup targeting allows for significantly higher sparsity than global baselines, as the recourse rule need not accommodate the variance of the entire dataset.
+
+Remarkably, GLANCE matches the high validity of local methods despite this harder constraint, though local methods retain superior manifold adherence (lower LOF): group-wise shifts inevitably push peripheral group members into lower-density regions to satisfy the validity constraint for the cluster center. Overall, group-wise counterfactuals offer an effective semi-global explanation, avoiding the noise of local methods and the ineffectiveness of purely global rules.
+
+\section{Conclusions}
+
+We introduced CEL, a unified benchmark and open-source library for standardized evaluation of counterfactual explanation methods. By harmonizing datasets, predictive backbones, preprocessing, and metrics, CEL enables fair and reproducible comparison across local, global, and group-wise paradigms, a significant step beyond the fragmented practices common in the field.
+
+Our benchmark of 14 methods on 18 datasets reveals that no single method uniformly dominates; each excels on some quality dimensions at the expense of others. Among local methods, PPCEF and CCHVAE achieve near-perfect validity with strong plausibility, while CADEX and Wachter produce closer counterfactuals that may fall in low-density regions; DiCE and CEGP yield the sparsest explanations, and SACE delivers the strongest manifold adherence at higher proximity, with computational cost ranging from under 1s (Wachter) to over 470s (CEGP). At the global level, GLOBE-CE achieves minimal, high-validity perturbations whereas AReS frequently fails. Group-wise GLANCE recovers local-level validity with interpretable subgroup rules, while TCREx favors minimal perturbation over effectiveness. For regression, Wachter dominates across all metrics.
+
+These findings underscore that method selection should be guided by application-specific requirements. CEL is designed to be extensible, and we encourage the community to contribute new methods, datasets, and metrics. Promising future directions include evaluating counterfactuals for fairness and robustness, developing user-centric trade-off optimization, and extending to more complex data modalities. We believe CEL will help accelerate progress toward more reliable and trustworthy explainable AI.
+
+%%
+%% The acknowledgments section is defined using the "acks" environment
+%% (and NOT an unnumbered section). This ensures the proper
+%% identification of the section in the article metadata, and the
+%% consistent spelling of the heading.
+% \begin{acks}
+
+% Tutaj potem granty trzeba wpisać
+
+% \end{acks}
+
+%%
+%% The next two lines define the bibliography style to be used, and
+%% the bibliography file.
+\bibliographystyle{splncs04}
+\bibliography{sample-base}
+
+
+%%
+%% If your work has an appendix, this is the place to put it.
+
+\end{document}

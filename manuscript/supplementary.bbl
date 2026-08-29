@@ -1,0 +1,11 @@
+\begin{thebibliography}{1}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{wielopolski2024probabilistically}
+Wielopolski, P., Furman, O., Stefanowski, J., Zi{\k{e}}ba, M.:
+  Probabilistically plausible counterfactual explanations with normalizing
+  flows. arXiv preprint arXiv:2405.17640  (2024)
+
+\end{thebibliography}

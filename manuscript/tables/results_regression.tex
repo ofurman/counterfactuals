@@ -1,0 +1,187 @@
+\begin{table*}[ht!]
+\centering
+\caption{Comparative regression results for the \textbf{Linear Regression} model. All performance metrics.}
+\label{tab:regression_all_lr}
+\begin{center}
+\begin{sc}
+\begin{tiny}
+\begin{tabular}{@{}llrrrrrrrrr@{}}
+\toprule
+Dataset & Method & MAE $\downarrow$ & PP $\uparrow$ & L2 $\downarrow$ & LOF $\downarrow$ & IF $\uparrow$ & LD $\uparrow$ & L1 $\downarrow$ & Time $\downarrow$ \\
+\midrule
+\multirow[t]{3}{*}{Synthetic} & CEARM & 0.05$\pm$0.01 & 0.16$\pm$0.03 & 0.38$\pm$0.03 & 2.06$\pm$0.09 & -0.09$\pm$0.01 & -83.59$\pm$52.05 & 0.48$\pm$0.04 & 66.84$\pm$2.10 \\
+ & WACH & 0.06$\pm$0.01 & 0.03$\pm$0.05 & \textbf{0.15$\pm$0.02} & \textbf{1.08$\pm$0.02} & \textbf{0.02$\pm$0.01} & 0.87$\pm$2.27 & \textbf{0.21$\pm$0.03} & \textbf{3.13$\pm$0.28} \\
+\midrule
+\multirow[t]{3}{*}{Concrete} & CEARM & 0.03$\pm$0.00 & 0.00$\pm$0.00 & 1.13$\pm$0.02 & 2.21$\pm$0.04 & -0.11$\pm$0.00 & -2880.93$\pm$3261.61 & 2.63$\pm$0.05 & 100.42$\pm$5.76 \\
+ & WACH & 0.05$\pm$0.00 & 0.00$\pm$0.00 & \textbf{0.16$\pm$0.00} & \textbf{1.17$\pm$0.02} & \textbf{0.00$\pm$0.01} & 0.45$\pm$2.17 & \textbf{0.36$\pm$0.01} & \textbf{3.15$\pm$0.27} \\
+\midrule
+\multirow[t]{3}{*}{Diabetes} & CEARM & 0.04$\pm$0.01 & 0.00$\pm$0.00 & 1.25$\pm$0.03 & 1.93$\pm$0.04 & -0.10$\pm$0.01 & -229.94$\pm$170.66 & 3.29$\pm$0.11 & 44.70$\pm$1.29 \\
+ & WACH & 0.07$\pm$0.01 & 0.00$\pm$0.00 & \textbf{0.18$\pm$0.01} & 1.09$\pm$0.01 & 0.03$\pm$0.01 & -3.11$\pm$4.60 & \textbf{0.44$\pm$0.06} & \textbf{3.57$\pm$0.09} \\
+\midrule
+\multirow[t]{3}{*}{Yacht} & CEARM & 0.08$\pm$0.02 & 0.00$\pm$0.01 & 1.02$\pm$0.04 & 1.17$\pm$0.02 & -0.06$\pm$0.01 & -8988.85$\pm$12145.27 & 2.15$\pm$0.11 & 25.23$\pm$1.06 \\
+ & WACH & 0.08$\pm$0.01 & 0.00$\pm$0.01 & \textbf{0.22$\pm$0.01} & 1.05$\pm$0.02 & \textbf{-0.03$\pm$0.01} & -14.39$\pm$11.12 & \textbf{0.34$\pm$0.05} & \textbf{3.48$\pm$0.07} \\
+\midrule
+\multirow[t]{2}{*}{SCM20D} & WACH & 0.07$\pm$0.00 & 0.00$\pm$0.00 & \textbf{0.18$\pm$0.00} & \textbf{1.04$\pm$0.00} & \textbf{0.01$\pm$0.00} & 26.17$\pm$7.72 & \textbf{1.13$\pm$0.03} & \textbf{5.87$\pm$0.49} \\
+\bottomrule
+\end{tabular}
+\end{tiny}
+\end{sc}
+\end{center}
+\end{table*}
+
+\begin{table*}[ht!]
+\centering
+\caption{Comparative regression results for the \textbf{Multilayer Perceptron} model. All performance metrics.}
+\label{tab:regression_all_dnn}
+\begin{center}
+\begin{sc}
+\begin{tiny}
+\begin{tabular}{@{}llrrrrrrrrr@{}}
+\toprule
+Dataset & Method & MAE $\downarrow$ & PP $\uparrow$ & L2 $\downarrow$ & LOF $\downarrow$ & IF $\uparrow$ & LD $\uparrow$ & L1 $\downarrow$ & Time $\downarrow$ \\
+\midrule
+\multirow[t]{3}{*}{Synthetic} & CEARM & 0.05$\pm$0.01 & 0.20$\pm$0.02 & 0.37$\pm$0.02 & 2.11$\pm$0.10 & -0.09$\pm$0.01 & -49.49$\pm$47.20 & 0.47$\pm$0.02 & 66.91$\pm$0.86 \\
+ & WACH & 0.05$\pm$0.00 & 0.01$\pm$0.02 & \textbf{0.14$\pm$0.01} & 1.09$\pm$0.02 & \textbf{0.02$\pm$0.00} & 1.35$\pm$1.07 & \textbf{0.20$\pm$0.02} & \textbf{12.28$\pm$1.43} \\
+\midrule
+\multirow[t]{3}{*}{Concrete} & CEARM & 0.04$\pm$0.01 & 0.00$\pm$0.00 & 1.16$\pm$0.02 & 2.27$\pm$0.04 & -0.12$\pm$0.00 & -152.55$\pm$322.80 & 2.72$\pm$0.05 & 94.28$\pm$1.11 \\
+ & WACH & 0.03$\pm$0.00 & 0.24$\pm$0.02 & \textbf{0.09$\pm$0.00} & 1.13$\pm$0.02 & 0.02$\pm$0.01 & 5.70$\pm$0.44 & \textbf{0.21$\pm$0.01} & \textbf{12.17$\pm$1.55} \\
+\midrule
+\multirow[t]{3}{*}{Diabetes} & CEARM & 0.05$\pm$0.02 & 0.00$\pm$0.00 & 1.21$\pm$0.03 & 1.89$\pm$0.04 & -0.09$\pm$0.00 & -467.25$\pm$493.84 & 3.18$\pm$0.11 & 43.92$\pm$1.87 \\
+ & WACH & 0.05$\pm$0.01 & 0.10$\pm$0.07 & \textbf{0.15$\pm$0.01} & 1.09$\pm$0.01 & 0.03$\pm$0.00 & 3.67$\pm$2.46 & \textbf{0.40$\pm$0.02} & \textbf{4.92$\pm$0.26} \\
+\midrule
+\multirow[t]{3}{*}{Yacht} & CEARM & 0.13$\pm$0.05 & 0.01$\pm$0.01 & 1.04$\pm$0.02 & 1.14$\pm$0.04 & -0.05$\pm$0.01 & -837.38$\pm$1115.65 & 2.18$\pm$0.07 & 24.31$\pm$1.67 \\
+ & WACH & 0.12$\pm$0.02 & 0.10$\pm$0.04 & \textbf{0.05$\pm$0.01} & 1.05$\pm$0.01 & -0.03$\pm$0.01 & -70.40$\pm$32.08 & \textbf{0.07$\pm$0.01} & \textbf{4.81$\pm$0.19} \\
+\midrule
+\multirow[t]{2}{*}{SCM20D} & WACH & 0.15$\pm$0.01 & 0.00$\pm$0.00 & \textbf{0.11$\pm$0.01} & \textbf{1.04$\pm$0.00} & \textbf{0.01$\pm$0.00} & 32.87$\pm$10.08 & \textbf{0.67$\pm$0.09} & \textbf{14.40$\pm$2.43} \\
+\bottomrule
+\end{tabular}
+\end{tiny}
+\end{sc}
+\end{center}
+\end{table*}
+
+% \begin{table*}[ht!]
+% \centering
+% \caption{Comparative regression results for the \textbf{Linear Regression} model. Main performance metrics.}
+% \label{tab:regression_all_lr_main}
+% \begin{center}
+% \begin{sc}
+% \begin{tiny}
+% \begin{tabular}{@{}llrrr@{}}
+% \toprule
+% Dataset & Method & MAE $\downarrow$ & PP $\uparrow$ & L2 $\downarrow$ \\
+% \midrule
+% \multirow[t]{3}{*}{Synthetic} & CEARM & 0.05$\pm$0.01 & 0.16$\pm$0.03 & 0.38$\pm$0.03 \\
+%  & WACH & 0.06$\pm$0.01 & 0.03$\pm$0.05 & \textbf{0.15$\pm$0.02} \\
+% \midrule
+% \multirow[t]{3}{*}{Concrete} & CEARM & 0.03$\pm$0.00 & 0.00$\pm$0.00 & 1.13$\pm$0.02 \\
+%  & WACH & 0.05$\pm$0.00 & 0.00$\pm$0.00 & \textbf{0.16$\pm$0.00} \\
+% \midrule
+% \multirow[t]{3}{*}{Diabetes} & CEARM & 0.04$\pm$0.01 & 0.00$\pm$0.00 & 1.25$\pm$0.03 \\
+%  & WACH & 0.07$\pm$0.01 & 0.00$\pm$0.00 & \textbf{0.18$\pm$0.01} \\
+% \midrule
+% \multirow[t]{3}{*}{Yacht} & CEARM & 0.08$\pm$0.02 & 0.00$\pm$0.01 & 1.02$\pm$0.04 \\
+%  & WACH & 0.08$\pm$0.01 & 0.00$\pm$0.01 & \textbf{0.22$\pm$0.01} \\
+% \midrule
+% \multirow[t]{2}{*}{SCM20D} & WACH & 0.07$\pm$0.00 & 0.00$\pm$0.00 & \textbf{0.18$\pm$0.00} \\
+% \bottomrule
+% \end{tabular}
+% \end{tiny}
+% \end{sc}
+% \end{center}
+% \end{table*}
+
+% \begin{table*}[ht!]
+% \centering
+% \caption{Comparative regression results for the \textbf{Linear Regression} model. Additional proximity and time metrics.}
+% \label{tab:regression_all_lr_add}
+% \begin{center}
+% \begin{sc}
+% \begin{tiny}
+% \begin{tabular}{@{}llrrrrr@{}}
+% \toprule
+% Dataset & Method & LOF $\downarrow$ & IF $\uparrow$ & LD $\uparrow$ & L1 $\downarrow$ & Time $\downarrow$ \\
+% \midrule
+% \multirow[t]{3}{*}{Synthetic} & CEARM & 2.06$\pm$0.09 & -0.09$\pm$0.01 & -83.59$\pm$52.05 & 0.48$\pm$0.04 & 66.84$\pm$2.10 \\
+%  & WACH & \textbf{1.08$\pm$0.02} & \textbf{0.02$\pm$0.01} & 0.87$\pm$2.27 & \textbf{0.21$\pm$0.03} & \textbf{3.13$\pm$0.28} \\
+% \midrule
+% \multirow[t]{3}{*}{Concrete} & CEARM & 2.21$\pm$0.04 & -0.11$\pm$0.00 & -2880.93$\pm$3261.61 & 2.63$\pm$0.05 & 100.42$\pm$5.76 \\
+%  & WACH & \textbf{1.17$\pm$0.02} & \textbf{0.00$\pm$0.01} & 0.45$\pm$2.17 & \textbf{0.36$\pm$0.01} & \textbf{3.15$\pm$0.27} \\
+% \midrule
+% \multirow[t]{3}{*}{Diabetes} & CEARM & 1.93$\pm$0.04 & -0.10$\pm$0.01 & -229.94$\pm$170.66 & 3.29$\pm$0.11 & 44.70$\pm$1.29 \\
+%  & WACH & 1.09$\pm$0.01 & 0.03$\pm$0.01 & -3.11$\pm$4.60 & \textbf{0.44$\pm$0.06} & \textbf{3.57$\pm$0.09} \\
+% \midrule
+% \multirow[t]{3}{*}{Yacht} & CEARM & 1.17$\pm$0.02 & -0.06$\pm$0.01 & -8988.85$\pm$12145.27 & 2.15$\pm$0.11 & 25.23$\pm$1.06 \\
+%  & WACH & 1.05$\pm$0.02 & \textbf{-0.03$\pm$0.01} & -14.39$\pm$11.12 & \textbf{0.34$\pm$0.05} & \textbf{3.48$\pm$0.07} \\
+% \midrule
+% \multirow[t]{2}{*}{SCM20D} & WACH & \textbf{1.04$\pm$0.00} & \textbf{0.01$\pm$0.00} & 26.17$\pm$7.72 & \textbf{1.13$\pm$0.03} & \textbf{5.87$\pm$0.49} \\
+% \bottomrule
+% \end{tabular}
+% \end{tiny}
+% \end{sc}
+% \end{center}
+% \end{table*}
+
+
+
+% \begin{table*}[ht!]
+% \centering
+% \caption{Comparative regression results for the \textbf{Multilayer Perceptron} model. Main performance metrics.}
+% \label{tab:regression_all_dnn_main}
+% \begin{center}
+% \begin{sc}
+% \begin{tiny}
+% \begin{tabular}{@{}llrrr@{}}
+% \toprule
+% Dataset & Method & MAE $\downarrow$ & PP $\uparrow$ & L2 $\downarrow$ \\
+% \midrule
+% \multirow[t]{3}{*}{Synthetic} & CEARM & 0.05$\pm$0.01 & 0.20$\pm$0.02 & 0.37$\pm$0.02 \\
+%  & WACH & 0.05$\pm$0.00 & 0.01$\pm$0.02 & \textbf{0.14$\pm$0.01} \\
+% \midrule
+% \multirow[t]{3}{*}{Concrete} & CEARM & 0.04$\pm$0.01 & 0.00$\pm$0.00 & 1.16$\pm$0.02 \\
+%  & WACH & 0.03$\pm$0.00 & 0.24$\pm$0.02 & \textbf{0.09$\pm$0.00} \\
+% \midrule
+% \multirow[t]{3}{*}{Diabetes} & CEARM & 0.05$\pm$0.02 & 0.00$\pm$0.00 & 1.21$\pm$0.03 \\
+%  & WACH & 0.05$\pm$0.01 & 0.10$\pm$0.07 & \textbf{0.15$\pm$0.01} \\
+% \midrule
+% \multirow[t]{3}{*}{Yacht} & CEARM & 0.13$\pm$0.05 & 0.01$\pm$0.01 & 1.04$\pm$0.02 \\
+%  & WACH & 0.12$\pm$0.02 & 0.10$\pm$0.04 & \textbf{0.05$\pm$0.01} \\
+% \midrule
+% \multirow[t]{2}{*}{SCM20D} & WACH & 0.15$\pm$0.01 & 0.00$\pm$0.00 & \textbf{0.11$\pm$0.01} \\
+% \bottomrule
+% \end{tabular}
+% \end{tiny}
+% \end{sc}
+% \end{center}
+% \end{table*}
+
+% \begin{table*}[ht!]
+% \centering
+% \caption{Comparative regression results for the \textbf{Multilayer Perceptron} model. Additional proximity and time metrics.}
+% \label{tab:regression_all_dnn_add}
+% \begin{center}
+% \begin{sc}
+% \begin{tiny}
+% \begin{tabular}{@{}llrrrrr@{}}
+% \toprule
+% Dataset & Method & LOF $\downarrow$ & IF $\uparrow$ & LD $\uparrow$ & L1 $\downarrow$ & Time $\downarrow$ \\
+% \midrule
+% \multirow[t]{3}{*}{Synthetic} & CEARM & 2.11$\pm$0.10 & -0.09$\pm$0.01 & -49.49$\pm$47.20 & 0.47$\pm$0.02 & 66.91$\pm$0.86 \\
+%  & WACH & 1.09$\pm$0.02 & \textbf{0.02$\pm$0.00} & 1.35$\pm$1.07 & \textbf{0.20$\pm$0.02} & \textbf{12.28$\pm$1.43} \\
+% \midrule
+% \multirow[t]{3}{*}{Concrete} & CEARM & 2.27$\pm$0.04 & -0.12$\pm$0.00 & -152.55$\pm$322.80 & 2.72$\pm$0.05 & 94.28$\pm$1.11 \\
+%  & WACH & 1.13$\pm$0.02 & 0.02$\pm$0.01 & 5.70$\pm$0.44 & \textbf{0.21$\pm$0.01} & \textbf{12.17$\pm$1.55} \\
+% \midrule
+% \multirow[t]{3}{*}{Diabetes} & CEARM & 1.89$\pm$0.04 & -0.09$\pm$0.00 & -467.25$\pm$493.84 & 3.18$\pm$0.11 & 43.92$\pm$1.87 \\
+%  & WACH & 1.09$\pm$0.01 & 0.03$\pm$0.00 & 3.67$\pm$2.46 & \textbf{0.40$\pm$0.02} & \textbf{4.92$\pm$0.26} \\
+% \midrule
+% \multirow[t]{3}{*}{Yacht} & CEARM & 1.14$\pm$0.04 & -0.05$\pm$0.01 & -837.38$\pm$1115.65 & 2.18$\pm$0.07 & 24.31$\pm$1.67 \\
+%  & WACH & 1.05$\pm$0.01 & -0.03$\pm$0.01 & -70.40$\pm$32.08 & \textbf{0.07$\pm$0.01} & \textbf{4.81$\pm$0.19} \\
+% \midrule
+% \multirow[t]{2}{*}{SCM20D} & WACH & \textbf{1.04$\pm$0.00} & \textbf{0.01$\pm$0.00} & 32.87$\pm$10.08 & \textbf{0.67$\pm$0.09} & \textbf{14.40$\pm$2.43} \\
+% \bottomrule
+% \end{tabular}
+% \end{tiny}
+% \end{sc}
+% \end{center}
+% \end{table*}

@@ -1,0 +1,232 @@
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\IfFileExists{ifsym.sty}{\usepackage[misc]{ifsym}}{\providecommand{\Letter}{\ensuremath{\boxtimes}}}
+\newcommand{\corr}{(\Letter)}
+% N.B.: do not change anything above this line. If you require additional
+% packages, please load them directly after this line.
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{realboxes} % Required to safely colorbox verbatim text
+\usepackage{url}
+
+\definecolor{artelt}{RGB}{31, 119, 180}
+\definecolor{dice}{RGB}{174, 199, 232}
+\definecolor{cchvae}{RGB}{255, 127, 14}
+\definecolor{ppcef}{RGB}{255, 187, 120}
+\definecolor{cegp}{RGB}{44, 160, 44}
+\definecolor{cadex}{RGB}{152, 223, 138}
+\definecolor{sace}{RGB}{214, 39, 40}
+\definecolor{ares}{RGB}{196, 156, 148}
+\definecolor{globece}{RGB}{140, 86, 75}
+\definecolor{globalglance}{RGB}{227, 119, 194}
+\definecolor{glance}{RGB}{247, 182, 210}
+\definecolor{tcrex}{RGB}{127, 127, 127}
+\definecolor{cearm}{RGB}{31, 119, 180}
+\definecolor{wach}{RGB}{255, 127, 14}
+
+\definecolor{lightblue}{RGB}{230, 240, 255}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{lightblue},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{red},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=4pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=ltb,
+    framerule=0pt,
+    keywordstyle={\bfseries \color{blue}}
+}
+\lstset{style=mystyle}
+\newcommand{\code}[1]{\Colorbox{lightblue}{\lstinline{#1}}}
+
+\begin{document}
+\title{Supplementary Material\\CEL: Comprehensive Counterfactual Explanations Library and Benchmark}
+\titlerunning{Supplementary Material: CEL}
+
+\author{Author information scrubbed for double-blind reviewing}
+\institute{}
+
+\maketitle
+
+\appendix
+
+\section{Evaluation Metrics in CEL}
+\label{app:metrics}
+To provide a comprehensive assessment of counterfactual methods, CEL implements a broad evaluation suite. We categorize these metrics into three primary dimensions: basic performance, proximity (cost) and plausibility.
+\subsection{Basic Metrics}
+These metrics assess the fundamental success and efficiency of the counterfactual generation process.
+\begin{itemize}
+    \item \textbf{Coverage:} The proportion of instances in the test set for which the method successfully returned a counterfactual candidate.
+    \item \textbf{Validity:} The proportion of generated counterfactuals that successfully altered the model's prediction to the desired target class $y_{target}$.
+    \item \textbf{Regression Validity:} For continuous targets, validity is measured as the mean absolute error (MAE) between the predicted value of the counterfactual and the desired target value.
+    \item \textbf{Actionability:} The proportion of instances where the generated counterfactual is identical to the original input (lower is better, as it indicates a failure to provide a meaningful path to recourse).
+    \item \textbf{Sparsity:} The average proportion of features modified to achieve the counterfactual. For an input $x$ and counterfactual $x'$, it is defined as:
+    \begin{equation}
+        \text{Sparsity}(x, x') = \frac{1}{d} \sum_{i=1}^{d} \mathbb{I}(x_i \neq x'_i)
+    \end{equation}
+\end{itemize}
+\subsection{Proximity and Cost}
+Proximity metrics measure the distance between the factual instance $x$ and the counterfactual $x'$, representing the "effort" required by the user to achieve recourse. CEL handles mixed-type data by calculating combined distances:
+\begin{equation}
+    D_{total}(x, x') = \alpha \cdot D_{cont}(x, x') + (1 - \alpha) \cdot D_{cat}(x, x')
+\end{equation}
+where $\alpha$ is the ratio of continuous features. The library supports:
+\begin{itemize}
+    \item \textbf{Continuous Distances ($D_{cont}$):} Euclidean ($L_2$), Manhattan ($L_1$), and Median Absolute Deviation (MAD) normalized distance.
+    \item \textbf{Categorical Distances ($D_{cat}$):} Hamming distance and Jaccard distance.
+\end{itemize}
+\subsection{Plausibility and Realism}
+Plausibility metrics evaluate whether the counterfactuals lie within the data manifold, ensuring they are not just adversarial perturbations but realistic instances.
+\begin{itemize}
+    \item \textbf{Log-Density:} The average log-likelihood of counterfactuals estimated by a pre-trained generative model (e.g., Masked Autoregressive Flow). Higher values indicate better alignment with the training distribution.
+    \item \textbf{Probabilistic Plausibility:} The fraction of counterfactuals whose log-likelihood exceeds a specified threshold $\tau$ (e.g., the median log-likelihood of the training set) proposed by Wielopolski et al.~\cite{wielopolski2024probabilistically}.
+    \item \textbf{LOF/Isolation Forest Scores:} Outlier-based measures where counterfactuals are compared against the training set $X_{train}$ using Local Outlier Factor or Isolation Forest. These identify whether the recourse path leads to "out-of-distribution" regions.
+\end{itemize}
+
+
+\section{Hyperparameter Configurations}
+\label{app:hyperparameters}
+
+To provide complete transparency and support reproducibility, this section details the hyperparameters used for all discriminative models, generative models, and counterfactual explanation methods in our benchmark.
+
+\subsection{Discriminative Models}
+
+The predictive models serve as the targets for explanation. We standardize the training procedure across all architectures: epochs: 5,000, learning rate: $0.001$, batch size: 128, and early stopping patience: 300 epochs.
+
+\begin{itemize}
+    \item \textbf{MLP:} 2 hidden layers of 256 units each.
+    \item \textbf{Logistic Regression:} Standard implementation without additional regularization penalties beyond those inherent in the Adam optimizer.
+\end{itemize}
+
+\subsection{Density Estimation Models}
+
+Masked Autoregressive Flow Parameters is used for density-based plausibility metrics and manifold-constrained search. Training hyperparameters include: epochs: 2,000, learning rate: $0.003$, batch size: 1,024. MAF architecture: 8 layers, 4 blocks/layer, 16 hidden features.
+
+% \section{Full results}
+% \label{app:full_results}
+
+% % mixed datasets for local methods
+
+% \input{tables/results_categorical}
+
+% % numerical datasets for local methods
+
+% \input{tables/results_numerical}
+
+% % global and group-wise method
+% \input{tables/results_global}
+% \input{tables/results_group}
+
+% % Regression
+
+% \input{tables/results_regression}
+
+\section{Full Results}
+\label{app:full_results}
+
+This appendix presents the complete quantitative results of our benchmark evaluation. The main text reports representative examples on selected datasets; here we provide the full set of results across all datasets, methods, and predictive models. All reported values are averaged over 5-fold cross-validation, with standard deviations indicated by $\pm$ notation. Bold values denote the best result for each metric within a given dataset and model combination.
+
+For each experimental configuration, we report a combined metrics table that includes coverage, validity, sparsity, probabilistic plausibility, log-density, LOF score, Isolation Forest score, proximity (L2-Hamming for mixed-type datasets, L2 for numerical datasets), and wall-clock computation time. These tables provide a multi-dimensional view of each method's performance, capturing trade-offs between validity, proximity, plausibility, and computational cost.
+
+Results are organized by counterfactual paradigm and feature type as follows.
+
+\subsection{Local Methods on Mixed-Type Datasets}
+
+This subsection reports results for local counterfactual methods evaluated on seven classification datasets containing both categorical and numerical features: Adult Census, Bank Marketing, Credit Default, German Credit, Give Me Some Credit, Law, and Lending Club. Due to the presence of categorical features, only methods that natively support mixed feature types are included in this comparison: CADEX, CCHVAE, SACE, and DiCE. Results are reported separately for MLP and Logistic Regression predictive models.
+
+Tables~\ref{tab:cat_metrics_mlp} and~\ref{tab:cat_metrics_lr} report all metrics for MLP and Logistic Regression backbones, respectively, including coverage, validity, sparsity, probabilistic plausibility, log-density, LOF and Isolation Forest outlier scores, L2-Hamming proximity, and computation time.
+
+Across all datasets and both predictive models, all methods achieve perfect coverage. Validity is near-perfect for most methods, with the notable exception of CADEX, which on Adult Census achieves only $\sim$0.51 validity (MLP), indicating that its constrained adversarial perturbations are often insufficient to cross the decision boundary in this setting. DiCE also exhibits occasional drops in validity, particularly under the Logistic Regression backbone (e.g., 0.73 on German Credit, 0.81 on Credit Default, and 0.79 on Lending Club).
+
+In terms of proximity, CADEX tends to achieve the lowest L2-Hamming distances on several datasets (e.g., Adult Census, Bank Marketing, Give Me Some Credit), while DiCE achieves the smallest perturbations on German Credit. On Lending Club, CCHVAE achieves the best proximity across both backbones. However, low proximity does not always correspond to high plausibility: on datasets with large feature ranges such as Credit Default and Lending Club, CADEX and DiCE exhibit extremely low log-density values, indicating that their counterfactuals, while close in normalized space, may fall in low-density regions.
+
+SACE stands out for its consistently strong plausibility scores. It achieves the highest probabilistic plausibility and log-density values across most datasets (e.g., 0.93 and $-109.47$ on Adult Census with MLP; 0.97 and $22.11$ on Give Me Some Credit), along with the lowest LOF scores, suggesting that its case-based retrieval strategy naturally produces counterfactuals close to the training data manifold. CCHVAE also achieves competitive plausibility on smaller datasets such as Law and German Credit (e.g., 0.92 on Law with MLP, 0.83 on German Credit with LR).
+
+SACE and CCHVAE are also among the fastest methods, with SACE completing in under 1 second on smaller datasets (e.g., German Credit, Law). CADEX and DiCE require longer computation times, particularly on larger datasets such as Adult Census and Lending Club.
+
+\input{tables/results_categorical}
+
+\subsection{Local Methods on Numerical Datasets}
+
+This subsection reports results for local counterfactual methods evaluated on six classification datasets with exclusively numerical features: Blobs, Digits, Moons, Wine, Audit, and HELOC. Since these datasets do not contain categorical features, additional methods that operate only on continuous inputs are included: Artelt, CEGP, CEM, and Wachter, alongside CADEX, CCHVAE, SACE, DiCE, and PPCEF. Results are reported separately for MLP and Logistic Regression predictive models. Tables~\ref{tab:num_metrics_mlp} and~\ref{tab:num_metrics_lr} report all metrics for MLP and Logistic Regression backbones, respectively.
+
+All methods achieve perfect coverage except Artelt, which returns zero coverage on several datasets (Blobs, Moons, HELOC with MLP), indicating a failure to produce counterfactual candidates in these settings. CEM also fails to produce results on Audit with MLP. Validity is generally high across most methods, though DiCE shows reduced validity on some datasets (e.g., 0.80 on Wine, 0.41 on Audit with MLP). CEM also struggles with validity on Audit under Logistic Regression (0.02).
+
+In terms of proximity, CADEX and CEGP consistently achieve the lowest L2 distances across most datasets. On Blobs, both CADEX and CEGP achieve the smallest perturbations (0.34 with MLP). On HELOC, CADEX and CEGP achieve the lowest L2 distances (0.14 and 0.15 with MLP, respectively), while CEGP achieves the best proximity under LR (0.11). Wachter achieves competitive proximity, particularly on low-dimensional datasets such as Moons and Blobs, where it closely matches CADEX.
+
+Plausibility metrics reveal strong differentiation. PPCEF achieves perfect or near-perfect probabilistic plausibility on low-dimensional datasets (1.00 on Blobs and Wine under both backbones; 1.00 on Moons with MLP, 0.90 with LR), along with the highest log-density values, demonstrating that its flow-based objective effectively constrains counterfactuals to high-density regions when the data manifold is well-captured. On HELOC, both PPCEF and CCHVAE achieve high plausibility (PPCEF: 1.00, CCHVAE: 0.99 with MLP). SACE similarly achieves strong plausibility on Digits and Audit, with the highest log-density and lowest LOF scores in these settings (e.g., 1.00 probabilistic plausibility and 60.70 log-density on Audit with MLP). In contrast, methods without explicit density objectives (Wachter, CADEX, CEGP) generally achieve low probabilistic plausibility, indicating that proximity-focused optimization alone does not ensure distributional alignment.
+
+The Audit dataset exposes numerical instabilities: several methods exhibit extremely high LOF values (on the order of $10^{7}$), suggesting that counterfactuals fall far outside the training data manifold on this high-dimensional dataset with heterogeneous feature scales.
+
+Wachter is consistently the fastest method, often completing in under 0.1 seconds, while CEGP and CEM require substantially longer computation times, particularly on larger datasets such as HELOC ($>$1,500s for CEGP).
+
+\input{tables/results_numerical}
+
+\subsection{Regression Methods}
+
+This subsection reports results for counterfactual explanation methods applied to regression tasks. Validity for regression is measured as the mean absolute error (MAE) between the predicted value of the counterfactual and the desired target value, rather than as a binary classification success rate. The evaluated methods include CEARM and Wachter (WACH), tested on five datasets: Synthetic, Concrete, Diabetes, Yacht, and SCM20D. Results are reported for both Linear Regression and MLP Regressor models. Tables~\ref{tab:regression_all_lr} and~\ref{tab:regression_all_dnn} report the performance metrics for Linear Regression and MLP backbones, respectively.
+
+CEARM is not applicable to the SCM20D dataset (multi-output regression with 16 targets), leaving Wachter as the only method evaluated in this setting. On the remaining four datasets, both methods achieve comparable MAE values, indicating similar effectiveness in reaching the target prediction. For instance, on Synthetic both methods achieve MAE of approximately 0.05 under both backbones.
+
+However, Wachter consistently achieves substantially lower proximity values. Its L2 distances are typically several times smaller than CEARM's across all datasets and backbones (e.g., 0.14 vs.\ 0.37 on Synthetic with MLP; 0.09 vs.\ 1.16 on Concrete with MLP). This indicates that Wachter produces counterfactuals with more efficient perturbations while achieving comparable target accuracy.
+
+In terms of plausibility, Wachter achieves better outlier scores across nearly all configurations. Its LOF values are consistently close to 1.0 (e.g., 1.04--1.17), while CEARM produces higher LOF values (1.14--2.27), suggesting that CEARM's counterfactuals are more likely to lie in low-density regions. Wachter also achieves higher Isolation Forest scores and substantially better log-density values. On Concrete with MLP, Wachter achieves a log-density of 5.70 compared to $-152.55$ for CEARM. Under the LR backbone, CEARM achieves higher probabilistic plausibility only on Synthetic (0.16 vs.\ 0.03 for Wachter), while under MLP, Wachter achieves higher probabilistic plausibility on Concrete (0.24 vs.\ 0.00), Diabetes (0.10 vs.\ 0.00), and Yacht (0.10 vs.\ 0.01), indicating that its gradient-based optimization is more effective at finding plausible counterfactuals for nonlinear models.
+
+Wachter is also significantly faster, completing in 3--14 seconds compared to CEARM's 24--100 seconds, due to its simpler gradient-based optimization.
+
+\input{tables/results_regression}
+
+\subsection{Global Methods}
+
+This subsection reports results for global counterfactual explanation methods, which learn a single transformation or shift vector applied uniformly across all instances. The evaluated methods include AReS, GLOBE-CE, and GLANCE configured with a single group (GLANCE). Results are reported across all 13 classification datasets and for both MLP and Logistic Regression backbones. Tables~\ref{tab:global_metrics_mlp} and~\ref{tab:global_metrics_lr} report all metrics for MLP and Logistic Regression, respectively.
+
+A notable observation is that AReS fails to produce results (indicated by --) on many datasets, including Audit, Blobs, Credit Default, Digits, Law, Moons, and Wine under both backbones. Additionally, AReS fails on Lending Club under Logistic Regression. This substantially limits its applicability compared to the other global methods. Similarly, GLOBE-CE fails on the Digits dataset under both backbones, likely due to the high dimensionality (64 features) making it difficult to find a single effective global shift.
+
+Where all three methods produce results, clear trade-offs emerge. GLOBE-CE generally achieves the lowest proximity values, often by a large margin. For example, on Adult Census it achieves near-zero distances across all proximity metrics under both backbones, and on Give Me Some Credit it achieves L2-Hamming distances of 0.01 compared to 0.86 for GLANCE (MLP). GLOBE-CE also tends to achieve high or perfect validity on most datasets where it succeeds (e.g., 1.00 on Adult Census, Give Me Some Credit, Moons, Law). However, on some datasets it achieves lower validity (e.g., 0.67 on Bank Marketing, 0.75 on Credit Default with MLP), indicating that a single global shift may not always suffice.
+
+GLANCE generally achieves the highest validity among the three methods, reaching perfect or near-perfect validity on many datasets (e.g., 1.00 on Adult Census, Bank Marketing, and Give Me Some Credit with both backbones). However, it shows reduced validity on some datasets such as Audit (0.40 with MLP), Moons (0.69 with MLP), and Wine (0.80 with MLP), and this comes at the cost of substantially larger perturbations. AReS, when it succeeds, generally achieves low proximity but often with very low validity (e.g., 0.17 on Adult Census, 0.06 on Bank Marketing with MLP), suggesting that its rule-based recourse often fails to flip predictions.
+
+In terms of plausibility, no single method dominates. AReS achieves the highest probabilistic plausibility on several datasets where it produces results (e.g., 0.50 on Give Me Some Credit, 0.41 on German Credit). GLOBE-CE is consistently the fastest method, typically completing in under 10 seconds, while GLANCE computation time varies widely from under 3 seconds on smaller datasets (e.g., Digits, German Credit) to over 250 seconds on larger ones (e.g., Adult Census, Credit Default).
+
+\input{tables/results_global}
+
+\subsection{Group-wise Methods}
+
+This subsection reports results for group-wise counterfactual explanation methods, which generate shared explanations for subgroups of instances. The evaluated methods include TCREx and GLANCE (GLANCE). Unlike local methods, the reported proximity and validity metrics reflect the effectiveness of shared shift vectors applied to instance subgroups rather than individually optimized perturbations. Results are reported across all 13 classification datasets and for both MLP and Logistic Regression backbones. Tables~\ref{tab:group_metrics_mlp} and~\ref{tab:group_metrics_lr} report all metrics for MLP and Logistic Regression, respectively.
+
+TCREx exhibits limited applicability, failing to produce results on several datasets including Credit Default, Digits, German Credit, Give Me Some Credit, Lending Club, and Wine under both backbones. On datasets where it succeeds, TCREx consistently achieves the smallest perturbations, often by a substantial margin. For instance, on Adult Census it produces near-zero distances across all proximity metrics, and on HELOC it achieves L2-Hamming of 0.08 compared to 0.76 for GLANCE (MLP). However, these minimal perturbations come at the cost of extremely low validity: TCREx achieves only 0.23 on Adult Census, 0.04 on Audit, 0.01 on Blobs, and 0.03 on HELOC (MLP). This indicates that the subgroup-level shifts learned by TCREx are often too conservative to change model predictions.
+
+In contrast, GLANCE achieves substantially higher validity across all datasets. On many configurations it reaches near-perfect validity (e.g., 1.00 on Bank Marketing, Give Me Some Credit, and Lending Club with MLP), though it shows reduced effectiveness on some datasets such as Audit (0.36 with MLP), Moons (0.48 with MLP), and Digits (0.71 with MLP). On Adult Census, GLANCE achieves 0.99 validity (MLP) compared to TCREx's 0.23, though with considerably larger perturbations. This pattern is consistent: GLANCE applies larger, more aggressive shifts that successfully flip predictions for a higher proportion of instances within each subgroup.
+
+The trade-off between proximity and validity in the group-wise paradigm is more pronounced than in local methods. Because shared shifts must be effective across multiple instances within a subgroup, methods face a fundamental tension between minimal change and broad effectiveness. TCREx favors minimal perturbation at the expense of validity, while GLANCE prioritizes prediction flipping.
+
+In terms of plausibility, TCREx achieves higher probabilistic plausibility and better LOF scores on datasets where it produces results (e.g., 0.49 on Adult Census, 0.26 on HELOC), reflecting the fact that its small perturbations keep counterfactuals close to the original data manifold. GLANCE generally achieves lower plausibility scores due to its larger perturbations. TCREx is also considerably faster, typically completing in under 1 second, while GLANCE typically requires tens to hundreds of seconds depending on the dataset size.
+
+\input{tables/results_group}
+
+
+\bibliographystyle{splncs04}
+\bibliography{sample-base}
+
+\end{document}

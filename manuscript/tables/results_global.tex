@@ -1,0 +1,137 @@
+\begin{table*}[ht]
+\centering
+\caption{Global methods: metrics (MLP).}
+\label{tab:global_metrics_mlp}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrrrrr}
+\toprule
+ & Method & Cov.$\uparrow$ & Valid.$\uparrow$ & Sparse.$\uparrow$ & Prob. Plaus.$\uparrow$ & Log Dens.$\uparrow$ & LOF$\downarrow$ & IsoForest$\uparrow$ & L2-Ham.$\downarrow$ & Time(s)$\downarrow$ \\
+\midrule
+\multirow{3}{*}{Adult Census} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.85\pm{0.03}}$ & $0.35\pm{0.07}$ & $-247.54\pm{75.60}$ & $4.00\pm{0.16}$ & $0.10\pm{0.01}$ & $0.84\pm{0.03}$ & $259.98\pm{1.95}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.17\pm{0.11}$ & $0.01\pm{0.00}$ & $0.34\pm{0.20}$ & $-399.45\pm{353.04}$ & $6.56\pm{2.49}$ & $0.11\pm{0.00}$ & $0.01\pm{0.01}$ & $97.73\pm{21.67}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.01\pm{0.00}$ & $\boldsymbol{0.49\pm{0.15}}$ & $\boldsymbol{-241.22\pm{14.60}}$ & $\boldsymbol{3.16\pm{0.06}}$ & $\boldsymbol{0.12\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{7.39\pm{0.23}}$ \\
+\midrule
+\multirow{3}{*}{Audit} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.40\pm{0.03}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $\boldsymbol{18.72\pm{9.43}}$ & $\boldsymbol{114.53\pm{26.35}}$ & $-0.09\pm{0.04}$ & $\boldsymbol{0.35\pm{0.04}}$ & $28.28\pm{0.05}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.44\pm{0.02}$ & $\boldsymbol{0.03\pm{0.02}}$ & $-291.16\pm{473.23}$ & $119.56\pm{125.84}$ & $\boldsymbol{0.11\pm{0.04}}$ & $0.91\pm{0.22}$ & $\boldsymbol{0.38\pm{0.01}}$ \\
+\midrule
+\multirow{3}{*}{Bank Marketing} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.02}}$ & $\boldsymbol{1.00\pm{0.01}}$ & $0.00\pm{0.01}$ & $-72.77\pm{4.33}$ & $\boldsymbol{3.37\pm{0.23}}$ & $0.01\pm{0.03}$ & $0.96\pm{0.01}$ & $96.32\pm{8.41}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.06\pm{0.09}$ & $0.05\pm{0.02}$ & $0.07\pm{0.09}$ & $\boldsymbol{-55.23\pm{5.51}}$ & $3.41\pm{1.46}$ & $0.03\pm{0.02}$ & $\boldsymbol{0.05\pm{0.03}}$ & $201.45\pm{33.89}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.67\pm{0.46}$ & $0.08\pm{0.04}$ & $\boldsymbol{0.37\pm{0.30}}$ & -- & $6.35\pm{6.64}$ & $\boldsymbol{0.04\pm{0.02}}$ & $0.08\pm{0.07}$ & $\boldsymbol{5.98\pm{0.13}}$ \\
+\midrule
+\multirow{3}{*}{Blobs} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.98\pm{0.02}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.35\pm{0.11}}$ & $\boldsymbol{0.66\pm{0.28}}$ & $\boldsymbol{1.26\pm{0.06}}$ & $\boldsymbol{-0.01\pm{0.01}}$ & $0.47\pm{0.05}$ & $100.57\pm{13.67}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $-7.16\pm{2.42}$ & $2.14\pm{0.31}$ & $-0.08\pm{0.02}$ & $\boldsymbol{0.35\pm{0.05}}$ & $\boldsymbol{0.39\pm{0.01}}$ \\
+\midrule
+\multirow{3}{*}{Credit Default} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.97\pm{0.02}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & -- & $\boldsymbol{8.33\pm{0.10}}$ & $-0.05\pm{0.01}$ & $0.87\pm{0.01}$ & $259.52\pm{45.28}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.75\pm{0.50}$ & $0.04\pm{0.02}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-5685.85\pm{6424.64}}$ & $207.52\pm{399.88}$ & $\boldsymbol{0.07\pm{0.01}}$ & $\boldsymbol{0.10\pm{0.05}}$ & $\boldsymbol{5.89\pm{0.09}}$ \\
+\midrule
+\multirow{3}{*}{Digits} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.74\pm{0.04}}$ & $\boldsymbol{0.91\pm{0.06}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-5585.73\pm{7131.33}}$ & $\boldsymbol{1.55\pm{0.06}}$ & $\boldsymbol{-0.07\pm{0.02}}$ & $\boldsymbol{1.77\pm{0.13}}$ & $\boldsymbol{2.54\pm{0.21}}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & -- & $0.00\pm{0.00}$ & -- & -- & -- & -- & -- & -- & -- \\
+\midrule
+\multirow{3}{*}{German Credit} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.80\pm{0.07}}$ & $\boldsymbol{0.70\pm{0.09}}$ & $0.17\pm{0.14}$ & -- & $1.07\pm{0.01}$ & $-0.03\pm{0.01}$ & $0.64\pm{0.08}$ & $2.01\pm{0.92}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.29\pm{0.12}$ & $0.02\pm{0.01}$ & $\boldsymbol{0.41\pm{0.15}}$ & $\boldsymbol{-60.31\pm{2.58}}$ & $\boldsymbol{1.05\pm{0.02}}$ & $\boldsymbol{0.02\pm{0.02}}$ & $\boldsymbol{0.04\pm{0.00}}$ & $2.15\pm{1.49}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.49\pm{0.13}$ & $0.08\pm{0.02}$ & $0.22\pm{0.19}$ & -- & $7.43\pm{10.23}$ & $\boldsymbol{0.02\pm{0.01}}$ & $0.09\pm{0.05}$ & $\boldsymbol{0.44\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{GMC} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $-27.54\pm{10.15}$ & $5.27\pm{0.32}$ & $-0.02\pm{0.01}$ & $0.86\pm{0.00}$ & $62.27\pm{1.92}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.88\pm{0.10}$ & $0.05\pm{0.01}$ & $\boldsymbol{0.50\pm{0.15}}$ & $\boldsymbol{-14.81\pm{5.71}}$ & $\boldsymbol{1.20\pm{0.04}}$ & $0.08\pm{0.02}$ & $0.05\pm{0.00}$ & $15.69\pm{9.07}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.05\pm{0.01}$ & $0.42\pm{0.35}$ & $-15.17\pm{6.03}$ & $1.49\pm{0.67}$ & $\boldsymbol{0.11\pm{0.01}}$ & $\boldsymbol{0.01\pm{0.01}}$ & $\boldsymbol{1.92\pm{0.07}}$ \\
+\midrule
+\multirow{3}{*}{HELOC} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.97\pm{0.01}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $\boldsymbol{-26269.57\pm{59527.61}}$ & $6.91\times 10^{8}\pm{8.77\times 10^{7}}$ & $0.00\pm{0.01}$ & $0.69\pm{0.05}$ & $63.73\pm{12.21}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.13\pm{0.06}$ & $0.24\pm{0.01}$ & $0.04\pm{0.03}$ & $-522982.51\pm{923938.83}$ & $\boldsymbol{38.22\pm{4.51}}$ & $\boldsymbol{0.04\pm{0.00}}$ & $\boldsymbol{0.18\pm{0.09}}$ & $\boldsymbol{0.20\pm{0.13}}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.27\pm{0.01}$ & $\boldsymbol{0.13\pm{0.03}}$ & $-1.10\times 10^{14}\pm{2.38\times 10^{14}}$ & $5.25\times 10^{8}\pm{4.96\times 10^{8}}$ & $0.03\pm{0.00}$ & $0.36\pm{0.07}$ & $1.28\pm{0.04}$ \\
+\midrule
+\multirow{3}{*}{Law} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.93\pm{0.01}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.40\pm{0.05}}$ & $\boldsymbol{-15.39\pm{0.22}}$ & $1.70\pm{0.08}$ & $-0.01\pm{0.00}$ & $0.88\pm{0.01}$ & $27.75\pm{4.53}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.19\pm{0.01}$ & $0.21\pm{0.16}$ & $-18.21\pm{2.38}$ & $\boldsymbol{1.51\pm{0.05}}$ & $\boldsymbol{0.02\pm{0.00}}$ & $\boldsymbol{0.06\pm{0.00}}$ & $\boldsymbol{0.80\pm{0.01}}$ \\
+\midrule
+\multirow{3}{*}{Lending Club} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.01}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & -- & $2.84\pm{0.17}$ & $-0.04\pm{0.01}$ & $0.83\pm{0.02}$ & $87.66\pm{12.53}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.30\pm{0.47}$ & $0.08\pm{0.02}$ & $0.22\pm{0.40}$ & $-49.30\pm{13.73}$ & $\boldsymbol{1.84\pm{1.04}}$ & $0.02\pm{0.03}$ & $\boldsymbol{0.08\pm{0.06}}$ & $\boldsymbol{0.06\pm{0.04}}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.75\pm{0.05}$ & $0.18\pm{0.01}$ & $\boldsymbol{0.34\pm{0.25}}$ & $\boldsymbol{-36.09\pm{6.59}}$ & $5.24\pm{0.45}$ & $\boldsymbol{0.04\pm{0.00}}$ & $\boldsymbol{0.08\pm{0.02}}$ & $1.84\pm{0.04}$ \\
+\midrule
+\multirow{3}{*}{Moons} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.69\pm{0.03}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.19\pm{0.05}}$ & $-14.29\pm{9.22}$ & $\boldsymbol{1.47\pm{0.05}}$ & $\boldsymbol{-0.01\pm{0.00}}$ & $0.41\pm{0.03}$ & $41.72\pm{3.94}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $\boldsymbol{-12.46\pm{7.25}}$ & $2.20\pm{0.18}$ & $-0.07\pm{0.01}$ & $\boldsymbol{0.36\pm{0.04}}$ & $\boldsymbol{0.38\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{Wine} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.80\pm{0.08}$ & $\boldsymbol{0.72\pm{0.07}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-20.75\pm{8.25}}$ & $\boldsymbol{1.25\pm{0.03}}$ & $\boldsymbol{0.00\pm{0.01}}$ & $\boldsymbol{0.91\pm{0.04}}$ & $1.51\pm{1.57}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.57\pm{0.01}$ & $\boldsymbol{0.00\pm{0.00}}$ & $-94.86\pm{48.69}$ & $2.03\pm{0.27}$ & $-0.01\pm{0.01}$ & $1.48\pm{0.23}$ & $\boldsymbol{0.33\pm{0.00}}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}
+
+\begin{table*}[ht]
+\centering
+\caption{Global methods: metrics (LR).}
+\label{tab:global_metrics_lr}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrrrrr}
+\toprule
+ & Method & Cov.$\uparrow$ & Valid.$\uparrow$ & Sparse.$\uparrow$ & Prob. Plaus.$\uparrow$ & Log Dens.$\uparrow$ & LOF$\downarrow$ & IsoForest$\uparrow$ & L2-Ham.$\downarrow$ & Time(s)$\downarrow$ \\
+\midrule
+\multirow{3}{*}{Adult Census} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.84\pm{0.03}}$ & $0.37\pm{0.06}$ & $\boldsymbol{-231.69\pm{40.35}}$ & $4.10\pm{0.15}$ & $0.10\pm{0.01}$ & $0.83\pm{0.03}$ & $257.83\pm{0.50}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.24\pm{0.14}$ & $0.01\pm{0.00}$ & $0.33\pm{0.26}$ & $-268.48\pm{27.85}$ & $4.81\pm{3.47}$ & $\boldsymbol{0.12\pm{0.01}}$ & $0.01\pm{0.01}$ & $80.82\pm{10.46}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.01\pm{0.00}$ & $\boldsymbol{0.38\pm{0.19}}$ & $-247.90\pm{12.00}$ & $\boldsymbol{3.24\pm{0.05}}$ & $\boldsymbol{0.12\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{5.55\pm{0.10}}$ \\
+\midrule
+\multirow{3}{*}{Audit} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $\boldsymbol{21.14\pm{5.87}}$ & $\boldsymbol{94.75\pm{26.62}}$ & $-0.10\pm{0.04}$ & $\boldsymbol{0.26\pm{0.00}}$ & $28.00\pm{0.07}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.46\pm{0.03}$ & $\boldsymbol{0.05\pm{0.05}}$ & $-17.72\pm{33.55}$ & $102.60\pm{36.96}$ & $\boldsymbol{0.10\pm{0.03}}$ & $0.27\pm{0.06}$ & $\boldsymbol{0.13\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{Bank Marketing} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.18\pm{0.14}}$ & $\boldsymbol{-50.85\pm{9.93}}$ & $\boldsymbol{2.77\pm{0.08}}$ & $0.03\pm{0.01}$ & $0.94\pm{0.00}$ & $89.95\pm{0.19}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.09\pm{0.12}$ & $0.04\pm{0.02}$ & $0.07\pm{0.05}$ & $-56.45\pm{12.24}$ & $3.53\pm{1.61}$ & $\boldsymbol{0.04\pm{0.02}}$ & $\boldsymbol{0.03\pm{0.02}}$ & $194.48\pm{22.55}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.85\pm{0.11}$ & $0.10\pm{0.03}$ & $0.06\pm{0.08}$ & $-5.94\times 10^{12}\pm{1.33\times 10^{13}}$ & $5.22\pm{1.92}$ & $0.02\pm{0.01}$ & $0.11\pm{0.06}$ & $\boldsymbol{3.77\pm{0.12}}$ \\
+\midrule
+\multirow{3}{*}{Blobs} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.99\pm{0.01}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.45\pm{0.09}}$ & $\boldsymbol{0.98\pm{0.39}}$ & $\boldsymbol{1.20\pm{0.07}}$ & $\boldsymbol{0.01\pm{0.01}}$ & $0.51\pm{0.04}$ & $80.50\pm{16.15}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $-5.40\pm{1.77}$ & $1.86\pm{0.18}$ & $-0.07\pm{0.01}$ & $\boldsymbol{0.32\pm{0.03}}$ & $\boldsymbol{0.11\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{Credit Default} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.97\pm{0.02}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & -- & $\boldsymbol{8.49\pm{0.66}}$ & $-0.02\pm{0.02}$ & $0.86\pm{0.00}$ & $209.61\pm{15.30}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.03\pm{0.00}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-957.72\pm{590.76}}$ & $10.44\pm{3.61}$ & $\boldsymbol{0.07\pm{0.00}}$ & $\boldsymbol{0.15\pm{0.04}}$ & $\boldsymbol{4.00\pm{0.10}}$ \\
+\midrule
+\multirow{3}{*}{Digits} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.70\pm{0.14}}$ & $\boldsymbol{0.85\pm{0.05}}$ & $\boldsymbol{0.01\pm{0.01}}$ & $\boldsymbol{-871.81\pm{845.67}}$ & $\boldsymbol{1.47\pm{0.05}}$ & $\boldsymbol{-0.07\pm{0.01}}$ & $\boldsymbol{1.55\pm{0.12}}$ & $\boldsymbol{2.14\pm{0.11}}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & -- & $0.00\pm{0.00}$ & -- & -- & -- & -- & -- & -- & -- \\
+\midrule
+\multirow{3}{*}{German Credit} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.82\pm{0.14}}$ & $\boldsymbol{0.70\pm{0.19}}$ & $0.08\pm{0.11}$ & -- & $\boldsymbol{1.08\pm{0.03}}$ & $-0.04\pm{0.02}$ & $0.64\pm{0.18}$ & $2.14\pm{1.12}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.34\pm{0.14}$ & $0.04\pm{0.01}$ & $\boldsymbol{0.27\pm{0.10}}$ & $\boldsymbol{-61.66\pm{2.25}}$ & $\boldsymbol{1.08\pm{0.01}}$ & $\boldsymbol{0.01\pm{0.01}}$ & $\boldsymbol{0.08\pm{0.06}}$ & $1.99\pm{1.49}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.66\pm{0.26}$ & $0.09\pm{0.02}$ & $0.09\pm{0.12}$ & -- & $12.13\pm{11.73}$ & $\boldsymbol{0.01\pm{0.01}}$ & $0.15\pm{0.09}$ & $\boldsymbol{0.21\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{GMC} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.01}}$ & $0.01\pm{0.03}$ & $-153.40\pm{291.01}$ & $5.31\pm{0.31}$ & $-0.01\pm{0.01}$ & $0.85\pm{0.01}$ & $62.40\pm{1.53}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.83\pm{0.10}$ & $0.05\pm{0.00}$ & $\boldsymbol{0.46\pm{0.23}}$ & $\boldsymbol{-12.58\pm{9.50}}$ & $1.21\pm{0.07}$ & $0.07\pm{0.03}$ & $0.05\pm{0.00}$ & $16.33\pm{6.68}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.06\pm{0.01}$ & $0.43\pm{0.21}$ & $-14.21\pm{7.55}$ & $\boldsymbol{1.16\pm{0.05}}$ & $\boldsymbol{0.12\pm{0.01}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.94\pm{0.01}}$ \\
+\midrule
+\multirow{3}{*}{HELOC} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.96\pm{0.02}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $\boldsymbol{-543.81\pm{733.67}}$ & $6.42\times 10^{8}\pm{1.07\times 10^{8}}$ & $0.00\pm{0.01}$ & $0.61\pm{0.07}$ & $55.65\pm{5.69}$ \\
+ & AReS & $\boldsymbol{1.00\pm{0.00}}$ & $0.27\pm{0.08}$ & $0.24\pm{0.01}$ & $0.07\pm{0.01}$ & $-976.16\pm{1339.37}$ & $\boldsymbol{38.07\pm{4.43}}$ & $\boldsymbol{0.04\pm{0.00}}$ & $\boldsymbol{0.20\pm{0.08}}$ & $\boldsymbol{0.15\pm{0.10}}$ \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.27\pm{0.01}$ & $\boldsymbol{0.10\pm{0.06}}$ & $-4402.46\pm{4600.04}$ & $1.21\times 10^{8}\pm{6.26\times 10^{7}}$ & $\boldsymbol{0.04\pm{0.00}}$ & $0.33\pm{0.12}$ & $0.33\pm{0.00}$ \\
+\midrule
+\multirow{3}{*}{Law} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.97\pm{0.01}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.39\pm{0.05}}$ & $\boldsymbol{-16.21\pm{1.69}}$ & $1.65\pm{0.08}$ & $0.00\pm{0.01}$ & $0.87\pm{0.01}$ & $30.29\pm{1.56}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.20\pm{0.00}$ & $0.26\pm{0.18}$ & $-16.79\pm{1.73}$ & $\boldsymbol{1.39\pm{0.06}}$ & $\boldsymbol{0.02\pm{0.01}}$ & $\boldsymbol{0.05\pm{0.00}}$ & $\boldsymbol{0.17\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{Lending Club} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.02}}$ & $0.00\pm{0.00}$ & $-298.92\pm{113.97}$ & $\boldsymbol{4.24\pm{0.51}}$ & $-0.03\pm{0.01}$ & $0.91\pm{0.05}$ & $64.13\pm{6.76}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $0.77\pm{0.22}$ & $0.18\pm{0.00}$ & $\boldsymbol{0.47\pm{0.30}}$ & $\boldsymbol{-33.06\pm{5.96}}$ & $5.39\pm{0.40}$ & $\boldsymbol{0.04\pm{0.00}}$ & $\boldsymbol{0.06\pm{0.00}}$ & $\boldsymbol{0.82\pm{0.01}}$ \\
+\midrule
+\multirow{3}{*}{Moons} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.99\pm{0.01}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.28\pm{0.02}}$ & $-22.19\pm{13.90}$ & $1.78\pm{0.16}$ & $-0.03\pm{0.01}$ & $0.50\pm{0.01}$ & $38.69\pm{9.27}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.00\pm{0.00}$ & $\boldsymbol{-1.26\pm{0.61}}$ & $\boldsymbol{1.31\pm{0.04}}$ & $\boldsymbol{-0.01\pm{0.01}}$ & $\boldsymbol{0.27\pm{0.02}}$ & $\boldsymbol{0.11\pm{0.00}}$ \\
+\midrule
+\multirow{3}{*}{Wine} & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $0.78\pm{0.09}$ & $\boldsymbol{0.76\pm{0.18}}$ & $\boldsymbol{0.01\pm{0.04}}$ & $\boldsymbol{-26.27\pm{20.29}}$ & $\boldsymbol{1.28\pm{0.06}}$ & $\boldsymbol{0.00\pm{0.02}}$ & $\boldsymbol{0.90\pm{0.05}}$ & $1.01\pm{0.85}$ \\
+ & AReS & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLOBE-CE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $0.57\pm{0.04}$ & $\boldsymbol{0.01\pm{0.03}}$ & $-140.54\pm{133.50}$ & $1.79\pm{0.29}$ & $\boldsymbol{0.00\pm{0.01}}$ & $1.29\pm{0.20}$ & $\boldsymbol{0.10\pm{0.00}}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}

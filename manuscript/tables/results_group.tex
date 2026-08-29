@@ -1,0 +1,111 @@
+\begin{table*}[ht]
+\centering
+\caption{Group-wise methods: metrics (MLP).}
+\label{tab:group_metrics_mlp}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrrrrr}
+\toprule
+ & Method & Cov.$\uparrow$ & Valid.$\uparrow$ & Sparse.$\uparrow$ & Prob. Plaus.$\uparrow$ & Log Dens.$\uparrow$ & LOF$\downarrow$ & IsoForest$\uparrow$ & L2-Ham.$\downarrow$ & Time(s)$\downarrow$ \\
+\midrule
+\multirow{2}{*}{Adult Census} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.23\pm{0.02}$ & $0.00\pm{0.00}$ & $\boldsymbol{0.49\pm{0.15}}$ & $\boldsymbol{-242.83\pm{13.92}}$ & $\boldsymbol{3.05\pm{0.05}}$ & $\boldsymbol{0.12\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.96\pm{0.03}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.01}}$ & $\boldsymbol{0.41\pm{0.02}}$ & $0.35\pm{0.05}$ & $-251.57\pm{80.02}$ & $3.95\pm{0.15}$ & $0.11\pm{0.00}$ & $0.41\pm{0.02}$ & $261.15\pm{1.33}$ \\
+\midrule
+\multirow{2}{*}{Audit} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.04\pm{0.04}$ & $0.01\pm{0.01}$ & $\boldsymbol{0.10\pm{0.03}}$ & $\boldsymbol{42.81\pm{6.55}}$ & $125470.63\pm{138611.61}$ & $\boldsymbol{0.16\pm{0.01}}$ & $\boldsymbol{0.22\pm{0.09}}$ & $\boldsymbol{0.01\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.36\pm{0.06}}$ & $\boldsymbol{0.85\pm{0.16}}$ & $0.00\pm{0.00}$ & $7.56\pm{11.46}$ & $\boldsymbol{119.05\pm{38.01}}$ & $-0.08\pm{0.03}$ & $0.36\pm{0.03}$ & $27.69\pm{0.13}$ \\
+\midrule
+\multirow{2}{*}{Bank Marketing} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.15\pm{0.31}$ & $0.02\pm{0.02}$ & $\boldsymbol{0.44\pm{0.29}}$ & $-47.03\pm{4.30}$ & $\boldsymbol{2.78\pm{0.64}}$ & $\boldsymbol{0.06\pm{0.01}}$ & $\boldsymbol{0.03\pm{0.02}}$ & $\boldsymbol{0.41\pm{0.01}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.65\pm{0.06}}$ & $0.01\pm{0.01}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $3.53\pm{0.35}$ & $0.01\pm{0.03}$ & $0.65\pm{0.05}$ & $98.64\pm{13.26}$ \\
+\midrule
+\multirow{2}{*}{Blobs} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.01\pm{0.01}$ & $0.04\pm{0.01}$ & $0.00\pm{0.00}$ & $-40.40\pm{11.23}$ & $\boldsymbol{1.09\pm{0.02}}$ & $\boldsymbol{0.03\pm{0.01}}$ & $\boldsymbol{0.36\pm{0.12}}$ & $\boldsymbol{0.00\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.01}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.30\pm{0.17}}$ & $\boldsymbol{0.53\pm{0.53}}$ & $1.29\pm{0.09}$ & $-0.01\pm{0.02}$ & $0.50\pm{0.05}$ & $95.64\pm{8.00}$ \\
+\midrule
+\multirow{2}{*}{Credit Default} & TCREx & -- & $0.00\pm{0.00}$ & -- & -- & -- & -- & -- & -- & $\boldsymbol{0.59\pm{0.02}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.98\pm{0.01}}$ & $\boldsymbol{0.92\pm{0.01}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $\boldsymbol{7.43\pm{1.71}}$ & $\boldsymbol{-0.05\pm{0.01}}$ & $\boldsymbol{0.81\pm{0.01}}$ & $235.54\pm{32.78}$ \\
+\midrule
+\multirow{2}{*}{Digits} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.71\pm{0.05}}$ & $\boldsymbol{0.92\pm{0.01}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-3252.85\pm{5069.03}}$ & $\boldsymbol{1.51\pm{0.02}}$ & $\boldsymbol{-0.07\pm{0.01}}$ & $\boldsymbol{1.71\pm{0.08}}$ & $\boldsymbol{2.60\pm{0.21}}$ \\
+\midrule
+\multirow{2}{*}{German Credit} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.83\pm{0.05}}$ & $\boldsymbol{0.90\pm{0.07}}$ & $\boldsymbol{0.30\pm{0.14}}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $\boldsymbol{1.04\pm{0.01}}$ & $\boldsymbol{-0.01\pm{0.00}}$ & $\boldsymbol{0.81\pm{0.05}}$ & $\boldsymbol{88.70\pm{6.82}}$ \\
+\midrule
+\multirow{2}{*}{GMC} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.89\pm{0.18}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-41.83\pm{15.03}}$ & $\boldsymbol{6.08\pm{0.95}}$ & $\boldsymbol{0.01\pm{0.02}}$ & $\boldsymbol{0.76\pm{0.15}}$ & $\boldsymbol{63.09\pm{0.91}}$ \\
+\midrule
+\multirow{2}{*}{HELOC} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.03\pm{0.00}$ & $0.03\pm{0.01}$ & $\boldsymbol{0.26\pm{0.03}}$ & $\boldsymbol{-3052.07\pm{4574.88}}$ & $\boldsymbol{1.10\pm{0.01}}$ & $\boldsymbol{0.04\pm{0.00}}$ & $\boldsymbol{0.08\pm{0.01}}$ & $\boldsymbol{0.05\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.96\pm{0.02}}$ & $\boldsymbol{0.78\pm{0.09}}$ & $0.00\pm{0.00}$ & $-99808.75\pm{219402.22}$ & $1.05\times 10^{9}\pm{1.65\times 10^{8}}$ & $0.00\pm{0.01}$ & $0.76\pm{0.04}$ & $66.65\pm{7.95}$ \\
+\midrule
+\multirow{2}{*}{Law} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.04\pm{0.05}$ & $0.04\pm{0.02}$ & $0.02\pm{0.02}$ & $-20.59\pm{3.21}$ & $\boldsymbol{1.29\pm{0.01}}$ & $\boldsymbol{0.03\pm{0.01}}$ & $\boldsymbol{0.07\pm{0.03}}$ & $\boldsymbol{0.01\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.94\pm{0.02}}$ & $\boldsymbol{0.92\pm{0.13}}$ & $\boldsymbol{0.41\pm{0.08}}$ & $\boldsymbol{-12.68\pm{1.53}}$ & $1.81\pm{0.37}$ & $0.00\pm{0.01}$ & $0.80\pm{0.13}$ & $27.19\pm{3.96}$ \\
+\midrule
+\multirow{2}{*}{Lending Club} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.84\pm{0.12}}$ & $\boldsymbol{0.03\pm{0.06}}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $\boldsymbol{3.22\pm{0.24}}$ & $\boldsymbol{-0.04\pm{0.02}}$ & $\boldsymbol{0.71\pm{0.11}}$ & $\boldsymbol{82.73\pm{12.03}}$ \\
+\midrule
+\multirow{2}{*}{Moons} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.10\pm{0.01}$ & $0.25\pm{0.03}$ & $0.00\pm{0.00}$ & $-39.46\pm{26.23}$ & $\boldsymbol{1.22\pm{0.02}}$ & $0.01\pm{0.01}$ & $\boldsymbol{0.17\pm{0.01}}$ & $\boldsymbol{0.00\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.48\pm{0.09}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.12\pm{0.04}}$ & $\boldsymbol{-6.22\pm{2.38}}$ & $1.25\pm{0.03}$ & $\boldsymbol{0.02\pm{0.01}}$ & $0.44\pm{0.05}$ & $43.71\pm{9.73}$ \\
+\midrule
+\multirow{2}{*}{Wine} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.79\pm{0.05}}$ & $\boldsymbol{0.78\pm{0.10}}$ & $\boldsymbol{0.04\pm{0.06}}$ & $\boldsymbol{-18.74\pm{7.78}}$ & $\boldsymbol{1.23\pm{0.03}}$ & $\boldsymbol{0.00\pm{0.01}}$ & $\boldsymbol{0.90\pm{0.06}}$ & $\boldsymbol{0.50\pm{0.04}}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}
+
+\begin{table*}[ht]
+\centering
+\caption{Group-wise methods: metrics (LR).}
+\label{tab:group_metrics_lr}
+\begin{center}
+\begin{sc}
+\begin{scriptsize}
+\begin{tabular}{l|l|rrrrrrrrr}
+\toprule
+ & Method & Cov.$\uparrow$ & Valid.$\uparrow$ & Sparse.$\uparrow$ & Prob. Plaus.$\uparrow$ & Log Dens.$\uparrow$ & LOF$\downarrow$ & IsoForest$\uparrow$ & L2-Ham.$\downarrow$ & Time(s)$\downarrow$ \\
+\midrule
+\multirow{2}{*}{Adult Census} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.23\pm{0.02}$ & $0.00\pm{0.00}$ & $\boldsymbol{0.36\pm{0.18}}$ & $-249.50\pm{11.74}$ & $\boldsymbol{3.04\pm{0.05}}$ & $\boldsymbol{0.12\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.96\pm{0.01}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.40\pm{0.03}}$ & $0.35\pm{0.05}$ & $\boldsymbol{-141.41\pm{57.06}}$ & $4.08\pm{0.19}$ & $0.11\pm{0.00}$ & $0.40\pm{0.03}$ & $258.84\pm{1.50}$ \\
+\midrule
+\multirow{2}{*}{Audit} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.01\pm{0.00}$ & $0.06\pm{0.09}$ & $\boldsymbol{0.13\pm{0.17}}$ & $\boldsymbol{30.61\pm{23.07}}$ & $16847.39\pm{22812.53}$ & $\boldsymbol{0.15\pm{0.02}}$ & $\boldsymbol{0.15\pm{0.18}}$ & $\boldsymbol{0.01\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.94\pm{0.11}}$ & $0.00\pm{0.00}$ & $15.70\pm{8.24}$ & $\boldsymbol{98.44\pm{27.47}}$ & $-0.09\pm{0.04}$ & $0.28\pm{0.01}$ & $27.59\pm{0.11}$ \\
+\midrule
+\multirow{2}{*}{Bank Marketing} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.01\pm{0.01}$ & $0.01\pm{0.00}$ & $\boldsymbol{0.20\pm{0.18}}$ & $-51.93\pm{5.64}$ & $\boldsymbol{2.31\pm{0.55}}$ & $\boldsymbol{0.06\pm{0.00}}$ & $\boldsymbol{0.03\pm{0.01}}$ & $\boldsymbol{0.40\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.58\pm{0.03}}$ & $0.16\pm{0.10}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $2.77\pm{0.05}$ & $0.03\pm{0.00}$ & $0.57\pm{0.03}$ & $91.52\pm{2.32}$ \\
+\midrule
+\multirow{2}{*}{Blobs} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.01\pm{0.01}$ & $0.03\pm{0.01}$ & $0.00\pm{0.00}$ & $-39.68\pm{18.99}$ & $\boldsymbol{1.08\pm{0.03}}$ & $\boldsymbol{0.03\pm{0.01}}$ & $\boldsymbol{0.37\pm{0.17}}$ & $\boldsymbol{0.00\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.43\pm{0.13}}$ & $\boldsymbol{0.89\pm{0.39}}$ & $1.22\pm{0.05}$ & $0.00\pm{0.01}$ & $0.53\pm{0.05}$ & $80.43\pm{14.75}$ \\
+\midrule
+\multirow{2}{*}{Credit Default} & TCREx & -- & $0.00\pm{0.00}$ & -- & -- & -- & -- & -- & -- & $\boldsymbol{0.56\pm{0.02}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.97\pm{0.02}}$ & $\boldsymbol{0.86\pm{0.03}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $\boldsymbol{7.51\pm{1.78}}$ & $\boldsymbol{-0.03\pm{0.02}}$ & $\boldsymbol{0.76\pm{0.02}}$ & $195.49\pm{12.75}$ \\
+\midrule
+\multirow{2}{*}{Digits} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.73\pm{0.09}}$ & $\boldsymbol{0.81\pm{0.03}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-1050.00\pm{849.44}}$ & $\boldsymbol{1.47\pm{0.03}}$ & $\boldsymbol{-0.07\pm{0.01}}$ & $\boldsymbol{1.57\pm{0.09}}$ & $\boldsymbol{2.14\pm{0.13}}$ \\
+\midrule
+\multirow{2}{*}{German Credit} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.82\pm{0.12}}$ & $\boldsymbol{0.92\pm{0.05}}$ & $\boldsymbol{0.24\pm{0.16}}$ & $\boldsymbol{0.00\pm{-\infty}}$ & $\boldsymbol{1.05\pm{0.01}}$ & $\boldsymbol{-0.02\pm{0.02}}$ & $\boldsymbol{0.84\pm{0.05}}$ & $\boldsymbol{81.75\pm{13.45}}$ \\
+\midrule
+\multirow{2}{*}{GMC} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.97\pm{0.01}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-143.36\pm{261.87}}$ & $\boldsymbol{5.34\pm{0.31}}$ & $\boldsymbol{-0.01\pm{0.02}}$ & $\boldsymbol{0.83\pm{0.01}}$ & $\boldsymbol{62.09\pm{0.94}}$ \\
+\midrule
+\multirow{2}{*}{HELOC} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.03\pm{0.01}$ & $0.03\pm{0.00}$ & $\boldsymbol{0.26\pm{0.03}}$ & $-1585.94\pm{1307.54}$ & $\boldsymbol{1.10\pm{0.00}}$ & $\boldsymbol{0.04\pm{0.00}}$ & $\boldsymbol{0.09\pm{0.01}}$ & $\boldsymbol{0.04\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.95\pm{0.04}}$ & $\boldsymbol{0.72\pm{0.08}}$ & $0.00\pm{0.00}$ & $\boldsymbol{-194.78\pm{134.95}}$ & $5.65\times 10^{8}\pm{1.35\times 10^{8}}$ & $0.00\pm{0.00}$ & $0.62\pm{0.11}$ & $54.01\pm{3.18}$ \\
+\midrule
+\multirow{2}{*}{Law} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.06\pm{0.05}$ & $0.05\pm{0.01}$ & $0.15\pm{0.14}$ & $-16.73\pm{1.53}$ & $\boldsymbol{1.31\pm{0.08}}$ & $\boldsymbol{0.03\pm{0.01}}$ & $\boldsymbol{0.06\pm{0.03}}$ & $\boldsymbol{0.01\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.97\pm{0.01}}$ & $\boldsymbol{0.99\pm{0.00}}$ & $\boldsymbol{0.40\pm{0.06}}$ & $\boldsymbol{-15.83\pm{1.50}}$ & $1.69\pm{0.08}$ & $0.00\pm{0.00}$ & $0.87\pm{0.01}$ & $27.55\pm{2.14}$ \\
+\midrule
+\multirow{2}{*}{Lending Club} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.68\pm{0.11}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-44.69\pm{-\infty}}$ & $\boldsymbol{4.13\pm{0.27}}$ & $\boldsymbol{-0.03\pm{0.00}}$ & $\boldsymbol{0.67\pm{0.09}}$ & $\boldsymbol{65.58\pm{5.62}}$ \\
+\midrule
+\multirow{2}{*}{Moons} & TCREx & $\boldsymbol{1.00\pm{0.00}}$ & $0.13\pm{0.06}$ & $0.38\pm{0.06}$ & $0.06\pm{0.02}$ & $-1236.33\pm{1652.67}$ & $\boldsymbol{1.17\pm{0.10}}$ & $-0.01\pm{0.03}$ & $\boldsymbol{0.49\pm{0.00}}$ & $\boldsymbol{0.00\pm{0.00}}$ \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.99\pm{0.01}}$ & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.41\pm{0.15}}$ & $\boldsymbol{-0.04\pm{0.64}}$ & $1.29\pm{0.05}$ & $\boldsymbol{0.00\pm{0.01}}$ & $0.52\pm{0.01}$ & $34.16\pm{3.77}$ \\
+\midrule
+\multirow{2}{*}{Wine} & TCREx & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+ & GLANCE & $\boldsymbol{1.00\pm{0.00}}$ & $\boldsymbol{0.78\pm{0.07}}$ & $\boldsymbol{0.73\pm{0.14}}$ & $\boldsymbol{0.00\pm{0.00}}$ & $\boldsymbol{-21.38\pm{11.80}}$ & $\boldsymbol{1.27\pm{0.07}}$ & $\boldsymbol{0.00\pm{0.02}}$ & $\boldsymbol{0.92\pm{0.05}}$ & $\boldsymbol{0.74\pm{0.69}}$ \\
+\bottomrule
+\end{tabular}
+\end{scriptsize}
+\end{sc}
+\end{center}
+\end{table*}

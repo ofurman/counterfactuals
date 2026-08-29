@@ -1,0 +1,183 @@
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{artelt2020convex}
+Artelt, A., Hammer, B.: Convex density constraints for computing plausible
+  counterfactual explanations. In: International conference on artificial
+  neural networks. pp. 353--365. Springer (2020)
+
+\bibitem{adult}
+Becker, B., Kohavi, R.: {Adult Census Income}. UCI Machine Learning Repository
+  (1996). \doi{10.24432/C5XW20}
+
+\bibitem{bewley2024tcrex}
+Bewley, T., Amoukou, S.I., Mishra, S., Magazzeni, D., Veloso, M.:
+  Counterfactual metarules for local and global recourse. In: Forty-first
+  International Conference on Machine Learning, {ICML} 2024, Vienna, Austria,
+  July 21-27, 2024. OpenReview.net (2024),
+  \url{https://openreview.net/forum?id=Ad9msn1SKC}
+
+\bibitem{DhurandharCLTTS18}
+Dhurandhar, A., Chen, P., Luss, R., Tu, C., Ting, P., Shanmugam, K., Das, P.:
+  Explanations based on the missing: Towards contrastive explanations with
+  pertinent negatives. In: Advances in Neural Information Processing Systems
+  31: Annual Conference on Neural Information Processing Systems 2018, NeurIPS
+  2018, December 3-8, 2018, Montr{\'{e}}al, Canada. pp. 590--601 (2018)
+
+\bibitem{diabetes_data}
+Efron, B., Hastie, T., Johnstone, I., Tibshirani, R.: Least angle regression”
+  (with discussions). The Annals of Statistics  \textbf{32} (01 2004)
+
+\bibitem{heloc}
+FICO: {FICO Explainable Machine Learning Challenge}.
+  \url{https://community.fico.com/s/explainable-machine-learning-challenge}
+  (2018)
+
+\bibitem{yacht_hydrodynamics_data}
+Gerritsma, J., Onnink, R., Versluis, A.: {Yacht Hydrodynamics}. UCI Machine
+  Learning Repository (1981), {DOI}: https://doi.org/10.24432/C5XG7R
+
+\bibitem{guidotti2024counterfactual}
+Guidotti, R.: Counterfactual explanations and how to find them: literature
+  review and benchmarking. Data Mining and Knowledge Discovery  \textbf{38}(5),
+   2770--2824 (2024)
+
+\bibitem{german_credit_data}
+Hofmann, H.: {Statlog (German Credit Data)}. UCI Machine Learning Repository
+  (1994), {DOI}: https://doi.org/10.24432/C5NC77
+
+\bibitem{jagtiani2019roles}
+Jagtiani, J., Lemieux, C.: The roles of alternative data and machine learning
+  in fintech lending: evidence from the lendingclub consumer platform.
+  Financial Management  \textbf{48}(4),  1009--1029 (2019)
+
+\bibitem{jiang2025robustx}
+Jiang, J., Marzari, L., Purohit, A., Leofante, F.: Robustx: Robust
+  counterfactual explanations made easy. arXiv preprint arXiv:2502.13751
+  (2025)
+
+\bibitem{karimi2020model}
+Karimi, A.H., Barthe, G., Balle, B., Valera, I.: Model-agnostic counterfactual
+  explanations for consequential decisions. In: International conference on
+  artificial intelligence and statistics. pp. 895--905. PMLR (2020)
+
+\bibitem{kavouras2024glance}
+Kavouras, L., Psaroudaki, E., Tsopelas, K., Rontogiannis, D., Theologitis, N.,
+  Sacharidis, D., Giannopoulos, G., Tomaras, D., Markou, K., Gunopulos, D.,
+  et~al.: Glance: Global actions in a nutshell for counterfactual
+  explainability. arXiv preprint arXiv:2405.18921  (2024)
+
+\bibitem{keane2020good}
+Keane, M.T., Smyth, B.: Good counterfactuals and where to find them: A
+  case-based technique for generating counterfactuals for explainable ai (xai).
+  In: International Conference on Case-Based Reasoning. pp. 163--178. Springer
+  (2020)
+
+\bibitem{ley2023globe}
+Ley, D., Mishra, S., Magazzeni, D.: Globe-ce: A translation based approach for
+  global counterfactual explanations. In: International conference on machine
+  learning. pp. 19315--19342. PMLR (2023)
+
+\bibitem{LooverenK21}
+Looveren, A.V., Klaise, J.: Interpretable counterfactual explanations guided by
+  prototypes. In: Machine Learning and Knowledge Discovery in Databases.
+  Research Track - European Conference, {ECML} {PKDD} 2021, Bilbao, Spain,
+  September 13-17, 2021, Proceedings, Part {II}. Lecture Notes in Computer
+  Science, vol. 12976, pp. 650--665. Springer (2021)
+
+\bibitem{law}
+(LSAC), L.S.A.C.: {Law School Admissions Bar Passage}. Kaggle,
+  \url{https://www.kaggle.com/datasets/danofer/law-school-admissions-bar-passage}
+
+\bibitem{moore2019explaining}
+Moore, J., Hammerla, N., Watkins, C.: Explaining deep learning models with
+  constrained adversarial examples. In: Pacific Rim international conference on
+  artificial intelligence. pp. 43--56. Springer (2019)
+
+\bibitem{moro2014bank}
+Moro, S., Cortez, P., Rita, P.: A data-driven approach to predict the success
+  of bank telemarketing. Decision Support Systems  \textbf{62},  22--31 (2014)
+
+\bibitem{mothilal2020explaining}
+Mothilal, R.K., Sharma, A., Tan, C.: Explaining machine learning classifiers
+  through diverse counterfactual explanations. In: Proceedings of the 2020
+  conference on fairness, accountability, and transparency. pp. 607--617 (2020)
+
+\bibitem{de2021framework}
+de~Oliveira, R.M.B., Martens, D.: A framework and benchmarking study for
+  counterfactual generating methods on tabular data. Applied Sciences
+  \textbf{11}(16), ~7274 (2021)
+
+\bibitem{papamakarios2017masked}
+Papamakarios, G., Pavlakou, T., Murray, I.: Masked autoregressive flow for
+  density estimation. Advances in neural information processing systems
+  \textbf{30} (2017)
+
+\bibitem{pawelczyk2021carla}
+Pawelczyk, M., Bielawski, S., Heuvel, J.v.d., Richter, T., Kasneci, G.: Carla:
+  a python library to benchmark algorithmic recourse and counterfactual
+  explanation algorithms. arXiv preprint arXiv:2108.00783  (2021)
+
+\bibitem{pawelczyk2020learning}
+Pawelczyk, M., Broelemann, K., Kasneci, G.: Learning model-agnostic
+  counterfactual explanations for tabular data. In: Proceedings of the web
+  conference 2020. pp. 3126--3132 (2020)
+
+\bibitem{pineau2021improving}
+Pineau, J., Vincent-Lamarre, P., Sinha, K., Larivi{\`e}re, V., Beygelzimer, A.,
+  d'Alch{\'e} Buc, F., Fox, E., Larochelle, H.: Improving reproducibility in
+  machine learning research (a report from the neurips 2019 reproducibility
+  program). Journal of machine learning research  \textbf{22}(164),  1--20
+  (2021)
+
+\bibitem{rawal2020beyond}
+Rawal, K., Lakkaraju, H.: Beyond individualized recourse: Interpretable and
+  interactive summaries of actionable recourses. Advances in Neural Information
+  Processing Systems  \textbf{33},  12187--12198 (2020)
+
+\bibitem{wine}
+Repository, U.M.L.: {Wine Data Set}.
+  \url{https://archive.ics.uci.edu/dataset/109/wine} (1991)
+
+\bibitem{digits}
+Repository, U.M.L.: {Optical Recognition of Handwritten Digits}.
+  \url{https://archive.ics.uci.edu/dataset/80/optical+recognition+of+handwritten+digits}
+  (1998)
+
+\bibitem{audit}
+Repository, U.M.L.: {Audit Data Set}.
+  \url{https://archive.ics.uci.edu/dataset/475/audit+data} (2016)
+
+\bibitem{spooner2021counterfactual}
+Spooner, T., Dervovic, D., Long, J., Shepard, J., Chen, J., Magazzeni, D.:
+  Counterfactual explanations for arbitrary regression models. arXiv preprint
+  arXiv:2106.15212  (2021)
+
+\bibitem{scm20d_data}
+Spyromitros-Xioufis, E., Tsoumakas, G., Groves, W., Vlahavas, I.: Multi-target
+  regression via input space expansion: treating targets as inputs. Machine
+  Learning  \textbf{104}(1),  55--98 (July 2016).
+  \doi{10.1007/s10994-016-5546-z},
+  \url{https://doi.org/10.1007/s10994-016-5546-z}
+
+\bibitem{wachter2017counterfactual}
+Wachter, S., Mittelstadt, B., Russell, C.: Counterfactual explanations without
+  opening the black box: Automated decisions and the gdpr. Harv. JL \& Tech.
+  \textbf{31}, ~841 (2017)
+
+\bibitem{wielopolski2024probabilistically}
+Wielopolski, P., Furman, O., Stefanowski, J., Zi{\k{e}}ba, M.:
+  Probabilistically plausible counterfactual explanations with normalizing
+  flows. arXiv preprint arXiv:2405.17640  (2024)
+
+\bibitem{concrete_compressive_strength_data}
+Yeh, I.C.: {Concrete Compressive Strength}. UCI Machine Learning Repository
+  (1998), {DOI}: https://doi.org/10.24432/C5PK67
+
+\bibitem{credit_default_data}
+Yeh, I.C.: {Default of Credit Card Clients}. UCI Machine Learning Repository
+  (2009), {DOI}: https://doi.org/10.24432/C55S3H
+
+\end{thebibliography}
