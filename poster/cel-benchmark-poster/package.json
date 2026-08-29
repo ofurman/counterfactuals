@@ -9,7 +9,11 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "render": "pnpm run build && node scripts/render.mjs",
+    "audit:claims": "pnpm run build && node scripts/audit-claims.mjs",
+    "audit:layout": "node scripts/audit-layout.mjs",
+    "audit:pdf": "node scripts/audit-pdf.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -67,6 +71,7 @@
     "autoprefixer": "^10.5.4",
     "jsdom": "^26.1.0",
     "oxlint": "^1.79.0",
+    "playwright": "1.55.0",
     "postcss": "^8.5.26",
     "tailwindcss": "3.4.1",
     "tailwindcss-animate": "^1.0.7",

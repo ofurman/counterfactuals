@@ -203,7 +203,7 @@ function resultClaim(parsedTables, spec) {
   const verdict = typeof spec.verdict === "function" ? spec.verdict(context) : spec.verdict;
   const qualifierParts = [spec.qualifier];
   if (value.roundedZero) qualifierParts.push("Reported as 0.00 ± 0.00 after rounding; not asserted to be an exact zero.");
-  if (value.kind === "missing") qualifierParts.push("The source reports an em dash; this is missing output, not proof of method inapplicability.");
+  if (value.kind === "missing") qualifierParts.push("The source reports a missing-value marker; this is missing output, not proof of method inapplicability.");
   return {
     id: spec.id,
     claimKind: "benchmark-result",

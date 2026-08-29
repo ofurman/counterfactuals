@@ -277,7 +277,7 @@
       },
       "extractionRule": "Parse the coverage cell from the named TeX table row.",
       "direction": "higher",
-      "qualifier": "Blobs, MLP. The source reports an em dash; this is missing output, not proof of method inapplicability.",
+      "qualifier": "Blobs, MLP. The source reports a missing-value marker; this is missing output, not proof of method inapplicability.",
       "status": "qualified"
     },
     {
