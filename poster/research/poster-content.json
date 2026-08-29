@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "argument": {
+    "claimIds": ["scope.protocol", "conclusion.tradeoffs"],
+    "composeFrom": "verdict",
+    "separator": " "
+  },
+  "links": {
+    "repository": {"identityLink": "repository", "label": "Code & project"},
+    "documentation": {"identityLink": "documentation", "label": "Documentation"}
+  },
+  "sections": [
+    {
+      "id": "header",
+      "owner": "header",
+      "order": 1,
+      "heading": "CEL: controlled comparisons, visible trade-offs",
+      "copy": ["Hold the protocol constant. See what each method actually trades."],
+      "claimIds": ["scope.protocol", "conclusion.tradeoffs"],
+      "sourceCitations": ["manuscript/main_lncs.tex#Benchmark", "manuscript/main_lncs.tex#Conclusions"],
+      "linkIds": ["repository"],
+      "assetRoles": ["project-qr"]
+    },
+    {
+      "id": "problem",
+      "owner": "left",
+      "order": 2,
+      "heading": "Protocol differences can confound comparisons",
+      "copy": ["Splits, preprocessing, predictors, constraints, and metrics can obscure method behavior."],
+      "claimIds": ["scope.protocol"],
+      "sourceCitations": ["manuscript/main_lncs.tex#Benchmark"],
+      "linkIds": [],
+      "assetRoles": ["confound-diagram"]
+    },
+    {
+      "id": "scope",
+      "owner": "left",
+      "order": 3,
+      "heading": "One broad benchmark",
+      "copy": ["Classification and regression. Local, global, and group-wise explanations. Repeated evaluation."],
+      "claimIds": ["scope.datasets", "scope.methods", "scope.folds"],
+      "sourceCitations": ["manuscript/main_lncs.tex#Datasets", "manuscript/main_lncs.tex#Methods", "manuscript/supplementary.tex#Full-Results"],
+      "linkIds": [],
+      "assetRoles": ["scope-strip"]
+    },
+    {
+      "id": "protocol",
+      "owner": "center",
+      "order": 4,
+      "heading": "CEL standardizes a shared protocol",
+      "copy": ["Splits, preprocessing, predictors, constraints, and metrics follow shared benchmark controls."],
+      "claimIds": ["scope.protocol"],
+      "sourceCitations": ["manuscript/main_lncs.tex#Benchmark"],
+      "linkIds": ["documentation"],
+      "assetRoles": ["protocol-flow", "metric-rail"]
+    },
+    {
+      "id": "local-tradeoff",
+      "owner": "right",
+      "order": 5,
+      "heading": "Plausibility can cost more change",
+      "copy": ["Read plausibility together with perturbation size inside one named configuration."],
+      "claimIds": ["local.blobs.ppcef.pp", "local.blobs.ppcef.l2"],
+      "sourceCitations": ["manuscript/tables/results_numerical.tex#tab:num_metrics_mlp"],
+      "linkIds": [],
+      "assetRoles": ["local-tradeoff-chart"]
+    },
+    {
+      "id": "group-tradeoff",
+      "owner": "right",
+      "order": 6,
+      "heading": "Shared shifts trade reach for size",
+      "copy": ["Higher group-wise effectiveness accompanies a larger shared change in the selected Adult comparison."],
+      "claimIds": ["group.adult.tcrex.validity", "group.adult.tcrex.distance", "group.adult.glance.validity", "group.adult.glance.distance"],
+      "sourceCitations": ["manuscript/tables/results_group.tex#tab:group_metrics_mlp"],
+      "linkIds": [],
+      "assetRoles": ["group-tradeoff-chart"]
+    },
+    {
+      "id": "regression-tradeoff",
+      "owner": "bottom",
+      "order": 7,
+      "heading": "Similar targets, different perturbations",
+      "copy": ["On Concrete, target error, change size, and plausibility tell different parts of the comparison."],
+      "claimIds": ["regression.concrete.cearm.mae", "regression.concrete.wachter.mae", "regression.concrete.cearm.l2", "regression.concrete.wachter.l2", "regression.concrete.wachter.pp"],
+      "sourceCitations": ["manuscript/tables/results_regression.tex#tab:regression_all_dnn"],
+      "linkIds": [],
+      "assetRoles": ["regression-tradeoff-chart"]
+    },
+    {
+      "id": "applicability",
+      "owner": "bottom",
+      "order": 8,
+      "heading": "Missing output is part of the evidence",
+      "copy": ["An unreported result is neither zero nor proof of method inapplicability."],
+      "claimIds": ["global.blobs.ares.missing"],
+      "sourceCitations": ["manuscript/tables/results_global.tex#tab:global_metrics_mlp"],
+      "linkIds": [],
+      "assetRoles": ["applicability-mark"]
+    },
+    {
+      "id": "guidance-limitations",
+      "owner": "bottom",
+      "order": 9,
+      "heading": "Choose by task, metric, and applicability",
+      "copy": ["Inspect coverage; validity can depend on result semantics.", "Compare plausibility within one dataset and model. Rounded zeroes are not exact.", "Sparsity comparison is omitted until its direction is reconciled."],
+      "claimIds": ["conclusion.tradeoffs", "local.adult.cadex.validity", "local.blobs.ppcef.pp", "group.adult.tcrex.distance", "global.adult.globe.validity", "caveat.sparsity-direction"],
+      "sourceCitations": ["manuscript/main_lncs.tex#Conclusions", "manuscript/tables/results_categorical.tex#tab:cat_metrics_mlp", "manuscript/tables/results_numerical.tex#tab:num_metrics_mlp", "manuscript/tables/results_group.tex#tab:group_metrics_mlp", "manuscript/tables/results_global.tex#tab:global_metrics_mlp", "manuscript/supplementary.tex#Metrics"],
+      "linkIds": [],
+      "assetRoles": ["selection-guide"]
+    },
+    {
+      "id": "reproducibility",
+      "owner": "footer",
+      "order": 10,
+      "heading": "Reproduce and extend",
+      "copy": ["Install: uv add ce-library", "Every displayed result resolves to a manuscript table cell."],
+      "claimIds": [],
+      "sourceCitations": ["pyproject.toml#project", "poster/research/claims/claims.generated.json"],
+      "linkIds": ["repository", "documentation"],
+      "assetRoles": ["provenance-note"]
+    }
+  ],
+  "resultVisuals": ["local-tradeoff-chart", "group-tradeoff-chart", "regression-tradeoff-chart", "applicability-mark"]
+}

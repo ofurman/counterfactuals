@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "page": {"format": "A0", "orientation": "landscape", "widthMm": 1189, "heightMm": 841, "marginMm": 0},
+  "canvas": {"widthPx": 1800, "heightPx": 1273},
+  "safeArea": {"topPx": 42, "rightPx": 48, "bottomPx": 42, "leftPx": 48},
+  "macroGrid": {"columns": ["1fr", "2fr", "1fr"], "gapPx": 28, "readingOrder": ["left", "center", "right-bottom"]},
+  "colors": {
+    "paper": "#fffdf8",
+    "navy": "#13253c",
+    "navyMuted": "#536274",
+    "teal": "#087f78",
+    "tealLight": "#dff3ef",
+    "orange": "#e66b37",
+    "orangeLight": "#fde7dc",
+    "rule": "#d8d5cc",
+    "white": "#ffffff"
+  },
+  "fonts": {
+    "title": "Georgia, 'Times New Roman', serif",
+    "body": "Aptos, 'Segoe UI', Arial, sans-serif",
+    "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+  },
+  "minimumPrintType": {
+    "title": {"cssPx": 44, "approxPtAtA0": 82},
+    "sectionHeading": {"cssPx": 22, "approxPtAtA0": 41},
+    "body": {"cssPx": 15, "approxPtAtA0": 28},
+    "chartLabel": {"cssPx": 12, "approxPtAtA0": 22},
+    "citation": {"cssPx": 9, "approxPtAtA0": 17}
+  },
+  "print": {"pageCss": "@page { size: 1189mm 841mm; margin: 0; }", "colorAdjust": "exact", "singlePage": true},
+  "chartSemantics": {"success": "#087f78", "changeCost": "#e66b37", "neutral": "#536274", "missing": "#d8d5cc"},
+  "avoid": ["Inter", "purple gradients", "excessive centering", "generic shadows", "uniform rounded cards"],
+  "expectedBundleAssetBudgetBytes": 3000000
+}
