@@ -32,13 +32,18 @@ function browserExecutable() {
   return executable
 }
 
-async function startStaticServer() {
+async function startStaticServer(entry) {
   const server = http.createServer(async (request, response) => {
     try {
       const requestPath = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname)
-      const relativePath = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '')
-      const absolutePath = path.resolve(distDir, relativePath)
-      if (!(absolutePath === distDir || absolutePath.startsWith(`${distDir}${path.sep}`))) {
+      const rootDir = entry === 'bundle' ? projectDir : distDir
+      const relativePath = requestPath === '/' ? (entry === 'bundle' ? 'bundle.html' : 'index.html') : requestPath.replace(/^\/+/, '')
+      if (entry === 'bundle' && relativePath !== 'bundle.html') {
+        response.writeHead(404).end('A self-contained bundle may not request local assets')
+        return
+      }
+      const absolutePath = path.resolve(rootDir, relativePath)
+      if (!(absolutePath === rootDir || absolutePath.startsWith(`${rootDir}${path.sep}`))) {
         response.writeHead(403).end('Forbidden')
         return
       }
@@ -62,24 +67,43 @@ async function startStaticServer() {
   return { server, url: `http://127.0.0.1:${address.port}/` }
 }
 
-export async function withPosterPage(callback) {
-  const { server, url } = await startStaticServer()
+export async function withPosterPage(callback, options = {}) {
+  const entry = options.entry ?? 'dist'
+  const blockRemote = options.blockRemote ?? false
+  const { server, url } = await startStaticServer(entry)
   const failures = []
+  const remoteRequests = []
+  const consoleErrors = []
   const browser = await chromium.launch({
     executablePath: browserExecutable(),
     headless: true,
     args: ['--disable-dev-shm-usage'],
   })
   const context = await browser.newContext({ viewport: { width: 1920, height: 1600 }, deviceScaleFactor: 1 })
+  if (blockRemote) {
+    await context.route('**/*', async (route) => {
+      const requestUrl = new URL(route.request().url())
+      if (requestUrl.hostname === '127.0.0.1' || requestUrl.protocol === 'data:' || requestUrl.protocol === 'blob:') {
+        await route.continue()
+        return
+      }
+      remoteRequests.push(`${route.request().resourceType()}: ${route.request().url()}`)
+      await route.abort('internetdisconnected')
+    })
+  }
   const page = await context.newPage()
   page.on('requestfailed', (request) => failures.push(`${request.url()}: ${request.failure()?.errorText ?? 'request failed'}`))
   page.on('response', (response) => {
     if (response.status() >= 400) failures.push(`${response.url()}: HTTP ${response.status()}`)
   })
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+  page.on('pageerror', (error) => consoleErrors.push(error.message))
   try {
     await page.goto(url, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
-    return await callback({ page, failures, url })
+    return await callback({ page, failures, remoteRequests, consoleErrors, url })
   } finally {
     await context.close()
     await browser.close()

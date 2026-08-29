@@ -10,10 +10,15 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --config vitest.config.ts",
-    "render": "pnpm run build && node scripts/render.mjs",
-    "audit:claims": "pnpm run build && node scripts/audit-claims.mjs",
+    "bundle": "bash /Users/ofurman/.agents/skills/web-artifacts-builder/scripts/bundle-artifact.sh",
+    "render": "node scripts/render.mjs",
+    "audit:claims": "node scripts/audit-claims.mjs",
     "audit:layout": "node scripts/audit-layout.mjs",
-    "audit:pdf": "node scripts/audit-pdf.mjs"
+    "audit:pdf": "node scripts/audit-pdf.mjs",
+    "audit:offline": "node scripts/audit-offline.mjs",
+    "package": "node scripts/package-deliverables.mjs",
+    "audit:package": "node scripts/audit-package.mjs",
+    "verify:all": "node ../research/scripts/validate-claims.mjs && node ../research/scripts/validate-brief.mjs && pnpm run typecheck && pnpm test && pnpm run build && pnpm run bundle && pnpm run audit:offline && pnpm run render && pnpm run audit:layout && pnpm run audit:claims && pnpm run audit:pdf && pnpm run package && pnpm run audit:package"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -62,6 +67,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@parcel/config-default": "^2.16.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.3",
@@ -69,8 +75,11 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "autoprefixer": "^10.5.4",
+    "html-inline": "^1.2.0",
     "jsdom": "^26.1.0",
     "oxlint": "^1.79.0",
+    "parcel": "^2.16.4",
+    "parcel-resolver-tspaths": "^0.0.9",
     "playwright": "1.55.0",
     "postcss": "^8.5.26",
     "tailwindcss": "3.4.1",
