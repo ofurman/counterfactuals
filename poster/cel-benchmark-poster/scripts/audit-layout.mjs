@@ -64,9 +64,10 @@ const report = await withPosterPage(async ({ page, failures }) => {
       columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       branding: {
         header: rect(document.querySelector('.poster-header')),
-        strip: rect(document.querySelector('.brand-strip')),
+        title: rect(document.querySelector('.header-copy h1')),
+        titleAlign: getComputedStyle(document.querySelector('.header-copy h1')).textAlign,
         logos: [...document.querySelectorAll('[data-brand-id]')].map((element) => ({ id: element.dataset.brandId, ...rect(element), objectFit: getComputedStyle(element).objectFit })),
-        identityText: [...document.querySelectorAll('.header-copy h1, .poster-thesis, .authors, .affiliation')].map((element) => {
+        identityText: [...document.querySelectorAll('.header-copy h1, .authors, .affiliation')].map((element) => {
           const range = document.createRange()
           range.selectNodeContents(element)
           return rect(range)
@@ -99,7 +100,13 @@ const report = await withPosterPage(async ({ page, failures }) => {
     if (logo.width <= 0 || logo.height <= 0 || logo.objectFit !== 'contain') failuresFound.push(`${logo.id} logo is missing or distorted`)
     if (logo.left < screen.branding.header.left || logo.right > screen.branding.header.right || logo.top < screen.branding.header.top || logo.bottom > screen.branding.header.bottom) failuresFound.push(`${logo.id} logo exceeds the header`)
   }
-  if (screen.branding.identityText.some((text) => overlaps(screen.branding.strip, text))) failuresFound.push('Brand logos overlap header text')
+  if (screen.branding.identityText.some((text) => screen.branding.logos.some((logo) => overlaps(logo, text)))) failuresFound.push('Brand logos overlap header text')
+  const centerX = (rect) => (rect.left + rect.right) / 2
+  if (screen.branding.titleAlign !== 'center' || Math.abs(centerX(screen.branding.title) - centerX(screen.branding.header)) > 1) failuresFound.push('Manuscript title is not centered in the header')
+  const pwr = screen.branding.logos.find((logo) => logo.id === 'pwr')
+  const genwro = screen.branding.logos.find((logo) => logo.id === 'genwro')
+  const tooploox = screen.branding.logos.find((logo) => logo.id === 'tooploox')
+  if (!pwr || !genwro || !tooploox || pwr.right > screen.branding.title.left || genwro.left < screen.branding.title.right || tooploox.left < screen.branding.title.right || genwro.bottom >= tooploox.top || Math.abs(centerX(genwro) - centerX(tooploox)) > 1) failuresFound.push('Header logos must be PWr left and genwro.AI above Tooploox right')
   for (const section of screen.sections) {
     if (section.scrollWidth > section.clientWidth + 1 || section.scrollHeight > section.clientHeight + 1) failuresFound.push(`${section.id} has clipped or overflowing content`)
     if (section.rect.left < screen.safeBounds.left - 1 || section.rect.right > screen.safeBounds.right + 1 || section.rect.top < screen.safeBounds.top - 1 || section.rect.bottom > screen.safeBounds.bottom + 1) failuresFound.push(`${section.id} breaches the safe area`)

@@ -179,8 +179,8 @@ for (const [index, tag] of storyboardTags.entries()) {
 }
 const substantiveHeadings = ["Scientific argument", "Header", "Left — concept and global results", "Center — controlled protocol", "Right — contributions and group-wise results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
-  "**Identity inventory:** Exact manuscript title, camera-ready authors, affiliation, XKDD venue marker. Show the title only once; use a short benchmark subtitle.",
-  "**Logo inventory:** PWr, genwro.AI, and Tooploox assets copied unchanged from the user-provided PUMAL reference poster; preserve their aspect ratios and keep authorship unchanged.",
+  "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation, XKDD venue marker. Show the title only once, without a subtitle.",
+  "**Logo inventory:** PWr on the left; genwro.AI above Tooploox on the right. Assets copied unchanged from the user-provided PUMAL reference poster; preserve their aspect ratios and keep authorship unchanged.",
   "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at top right; linked to the repository, with no header or paper QR.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in project files."
@@ -236,6 +236,7 @@ const qrOwners = content.sections.filter((section) => section.assetRoles.include
 if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "right" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the right-column Extend contribution");
 const headerSection = content.sections.find((section) => section.id === "header");
 if (headerSection.heading !== identity.title) fail("Poster title must exactly match the manuscript title");
+if (headerSection.copy.length !== 0) fail("The title header must not contain a subtitle");
 if (/hold\s+the\s+protocol\s+constant/i.test([headerSection.heading, ...headerSection.copy].join(" ")) && !headerSection.claimIds.includes("scope.protocol")) fail("Header protocol-constant copy must map to scope.protocol");
 const guidanceSection = content.sections.find((section) => section.id === "guidance-limitations");
 for (const id of ["contribution.protocol", "contribution.benchmark", "contribution.library"]) {

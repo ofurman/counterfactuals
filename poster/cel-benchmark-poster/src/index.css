@@ -76,7 +76,10 @@ a { color: inherit; }
 }
 
 .poster-header {
-  display: block;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) 180px;
+  gap: 28px;
+  align-items: center;
   padding-bottom: 18px;
   border-bottom: 3px solid var(--navy);
 }
@@ -90,21 +93,20 @@ a { color: inherit; }
 }
 h1 {
   max-width: 1390px;
-  margin: 0;
+  margin: 0 auto;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 58px;
   line-height: 0.98;
   letter-spacing: -0.025em;
 }
-.poster-thesis { margin: 14px 0 10px; font-size: 23px; color: var(--navy-muted); }
-.authors { margin: 0; font-size: 16px; font-weight: 750; }
+.authors { margin: 18px 0 0; font-size: 16px; font-weight: 750; }
 .affiliation { margin: 4px 0 0; font-size: 14px; color: var(--navy-muted); }
-.header-copy { position: relative; }
-.brand-strip { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; gap: 24px; height: 58px; }
+.header-copy { min-width: 0; text-align: center; }
+.brand-strip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
 .brand-logo { display: block; object-fit: contain; }
-.brand-logo--pwr { width: 37px; height: 58px; }
-.brand-logo--genwro { width: 136px; height: 34px; }
-.brand-logo--tooploox { width: 142px; height: 37px; }
+.brand-logo--pwr { width: 88px; height: 140px; }
+.brand-logo--genwro { width: 180px; height: 45px; }
+.brand-logo--tooploox { width: 180px; height: 46px; }
 .project-mark {
   display: grid;
   gap: 6px;

@@ -6,10 +6,11 @@ const imageById = {
   tooploox: new URL('../../assets/brands/tpx-logo.png', import.meta.url).href,
 }
 
-export function BrandStrip() {
+export function BrandStrip({ side }: { side: 'left' | 'right' }) {
+  const assets = brands.assets.filter((brand) => side === 'left' ? brand.id === 'pwr' : brand.id !== 'pwr')
   return (
-    <div className="brand-strip" aria-label="PWr, genwro.AI, and Tooploox logos">
-      {brands.assets.map((brand) => (
+    <div className={`brand-strip brand-strip--${side}`} data-brand-side={side} aria-label={side === 'left' ? 'PWr logo' : 'genwro.AI and Tooploox logos'}>
+      {assets.map((brand) => (
         <img
           key={brand.id}
           data-brand-id={brand.id}

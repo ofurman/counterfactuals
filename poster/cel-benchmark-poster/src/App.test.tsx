@@ -32,6 +32,8 @@ describe('poster scaffold', () => {
     const { container } = render(<App />)
     expect(container.querySelector('h1')?.textContent).toBe(posterData.identity.title)
     expect(container.querySelector('.eyebrow')?.textContent).toBe(posterData.identity.venue)
+    expect(container.querySelector('.poster-thesis')).toBeNull()
+    expect(container.querySelector('.poster-header')?.textContent).not.toContain('One protocol. Multiple CE paradigms. Measurable trade-offs.')
     const headingsAndCopy = posterData.sections.flatMap((section) => [section.heading, ...section.copy]).join(' ')
     expect(headingsAndCopy.trim().split(/\s+/).length).toBeLessThanOrEqual(110)
     expect(container.querySelectorAll('.section-block .section-kicker')).toHaveLength(0)

@@ -23,22 +23,22 @@
       "rect": {
         "top": 145,
         "right": 1812,
-        "bottom": 416.15625,
+        "bottom": 375.65625,
         "left": 108,
         "width": 1704,
-        "height": 271.15625
+        "height": 230.65625
       },
       "clientWidth": 1704,
       "scrollWidth": 1704,
-      "clientHeight": 268,
-      "scrollHeight": 268
+      "clientHeight": 228,
+      "scrollHeight": 228
     },
     {
       "id": "scope",
       "rect": {
-        "top": 436.15625,
+        "top": 395.65625,
         "right": 1812,
-        "bottom": 513.28125,
+        "bottom": 472.78125,
         "left": 108,
         "width": 1704,
         "height": 77.125
@@ -51,92 +51,92 @@
     {
       "id": "problem",
       "rect": {
-        "top": 533.28125,
+        "top": 492.78125,
         "right": 522,
-        "bottom": 964.96875,
+        "bottom": 949.09375,
         "left": 108,
         "width": 414,
-        "height": 431.6875
+        "height": 456.3125
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 428,
-      "scrollHeight": 428
+      "clientHeight": 452,
+      "scrollHeight": 452
     },
     {
       "id": "applicability",
       "rect": {
-        "top": 980.96875,
+        "top": 965.09375,
         "right": 522,
         "bottom": 1259.484375,
         "left": 108,
         "width": 414,
-        "height": 278.515625
+        "height": 294.390625
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 275,
-      "scrollHeight": 275
+      "clientHeight": 290,
+      "scrollHeight": 290
     },
     {
       "id": "protocol",
       "rect": {
-        "top": 533.28125,
+        "top": 492.78125,
         "right": 1374,
-        "bottom": 964.96875,
+        "bottom": 949.09375,
         "left": 546,
         "width": 828,
-        "height": 431.6875
+        "height": 456.3125
       },
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 432,
-      "scrollHeight": 432
+      "clientHeight": 456,
+      "scrollHeight": 456
     },
     {
       "id": "local-tradeoff",
       "rect": {
-        "top": 980.96875,
+        "top": 965.09375,
         "right": 1374,
         "bottom": 1259.484375,
         "left": 546,
         "width": 828,
-        "height": 278.515625
+        "height": 294.390625
       },
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 275,
-      "scrollHeight": 275
+      "clientHeight": 290,
+      "scrollHeight": 290
     },
     {
       "id": "guidance-limitations",
       "rect": {
-        "top": 533.28125,
+        "top": 492.78125,
         "right": 1812,
-        "bottom": 964.96875,
+        "bottom": 949.09375,
         "left": 1398,
         "width": 414,
-        "height": 431.6875
+        "height": 456.3125
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 428,
-      "scrollHeight": 428
+      "clientHeight": 452,
+      "scrollHeight": 452
     },
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 980.96875,
+        "top": 965.09375,
         "right": 1812,
         "bottom": 1259.484375,
         "left": 1398,
         "width": 414,
-        "height": 278.515625
+        "height": 294.390625
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 275,
-      "scrollHeight": 275
+      "clientHeight": 290,
+      "scrollHeight": 290
     },
     {
       "id": "reproducibility",
@@ -192,61 +192,61 @@
     "left": [
       {
         "id": "problem",
-        "top": 533.28125,
+        "top": 492.78125,
         "right": 522,
-        "bottom": 964.96875,
+        "bottom": 949.09375,
         "left": 108,
         "width": 414,
-        "height": 431.6875
+        "height": 456.3125
       },
       {
         "id": "applicability",
-        "top": 980.96875,
+        "top": 965.09375,
         "right": 522,
         "bottom": 1259.484375,
         "left": 108,
         "width": 414,
-        "height": 278.515625
+        "height": 294.390625
       }
     ],
     "center": [
       {
         "id": "protocol",
-        "top": 533.28125,
+        "top": 492.78125,
         "right": 1374,
-        "bottom": 964.96875,
+        "bottom": 949.09375,
         "left": 546,
         "width": 828,
-        "height": 431.6875
+        "height": 456.3125
       },
       {
         "id": "local-tradeoff",
-        "top": 980.96875,
+        "top": 965.09375,
         "right": 1374,
         "bottom": 1259.484375,
         "left": 546,
         "width": 828,
-        "height": 278.515625
+        "height": 294.390625
       }
     ],
     "right": [
       {
         "id": "guidance-limitations",
-        "top": 533.28125,
+        "top": 492.78125,
         "right": 1812,
-        "bottom": 964.96875,
+        "bottom": 949.09375,
         "left": 1398,
         "width": 414,
-        "height": 431.6875
+        "height": 456.3125
       },
       {
         "id": "group-tradeoff",
-        "top": 980.96875,
+        "top": 965.09375,
         "right": 1812,
         "bottom": 1259.484375,
         "left": 1398,
         "width": 414,
-        "height": 278.515625
+        "height": 294.390625
       }
     ]
   },
@@ -254,81 +254,74 @@
     "header": {
       "top": 145,
       "right": 1812,
-      "bottom": 416.15625,
+      "bottom": 375.65625,
       "left": 108,
       "width": 1704,
-      "height": 271.15625
+      "height": 230.65625
     },
-    "strip": {
-      "top": 337.15625,
-      "right": 1812,
-      "bottom": 395.15625,
-      "left": 1449,
-      "width": 363,
-      "height": 58
+    "title": {
+      "top": 174,
+      "right": 1604,
+      "bottom": 287.65625,
+      "left": 316,
+      "width": 1288,
+      "height": 113.65625
     },
+    "titleAlign": "center",
     "logos": [
       {
         "id": "pwr",
-        "top": 337.15625,
-        "right": 1486,
-        "bottom": 395.15625,
-        "left": 1449,
-        "width": 37,
-        "height": 58,
+        "top": 179.828125,
+        "right": 242,
+        "bottom": 319.828125,
+        "left": 154,
+        "width": 88,
+        "height": 140,
         "objectFit": "contain"
       },
       {
         "id": "genwro",
-        "top": 349.15625,
-        "right": 1646,
-        "bottom": 383.15625,
-        "left": 1510,
-        "width": 136,
-        "height": 34,
+        "top": 192.328125,
+        "right": 1812,
+        "bottom": 237.328125,
+        "left": 1632,
+        "width": 180,
+        "height": 45,
         "objectFit": "contain"
       },
       {
         "id": "tooploox",
-        "top": 347.65625,
+        "top": 261.328125,
         "right": 1812,
-        "bottom": 384.65625,
-        "left": 1670,
-        "width": 142,
-        "height": 37,
+        "bottom": 307.328125,
+        "left": 1632,
+        "width": 180,
+        "height": 46,
         "objectFit": "contain"
       }
     ],
     "identityText": [
       {
         "top": 169,
-        "right": 1329.859375,
+        "right": 1570.921875,
         "bottom": 291.828125,
-        "left": 108,
+        "left": 349.0625,
         "width": 1221.859375,
         "height": 122.828125
       },
       {
-        "top": 305.65625,
-        "right": 726.328125,
-        "bottom": 331.65625,
-        "left": 108,
-        "width": 618.328125,
-        "height": 26
-      },
-      {
-        "top": 349.15625,
-        "right": 627.296875,
-        "bottom": 366.15625,
-        "left": 108,
+        "top": 308.65625,
+        "right": 1219.640625,
+        "bottom": 325.65625,
+        "left": 700.34375,
         "width": 519.296875,
         "height": 17
       },
       {
-        "top": 376.15625,
-        "right": 508.5,
-        "bottom": 392.15625,
-        "left": 108,
+        "top": 335.65625,
+        "right": 1160.25,
+        "bottom": 351.65625,
+        "left": 759.75,
         "width": 400.5,
         "height": 16
       }
@@ -342,37 +335,37 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:58674/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:59002/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:58674/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:59002/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:58674/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:59002/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:58674/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:59002/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:58674/architecture.bded2544.png",
+      "src": "http://127.0.0.1:59002/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:58674/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:59002/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:58674/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:59002/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

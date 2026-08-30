@@ -15,7 +15,7 @@
       "owner": "header",
       "order": 1,
       "heading": "CEL: Comprehensive Counterfactual Explanations Library and Benchmark",
-      "copy": ["One protocol. Multiple CE paradigms. Measurable trade-offs."],
+      "copy": [],
       "claimIds": ["scope.protocol", "conclusion.tradeoffs"],
       "sourceCitations": ["manuscript/main_lncs.tex#Benchmark", "manuscript/main_lncs.tex#Conclusions"],
       "linkIds": [],

@@ -8,9 +8,11 @@ import { BrandStrip } from './components/poster/BrandStrip'
 
 describe('reference poster logos', () => {
   it('preserves all three supplied logo files byte for byte', () => {
-    const { container } = render(<BrandStrip />)
+    const { container } = render(<><BrandStrip side="left" /><BrandStrip side="right" /></>)
     expect(brands.assets.map((asset) => asset.id)).toEqual(['pwr', 'genwro', 'tooploox'])
     expect(container.querySelectorAll('img')).toHaveLength(3)
+    expect(Array.from(container.querySelectorAll('[data-brand-side="left"] img')).map((image) => image.getAttribute('data-brand-id'))).toEqual(['pwr'])
+    expect(Array.from(container.querySelectorAll('[data-brand-side="right"] img')).map((image) => image.getAttribute('data-brand-id'))).toEqual(['genwro', 'tooploox'])
     for (const brand of brands.assets) {
       const bytes = readFileSync(path.resolve(process.cwd(), '../..', brand.localFile))
       expect(createHash('sha256').update(bytes).digest('hex')).toBe(brand.sha256)

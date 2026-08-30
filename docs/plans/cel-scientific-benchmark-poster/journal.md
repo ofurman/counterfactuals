@@ -99,3 +99,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: `ce-example.json` records the invented profiles and affordability rule separately from manuscript evidence. Tests confirm both changed features are actionable, the other four are unchanged, and neither single change alone flips the stated example prediction. Source mappings and the existing sparsity caveat remain available in metadata; no sparsity ranking was added.
 **Problems**: Initial table spacing clipped the change-count summary; reduced cell padding without shrinking text. The first PDF annotation scan also matched the word “source” inside “open-source”; narrowed it to source-label punctuation and reran the complete pipeline successfully.
 **Commit**: `this commit` (`feat(poster): refine multi-feature counterfactual example`)
+
+## 2026-08-30 13:19 -- Post-plan revision: Centered title and split header logos -- DONE
+**Did**: Centered the exact manuscript title and author block between equal-width logo columns. Placed PWr on the left and genwro.AI above Tooploox on the right. Removed the requested subtitle from the visible poster and content contract; preserved all evidence panels and the contribution QR.
+**Verification**: `pnpm run verify:all` passed 31 source-backed claims, 15/15 tests, exact manuscript title, centered-title geometry, logo ordering and non-overlap, offline loading, one-page A0 PDF, and package audits. Manual SHA-256 checks passed all three deliverables; `git diff --check` passed. REPORT heading+copy words=73/110; visible words=187/260; required remote requests=0. Final PDF-derived preview visually inspected without clipping.
+**Provenance**: Logo assets remain byte-identical to the supplied reference poster. Browser geometry checks verify the title midpoint matches the header midpoint and the right-side logos share a center line. PDF text extraction checks the removed subtitle is absent; package verification binds the preview to the current PDF.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): center title and arrange header logos`)
