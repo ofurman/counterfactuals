@@ -76,6 +76,8 @@ const report = await withPosterPage(async ({ page, failures }) => {
       localMetricPanels: [...document.querySelectorAll('.local-metric-window')].map((element) => ({ metric: element.dataset.metric, crop: element.dataset.crop.split(' ').map(Number), viewport: rect(element), image: rect(element.querySelector('img')) })),
       rasterChartLabels: 'Embedded manuscript labels; reviewed visually, not measured as DOM text.',
       scopeItems: [...document.querySelectorAll('.scope-tile')].map(rect),
+      centerHeadingCount: document.querySelectorAll('.poster-column--center h2').length,
+      scopeTopBorderWidth: getComputedStyle(document.querySelector('.scope-strip')).borderTopWidth,
       branding: {
         header: rect(document.querySelector('.poster-header')),
         title: rect(document.querySelector('.header-copy h1')),
@@ -99,6 +101,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   })
 
   const failuresFound = [...failures]
+  if (screen.centerHeadingCount !== 0 || screen.scopeTopBorderWidth !== '0px') failuresFound.push('Removed center-column headings or divider remain')
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')

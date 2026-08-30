@@ -30,6 +30,7 @@ export type PosterSection = {
   owner: 'header' | 'left' | 'center' | 'right' | 'bottom' | 'footer'
   order: number
   heading: string
+  showHeading?: boolean
   copy: string[]
   claimIds: string[]
   sourceCitations: string[]

@@ -4,10 +4,12 @@ import { SourceNote } from './SourceNote'
 
 export function ScopeStrip({ section }: { section: ResolvedSection }) {
   return (
-    <section className="scope-strip" data-section={section.id} aria-labelledby={`${section.id}-heading`}>
-      <div>
+    <section className="scope-strip" data-section={section.id}
+      aria-labelledby={section.showHeading === false ? undefined : `${section.id}-heading`}
+      aria-label={section.showHeading === false ? section.heading : undefined}>
+      {section.showHeading !== false && <div>
         <h2 id={`${section.id}-heading`}>{section.heading}</h2>
-      </div>
+      </div>}
       <ul className="scope-tiles" data-result-surface="scope">
         {posterData.scopeFacts.map((fact) => (
           <li className="scope-tile" key={fact.claimId} data-claim-id={fact.claimId}>

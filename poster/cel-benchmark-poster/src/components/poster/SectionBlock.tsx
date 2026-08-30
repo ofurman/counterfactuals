@@ -16,9 +16,10 @@ export function SectionBlock({ section, className = '', children, showClaims = t
     <Element
       className={`section-block ${className}`.trim()}
       data-section={section.id}
-      aria-labelledby={`${section.id}-heading`}
+      aria-labelledby={section.showHeading === false ? undefined : `${section.id}-heading`}
+      aria-label={section.showHeading === false ? section.heading : undefined}
     >
-      <Heading id={`${section.id}-heading`}>{section.heading}</Heading>
+      {section.showHeading !== false && <Heading id={`${section.id}-heading`}>{section.heading}</Heading>}
       {section.copy.map((paragraph) => <p className="section-copy" key={paragraph}>{paragraph}</p>)}
       {showClaims && section.claims.length > 0 && (
         <ul className="claim-list">

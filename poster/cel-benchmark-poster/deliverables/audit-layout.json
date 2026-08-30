@@ -53,30 +53,30 @@
       "rect": {
         "top": 375,
         "right": 1229.578125,
-        "bottom": 784.546875,
+        "bottom": 748.234375,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 409.546875
+        "height": 373.234375
       },
       "clientWidth": 712,
       "scrollWidth": 712,
-      "clientHeight": 410,
-      "scrollHeight": 410
+      "clientHeight": 373,
+      "scrollHeight": 373
     },
     {
       "id": "scope",
       "rect": {
-        "top": 800.546875,
+        "top": 764.234375,
         "right": 1229.578125,
-        "bottom": 1257.515625,
+        "bottom": 1150.703125,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 456.96875
+        "height": 386.46875
       },
       "clientWidth": 712,
       "scrollWidth": 712,
-      "clientHeight": 454,
-      "scrollHeight": 454
+      "clientHeight": 386,
+      "scrollHeight": 386
     },
     {
       "id": "results",
@@ -205,17 +205,17 @@
   "canvasTopBorderWidth": "0px",
   "architecture": {
     "viewport": {
-      "top": 421.3125,
+      "top": 385,
       "right": 1229.578125,
-      "bottom": 784.546875,
+      "bottom": 748.234375,
       "left": 517.109375,
       "width": 712.46875,
       "height": 363.234375
     },
     "image": {
-      "top": 404.96875,
+      "top": 368.65625,
       "right": 1282.140625,
-      "bottom": 834.1875,
+      "bottom": 797.875,
       "left": 464.5625,
       "width": 817.578125,
       "height": 429.21875
@@ -243,19 +243,19 @@
         "id": "protocol",
         "top": 375,
         "right": 1229.578125,
-        "bottom": 784.546875,
+        "bottom": 748.234375,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 409.546875
+        "height": 373.234375
       },
       {
         "id": "scope",
-        "top": 800.546875,
+        "top": 764.234375,
         "right": 1229.578125,
-        "bottom": 1257.515625,
+        "bottom": 1150.703125,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 456.96875
+        "height": 386.46875
       }
     ],
     "right": [
@@ -439,38 +439,40 @@
   "rasterChartLabels": "Embedded manuscript labels; reviewed visually, not measured as DOM text.",
   "scopeItems": [
     {
-      "top": 871.046875,
+      "top": 764.234375,
       "right": 867.34375,
-      "bottom": 1079.828125,
+      "bottom": 973.015625,
       "left": 517.109375,
       "width": 350.234375,
       "height": 208.78125
     },
     {
-      "top": 871.046875,
+      "top": 764.234375,
       "right": 1229.578125,
-      "bottom": 1079.828125,
+      "bottom": 973.015625,
       "left": 879.34375,
       "width": 350.234375,
       "height": 208.78125
     },
     {
-      "top": 1091.828125,
+      "top": 985.015625,
       "right": 867.34375,
-      "bottom": 1257.515625,
+      "bottom": 1150.703125,
       "left": 517.109375,
       "width": 350.234375,
       "height": 165.6875
     },
     {
-      "top": 1091.828125,
+      "top": 985.015625,
       "right": 1229.578125,
-      "bottom": 1257.515625,
+      "bottom": 1150.703125,
       "left": 879.34375,
       "width": 350.234375,
       "height": 165.6875
     }
   ],
+  "centerHeadingCount": 0,
+  "scopeTopBorderWidth": "0px",
   "branding": {
     "header": {
       "top": 135,
@@ -576,67 +578,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:61374/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:61628/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:61374/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:61628/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:61374/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:61628/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:61374/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:61628/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:61374/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:61628/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:61374/architecture.bded2544.png",
+      "src": "http://127.0.0.1:61628/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61374/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:61628/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61374/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:61628/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

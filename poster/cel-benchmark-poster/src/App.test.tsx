@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 import { posterData } from './data/posterData'
@@ -56,5 +56,14 @@ describe('poster scaffold', () => {
     expect(container.querySelector('.scope-strip [data-claim-id="scope.metrics"] h3')?.textContent).toBe('9classification metrics')
     expect(container.querySelector('.scope-strip [data-claim-id="scope.folds"]')).toBeNull()
     expect(container.querySelector('.scope-strip')?.textContent).not.toMatch(/5folds|3paradigms/)
+  })
+
+  it('omits center-column headings but keeps accessible section names', () => {
+    const { container } = render(<App />)
+    expect(container.querySelectorAll('.poster-column--center h2')).toHaveLength(0)
+    for (const name of ['One evaluation framework', 'Benchmark scope']) {
+      expect(within(container).queryByText(name)).not.toBeInTheDocument()
+      expect(within(container).getByRole('region', { name })).toBeInTheDocument()
+    }
   })
 })

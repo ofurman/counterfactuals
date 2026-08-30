@@ -27,6 +27,8 @@ path, not a dump of manuscript sections or a full result table.
 
 ## Center — framework and benchmark scope
 
+**Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.
+
 1. Use the manuscript architecture figure at readable scale: crop its outer whitespace, enlarge it to the center-column width, and omit the repeated caption and panel background. Preserve all schema content: Data Module and Model Module feed the Explanation Engine, then the Metrics Orchestrator and counterfactual reports. <!-- claims: scope.protocol, scope.methods, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
 2. The architecture must make the benchmark surface explicit: local, global, and group-wise CEs share data, models, constraints, and metrics. <!-- claims: scope.methods, contribution.protocol | sources: manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Introduction -->
 3. **Scope tiles below the framework:** name the full dataset and method inventories, task-specific backbones, and classification-table metrics in a compact two-by-two grid. Group methods into local, global, and group-wise lists. Remove standalone folds and paradigm-count tiles. Include runtime among metrics and count proximity variants once. All displayed names resolve to the manuscript-derived claim inventory. <!-- claims: scope.datasets, scope.methods, scope.backbones, scope.metrics | sources: manuscript/main_lncs.tex#Datasets, manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Models, manuscript/supplementary.tex#app:full_results, manuscript/tables/results_categorical.tex#tab:cat_metrics_mlp -->
