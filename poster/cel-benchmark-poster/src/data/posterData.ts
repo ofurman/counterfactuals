@@ -22,6 +22,7 @@ export type Claim = {
   direction: string
   qualifier: string
   status: 'publishable' | 'qualified' | 'contradictory'
+  inventory?: { label: string; names: string[] }[]
 }
 
 export type PosterSection = {
@@ -52,6 +53,12 @@ export function resolveSection(sectionId: string): ResolvedSection {
   const section = sections.find((candidate) => candidate.id === sectionId)
   if (!section) throw new Error(`Unknown poster section: ${sectionId}`)
   return { ...section, claims: section.claimIds.map(resolveClaim) }
+}
+
+function scopeInventory(claimId: string) {
+  const inventory = resolveClaim(claimId).inventory
+  if (!inventory?.length) throw new Error(`Missing named scope inventory: ${claimId}`)
+  return inventory
 }
 
 export function claimDisplay(claimId: string): string {
@@ -94,7 +101,6 @@ const protocolControls = protocolClaim.posterWording
 const datasetScope = resolveClaim('scope.datasets').value as Extract<ClaimValue, { kind: 'finite' }>
 const methodScope = resolveClaim('scope.methods').value as Extract<ClaimValue, { kind: 'finite' }>
 const backboneScope = resolveClaim('scope.backbones').value as Extract<ClaimValue, { kind: 'finite' }>
-const foldScope = resolveClaim('scope.folds').value as Extract<ClaimValue, { kind: 'finite' }>
 const metricScope = resolveClaim('scope.metrics').value as Extract<ClaimValue, { kind: 'finite' }>
 
 export const posterData = {
@@ -117,15 +123,9 @@ export const posterData = {
     controls: protocolControls,
   },
   scopeFacts: [
-    { claimId: 'scope.datasets', value: datasetScope.total, label: 'datasets' },
-    { claimId: 'scope.methods', value: methodScope.total, label: 'methods' },
-    {
-      claimId: 'scope.methods',
-      value: ['local', 'global', 'groupWise'].filter((key) => typeof methodScope[key] === 'number').length,
-      label: 'paradigms',
-    },
-    { claimId: 'scope.backbones', value: backboneScope.total, label: 'backbones / task' },
-    { claimId: 'scope.folds', value: foldScope.total, label: 'folds' },
-    { claimId: 'scope.metrics', value: metricScope.total, label: 'classification metrics' },
+    { claimId: 'scope.datasets', value: datasetScope.total, label: 'datasets', inventory: scopeInventory('scope.datasets') },
+    { claimId: 'scope.methods', value: methodScope.total, label: 'methods', inventory: scopeInventory('scope.methods') },
+    { claimId: 'scope.backbones', value: backboneScope.total, label: 'backbones / task', inventory: scopeInventory('scope.backbones') },
+    { claimId: 'scope.metrics', value: metricScope.total, label: 'classification metrics', inventory: scopeInventory('scope.metrics') },
   ],
 } as const

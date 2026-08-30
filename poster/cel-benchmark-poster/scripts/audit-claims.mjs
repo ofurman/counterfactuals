@@ -51,7 +51,11 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
       isResult: Boolean(document.querySelector('.ce-example[data-result-surface], .ce-example[data-finding], .ce-example[data-manuscript-source]')),
     },
     hasRegression: Boolean(document.querySelector('[data-section="regression-tradeoff"], [data-finding="regression"]')),
-    scope: [...document.querySelectorAll('.scope-strip li')].map((element) => ({ id: element.getAttribute('data-claim-id'), text: element.textContent?.trim() ?? '' })),
+    scope: [...document.querySelectorAll('.scope-tile')].map((element) => ({
+      id: element.getAttribute('data-claim-id'),
+      text: element.querySelector('.scope-tile__heading')?.textContent?.trim() ?? '',
+      inventory: [...element.querySelectorAll('[data-scope-group]')].map((group) => ({ label: group.dataset.scopeGroup, names: [...group.querySelectorAll('[data-scope-name]')].map((name) => name.textContent) })),
+    })),
     manuscriptFigures: [...document.querySelectorAll('[data-manuscript-source]')].map((element) => ({
       source: element.getAttribute('data-manuscript-source'),
       alt: element.querySelector('img')?.getAttribute('alt') ?? '',
@@ -72,12 +76,10 @@ for (const marker of rendered.claims) {
 const expectedScope = [
   ['scope.datasets', claimsById.get('scope.datasets').value.total, 'datasets'],
   ['scope.methods', claimsById.get('scope.methods').value.total, 'methods'],
-  ['scope.methods', ['local', 'global', 'groupWise'].filter((key) => Number.isFinite(claimsById.get('scope.methods').value[key])).length, 'paradigms'],
   ['scope.backbones', claimsById.get('scope.backbones').value.total, 'backbones / task'],
-  ['scope.folds', claimsById.get('scope.folds').value.total, 'folds'],
   ['scope.metrics', claimsById.get('scope.metrics').value.total, 'classification metrics'],
 ]
-if (JSON.stringify(rendered.scope) !== JSON.stringify(expectedScope.map(([id, value, label]) => ({ id, text: `${value}${label}` })))) throw new Error('Rendered scope facts do not match the generated ledger')
+if (JSON.stringify(rendered.scope) !== JSON.stringify(expectedScope.map(([id, value, label]) => ({ id, text: `${value}${label}`, inventory: claimsById.get(id).inventory })))) throw new Error('Rendered scope tiles and named inventories do not match the generated ledger')
 const allowedSources = new Set(content.sections.flatMap((section) => section.sourceCitations))
 for (const source of rendered.sources) if (!allowedSources.has(source) && !source.endsWith('#Related Works')) throw new Error(`Rendered unknown source citation: ${source}`)
 const allowedLinks = new Set(Object.values(identity.links))

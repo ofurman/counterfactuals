@@ -8,11 +8,20 @@ export function ScopeStrip({ section }: { section: ResolvedSection }) {
       <div>
         <h2 id={`${section.id}-heading`}>{section.heading}</h2>
       </div>
-      <ul data-result-surface="scope">
+      <ul className="scope-tiles" data-result-surface="scope">
         {posterData.scopeFacts.map((fact) => (
-          <li key={`${fact.claimId}-${fact.label}`} data-claim-id={fact.claimId}>
-            <strong>{fact.value}</strong>
-            <span>{fact.label}</span>
+          <li className="scope-tile" key={fact.claimId} data-claim-id={fact.claimId}>
+            <h3 className="scope-tile__heading"><strong>{fact.value}</strong><span>{fact.label}</span></h3>
+            <div className="scope-tile__inventory">
+              {fact.inventory.map((group) => (
+                <p key={group.label} data-scope-group={group.label}>
+                  {group.label && <b>{group.label}</b>}
+                  {group.names.map((name, index) => (
+                    <span key={name}>{index > 0 && ' · '}<span data-scope-name>{name}</span></span>
+                  ))}
+                </p>
+              ))}
+            </div>
           </li>
         ))}
       </ul>

@@ -35,7 +35,12 @@ if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')
 for (const expected of ['Loan application example', 'Age', 'Employment', 'Credit history', 'Loan amount', 'Monthly income', 'Monthly debt', 'Original', 'Counterfactual', 'Declined', 'Approved', 'Only 2 of 6 features change.']) if (!normalizedText.toLowerCase().includes(expected.toLowerCase())) throw new Error(`PDF is missing the applicant comparison: ${expected}`)
 if (/\bSource\s*[·:]|\btoy\b|not benchmark data|Sparsity direction unresolved|Benchmark context/i.test(normalizedText)) throw new Error('Removed source or disclaimer text remains in the PDF')
-if (/Regression:|CEARM|Wachter/.test(normalizedText)) throw new Error('Removed regression results remain in the PDF')
+if (/Regression:/.test(normalizedText)) throw new Error('Removed regression result section remains in the PDF')
+if (/\b5\s+folds\b|\b3\s+paradigms\b/i.test(normalizedText)) throw new Error('Removed folds or paradigms tiles remain in the PDF')
+const scopeClaims = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/claims/claims.generated.json'), 'utf8')).claims;
+for (const claim of scopeClaims.filter((claim) => claim.inventory)) {
+  for (const name of claim.inventory.flatMap((group) => group.names)) if (!normalizedText.includes(name)) throw new Error(`PDF is missing named scope item: ${name}`)
+}
 const pngSignature = await readFile(reviewPath).then((bytes) => bytes.subarray(0, 8).toString('hex'))
 if (pngSignature !== '89504e470d0a1a0a') throw new Error('PDF-derived preview is not a PNG')
 console.log(info.stdout.trim())

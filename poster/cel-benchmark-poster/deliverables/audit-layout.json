@@ -66,17 +66,17 @@
     {
       "id": "scope",
       "rect": {
-        "top": 808.546875,
+        "top": 800.546875,
         "right": 1229.578125,
-        "bottom": 1041.828125,
+        "bottom": 1257.515625,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 233.28125
+        "height": 456.96875
       },
       "clientWidth": 712,
       "scrollWidth": 712,
-      "clientHeight": 230,
-      "scrollHeight": 230
+      "clientHeight": 454,
+      "scrollHeight": 454
     },
     {
       "id": "results",
@@ -250,12 +250,12 @@
       },
       {
         "id": "scope",
-        "top": 808.546875,
+        "top": 800.546875,
         "right": 1229.578125,
-        "bottom": 1041.828125,
+        "bottom": 1257.515625,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 233.28125
+        "height": 456.96875
       }
     ],
     "right": [
@@ -439,52 +439,36 @@
   "rasterChartLabels": "Embedded manuscript labels; reviewed visually, not measured as DOM text.",
   "scopeItems": [
     {
-      "top": 883.046875,
-      "right": 742.59375,
-      "bottom": 951.4375,
+      "top": 871.046875,
+      "right": 867.34375,
+      "bottom": 1079.828125,
       "left": 517.109375,
-      "width": 225.484375,
-      "height": 68.390625
+      "width": 350.234375,
+      "height": 208.78125
     },
     {
-      "top": 883.046875,
-      "right": 986.078125,
-      "bottom": 951.4375,
-      "left": 760.59375,
-      "width": 225.484375,
-      "height": 68.390625
+      "top": 871.046875,
+      "right": 1229.578125,
+      "bottom": 1079.828125,
+      "left": 879.34375,
+      "width": 350.234375,
+      "height": 208.78125
     },
     {
-      "top": 883.046875,
-      "right": 1229.5625,
-      "bottom": 951.4375,
-      "left": 1004.078125,
-      "width": 225.484375,
-      "height": 68.390625
-    },
-    {
-      "top": 973.4375,
-      "right": 742.59375,
-      "bottom": 1041.828125,
+      "top": 1091.828125,
+      "right": 867.34375,
+      "bottom": 1257.515625,
       "left": 517.109375,
-      "width": 225.484375,
-      "height": 68.390625
+      "width": 350.234375,
+      "height": 165.6875
     },
     {
-      "top": 973.4375,
-      "right": 986.078125,
-      "bottom": 1041.828125,
-      "left": 760.59375,
-      "width": 225.484375,
-      "height": 68.390625
-    },
-    {
-      "top": 973.4375,
-      "right": 1229.5625,
-      "bottom": 1041.828125,
-      "left": 1004.078125,
-      "width": 225.484375,
-      "height": 68.390625
+      "top": 1091.828125,
+      "right": 1229.578125,
+      "bottom": 1257.515625,
+      "left": 879.34375,
+      "width": 350.234375,
+      "height": 165.6875
     }
   ],
   "branding": {
@@ -592,67 +576,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:61039/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:61374/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:61039/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:61374/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:61039/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:61374/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:61039/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:61374/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:61039/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:61374/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:61039/architecture.bded2544.png",
+      "src": "http://127.0.0.1:61374/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61039/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:61374/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61374/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61039/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:61374/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

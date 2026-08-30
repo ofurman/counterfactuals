@@ -325,6 +325,7 @@ export async function buildClaims() {
   if (!backboneCount) throw new Error(`Unsupported predictive backbone count: ${backboneScope[1]}`);
   const methodTable = tableBlock(main, "tab:methods");
   const methodCategoryCounts = {Local: 0, Global: 0, "Group-wise": 0};
+  const methodNamesByCategory = {Local: [], Global: [], "Group-wise": []};
   let currentMethodCategory = null;
   for (const rawLine of methodTable.split("\n")) {
     const line = rawLine.trim();
@@ -332,6 +333,7 @@ export async function buildClaims() {
     if (category) currentMethodCategory = category;
     if (currentMethodCategory && line.includes("&") && /\\cite\{/.test(line)) {
       methodCategoryCounts[currentMethodCategory] += 1;
+      methodNamesByCategory[currentMethodCategory].push(cleanTex(line.split('&')[1]));
     }
   }
   if (!methodCategoryCounts.Local || !methodCategoryCounts.Global || !methodCategoryCounts["Group-wise"]) {
@@ -349,6 +351,24 @@ export async function buildClaims() {
     );
   }
   const foldCount = Number(foldScope[1]);
+  const creditDatasetName = requireMatch(supplementary, /German Credit, ([A-Za-z ]+), Law, and Lending Club/, 'Give Me Some Credit dataset name')[1].trim();
+  const datasetNames = tableBlock(main, 'tab:datasets_complete').split('\n')
+    .filter((line) => /&\s*(?:Clf\.|Regr\.)\s*&/.test(line))
+    .map((line) => cleanTex(line.split('&')[0].replace(/\\cite\{[^}]+\}/g, '')).replace(/^GMC$/, creditDatasetName));
+  if (datasetNames.length !== datasetCounts.total || new Set(datasetNames).size !== datasetCounts.total) throw new Error('Dataset names do not match the declared scope');
+  const classificationBackbones = requireMatch(main, /Classification Models:\} The library includes implementations of ([^.]+)\./, 'classification backbone names')[1].split(',').map((name) => name.trim());
+  const regressionBackbones = requireMatch(main, /For continuous target variables, CEL provides ([^.]+) models\./, 'continuous-target backbone names')[1].split(' and ').map((name) => name.trim());
+  if (classificationBackbones.length !== backboneCount || regressionBackbones.length !== backboneCount) throw new Error('Named backbones do not match the per-task count');
+  const metricNames = {
+    coverage: 'Coverage', validity: 'Validity', sparsity: 'Sparsity',
+    probabilistic_plausibility: 'Prob. plausibility', log_density: 'Log-density',
+    lof: 'LOF', isolation_forest: 'Isolation Forest',
+    l2_hamming: 'Proximity (L2 / L2-Hamming)', time_s: 'Runtime',
+  };
+  const classificationMetricNames = Object.keys(parsedTables['tab:cat_metrics_mlp'][0].metrics).map((key) => {
+    if (!metricNames[key]) throw new Error(`No display name for classification metric ${key}`);
+    return metricNames[key];
+  });
   const classificationMetricCount = Object.keys(parsedTables['tab:cat_metrics_mlp'][0].metrics).length;
   for (const [label, , kind] of tableDefinitions) {
     if (kind === 'classification' && parsedTables[label].some((row) => Object.keys(row.metrics).length !== classificationMetricCount)) throw new Error(`Inconsistent reported metric count in ${label}`);
@@ -371,6 +391,7 @@ export async function buildClaims() {
     },
     {
       id: "scope.datasets",
+      inventory: [{label: '', names: datasetNames}],
       claimKind: "scope-count",
       posterWording: `${datasetCounts.total} datasets: ${datasetCounts.classification} classification + ${datasetCounts.regression} regression`,
       value: {kind: "finite", classification: datasetCounts.classification, regression: datasetCounts.regression, total: datasetCounts.total},
@@ -384,6 +405,7 @@ export async function buildClaims() {
     },
     {
       id: "scope.methods",
+      inventory: Object.entries(methodNamesByCategory).map(([label, names]) => ({label, names})),
       claimKind: "scope-count",
       posterWording: `${declaredMethodTotal} methods across local, global, and group-wise explanations`,
       value: {kind: "finite", total: declaredMethodTotal, local: methodCategoryCounts.Local, global: methodCategoryCounts.Global, groupWise: methodCategoryCounts["Group-wise"]},
@@ -410,6 +432,7 @@ export async function buildClaims() {
     },
     {
       id: "scope.backbones",
+      inventory: [{label: 'Classification', names: classificationBackbones}, {label: 'Continuous targets', names: regressionBackbones}],
       claimKind: "scope-count",
       posterWording: `${backboneCount} predictive backbones per task type`,
       value: {kind: "finite", total: backboneCount},
@@ -423,6 +446,7 @@ export async function buildClaims() {
     },
     {
       id: "scope.metrics",
+      inventory: [{label: '', names: classificationMetricNames}],
       claimKind: "scope-count",
       posterWording: `${classificationMetricCount} classification metrics`,
       value: {kind: "finite", total: classificationMetricCount},

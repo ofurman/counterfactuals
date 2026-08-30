@@ -234,6 +234,7 @@ for (const [id, owner] of [["problem", "left"], ["applicability", "right"], ["pr
 }
 const scopeSection = content.sections.find((section) => section.id === 'scope');
 if (!scopeSection.claimIds.includes('scope.metrics') || scopeSection.order <= content.sections.find((section) => section.id === 'protocol').order) fail('Scope with the reported metric count must follow the evaluation framework');
+if (JSON.stringify(scopeSection.claimIds) !== JSON.stringify(['scope.datasets', 'scope.methods', 'scope.backbones', 'scope.metrics'])) fail('Scope must contain only the four named inventory tiles');
 const resultsSection = content.sections.find((section) => section.id === 'results');
 if (resultsSection.heading !== 'Results' || resultsSection.order >= content.sections.find((section) => section.id === 'guidance-limitations').order) fail('Unified Results must precede contributions');
 for (const id of ['result.global.overview', 'result.local.overview', 'result.group.overview']) if (!resultsSection.claimIds.includes(id)) fail(`Unified Results lacks ${id}`);

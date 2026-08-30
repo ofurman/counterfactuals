@@ -75,7 +75,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       resultCaptionCount: document.querySelectorAll('.result-manuscript-figure figcaption').length,
       localMetricPanels: [...document.querySelectorAll('.local-metric-window')].map((element) => ({ metric: element.dataset.metric, crop: element.dataset.crop.split(' ').map(Number), viewport: rect(element), image: rect(element.querySelector('img')) })),
       rasterChartLabels: 'Embedded manuscript labels; reviewed visually, not measured as DOM text.',
-      scopeItems: [...document.querySelectorAll('.scope-strip li')].map(rect),
+      scopeItems: [...document.querySelectorAll('.scope-tile')].map(rect),
       branding: {
         header: rect(document.querySelector('.poster-header')),
         title: rect(document.querySelector('.header-copy h1')),
@@ -91,7 +91,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       images: [...document.images].map((image) => ({ src: image.currentSrc || image.src, complete: image.complete, naturalWidth: image.naturalWidth })),
       fonts: { status: document.fonts.status },
       minimumFontPx: {
-        body: minimum('.section-copy'),
+        body: minimum('.section-copy, .scope-tile__inventory'),
         caption: minimum('.source-note, figcaption'),
         resultHeading: minimum('.result-panel h3'),
       },
@@ -126,7 +126,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
     if (Math.abs(panel.image.width - 1400 * scale) > 1 || Math.abs(panel.image.height - 1101 * scale) > 1 || Math.abs(panel.viewport.left - panel.image.left - x * scale) > 1 || Math.abs(panel.viewport.top - panel.image.top - y * scale) > 1 || Math.abs(panel.viewport.height - height * scale) > 1) failuresFound.push(`${panel.metric} crop is stretched or has incorrect source geometry`)
   }
   if (screen.localMetricPanels.slice(0, 3).some((panel) => Math.abs(panel.viewport.top - screen.localMetricPanels[0].viewport.top) > 1) || screen.localMetricPanels.slice(3).some((panel) => Math.abs(panel.viewport.top - screen.localMetricPanels[3].viewport.top) > 1) || screen.localMetricPanels[0].viewport.bottom >= screen.localMetricPanels[3].viewport.top) failuresFound.push('Local metric panels must occupy two rows without overlap')
-  if (screen.scopeItems.length !== 6 || screen.scopeItems.slice(0, 3).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(3).some((item) => Math.abs(item.top - screen.scopeItems[3].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[3].top) failuresFound.push('Benchmark scope must be a two-row, three-column facts grid')
+  if (screen.scopeItems.length !== 4 || screen.scopeItems.slice(0, 2).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(2).some((item) => Math.abs(item.top - screen.scopeItems[2].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[2].top) failuresFound.push('Benchmark scope must be a two-by-two named tile grid')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const logo of screen.branding.logos) {
     if (logo.width <= 0 || logo.height <= 0 || logo.objectFit !== 'contain') failuresFound.push(`${logo.id} logo is missing or distorted`)

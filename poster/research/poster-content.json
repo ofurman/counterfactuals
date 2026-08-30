@@ -38,7 +38,7 @@
       "order": 4,
       "heading": "Benchmark scope",
       "copy": [],
-      "claimIds": ["scope.datasets", "scope.methods", "scope.backbones", "scope.folds", "scope.metrics"],
+      "claimIds": ["scope.datasets", "scope.methods", "scope.backbones", "scope.metrics"],
       "sourceCitations": ["manuscript/main_lncs.tex#Datasets", "manuscript/main_lncs.tex#Methods", "manuscript/supplementary.tex#Full-Results", "manuscript/tables/results_categorical.tex#tab:cat_metrics_mlp"],
       "linkIds": [],
       "assetRoles": ["scope-strip"]

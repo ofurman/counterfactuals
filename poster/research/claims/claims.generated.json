@@ -30,6 +30,31 @@
     },
     {
       "id": "scope.datasets",
+      "inventory": [
+        {
+          "label": "",
+          "names": [
+            "Adult Census",
+            "Audit",
+            "Bank Marketing",
+            "Blobs",
+            "Credit Default",
+            "Digits",
+            "German Credit",
+            "Give Me Some Credit",
+            "HELOC",
+            "Law",
+            "Lending Club",
+            "Moons",
+            "Wine",
+            "Synthetic",
+            "Concrete",
+            "Diabetes",
+            "Yacht",
+            "SCM20D"
+          ]
+        }
+      ],
       "claimKind": "scope-count",
       "posterWording": "18 datasets: 13 classification + 5 regression",
       "value": {
@@ -51,6 +76,37 @@
     },
     {
       "id": "scope.methods",
+      "inventory": [
+        {
+          "label": "Local",
+          "names": [
+            "Wachter",
+            "Artelt",
+            "DiCE",
+            "CCHVAE",
+            "PPCEF",
+            "CEM",
+            "CEGP",
+            "CADEX",
+            "SACE",
+            "CEARM"
+          ]
+        },
+        {
+          "label": "Global",
+          "names": [
+            "AReS",
+            "GLOBE-CE"
+          ]
+        },
+        {
+          "label": "Group-wise",
+          "names": [
+            "GLANCE",
+            "T-CREx"
+          ]
+        }
+      ],
       "claimKind": "scope-count",
       "posterWording": "14 methods across local, global, and group-wise explanations",
       "value": {
@@ -91,6 +147,22 @@
     },
     {
       "id": "scope.backbones",
+      "inventory": [
+        {
+          "label": "Classification",
+          "names": [
+            "Multi-Layer Perceptrons (MLP)",
+            "Logistic Regression"
+          ]
+        },
+        {
+          "label": "Continuous targets",
+          "names": [
+            "Linear Regression",
+            "MLP Regressor"
+          ]
+        }
+      ],
       "claimKind": "scope-count",
       "posterWording": "2 predictive backbones per task type",
       "value": {
@@ -110,6 +182,22 @@
     },
     {
       "id": "scope.metrics",
+      "inventory": [
+        {
+          "label": "",
+          "names": [
+            "Coverage",
+            "Validity",
+            "Sparsity",
+            "Prob. plausibility",
+            "Log-density",
+            "LOF",
+            "Isolation Forest",
+            "Proximity (L2 / L2-Hamming)",
+            "Runtime"
+          ]
+        }
+      ],
       "claimKind": "scope-count",
       "posterWording": "9 classification metrics",
       "value": {
