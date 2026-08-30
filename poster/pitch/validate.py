@@ -150,7 +150,6 @@ def main():
         "No single winner",
         "Validity and failures",
         "Reach versus change",
-        "Plausibility: log-density",
         "1 AReS · 2 GLOBE-CE",
         "3 GLANCE (one group)",
         "18",
@@ -163,6 +162,7 @@ def main():
     ]:
         assert phrase in text, phrase
     assert "Wrocław University of Science and Technology" not in text
+    assert "Plausibility: log-density" not in text
     for author in identity["authors"]:
         assert author["name"] in text
     with Image.open(OUTPUT / "cel-poster-pitch.png") as preview:

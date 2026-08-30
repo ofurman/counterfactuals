@@ -132,7 +132,7 @@ async function main() {
   await fs.writeFile(path.join(output, 'two-minute-script.md'), script);
   await fs.writeFile(path.join(assets, 'provenance.json'), JSON.stringify({
     figures,
-    changes: 'Select validity, L2+Hamming and log-density plausibility for local, global and group-wise results. Translate complete metric groups into aligned columns. Dataset label, plausibility explanation and global method key use native slide text. Original plot pixels, aspect ratios, ticks, directions and method labels are unchanged.',
+    changes: 'Select validity, L2+Hamming and log-density plausibility for local, global and group-wise results. Translate complete metric groups into aligned columns. Dataset label and global method key use native slide text. Original plot pixels, aspect ratios, ticks, directions and method labels are unchanged.',
     repository: identity.links.repository,
   }, null, 2) + '\n');
   const profile = await fs.mkdtemp(path.join(require('node:os').tmpdir(), 'cel-pitch-lo-'));

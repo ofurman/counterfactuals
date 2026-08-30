@@ -353,6 +353,6 @@
       ]
     }
   ],
-  "changes": "Select validity, L2+Hamming and log-density plausibility for local, global and group-wise results. Translate complete metric groups into aligned columns. Dataset label, plausibility explanation and global method key use native slide text. Original plot pixels, aspect ratios, ticks, directions and method labels are unchanged.",
+  "changes": "Select validity, L2+Hamming and log-density plausibility for local, global and group-wise results. Translate complete metric groups into aligned columns. Dataset label and global method key use native slide text. Original plot pixels, aspect ratios, ticks, directions and method labels are unchanged.",
   "repository": "https://github.com/ofurman/counterfactuals"
 }
