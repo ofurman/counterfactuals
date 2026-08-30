@@ -1,0 +1,59 @@
+{
+  "title": "CEL: Comprehensive Counterfactual Explanations Library and Benchmark",
+  "overflow": [],
+  "broken": [],
+  "tiles": [
+    {
+      "id": "datasets",
+      "number": "18",
+      "label": "Datasets"
+    },
+    {
+      "id": "methods",
+      "number": "14",
+      "label": "Methods"
+    },
+    {
+      "id": "backbones",
+      "number": "2",
+      "label": "Backbones / Task"
+    },
+    {
+      "id": "metrics",
+      "number": "9",
+      "label": "Counterfactual Explanations Metrics"
+    }
+  ],
+  "results": [
+    {
+      "paradigm": "local",
+      "left": 640,
+      "top": 196,
+      "bottom": 368,
+      "plotBottom": 366.6875
+    },
+    {
+      "paradigm": "global",
+      "left": 640,
+      "top": 370.65625,
+      "bottom": 530.65625,
+      "plotBottom": 527.40625
+    },
+    {
+      "paradigm": "group",
+      "left": 640,
+      "top": 532,
+      "bottom": 714.65625,
+      "plotBottom": 712.640625
+    }
+  ],
+  "header": {
+    "titleLeft": 48,
+    "titleBottom": 66.765625,
+    "titleLines": 0.9999332264957266,
+    "authorsLeft": 48,
+    "authorsTop": 88,
+    "hasAffiliation": false
+  },
+  "words": 103
+}

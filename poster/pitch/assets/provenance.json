@@ -1,0 +1,358 @@
+{
+  "figures": [
+    {
+      "paradigm": "local",
+      "source": "poster/plots/generated/manuscript-local.svg",
+      "sha256": "55e422e8e6952de299810e649de215cf33f6d1eb6cfe217a60488be0d777a33f",
+      "manuscriptSource": "manuscript/figures/metrics_boxplot_local.png",
+      "retainedMetrics": [
+        {
+          "metric": "Validity (↑)",
+          "pixelBounds": [
+            234,
+            98,
+            1207,
+            533
+          ],
+          "pngSha256": "e2eb15b79bd106506a14f6513a872867280c4b023e43558ac9e5047ef3681424",
+          "display": [
+            55,
+            24,
+            139.33333333333334,
+            62.291880781089425
+          ],
+          "ticks": [
+            [
+              27.559055118110233,
+              "1.0"
+            ],
+            [
+              62.389009884402746,
+              "0.8"
+            ],
+            [
+              97.10169207572457,
+              "0.6"
+            ]
+          ]
+        },
+        {
+          "metric": "L2+Hamming (↓)",
+          "pixelBounds": [
+            1420,
+            98,
+            2392,
+            533
+          ],
+          "pngSha256": "02a55f53ccd7474efe145c2022b3a32e1c063a4426bca30800618af90ad244a0",
+          "display": [
+            238.33333333333334,
+            24,
+            139.33333333333334,
+            62.35596707818931
+          ],
+          "ticks": [
+            [
+              31.429050092142734,
+              "0.06"
+            ],
+            [
+              60.981738984754564,
+              "0.04"
+            ],
+            [
+              90.53442787736638,
+              "0.02"
+            ],
+            [
+              120.08711676997821,
+              "0.00"
+            ]
+          ]
+        },
+        {
+          "metric": "Log. dens. (↑)",
+          "pixelBounds": [
+            3786,
+            98,
+            4758,
+            533
+          ],
+          "pngSha256": "28611da9e9fd439fb235746e38dc387860c1b816ad5d564279d886e549860c94",
+          "display": [
+            146.66666666666669,
+            154,
+            139.33333333333334,
+            62.35596707818931
+          ],
+          "ticks": [
+            [
+              44.79812363880047,
+              "−200"
+            ],
+            [
+              76.2271737309432,
+              "−400"
+            ],
+            [
+              107.65622382308594,
+              "−600"
+            ]
+          ]
+        }
+      ],
+      "methodKey": [],
+      "viewport": [
+        0,
+        0,
+        525,
+        142
+      ]
+    },
+    {
+      "paradigm": "global",
+      "source": "poster/plots/generated/manuscript-global.svg",
+      "sha256": "ce907eb641ef1add296667d3821abd66ce57af89e72f8d0f8eb9e1f0300701fd",
+      "manuscriptSource": "manuscript/figures/metrics_boxplot_global.png",
+      "retainedMetrics": [
+        {
+          "metric": "Validity (↑)",
+          "pixelBounds": [
+            211,
+            98,
+            588,
+            446
+          ],
+          "pngSha256": "8364ca6f2709b6aec19af14fa50ff2a974e97c2a9826182d8f1fbff3167a95f2",
+          "display": [
+            78.66666666666667,
+            24,
+            92,
+            84.92307692307692
+          ],
+          "ticks": [
+            [
+              38.04713804713804,
+              "1.00"
+            ],
+            [
+              68.68686868686868,
+              "0.75"
+            ],
+            [
+              99.32659932659932,
+              "0.50"
+            ],
+            [
+              129.96632996632997,
+              "0.25"
+            ]
+          ]
+        },
+        {
+          "metric": "L2+Hamming (↓)",
+          "pixelBounds": [
+            799,
+            98,
+            1176,
+            446
+          ],
+          "pngSha256": "61284f189c6cd89e193601f8880de9ca040ae8dbed90c9562cbbf4cfe2d01899",
+          "display": [
+            262,
+            24,
+            92,
+            84.92307692307692
+          ],
+          "ticks": [
+            [
+              53.1986531986532,
+              "0.75"
+            ],
+            [
+              83.16498316498316,
+              "0.50"
+            ],
+            [
+              143.43434343434342,
+              "0.00"
+            ]
+          ]
+        },
+        {
+          "metric": "Log. dens. (↑)",
+          "pixelBounds": [
+            1978,
+            98,
+            2355,
+            446
+          ],
+          "pngSha256": "1503fbde359b48967637a72ea41325fac7bdc77530034c0aaa98e7abbb5306b7",
+          "display": [
+            170.33333333333337,
+            150,
+            92,
+            84.92307692307692
+          ],
+          "ticks": [
+            [
+              60.26936026936026,
+              "−200"
+            ],
+            [
+              118.18181818181817,
+              "−250"
+            ]
+          ]
+        }
+      ],
+      "methodKey": [
+        {
+          "tick": "1",
+          "method": "AReS"
+        },
+        {
+          "tick": "2",
+          "method": "GLOBE-CE"
+        },
+        {
+          "tick": "3",
+          "method": "GlobalGLANCE"
+        }
+      ],
+      "viewport": [
+        0,
+        0,
+        525,
+        128
+      ]
+    },
+    {
+      "paradigm": "group",
+      "source": "poster/plots/generated/manuscript-group.svg",
+      "sha256": "b0fe415dae902f70a37b9a6e19d71ae6f1d04d6ceb0c7da11f45ab64f241a0ec",
+      "manuscriptSource": "manuscript/figures/metrics_boxplot_group_wise.png",
+      "retainedMetrics": [
+        {
+          "metric": "Validity (↑)",
+          "pixelBounds": [
+            211,
+            98,
+            606,
+            526
+          ],
+          "pngSha256": "7e447801cbc711232e11b7b91319f885312e49c5d1ce3de9da12e76069bc56c6",
+          "display": [
+            55,
+            24,
+            66,
+            71.51392405063291
+          ],
+          "ticks": [
+            [
+              39.40720781407882,
+              "1.0"
+            ],
+            [
+              72.07814078814415,
+              "0.8"
+            ],
+            [
+              104.7490737622095,
+              "0.6"
+            ],
+            [
+              137.42000673627484,
+              "0.4"
+            ],
+            [
+              170.0909397103402,
+              "0.2"
+            ]
+          ]
+        },
+        {
+          "metric": "L2+Hamming (↓)",
+          "pixelBounds": [
+            796,
+            98,
+            1191,
+            526
+          ],
+          "pngSha256": "97b29431af90589c7b894336bdd15ded185b57a9049a398ea4d6525ee5ca4b05",
+          "display": [
+            165,
+            24,
+            66,
+            71.51392405063291
+          ],
+          "ticks": [
+            [
+              53.55338497810711,
+              "0.4"
+            ],
+            [
+              82.51936679016504,
+              "0.3"
+            ],
+            [
+              111.48534860222297,
+              "0.2"
+            ],
+            [
+              140.4513304142809,
+              "0.1"
+            ],
+            [
+              169.41731222633885,
+              "0.0"
+            ]
+          ]
+        },
+        {
+          "metric": "Log. dens. (↑)",
+          "pixelBounds": [
+            1963,
+            98,
+            2357,
+            526
+          ],
+          "pngSha256": "a5d5301c16a09e39db74c897c5e14cd2d5d2dc910af54e8a23b613c61da4e626",
+          "display": [
+            385,
+            24,
+            66,
+            71.69543147208122
+          ],
+          "ticks": [
+            [
+              33.34456045806669,
+              "−230"
+            ],
+            [
+              75.78309195015157,
+              "−240"
+            ],
+            [
+              117.88480970023578,
+              "−250"
+            ],
+            [
+              159.98652745031998,
+              "−260"
+            ]
+          ]
+        }
+      ],
+      "methodKey": [],
+      "viewport": [
+        0,
+        0,
+        525,
+        152
+      ]
+    }
+  ],
+  "changes": "Select validity, L2+Hamming and log-density plausibility for local, global and group-wise results. Translate complete metric groups into aligned columns. Dataset label, plausibility explanation and global method key use native slide text. Original plot pixels, aspect ratios, ticks, directions and method labels are unchanged.",
+  "repository": "https://github.com/ofurman/counterfactuals"
+}

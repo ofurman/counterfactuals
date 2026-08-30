@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CEL poster pitch</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { position: relative; display: flex; width: 960pt; height: 540pt; margin: 0; padding: 0; background: #fffdf8; color: #13253c; font-family: Arial, sans-serif; }
+    p, h1, h2 { position: absolute; margin: 0; padding: 0; }
+    h1 { left: 36pt; top: 22pt; width: 888pt; font: 26pt/1.08 Georgia, serif; white-space: nowrap; }
+    .authors { left: 36pt; top: 66pt; width: 660pt; font-size: 14pt; line-height: 1.25; }
+    .logo { position: absolute; }
+    .pwr { left: 725pt; top: 61pt; width: 30.9pt; height: 49.8pt; }
+    .genwro { left: 782pt; top: 76pt; width: 68pt; height: 17.3pt; }
+    .tooploox { left: 870pt; top: 76pt; width: 62pt; height: 16.3pt; }
+    .scope-title { left: 36pt; top: 110pt; width: 416pt; font: bold 27pt/1.15 Georgia, serif; }
+    .scope-tile { position: absolute; width: 202pt; height: 142pt; background: #e6f4fc; border: 1.2pt dashed #10384c; border-radius: 8pt; }
+    .datasets { left: 36pt; top: 164pt; }
+    .methods { left: 250pt; top: 164pt; }
+    .backbones { left: 36pt; top: 318pt; }
+    .metrics { left: 250pt; top: 318pt; }
+    .tile-heading { position: absolute; left: 9pt; top: 9pt; width: 184pt; height: 37pt; background: #fce8c6; border: 1pt solid #10384c; border-radius: 5pt; }
+    .tile-heading .number { left: 7pt; top: 3pt; width: 40pt; font-size: 28pt; line-height: 1; font-weight: bold; color: #10384c; }
+    .tile-heading .label { left: 47pt; top: 10pt; width: 129pt; font-size: 16pt; line-height: 1; font-weight: bold; color: #10384c; }
+    .metrics .tile-heading .label { left: 34pt; top: 3pt; width: 143pt; font-size: 13.5pt; line-height: 1.13; }
+    .backbones .tile-heading .label { left: 34pt; top: 10pt; width: 143pt; font-size: 15pt; }
+    .tile-copy { left: 11pt; top: 55pt; width: 179pt; font-size: 16pt; line-height: 1.3; color: #10384c; }
+    .methods .tile-copy { font-size: 15pt; }
+    .backbones .tile-copy { font-size: 13.5pt; line-height: 1.4; }
+    .metrics .tile-copy { font-size: 11.6pt; line-height: 1.32; }
+    .results-title { left: 480pt; top: 110pt; width: 140pt; font: bold 27pt/1.15 Georgia, serif; }
+    .result-context { left: 628pt; top: 114pt; width: 296pt; font-size: 11pt; line-height: 1.25; text-align: right; color: #536274; }
+    .result-row { position: absolute; left: 480pt; width: 444pt; }
+    .local-results { top: 147pt; height: 129pt; }
+    .global-results { top: 278pt; height: 120pt; }
+    .group-results { top: 399pt; height: 137pt; }
+    .result-row h2 { left: 0; top: 0; width: 112pt; font: bold 18pt/1.15 Georgia, serif; }
+    .result-row .takeaway { left: 120pt; top: 4pt; width: 160pt; font-size: 12pt; line-height: 1.2; color: #087f78; }
+    .global-results .takeaway { left: 85pt; width: 145pt; }
+    .result { position: absolute; left: 26pt; top: 22pt; width: 392pt; }
+    .local-results .result { height: 106.0267pt; }
+    .global-results .result { height: 95.5733pt; }
+    .group-results .result { height: 113.4933pt; }
+    .method-key { left: 280pt; top: 0; width: 164pt; font-size: 9.5pt; line-height: 1.15; color: #536274; }
+    .invitation { left: 36pt; top: 480pt; width: 350pt; font-size: 18.5pt; line-height: 1.15; font-weight: bold; color: #087f78; }
+    .qr { position: absolute; left: 394pt; top: 474pt; width: 58pt; height: 58pt; }
+  </style>
+</head>
+<body>
+  <h1>CEL: Comprehensive Counterfactual Explanations Library and Benchmark</h1>
+  <p class="authors"><b>Oleksii Furman</b> · Łukasz Lenkiewicz · Marcel Musiałek · Maciej Zięba</p>
+  <img class="logo pwr" src="../cel-benchmark-poster/src/assets/brands/pwr-logo.png" alt="Wrocław Tech">
+  <img class="logo genwro" src="../cel-benchmark-poster/src/assets/brands/genwro-logo.png" alt="genwro.AI">
+  <img class="logo tooploox" src="../cel-benchmark-poster/src/assets/brands/tpx-logo.png" alt="Tooploox">
+  <h2 class="scope-title">Benchmark scope</h2>
+  <div class="scope-tile datasets" data-scope="datasets">
+    <div class="tile-heading"><p class="number">18</p><p class="label">Datasets</p></div>
+    <p class="tile-copy">13 classification<br>5 regression</p>
+  </div>
+  <div class="scope-tile methods" data-scope="methods">
+    <div class="tile-heading"><p class="number">14</p><p class="label">Methods</p></div>
+    <p class="tile-copy">10 Local<br>2 Global<br>2 Group-wise</p>
+  </div>
+  <div class="scope-tile backbones" data-scope="backbones">
+    <div class="tile-heading"><p class="number">2</p><p class="label">Backbones / Task</p></div>
+    <p class="tile-copy"><b>Classification</b>: LR + MLP<br><b>Regression</b>: Linear + MLP</p>
+  </div>
+  <div class="scope-tile metrics" data-scope="metrics">
+    <div class="tile-heading"><p class="number">9</p><p class="label"><b>Counterfactual<br>Explanations Metrics</b></p></div>
+    <p class="tile-copy">Validity · Coverage · Sparsity<br>Proximity · Runtime<br>Prob. plausibility · Log-density<br>LOF · Isolation Forest</p>
+  </div>
+  <h2 class="results-title">Results</h2>
+  <p class="result-context">Adult Census · LR + MLP<br>Plausibility: log-density (↑)</p>
+  <div class="result-row local-results" data-paradigm="local">
+    <h2>Local</h2>
+    <p class="takeaway">No single winner</p>
+    <img class="result" src="assets/local-results.png" alt="Manuscript local results: validity, L2+Hamming and log-density plausibility for CADEX, CCHVAE, DiCE and SACE.">
+  </div>
+  <div class="result-row global-results" data-paradigm="global">
+    <h2>Global</h2>
+    <p class="takeaway">Validity and failures</p>
+    <p class="method-key">1 AReS · 2 GLOBE-CE<br>3 GLANCE (one group)</p>
+    <img class="result" src="assets/global-results.png" alt="Manuscript global results: validity, L2+Hamming and log-density plausibility for AReS, GLOBE-CE and GlobalGLANCE, keyed as 1, 2 and 3.">
+  </div>
+  <div class="result-row group-results" data-paradigm="group">
+    <h2>Group-wise</h2>
+    <p class="takeaway">Reach versus change</p>
+    <img class="result" src="assets/group-results.png" alt="Manuscript group-wise results: validity, L2+Hamming and log-density plausibility for GLANCE and T-CREx.">
+  </div>
+  <p class="invitation">Bring your method to the benchmark.</p>
+  <img class="qr" src="assets/github-qr.png" alt="GitHub repository QR">
+</body>
+</html>
