@@ -14,6 +14,7 @@ export type Claim = {
   id: string
   claimKind: string
   posterWording: string
+  posterDetail?: string
   value: ClaimValue
   unit: string | null
   verdict: string

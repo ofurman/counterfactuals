@@ -499,7 +499,8 @@ export async function buildClaims() {
     {
       id: "contribution.protocol",
       claimKind: "qualitative",
-      posterWording: "Controlled evaluation protocol",
+      posterWording: "Controlled protocol",
+      posterDetail: "Reproducible evaluation",
       value: {kind: "qualitative"},
       unit: null,
       verdict: "CEL standardizes datasets, preprocessing, predictive backbones, constraints, and metric definitions for fairer CE comparison.",
@@ -512,7 +513,8 @@ export async function buildClaims() {
     {
       id: "contribution.benchmark",
       claimKind: "qualitative",
-      posterWording: "Broad benchmark across CE paradigms",
+      posterWording: "Cross-paradigm benchmark",
+      posterDetail: "Local · Global · Group-wise",
       value: {kind: "qualitative"},
       unit: null,
       verdict: "CEL benchmarks local, global, and group-wise counterfactual explanations inside one framework.",
@@ -525,7 +527,8 @@ export async function buildClaims() {
     {
       id: "contribution.library",
       claimKind: "qualitative",
-      posterWording: "Extensible open-source benchmark workbench",
+      posterWording: "Extensible library",
+      posterDetail: "Open source",
       value: {kind: "qualitative"},
       unit: null,
       verdict: "The CEL library supports method integration, transparent reporting, and community-driven benchmarking.",

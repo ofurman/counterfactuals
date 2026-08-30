@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { posterData, resolveClaim, resolveSection } from './posterData'
 
 describe('poster data adapter', () => {
+  it('keeps concise contribution headings and supporting lines in the manuscript-backed ledger', () => {
+    expect(['contribution.protocol', 'contribution.benchmark', 'contribution.library'].map((id) => {
+      const claim = resolveClaim(id)
+      expect(claim.source.file).toBe('manuscript/main_lncs.tex')
+      return [claim.posterWording, claim.posterDetail]
+    })).toEqual([
+      ['Controlled protocol', 'Reproducible evaluation'],
+      ['Cross-paradigm benchmark', 'Local · Global · Group-wise'],
+      ['Extensible library', 'Open source'],
+    ])
+  })
   it('names every scope item and splits methods by their manuscript paradigm', () => {
     expect(posterData.scopeFacts.map((fact) => fact.claimId)).toEqual(['scope.datasets', 'scope.methods', 'scope.backbones', 'scope.metrics'])
     for (const fact of posterData.scopeFacts) {

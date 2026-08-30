@@ -260,7 +260,8 @@
     {
       "id": "contribution.protocol",
       "claimKind": "qualitative",
-      "posterWording": "Controlled evaluation protocol",
+      "posterWording": "Controlled protocol",
+      "posterDetail": "Reproducible evaluation",
       "value": {
         "kind": "qualitative"
       },
@@ -278,7 +279,8 @@
     {
       "id": "contribution.benchmark",
       "claimKind": "qualitative",
-      "posterWording": "Broad benchmark across CE paradigms",
+      "posterWording": "Cross-paradigm benchmark",
+      "posterDetail": "Local · Global · Group-wise",
       "value": {
         "kind": "qualitative"
       },
@@ -296,7 +298,8 @@
     {
       "id": "contribution.library",
       "claimKind": "qualitative",
-      "posterWording": "Extensible open-source benchmark workbench",
+      "posterWording": "Extensible library",
+      "posterDetail": "Open source",
       "value": {
         "kind": "qualitative"
       },

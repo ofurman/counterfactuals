@@ -113,8 +113,13 @@ its smaller manuscript typography (approximately 13.6pt on the poster).
 The title is 80pt, the main Results heading is 32pt bold, subheadings are 28pt,
 and body/result text uses Arial. The A1 portrait layout uses upper example/framework
 columns and a lower two-by-two results grid with aligned frames and larger internal
-padding. Scope inventories have more line and group spacing. Bottom contribution
-statements are bold and top-aligned, with a separate QR column. Logo artwork is unchanged.
+padding. Scope inventories have more line and group spacing. The bottom contribution
+strip is unboxed, with a 32pt bold Contributions heading matching Results above
+three equal-width messages. Message headings use 28pt bold Georgia, matching the
+result-panel title size, with 18pt supporting lines and small teal ordinals.
+The caption-free library QR is 96px (43.2mm) square and includes the official
+GitHub mark. Its decoded destination and high error correction are checked from
+the exported PDF at 72 and 150 DPI. Existing header logo artwork is unchanged.
 
 The poster's Parcel configuration bypasses SVG optimization only for
 `manuscript-architecture*.svg`: the original nested glyph definitions make the

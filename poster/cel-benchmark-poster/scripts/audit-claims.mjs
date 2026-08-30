@@ -37,6 +37,7 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
     header: document.querySelector('.poster-header')?.textContent ?? '',
     title: document.querySelector('.poster-header h1')?.textContent ?? '',
     visibleWordCount: document.querySelector('.poster-canvas')?.innerText.trim().split(/\s+/).length ?? 0,
+    contributions: [...document.querySelectorAll('.contribution-item')].map((element) => ({ id: element.dataset.claimId, heading: element.querySelector('h3').textContent, detail: element.querySelector('[data-claim-detail]').textContent })),
     brands: [...document.querySelectorAll('[data-brand-id]')].map((image) => ({ id: image.dataset.brandId, alt: image.alt, loaded: image.complete && image.naturalWidth > 0 })),
     example: {
       kind: document.querySelector('[data-example-kind]')?.getAttribute('data-example-kind'),
@@ -87,6 +88,7 @@ const expectedScope = [
   ['scope.backbones', claimsById.get('scope.backbones').value.total, 'Backbones / Task'],
   ['scope.metrics', claimsById.get('scope.metrics').value.total, 'Classification Metrics'],
 ]
+if (JSON.stringify(rendered.contributions) !== JSON.stringify(['contribution.protocol', 'contribution.benchmark', 'contribution.library'].map((id) => ({ id, heading: claimsById.get(id).posterWording, detail: claimsById.get(id).posterDetail })))) throw new Error('Contribution headings and supporting lines must match the manuscript-backed ledger')
 if (JSON.stringify(rendered.scope) !== JSON.stringify(expectedScope.map(([id, value, label]) => ({ id, text: `${value}${label}`, inventory: claimsById.get(id).inventory })))) throw new Error('Rendered scope tiles and named inventories do not match the generated ledger')
 const allowedSources = new Set(content.sections.flatMap((section) => section.sourceCitations))
 for (const source of rendered.sources) if (!allowedSources.has(source) && !source.endsWith('#Related Works')) throw new Error(`Rendered unknown source citation: ${source}`)

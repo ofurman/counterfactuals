@@ -1,5 +1,6 @@
 import { ClaimWording } from '@/components/poster'
 import { ProjectQr } from '@/components/poster/ProjectQr'
+import { resolveClaim } from '@/data/posterData'
 import { counterfactualExample as example, exampleFeatureRows, examplePrediction } from '@/data/counterfactualExample'
 import { RecoursePlot } from './RecoursePlot'
 
@@ -54,9 +55,11 @@ const contributions = [
 export function ContributionStack() {
   return (
     <div className="contribution-stack">
-      {contributions.map((contribution) => (
+      {contributions.map((contribution, index) => (
         <article className={`contribution-item${contribution.claimId === 'contribution.library' ? ' contribution-item--extend' : ''}`} data-claim-id={contribution.claimId} key={contribution.claimId}>
+          <span className="contribution-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
           <h3><ClaimWording claimId={contribution.claimId} /></h3>
+          <p data-claim-detail={contribution.claimId}>{resolveClaim(contribution.claimId).posterDetail}</p>
           {contribution.claimId === 'contribution.library' && <ProjectQr />}
         </article>
       ))}

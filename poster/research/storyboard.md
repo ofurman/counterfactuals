@@ -20,7 +20,7 @@ path, not a dump of manuscript sections or a full result table.
 **Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.
 **Typography:** Use an eighty-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and result labels. Set body copy near eighteen points and result labels to at least seventeen points at A1. Restore the original manuscript diagram with its original fonts, sizes, and line breaks. Preserve lossless plot interiors in poster-only result derivatives; do not infer or reconstruct benchmark statistics.
 **Logo inventory:** ECML-PKDD above XKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.
-**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at the bottom of the poster; linked to the repository, with no header or paper QR.
+**QR inventory:** One enlarged QR with the official GitHub mark inside the library contribution at the bottom of the poster; linked to the repository, with no printed caption, header QR, or paper QR. Retain an accessible link label, high error correction, and clear space around the code and logo.
 
 ## Upper left — counterfactual concept
 
@@ -64,7 +64,7 @@ Do not use the unresolved sparsity direction. <!-- claims: caveat.sparsity-direc
 ## Bottom — contributions
 
 Present the controlled protocol, broad benchmark, and extensible library in a full-width closing row below all results, with the repository QR inside Extend. <!-- claims: contribution.protocol, contribution.benchmark, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
-Use the existing contribution statements as bold headings instead of repeated action labels. Align the statements at the top and keep the QR in its own column within the library contribution.
+Use an unboxed closing strip headed Contributions with the same typography as Results. Give each equal-width message a small teal ordinal, a navy heading matching the result-panel titles but bold, and one short supporting line. Remove card backgrounds and colored bars. Anchor the enlarged, caption-free GitHub QR to the height of the whole strip and preserve its quiet zone.
 
 ## Thirty-second visitor narrative
 

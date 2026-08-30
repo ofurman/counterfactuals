@@ -104,7 +104,7 @@
       "id": "guidance-limitations",
       "owner": "bottom",
       "order": 10,
-      "heading": "Three contributions",
+      "heading": "Contributions",
       "copy": [],
       "claimIds": ["contribution.protocol", "contribution.benchmark", "contribution.library"],
       "sourceCitations": ["manuscript/main_lncs.tex#Introduction"],

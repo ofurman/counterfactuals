@@ -32,7 +32,7 @@ for (const expected of requiredSectionText) if (!normalizedText.includes(expecte
 if (normalizedText.includes('One protocol. Multiple CE paradigms. Measurable trade-offs.')) throw new Error('Removed header subtitle remains in the PDF')
 if (normalizedText.includes(identity.venue)) throw new Error('Removed venue marker remains in the PDF')
 if (/Reproduce and extend|uv add ce-library|Documentation/.test(normalizedText)) throw new Error('Removed footer text remains in the PDF')
-if ((normalizedText.match(/Code & project/g) ?? []).length !== 1) throw new Error('Only the contribution QR label should remain')
+if (/Code & project|Three contributions/.test(normalizedText)) throw new Error('Removed QR caption or old Contributions heading remains')
 if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed architecture caption remains in the PDF')
 if (/One evaluation framework|Benchmark scope/i.test(normalizedText)) throw new Error('Removed center-column heading remains in the PDF')
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')
@@ -41,6 +41,9 @@ if (/\bSource\s*[·:]|\btoy\b|not benchmark data|Sparsity direction unresolved|B
 if (!normalizedText.includes('Regression: accuracy versus change')) throw new Error('Requested regression result heading is missing from the PDF')
 if (/\b5\s+folds\b|\b3\s+paradigms\b/i.test(normalizedText)) throw new Error('Removed folds or paradigms tiles remain in the PDF')
 const scopeClaims = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/claims/claims.generated.json'), 'utf8')).claims;
+for (const claim of scopeClaims.filter((claim) => claim.id.startsWith('contribution.'))) {
+  for (const wording of [claim.posterWording, claim.posterDetail]) if (!wording || !normalizedText.includes(wording)) throw new Error(`PDF is missing contribution copy: ${wording}`)
+}
 for (const claim of scopeClaims.filter((claim) => claim.inventory)) {
   for (const name of claim.inventory.flatMap((group) => group.names)) if (!normalizedText.includes(name)) throw new Error(`PDF is missing named scope item: ${name}`)
 }

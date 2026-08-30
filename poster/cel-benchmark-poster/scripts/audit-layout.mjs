@@ -9,7 +9,7 @@ const visualSpec = JSON.parse(await readFile(path.join(repositoryDir, 'poster/re
 const exampleAssets = await loadExampleAssets()
 const manuscriptAssets = await loadManuscriptAssets()
 
-const report = await withPosterPage(async ({ page, failures }) => {
+const report = await withPosterPage(async ({ page, failures, url }) => {
   const screen = await page.evaluate(() => {
     const canvas = document.querySelector('.poster-canvas')
     if (!canvas) throw new Error('Poster canvas is missing')
@@ -92,7 +92,19 @@ const report = await withPosterPage(async ({ page, failures }) => {
       columns: Object.fromEntries(['left', 'center', 'right', 'bottom'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
       contributionHeadings: [...document.querySelectorAll('.contribution-item h3')].map(rect),
+      contributionDetails: [...document.querySelectorAll('.contribution-item p')].map(rect),
+      contributionTitle: rect(document.querySelector('.contributions-block > h2')),
+      contributionItems: [...document.querySelectorAll('.contribution-item')].map((element) => ({ ...rect(element), background: getComputedStyle(element).backgroundColor, borders: ['Top', 'Right', 'Bottom', 'Left'].map((side) => parseFloat(getComputedStyle(element)[`border${side}Width`])) })),
+      contributionNumbers: [...document.querySelectorAll('.contribution-number')].map((element) => ({text: element.textContent, color: getComputedStyle(element).color})),
       contributionQr: rect(document.querySelector('.contribution-item .project-mark')),
+      qrBranding: {
+        symbol: rect(document.querySelector('.project-mark__qr svg')),
+        logo: rect(document.querySelector('.project-mark__qr image')),
+        logoSource: document.querySelector('.project-mark__qr image').getAttribute('href'),
+        errorLevel: document.querySelector('.project-mark__qr svg').dataset.qrErrorLevel,
+        margin: document.querySelector('.project-mark__qr svg').dataset.qrMargin,
+        visibleText: document.querySelector('.project-mark').textContent.trim(),
+      },
       resultFrames: [...document.querySelectorAll('.result-panel')].map((element) => {
         const outline = element.querySelector('.result-panel__outline rect')
         const style = getComputedStyle(outline)
@@ -110,6 +122,10 @@ const report = await withPosterPage(async ({ page, failures }) => {
         titlePt: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize) * numberToken('--print-scale') * 0.75,
         resultsHeadingPt: parseFloat(getComputedStyle(document.querySelector('.unified-results-block > h2')).fontSize) * numberToken('--print-scale') * 0.75,
         resultsHeadingWeight: getComputedStyle(document.querySelector('.unified-results-block > h2')).fontWeight,
+        contributionHeadingPt: fontSizes('.contribution-item h3').map((size) => size * numberToken('--print-scale') * 0.75),
+        contributionHeadingStyles: [...document.querySelectorAll('.contribution-item h3')].map((element) => ({ family: getComputedStyle(element).fontFamily, weight: getComputedStyle(element).fontWeight })),
+        sectionHeadingStyles: [...document.querySelectorAll('.unified-results-block > h2, .contributions-block > h2')].map((element) => { const style = getComputedStyle(element); return { family: style.fontFamily, weight: style.fontWeight, size: style.fontSize, lineHeight: style.lineHeight, color: style.color } }),
+        contributionDetailPt: fontSizes('.contribution-item p').map((size) => size * numberToken('--print-scale') * 0.75),
         subheadingPt: fontSizes('.recourse-panel h3, .result-panel h3').map((size) => size * numberToken('--print-scale') * 0.75),
         bodyFamily: getComputedStyle(document.querySelector('.section-copy')).fontFamily,
       },
@@ -207,6 +223,16 @@ const report = await withPosterPage(async ({ page, failures }) => {
   const results = screen.columns.right[0]
   const contributions = screen.columns.bottom[0]
   if (screen.contributionHeadings.length !== 3 || screen.contributionHeadings.some((heading) => Math.abs(heading.top - screen.contributionHeadings[0].top) > 1) || screen.contributionHeadings[2].right >= screen.contributionQr.left) failuresFound.push('Contribution statements must align at the top with a separate QR column')
+  if (screen.contributionItems.some((item) => item.background !== 'rgba(0, 0, 0, 0)' || item.borders.some((width) => width !== 0) || Math.abs(item.width - screen.contributionItems[0].width) > 1)) failuresFound.push('Contributions must be equal-width unboxed messages without colored bars')
+  if (screen.contributionTitle.bottom >= screen.contributionHeadings[0].top || Math.abs(screen.contributionQr.top - contributions.top) > 1 || screen.contributionQr.bottom > contributions.bottom + 1) failuresFound.push('Contribution heading must sit above the messages, with the QR anchored to the whole strip')
+  if (screen.contributionDetails.length !== 3 || screen.contributionDetails.some((detail, index) => detail.top < screen.contributionHeadings[index].bottom || detail.bottom > contributions.bottom + 1 || Math.abs(detail.top - screen.contributionDetails[0].top) > 1)) failuresFound.push('Contribution supporting lines must align below their headings and stay inside the strip')
+  if (JSON.stringify(screen.contributionNumbers.map((number) => number.text)) !== '["01","02","03"]' || screen.contributionNumbers.some((number) => number.color !== 'rgb(8, 127, 120)')) failuresFound.push('Contributions must use small ordered teal numerals')
+  if (screen.typography.contributionHeadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.contributionHeadingStyles.some((style) => !style.family.startsWith('Georgia') || style.weight !== '700') || screen.typography.contributionDetailPt.some((size) => Math.abs(size - 18) > 0.05)) failuresFound.push('Contribution headings must match result titles at 28pt Georgia, but bold; supporting lines stay 18pt')
+  if (JSON.stringify(screen.typography.sectionHeadingStyles[0]) !== JSON.stringify(screen.typography.sectionHeadingStyles[1])) failuresFound.push('Contributions and Results section headings must have identical typography')
+  const qr = screen.qrBranding
+  const localGithubLogo = new URL(qr.logoSource).origin === new URL(url).origin && /\/GitHub_Invertocat_Black_Clearspace\.[a-zA-Z0-9_-]+\.svg$/.test(new URL(qr.logoSource).pathname)
+  if (qr.symbol.width !== 96 || qr.symbol.height !== 96 || qr.visibleText !== '' || qr.errorLevel !== 'H' || qr.margin !== '4' || !localGithubLogo) failuresFound.push('QR must be 96px, caption-free, high-error-correction, and contain the local GitHub SVG with a four-module quiet zone')
+  if (Math.abs(qr.logo.width - 22) > 0.1 || Math.abs(qr.logo.height - 22) > 0.1 || Math.abs(qr.logo.left + qr.logo.width / 2 - qr.symbol.left - qr.symbol.width / 2) > 0.1 || Math.abs(qr.logo.top + qr.logo.height / 2 - qr.symbol.top - qr.symbol.height / 2) > 0.1) failuresFound.push('GitHub logo must be centered and undistorted inside the QR')
   if (!contributions || contributions.top <= results.bottom || Math.abs(contributions.left - screen.safeBounds.left) > 1 || Math.abs(contributions.right - screen.safeBounds.right) > 1) failuresFound.push('Contributions and their QR must span the bottom below all results')
   if (results.top <= Math.max(...screen.columns.left.map((section) => section.bottom), ...screen.columns.center.map((section) => section.bottom)) || Math.abs(results.left - screen.safeBounds.left) > 1 || Math.abs(results.right - screen.safeBounds.right) > 1) failuresFound.push('Results must span the lower page below both upper columns')
   if (screen.resultPanels.length === 4) {

@@ -158,15 +158,15 @@
       "rect": {
         "top": 1832.078125,
         "right": 1590,
-        "bottom": 1932.265625,
+        "bottom": 1928.078125,
         "left": 330,
         "width": 1260,
-        "height": 100.1875
+        "height": 96
       },
       "clientWidth": 1260,
       "scrollWidth": 1260,
-      "clientHeight": 100,
-      "scrollHeight": 100
+      "clientHeight": 96,
+      "scrollHeight": 96
     }
   ],
   "sectionRules": [
@@ -266,7 +266,7 @@
       "clientWidth": 1260,
       "scrollWidth": 1260,
       "clientHeight": 1622,
-      "scrollHeight": 1623
+      "scrollHeight": 1622
     },
     {
       "name": "poster-column poster-column--left",
@@ -321,29 +321,29 @@
       "name": "poster-column poster-column--bottom",
       "clientWidth": 1260,
       "scrollWidth": 1260,
-      "clientHeight": 100,
-      "scrollHeight": 100
+      "clientHeight": 96,
+      "scrollHeight": 96
     },
     {
       "name": "contribution-item",
-      "clientWidth": 283,
-      "scrollWidth": 283,
-      "clientHeight": 100,
-      "scrollHeight": 100
+      "clientWidth": 363,
+      "scrollWidth": 363,
+      "clientHeight": 46,
+      "scrollHeight": 46
     },
     {
       "name": "contribution-item",
-      "clientWidth": 283,
-      "scrollWidth": 283,
-      "clientHeight": 100,
-      "scrollHeight": 100
+      "clientWidth": 363,
+      "scrollWidth": 363,
+      "clientHeight": 46,
+      "scrollHeight": 46
     },
     {
       "name": "contribution-item contribution-item--extend",
-      "clientWidth": 441,
-      "scrollWidth": 441,
-      "clientHeight": 100,
-      "scrollHeight": 100
+      "clientWidth": 363,
+      "scrollWidth": 363,
+      "clientHeight": 46,
+      "scrollHeight": 46
     }
   ],
   "exampleBackground": "rgba(0, 0, 0, 0)",
@@ -463,10 +463,10 @@
         "id": "guidance-limitations",
         "top": 1832.078125,
         "right": 1590,
-        "bottom": 1932.265625,
+        "bottom": 1928.078125,
         "left": 330,
         "width": 1260,
-        "height": 100.1875
+        "height": 96
       }
     ]
   },
@@ -510,37 +510,154 @@
   ],
   "contributionHeadings": [
     {
-      "top": 1840.078125,
-      "right": 835.875,
-      "bottom": 1859.578125,
-      "left": 569,
-      "width": 266.875,
-      "height": 19.5
+      "top": 1867.171875,
+      "right": 692.65625,
+      "bottom": 1891.3125,
+      "left": 366,
+      "width": 326.65625,
+      "height": 24.140625
     },
     {
-      "top": 1840.078125,
-      "right": 1129.765625,
-      "bottom": 1879.078125,
-      "left": 862.875,
-      "width": 266.890625,
-      "height": 39
+      "top": 1867.171875,
+      "right": 1081.328125,
+      "bottom": 1891.3125,
+      "left": 754.65625,
+      "width": 326.671875,
+      "height": 24.140625
     },
     {
-      "top": 1840.078125,
-      "right": 1494,
-      "bottom": 1859.578125,
-      "left": 1156.765625,
-      "width": 337.234375,
-      "height": 19.5
+      "top": 1867.171875,
+      "right": 1469.984375,
+      "bottom": 1891.3125,
+      "left": 1143.328125,
+      "width": 326.65625,
+      "height": 24.140625
+    }
+  ],
+  "contributionDetails": [
+    {
+      "top": 1895.3125,
+      "right": 692.65625,
+      "bottom": 1913.640625,
+      "left": 366,
+      "width": 326.65625,
+      "height": 18.328125
+    },
+    {
+      "top": 1895.3125,
+      "right": 1081.328125,
+      "bottom": 1913.640625,
+      "left": 754.65625,
+      "width": 326.671875,
+      "height": 18.328125
+    },
+    {
+      "top": 1895.3125,
+      "right": 1469.984375,
+      "bottom": 1913.640625,
+      "left": 1143.328125,
+      "width": 326.65625,
+      "height": 18.328125
+    }
+  ],
+  "contributionTitle": {
+    "top": 1832.078125,
+    "right": 1590,
+    "bottom": 1859.171875,
+    "left": 330,
+    "width": 1260,
+    "height": 27.09375
+  },
+  "contributionItems": [
+    {
+      "top": 1867.171875,
+      "right": 692.65625,
+      "bottom": 1913.640625,
+      "left": 330,
+      "width": 362.65625,
+      "height": 46.46875,
+      "background": "rgba(0, 0, 0, 0)",
+      "borders": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "top": 1867.171875,
+      "right": 1081.328125,
+      "bottom": 1913.640625,
+      "left": 718.65625,
+      "width": 362.671875,
+      "height": 46.46875,
+      "background": "rgba(0, 0, 0, 0)",
+      "borders": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "top": 1867.171875,
+      "right": 1469.984375,
+      "bottom": 1913.640625,
+      "left": 1107.328125,
+      "width": 362.65625,
+      "height": 46.46875,
+      "background": "rgba(0, 0, 0, 0)",
+      "borders": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "contributionNumbers": [
+    {
+      "text": "01",
+      "color": "rgb(8, 127, 120)"
+    },
+    {
+      "text": "02",
+      "color": "rgb(8, 127, 120)"
+    },
+    {
+      "text": "03",
+      "color": "rgb(8, 127, 120)"
     }
   ],
   "contributionQr": {
-    "top": 1840.078125,
-    "right": 1582,
-    "bottom": 1924.265625,
-    "left": 1502,
-    "width": 80,
-    "height": 84.1875
+    "top": 1832.078125,
+    "right": 1590,
+    "bottom": 1928.078125,
+    "left": 1494,
+    "width": 96,
+    "height": 96
+  },
+  "qrBranding": {
+    "symbol": {
+      "top": 1832.078125,
+      "right": 1590,
+      "bottom": 1928.078125,
+      "left": 1494,
+      "width": 96,
+      "height": 96
+    },
+    "logo": {
+      "top": 1869.078125,
+      "right": 1553,
+      "bottom": 1891.078125,
+      "left": 1531,
+      "width": 22,
+      "height": 22
+    },
+    "logoSource": "http://127.0.0.1:56818/GitHub_Invertocat_Black_Clearspace.8cdef879.svg",
+    "errorLevel": "H",
+    "margin": "4",
+    "visibleText": ""
   },
   "resultFrames": [
     {
@@ -757,6 +874,46 @@
     "titlePt": 80.00018678925,
     "resultsHeadingPt": 32.000023692,
     "resultsHeadingWeight": "700",
+    "contributionHeadingPt": [
+      28.0000207305,
+      28.0000207305,
+      28.0000207305
+    ],
+    "contributionHeadingStyles": [
+      {
+        "family": "Georgia, \"Times New Roman\", serif",
+        "weight": "700"
+      },
+      {
+        "family": "Georgia, \"Times New Roman\", serif",
+        "weight": "700"
+      },
+      {
+        "family": "Georgia, \"Times New Roman\", serif",
+        "weight": "700"
+      }
+    ],
+    "sectionHeadingStyles": [
+      {
+        "family": "Georgia, \"Times New Roman\", serif",
+        "weight": "700",
+        "size": "25.0864px",
+        "lineHeight": "27.0933px",
+        "color": "rgb(19, 37, 60)"
+      },
+      {
+        "family": "Georgia, \"Times New Roman\", serif",
+        "weight": "700",
+        "size": "25.0864px",
+        "lineHeight": "27.0933px",
+        "color": "rgb(19, 37, 60)"
+      }
+    ],
+    "contributionDetailPt": [
+      18.00001332675,
+      18.00001332675,
+      18.00001332675
+    ],
     "subheadingPt": [
       28.0000207305,
       28.0000207305,
@@ -1031,67 +1188,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:55691/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:56818/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:55691/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:56818/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:55691/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:56818/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:55691/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:56818/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:55691/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:56818/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:55691/ce-example-local.f86c716c.svg",
+      "src": "http://127.0.0.1:56818/ce-example-local.f86c716c.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:55691/ce-example-global.848f640c.svg",
+      "src": "http://127.0.0.1:56818/ce-example-global.848f640c.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:55691/ce-example-group-wise.61b23061.svg",
+      "src": "http://127.0.0.1:56818/ce-example-group-wise.61b23061.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:55691/manuscript-architecture.d5e0d17a.svg",
+      "src": "http://127.0.0.1:56818/manuscript-architecture.d5e0d17a.svg",
       "complete": true,
       "naturalWidth": 1050
     },
     {
-      "src": "http://127.0.0.1:55691/manuscript-global.1c192b43.svg",
+      "src": "http://127.0.0.1:56818/manuscript-global.1c192b43.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:55691/manuscript-local.acd6828f.svg",
+      "src": "http://127.0.0.1:56818/manuscript-local.acd6828f.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:55691/manuscript-group.ad8ede3b.svg",
+      "src": "http://127.0.0.1:56818/manuscript-group.ad8ede3b.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:55691/manuscript-regression.0376a331.svg",
+      "src": "http://127.0.0.1:56818/manuscript-regression.0376a331.svg",
       "complete": true,
       "naturalWidth": 566
     }

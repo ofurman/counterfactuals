@@ -1,6 +1,8 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { posterData } from '@/data/posterData'
 
+const githubMark = new URL('../../assets/qr/GitHub_Invertocat_Black_Clearspace.svg', import.meta.url).href
+
 export function ProjectQr() {
   const { identity, visualSpec } = posterData
   return (
@@ -9,13 +11,16 @@ export function ProjectQr() {
         <QRCodeSVG
           value={identity.qr.url}
           size={96}
-          level="M"
+          level="H"
           marginSize={4}
           bgColor={visualSpec.colors.white}
           fgColor={visualSpec.colors.navy}
+          imageSettings={{ src: githubMark, width: 22, height: 22, excavate: true }}
+          data-qr-logo="github"
+          data-qr-error-level="H"
+          data-qr-margin="4"
         />
       </span>
-      <span>{identity.qr.label}</span>
     </a>
   )
 }

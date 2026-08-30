@@ -36,7 +36,7 @@ describe('poster scaffold', () => {
     expect(poster.queryByText('uv add ce-library')).not.toBeInTheDocument()
     expect(poster.queryByText('Documentation')).not.toBeInTheDocument()
     expect(poster.queryByRole('navigation', { name: 'Project links' })).not.toBeInTheDocument()
-    expect(poster.getAllByText('Code & project')).toHaveLength(1)
+    expect(poster.queryByText('Code & project')).not.toBeInTheDocument()
     expect(container.querySelector('[data-section="guidance-limitations"] [data-qr-destination]')).not.toBeNull()
   })
 
@@ -77,11 +77,14 @@ describe('poster scaffold', () => {
     const grid = container.querySelector('.poster-grid')!
     const bottom = grid.lastElementChild!
     expect(bottom).toHaveClass('poster-column--bottom')
-    expect(bottom.querySelector('h2')?.textContent).toBe('Three contributions')
+    expect(bottom.querySelector('h2')?.textContent).toBe('Contributions')
     expect(bottom.querySelectorAll('.contribution-item')).toHaveLength(3)
     expect(bottom.querySelectorAll('.contribution-item > h3')).toHaveLength(3)
     expect(bottom.textContent).not.toMatch(/CONTROL|COVER|EXTEND/)
-    expect(bottom.querySelectorAll('.contribution-item > p, .contribution-item > span')).toHaveLength(0)
+    expect(Array.from(bottom.querySelectorAll('.contribution-number')).map((item) => item.textContent)).toEqual(['01', '02', '03'])
+    expect(bottom.querySelectorAll('.contribution-number[aria-hidden="true"]')).toHaveLength(3)
+    expect(Array.from(bottom.querySelectorAll('.contribution-item > h3')).map((item) => item.textContent)).toEqual(['Controlled protocol', 'Cross-paradigm benchmark', 'Extensible library'])
+    expect(Array.from(bottom.querySelectorAll('.contribution-item > p')).map((item) => item.textContent)).toEqual(['Reproducible evaluation', 'Local · Global · Group-wise', 'Open source'])
     expect(bottom.querySelectorAll('[data-qr-destination]')).toHaveLength(1)
     expect(bottom.previousElementSibling).toHaveClass('poster-column--right')
     expect(posterData.sections.find((section) => section.id === 'guidance-limitations')?.order)

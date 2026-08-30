@@ -181,7 +181,7 @@ const substantiveHeadings = ["Scientific argument", "Header", "Upper left — co
 const structuralLines = new Set([
   "**Inventory spacing:** Increase line spacing, task-group separation, and inner padding without adding names or text. Extend the scope grid to align with the bottom of the example column.",
   "**Visual hierarchy:** Give Results a stronger bold heading, add internal frame padding, and align the frame bottoms within each row. Keep the title, logos, original manuscript architecture, and section order unchanged.",
-  "Use the existing contribution statements as bold headings instead of repeated action labels. Align the statements at the top and keep the QR in its own column within the library contribution.",
+  "Use an unboxed closing strip headed Contributions with the same typography as Results. Give each equal-width message a small teal ordinal, a navy heading matching the result-panel titles but bold, and one short supporting line. Remove card backgrounds and colored bars. Anchor the enlarged, caption-free GitHub QR to the height of the whole strip and preserve its quiet zone.",
   "**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.",
   "**Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.",
   "**Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.",
@@ -189,7 +189,7 @@ const structuralLines = new Set([
   "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.",
   "**Typography:** Use an eighty-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and result labels. Set body copy near eighteen points and result labels to at least seventeen points at A1. Restore the original manuscript diagram with its original fonts, sizes, and line breaks. Preserve lossless plot interiors in poster-only result derivatives; do not infer or reconstruct benchmark statistics.",
   "**Logo inventory:** ECML-PKDD above XKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.",
-  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at the bottom of the poster; linked to the repository, with no header or paper QR.",
+  "**QR inventory:** One enlarged QR with the official GitHub mark inside the library contribution at the bottom of the poster; linked to the repository, with no printed caption, header QR, or paper QR. Retain an accessible link label, high error correction, and clear space around the code and logo.",
   "**Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** No bottom reproduction strip or repository/documentation links. Retain the contribution QR and non-printing provenance. Keep a compact twelve-pixel gap between the header and main body with no header bottom padding."
