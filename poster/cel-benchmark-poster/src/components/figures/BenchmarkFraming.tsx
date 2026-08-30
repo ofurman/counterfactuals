@@ -1,4 +1,5 @@
 import { ClaimWording } from '@/components/poster'
+import { ProjectQr } from '@/components/poster/ProjectQr'
 import { ArrowDown } from 'lucide-react'
 import { counterfactualExample as example, exampleIncome, examplePrediction } from '@/data/counterfactualExample'
 
@@ -40,9 +41,10 @@ export function ContributionStack() {
   return (
     <div className="contribution-stack">
       {contributions.map((contribution) => (
-        <article className="contribution-item" data-claim-id={contribution.claimId} key={contribution.claimId}>
+        <article className={`contribution-item${contribution.claimId === 'contribution.library' ? ' contribution-item--extend' : ''}`} data-claim-id={contribution.claimId} key={contribution.claimId}>
           <span>{contribution.eyebrow}</span>
           <p><ClaimWording claimId={contribution.claimId} /></p>
+          {contribution.claimId === 'contribution.library' && <ProjectQr />}
         </article>
       ))}
     </div>

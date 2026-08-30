@@ -181,7 +181,7 @@ const substantiveHeadings = ["Scientific argument", "Header", "Left — concept 
 const structuralLines = new Set([
   "**Identity inventory:** Exact manuscript title, camera-ready authors, affiliation, XKDD venue marker. Show the title only once; use a short benchmark subtitle.",
   "**Logo inventory:** PWr, genwro.AI, and Tooploox assets copied unchanged from the user-provided PUMAL reference poster; preserve their aspect ratios and keep authorship unchanged.",
-  "**QR inventory:** One labelled `Code & project` QR linked to the repository; no paper QR.",
+  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at top right; linked to the repository, with no header or paper QR.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in the source notes."
 ]);
@@ -233,7 +233,7 @@ for (const [id, owner] of [["problem", "left"], ["applicability", "left"], ["pro
   if (content.sections.find((section) => section.id === id)?.owner !== owner) fail(`Incorrect column ownership for ${id}`);
 }
 const qrOwners = content.sections.filter((section) => section.assetRoles.includes("project-qr"));
-if (qrOwners.length !== 1 || qrOwners[0].id !== "header" || qrOwners[0].owner !== "header") fail("Exactly one project QR must be owned by the header section");
+if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "right" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the right-column Extend contribution");
 const headerSection = content.sections.find((section) => section.id === "header");
 if (headerSection.heading !== identity.title) fail("Poster title must exactly match the manuscript title");
 if (/hold\s+the\s+protocol\s+constant/i.test([headerSection.heading, ...headerSection.copy].join(" ")) && !headerSection.claimIds.includes("scope.protocol")) fail("Header protocol-constant copy must map to scope.protocol");

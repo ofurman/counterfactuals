@@ -85,3 +85,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: The new definition is anchored to the manuscript introduction. Invented example inputs and the approval threshold are isolated in `ce-example.json`, labelled as toy data on the poster, and tested to flip the declared prediction without claiming experimental provenance. `brand-assets.json` records the reference path and SHA-256 for each byte-identical source logo. Live browser rectangles confirm both center panels retain their previous positions and sizes.
 **Problems**: Initial example spacing exceeded its panel by four pixels; reduced only its internal gaps/margin. PDF text extraction uppercased the styled illustrative label; its content check now compares case-insensitively while the manuscript-title check remains exact. Both issues were resolved before the successful full verification.
 **Commit**: `this commit` (`feat(poster): add CE example and refine benchmark layout`)
+
+## 2026-08-30 12:58 -- Post-plan revision: Project QR inside Extend -- DONE
+**Did**: Moved the unique repository QR from the header into the Extend contribution, beside the open-source library description. Removed the reserved header QR column and retained the exact title, logos, and evidence-panel layout.
+**Verification**: `pnpm run verify:all` passed all 15 tests, source/brief checks, offline build, layout, claims, one-page A0 PDF, and package audits. Tests and the live claim audit now require exactly one QR owned by `contribution.library` in the right-column contributions section. Manual checksums passed; the final PDF-derived preview was visually inspected without clipping.
+**Provenance**: QR payload and label still resolve to the frozen project identity. The vector QR has a four-module quiet zone and is contained within the Extend card.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): move project QR to Extend contribution`)

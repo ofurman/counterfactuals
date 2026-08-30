@@ -50,6 +50,10 @@ describe('rendered evidence provenance', () => {
       expect(allowedLinks.has(anchor.href)).toBe(true)
     }
     const qr = container.querySelector<HTMLElement>('[data-qr-destination]')
+    expect(container.querySelectorAll('[data-qr-destination]')).toHaveLength(1)
+    expect(container.querySelector('.poster-header [data-qr-destination]')).toBeNull()
+    expect(qr?.closest('article')?.dataset.claimId).toBe('contribution.library')
+    expect(qr?.closest('[data-section]')?.getAttribute('data-section')).toBe('guidance-limitations')
     expect(qr?.dataset.qrDestination).toBe(posterData.identity.qr.url)
     expect(qr?.getAttribute('href')).toBe(posterData.identity.links.repository)
 

@@ -259,9 +259,9 @@
     },
     "strip": {
       "top": 337.15625,
-      "right": 1602,
+      "right": 1812,
       "bottom": 395.15625,
-      "left": 1239,
+      "left": 1449,
       "width": 363,
       "height": 58
     },
@@ -269,9 +269,9 @@
       {
         "id": "pwr",
         "top": 337.15625,
-        "right": 1276,
+        "right": 1486,
         "bottom": 395.15625,
-        "left": 1239,
+        "left": 1449,
         "width": 37,
         "height": 58,
         "objectFit": "contain"
@@ -279,9 +279,9 @@
       {
         "id": "genwro",
         "top": 349.15625,
-        "right": 1436,
+        "right": 1646,
         "bottom": 383.15625,
-        "left": 1300,
+        "left": 1510,
         "width": 136,
         "height": 34,
         "objectFit": "contain"
@@ -289,9 +289,9 @@
       {
         "id": "tooploox",
         "top": 347.65625,
-        "right": 1602,
+        "right": 1812,
         "bottom": 384.65625,
-        "left": 1460,
+        "left": 1670,
         "width": 142,
         "height": 37,
         "objectFit": "contain"
@@ -340,37 +340,37 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:57549/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:58087/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:57549/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:58087/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:57549/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:58087/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:57549/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:58087/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:57549/architecture.bded2544.png",
+      "src": "http://127.0.0.1:58087/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:57549/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:58087/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:57549/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:58087/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

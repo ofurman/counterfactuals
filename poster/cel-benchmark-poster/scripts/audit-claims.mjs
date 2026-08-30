@@ -29,6 +29,9 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
     sources: [...document.querySelectorAll('[data-source-citation]')].map((element) => element.getAttribute('data-source-citation')),
     links: [...document.querySelectorAll('a[href]')].map((element) => element.href),
     qr: document.querySelector('[data-qr-destination]')?.getAttribute('data-qr-destination'),
+    qrCount: document.querySelectorAll('[data-qr-destination]').length,
+    qrOwner: document.querySelector('[data-qr-destination]')?.closest('article')?.dataset.claimId,
+    qrSection: document.querySelector('[data-qr-destination]')?.closest('[data-section]')?.getAttribute('data-section'),
     header: document.querySelector('.poster-header')?.textContent ?? '',
     title: document.querySelector('.poster-header h1')?.textContent ?? '',
     visibleWordCount: document.querySelector('.poster-canvas')?.innerText.trim().split(/\s+/).length ?? 0,
@@ -71,6 +74,7 @@ for (const source of rendered.sources) if (!allowedSources.has(source) && !sourc
 const allowedLinks = new Set(Object.values(identity.links))
 for (const link of rendered.links) if (!allowedLinks.has(link)) throw new Error(`Rendered unknown link: ${link}`)
 if (rendered.qr !== identity.qr.url) throw new Error('Rendered QR destination does not match identity')
+if (rendered.qrCount !== 1 || rendered.qrOwner !== 'contribution.library' || rendered.qrSection !== 'guidance-limitations') throw new Error('The unique project QR must be inside the Extend contribution')
 if (rendered.title !== identity.title) throw new Error('Poster title differs from the manuscript title')
 if (!rendered.visibleWordCount || rendered.visibleWordCount > 260) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/260`)
 for (const text of [identity.venue, identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)

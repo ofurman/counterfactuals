@@ -76,10 +76,7 @@ a { color: inherit; }
 }
 
 .poster-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 170px;
-  gap: 40px;
-  align-items: start;
+  display: block;
   padding-bottom: 18px;
   border-bottom: 3px solid var(--navy);
 }
@@ -110,9 +107,10 @@ h1 {
 .brand-logo--tooploox { width: 142px; height: 37px; }
 .project-mark {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   color: var(--navy);
-  font-size: 13px;
+  font-size: 11px;
+  line-height: 1.2;
   font-weight: 750;
   text-align: center;
   text-decoration: none;
@@ -120,9 +118,9 @@ h1 {
 .project-mark__qr {
   display: grid;
   place-items: center;
-  padding: 8px;
+  padding: 6px;
   background: white;
-  outline: 7px solid var(--teal-light);
+  outline: 3px solid var(--teal-light);
 }
 
 .scope-strip {
@@ -279,13 +277,13 @@ h1 {
 .example-rule, .example-disclaimer { margin: 0; color: #c9d0d7; font-size: 11px; line-height: 1.2; }
 
 .contributions-block { border-top-color: var(--teal); }
-.contribution-stack { display: grid; gap: 18px; margin-top: 22px; }
+.contribution-stack { display: grid; gap: 12px; margin-top: 16px; }
 .contribution-item {
   display: grid;
   grid-template-columns: 1fr;
   gap: 9px;
   align-items: start;
-  padding: 18px 20px;
+  padding: 14px 20px;
   background: #f4f8f7;
   border-left: 5px solid var(--teal);
 }
@@ -293,6 +291,11 @@ h1 {
 .contribution-item > span { color: var(--teal); font-size: 12px; font-weight: 900; letter-spacing: 0.09em; }
 .contribution-item:nth-child(2) > span { color: var(--orange); }
 .contribution-item p { margin: 0; font-size: 20px; line-height: 1.2; }
+.contribution-item--extend { grid-template-columns: minmax(0, 1fr) 108px; column-gap: 16px; align-items: center; }
+.contribution-item--extend > span, .contribution-item--extend > p { grid-column: 1; }
+.contribution-item--extend > span { align-self: end; }
+.contribution-item--extend > p { align-self: start; }
+.contribution-item--extend .project-mark { grid-column: 2; grid-row: 1 / span 2; }
 
 .protocol-block {
   padding: 14px 18px !important;

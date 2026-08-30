@@ -18,7 +18,7 @@ path, not a dump of manuscript sections or a full result table.
 - Paper identity and a direct benchmark hook: CEL enables controlled comparison of counterfactual explanations across multiple quality dimensions. <!-- claims: scope.protocol, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Benchmark, manuscript/main_lncs.tex#Conclusions -->
 **Identity inventory:** Exact manuscript title, camera-ready authors, affiliation, XKDD venue marker. Show the title only once; use a short benchmark subtitle.
 **Logo inventory:** PWr, genwro.AI, and Tooploox assets copied unchanged from the user-provided PUMAL reference poster; preserve their aspect ratios and keep authorship unchanged.
-**QR inventory:** One labelled `Code & project` QR linked to the repository; no paper QR.
+**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at top right; linked to the repository, with no header or paper QR.
 
 ## Left — concept and global results
 

@@ -18,8 +18,8 @@
       "copy": ["One protocol. Multiple CE paradigms. Measurable trade-offs."],
       "claimIds": ["scope.protocol", "conclusion.tradeoffs"],
       "sourceCitations": ["manuscript/main_lncs.tex#Benchmark", "manuscript/main_lncs.tex#Conclusions"],
-      "linkIds": ["repository"],
-      "assetRoles": ["project-qr", "reference-logos"]
+      "linkIds": [],
+      "assetRoles": ["reference-logos"]
     },
     {
       "id": "problem",
@@ -95,8 +95,8 @@
       "copy": [],
       "claimIds": ["contribution.protocol", "contribution.benchmark", "contribution.library"],
       "sourceCitations": ["manuscript/main_lncs.tex#Introduction"],
-      "linkIds": [],
-      "assetRoles": ["contribution-stack"]
+      "linkIds": ["repository"],
+      "assetRoles": ["contribution-stack", "project-qr"]
     },
     {
       "id": "reproducibility",
