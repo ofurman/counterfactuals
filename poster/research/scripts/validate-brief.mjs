@@ -84,7 +84,7 @@ for (const edge of ["topPx", "rightPx", "bottomPx", "leftPx"]) {
   if (!Number.isFinite(visual.safeArea?.[edge]) || visual.safeArea[edge] <= 0) fail(`Invalid safe-area value: ${edge}`);
 }
 if (visual.safeArea.leftPx + visual.safeArea.rightPx >= visual.canvas.widthPx || visual.safeArea.topPx + visual.safeArea.bottomPx >= visual.canvas.heightPx) fail("Safe area is not contained by the canvas");
-if (JSON.stringify(visual.macroGrid.columns) !== JSON.stringify(["1fr", "2fr", "1fr"])) fail("Visual spec lacks the asymmetric macro-grid");
+if (JSON.stringify(visual.macroGrid.columns) !== JSON.stringify(["1fr", "1.85fr", "1.45fr"])) fail("Visual spec lacks the rebalanced framework/results macro-grid");
 if (!Number.isFinite(visual.macroGrid.gapPx) || visual.macroGrid.gapPx <= 0) fail("Macro-grid gap must be positive");
 for (const family of ["title", "body", "mono"]) if (!visual.fonts?.[family]) fail(`Missing font stack: ${family}`);
 
@@ -177,11 +177,11 @@ for (const [index, tag] of storyboardTags.entries()) {
   const citations = tag[2].split(",").map((value) => value.trim()).filter(Boolean);
   await validateClaimMapping(ids, citations, `storyboard claim tag ${index + 1}`);
 }
-const substantiveHeadings = ["Scientific argument", "Header", "Left — concept and global results", "Center — controlled protocol", "Right — contributions and group-wise results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
+const substantiveHeadings = ["Scientific argument", "Header", "Left — counterfactual concept", "Center — framework and benchmark scope", "Right — results and contributions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
   "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.",
   "**Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.",
-  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at top right; linked to the repository, with no header or paper QR.",
+  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the right-column results; linked to the repository, with no header or paper QR.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in project files."
 ]);
@@ -219,19 +219,24 @@ for (const section of content.sections) {
   await validateClaimMapping(section.claimIds, section.sourceCitations, `poster section ${section.id}`, {required: scientific});
   for (const linkId of section.linkIds) if (!linkIds.has(linkId)) fail(`${section.id} references unknown link ID: ${linkId}`);
 }
-for (const required of ["header", "problem", "scope", "protocol", "local-tradeoff", "group-tradeoff", "applicability", "guidance-limitations", "reproducibility"]) {
+for (const required of ["header", "problem", "scope", "protocol", "results", "local-tradeoff", "group-tradeoff", "applicability", "guidance-limitations", "reproducibility"]) {
   if (!sectionIds.has(required)) fail(`Missing required poster section: ${required}`);
 }
 for (const [linkId, link] of Object.entries(content.links)) {
   if (!identity.links[link.identityLink]) fail(`${linkId} does not resolve to identity.json`);
 }
-if (content.sections.length !== 9 || sectionIds.has("regression-tradeoff")) fail("Poster must contain nine sections without regression results");
+if (content.sections.length !== 10 || sectionIds.has("regression-tradeoff")) fail("Poster must contain seven top-level sections and three nested result panels without regression results");
 if (JSON.stringify([...content.resultVisuals].sort()) !== JSON.stringify(["global-manuscript-figure", "group-manuscript-figure", "local-manuscript-figure"])) fail("Poster must own exactly the local, global, and group-wise result visuals");
 const conceptSection = content.sections.find((section) => section.id === "problem");
 if (conceptSection.copy.join(" ") !== claimsById.get("concept.counterfactual").posterWording || !conceptSection.claimIds.includes("concept.counterfactual")) fail("CE definition must resolve to its manuscript claim");
-for (const [id, owner] of [["problem", "left"], ["applicability", "left"], ["protocol", "center"], ["local-tradeoff", "center"], ["guidance-limitations", "right"], ["group-tradeoff", "right"]]) {
+for (const [id, owner] of [["problem", "left"], ["applicability", "right"], ["protocol", "center"], ["scope", "center"], ["results", "right"], ["local-tradeoff", "right"], ["guidance-limitations", "right"], ["group-tradeoff", "right"]]) {
   if (content.sections.find((section) => section.id === id)?.owner !== owner) fail(`Incorrect column ownership for ${id}`);
 }
+const scopeSection = content.sections.find((section) => section.id === 'scope');
+if (!scopeSection.claimIds.includes('scope.metrics') || scopeSection.order <= content.sections.find((section) => section.id === 'protocol').order) fail('Scope with the reported metric count must follow the evaluation framework');
+const resultsSection = content.sections.find((section) => section.id === 'results');
+if (resultsSection.heading !== 'Results' || resultsSection.order >= content.sections.find((section) => section.id === 'guidance-limitations').order) fail('Unified Results must precede contributions');
+for (const id of ['result.global.overview', 'result.local.overview', 'result.group.overview']) if (!resultsSection.claimIds.includes(id)) fail(`Unified Results lacks ${id}`);
 const qrOwners = content.sections.filter((section) => section.assetRoles.includes("project-qr"));
 if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "right" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the right-column Extend contribution");
 const headerSection = content.sections.find((section) => section.id === "header");
@@ -283,6 +288,7 @@ scanNumericLiterals(guidelines, "design guidelines", [
   `${visual.canvas.widthPx} × ${visual.canvas.heightPx}`,
   `${visual.page.widthMm} × ${visual.page.heightMm} mm`,
   visual.macroGrid.columns.join(" "),
+  "1fr 2fr 1fr",
   visual.print.pageCss
 ]);
 scanNumericLiterals(storyboard, "storyboard");

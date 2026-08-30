@@ -34,109 +34,124 @@
       "scrollHeight": 217
     },
     {
-      "id": "scope",
-      "rect": {
-        "top": 375,
-        "right": 1812,
-        "bottom": 452.125,
-        "left": 108,
-        "width": 1704,
-        "height": 77.125
-      },
-      "clientWidth": 1696,
-      "scrollWidth": 1696,
-      "clientHeight": 77,
-      "scrollHeight": 77
-    },
-    {
       "id": "problem",
       "rect": {
-        "top": 472.125,
-        "right": 522,
-        "bottom": 941,
+        "top": 375,
+        "right": 493.109375,
+        "bottom": 794.8125,
         "left": 108,
-        "width": 414,
-        "height": 468.875
+        "width": 385.109375,
+        "height": 419.8125
       },
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 465,
-      "scrollHeight": 465
-    },
-    {
-      "id": "applicability",
-      "rect": {
-        "top": 957,
-        "right": 522,
-        "bottom": 1259.5,
-        "left": 108,
-        "width": 414,
-        "height": 302.5
-      },
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 299,
-      "scrollHeight": 299
+      "clientWidth": 385,
+      "scrollWidth": 385,
+      "clientHeight": 416,
+      "scrollHeight": 416
     },
     {
       "id": "protocol",
       "rect": {
-        "top": 472.125,
-        "right": 1374,
-        "bottom": 941,
-        "left": 546,
-        "width": 828,
-        "height": 468.875
+        "top": 375,
+        "right": 1229.578125,
+        "bottom": 784.546875,
+        "left": 517.109375,
+        "width": 712.46875,
+        "height": 409.546875
       },
-      "clientWidth": 828,
-      "scrollWidth": 828,
-      "clientHeight": 469,
-      "scrollHeight": 469
+      "clientWidth": 712,
+      "scrollWidth": 712,
+      "clientHeight": 410,
+      "scrollHeight": 410
+    },
+    {
+      "id": "scope",
+      "rect": {
+        "top": 808.546875,
+        "right": 1229.578125,
+        "bottom": 1041.828125,
+        "left": 517.109375,
+        "width": 712.46875,
+        "height": 233.28125
+      },
+      "clientWidth": 712,
+      "scrollWidth": 712,
+      "clientHeight": 230,
+      "scrollHeight": 230
+    },
+    {
+      "id": "results",
+      "rect": {
+        "top": 375,
+        "right": 1812,
+        "bottom": 932.015625,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 557.015625
+      },
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 553,
+      "scrollHeight": 553
+    },
+    {
+      "id": "applicability",
+      "rect": {
+        "top": 426.75,
+        "right": 1812,
+        "bottom": 608.046875,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 181.296875
+      },
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 181,
+      "scrollHeight": 181
     },
     {
       "id": "local-tradeoff",
       "rect": {
-        "top": 957,
-        "right": 1374,
-        "bottom": 1259.5,
-        "left": 546,
-        "width": 828,
-        "height": 302.5
-      },
-      "clientWidth": 828,
-      "scrollWidth": 828,
-      "clientHeight": 299,
-      "scrollHeight": 299
-    },
-    {
-      "id": "guidance-limitations",
-      "rect": {
-        "top": 472.125,
+        "top": 624.046875,
         "right": 1812,
-        "bottom": 941,
-        "left": 1398,
-        "width": 414,
-        "height": 468.875
+        "bottom": 734.71875,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 110.671875
       },
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 465,
-      "scrollHeight": 465
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 111,
+      "scrollHeight": 111
     },
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 957,
+        "top": 750.71875,
         "right": 1812,
-        "bottom": 1259.5,
-        "left": 1398,
-        "width": 414,
-        "height": 302.5
+        "bottom": 932.015625,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 181.296875
       },
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 299,
-      "scrollHeight": 299
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 181,
+      "scrollHeight": 181
+    },
+    {
+      "id": "guidance-limitations",
+      "rect": {
+        "top": 956.015625,
+        "right": 1812,
+        "bottom": 1254.140625,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 298.125
+      },
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 294,
+      "scrollHeight": 294
     },
     {
       "id": "reproducibility",
@@ -156,54 +171,54 @@
   ],
   "figures": [
     {
-      "clientWidth": 414,
-      "scrollWidth": 414,
+      "clientWidth": 385,
+      "scrollWidth": 385,
       "clientHeight": 340,
       "scrollHeight": 340
     },
     {
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 116,
-      "scrollHeight": 116
+      "clientWidth": 712,
+      "scrollWidth": 712,
+      "clientHeight": 363,
+      "scrollHeight": 363
     },
     {
-      "clientWidth": 828,
-      "scrollWidth": 828,
-      "clientHeight": 422,
-      "scrollHeight": 422
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 153,
+      "scrollHeight": 153
     },
     {
-      "clientWidth": 828,
-      "scrollWidth": 828,
-      "clientHeight": 113,
-      "scrollHeight": 113
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 83,
+      "scrollHeight": 83
     },
     {
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 116,
-      "scrollHeight": 116
+      "clientWidth": 558,
+      "scrollWidth": 558,
+      "clientHeight": 153,
+      "scrollHeight": 153
     }
   ],
   "exampleBackground": "rgba(0, 0, 0, 0)",
   "canvasTopBorderWidth": "0px",
   "architecture": {
     "viewport": {
-      "top": 518.4375,
-      "right": 1374,
-      "bottom": 940.578125,
-      "left": 546,
-      "width": 828,
-      "height": 422.140625
+      "top": 421.3125,
+      "right": 1229.578125,
+      "bottom": 784.546875,
+      "left": 517.109375,
+      "width": 712.46875,
+      "height": 363.234375
     },
     "image": {
-      "top": 499.4375,
-      "right": 1435.078125,
-      "bottom": 998.265625,
-      "left": 484.921875,
-      "width": 950.15625,
-      "height": 498.828125
+      "top": 404.96875,
+      "right": 1282.140625,
+      "bottom": 834.1875,
+      "left": 464.5625,
+      "width": 817.578125,
+      "height": 429.21875
     },
     "background": "rgba(0, 0, 0, 0)",
     "outline": "none",
@@ -215,64 +230,134 @@
     "left": [
       {
         "id": "problem",
-        "top": 472.125,
-        "right": 522,
-        "bottom": 941,
+        "top": 375,
+        "right": 493.109375,
+        "bottom": 794.8125,
         "left": 108,
-        "width": 414,
-        "height": 468.875
-      },
-      {
-        "id": "applicability",
-        "top": 957,
-        "right": 522,
-        "bottom": 1259.5,
-        "left": 108,
-        "width": 414,
-        "height": 302.5
+        "width": 385.109375,
+        "height": 419.8125
       }
     ],
     "center": [
       {
         "id": "protocol",
-        "top": 472.125,
-        "right": 1374,
-        "bottom": 941,
-        "left": 546,
-        "width": 828,
-        "height": 468.875
+        "top": 375,
+        "right": 1229.578125,
+        "bottom": 784.546875,
+        "left": 517.109375,
+        "width": 712.46875,
+        "height": 409.546875
       },
       {
-        "id": "local-tradeoff",
-        "top": 957,
-        "right": 1374,
-        "bottom": 1259.5,
-        "left": 546,
-        "width": 828,
-        "height": 302.5
+        "id": "scope",
+        "top": 808.546875,
+        "right": 1229.578125,
+        "bottom": 1041.828125,
+        "left": 517.109375,
+        "width": 712.46875,
+        "height": 233.28125
       }
     ],
     "right": [
       {
-        "id": "guidance-limitations",
-        "top": 472.125,
+        "id": "results",
+        "top": 375,
         "right": 1812,
-        "bottom": 941,
-        "left": 1398,
-        "width": 414,
-        "height": 468.875
+        "bottom": 932.015625,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 557.015625
       },
       {
-        "id": "group-tradeoff",
-        "top": 957,
+        "id": "guidance-limitations",
+        "top": 956.015625,
         "right": 1812,
-        "bottom": 1259.5,
-        "left": 1398,
-        "width": 414,
-        "height": 302.5
+        "bottom": 1254.140625,
+        "left": 1253.578125,
+        "width": 558.421875,
+        "height": 298.125
       }
     ]
   },
+  "resultPanels": [
+    {
+      "id": "applicability",
+      "top": 426.75,
+      "right": 1812,
+      "bottom": 608.046875,
+      "left": 1253.578125,
+      "width": 558.421875,
+      "height": 181.296875
+    },
+    {
+      "id": "local-tradeoff",
+      "top": 624.046875,
+      "right": 1812,
+      "bottom": 734.71875,
+      "left": 1253.578125,
+      "width": 558.421875,
+      "height": 110.671875
+    },
+    {
+      "id": "group-tradeoff",
+      "top": 750.71875,
+      "right": 1812,
+      "bottom": 932.015625,
+      "left": 1253.578125,
+      "width": 558.421875,
+      "height": 181.296875
+    }
+  ],
+  "scopeItems": [
+    {
+      "top": 883.046875,
+      "right": 742.59375,
+      "bottom": 951.4375,
+      "left": 517.109375,
+      "width": 225.484375,
+      "height": 68.390625
+    },
+    {
+      "top": 883.046875,
+      "right": 986.078125,
+      "bottom": 951.4375,
+      "left": 760.59375,
+      "width": 225.484375,
+      "height": 68.390625
+    },
+    {
+      "top": 883.046875,
+      "right": 1229.5625,
+      "bottom": 951.4375,
+      "left": 1004.078125,
+      "width": 225.484375,
+      "height": 68.390625
+    },
+    {
+      "top": 973.4375,
+      "right": 742.59375,
+      "bottom": 1041.828125,
+      "left": 517.109375,
+      "width": 225.484375,
+      "height": 68.390625
+    },
+    {
+      "top": 973.4375,
+      "right": 986.078125,
+      "bottom": 1041.828125,
+      "left": 760.59375,
+      "width": 225.484375,
+      "height": 68.390625
+    },
+    {
+      "top": 973.4375,
+      "right": 1229.5625,
+      "bottom": 1041.828125,
+      "left": 1004.078125,
+      "width": 225.484375,
+      "height": 68.390625
+    }
+  ],
   "branding": {
     "header": {
       "top": 135,
@@ -378,47 +463,47 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:60258/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:60703/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:60258/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:60703/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:60258/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:60703/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:60258/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:60703/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:60258/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:60703/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:60258/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:60703/architecture.bded2544.png",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:60703/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:60258/architecture.bded2544.png",
+      "src": "http://127.0.0.1:60703/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:60258/local-mixed.fafc5dac.jpg",
-      "complete": true,
-      "naturalWidth": 1400
-    },
-    {
-      "src": "http://127.0.0.1:60258/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:60703/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

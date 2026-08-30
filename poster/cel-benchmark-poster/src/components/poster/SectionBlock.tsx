@@ -7,16 +7,18 @@ type Props = {
   className?: string
   children?: ReactNode
   showClaims?: boolean
+  as?: 'section' | 'article'
 }
 
-export function SectionBlock({ section, className = '', children, showClaims = true }: Props) {
+export function SectionBlock({ section, className = '', children, showClaims = true, as: Element = 'section' }: Props) {
+  const Heading = Element === 'article' ? 'h3' : 'h2'
   return (
-    <section
+    <Element
       className={`section-block ${className}`.trim()}
       data-section={section.id}
       aria-labelledby={`${section.id}-heading`}
     >
-      <h2 id={`${section.id}-heading`}>{section.heading}</h2>
+      <Heading id={`${section.id}-heading`}>{section.heading}</Heading>
       {section.copy.map((paragraph) => <p className="section-copy" key={paragraph}>{paragraph}</p>)}
       {showClaims && section.claims.length > 0 && (
         <ul className="claim-list">
@@ -25,6 +27,6 @@ export function SectionBlock({ section, className = '', children, showClaims = t
       )}
       {children}
       <SourceNote section={section} />
-    </section>
+    </Element>
   )
 }

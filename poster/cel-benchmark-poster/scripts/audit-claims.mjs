@@ -75,6 +75,7 @@ const expectedScope = [
   ['scope.methods', ['local', 'global', 'groupWise'].filter((key) => Number.isFinite(claimsById.get('scope.methods').value[key])).length, 'paradigms'],
   ['scope.backbones', claimsById.get('scope.backbones').value.total, 'backbones / task'],
   ['scope.folds', claimsById.get('scope.folds').value.total, 'folds'],
+  ['scope.metrics', claimsById.get('scope.metrics').value.total, 'classification metrics'],
 ]
 if (JSON.stringify(rendered.scope) !== JSON.stringify(expectedScope.map(([id, value, label]) => ({ id, text: `${value}${label}` })))) throw new Error('Rendered scope facts do not match the generated ledger')
 const allowedSources = new Set(content.sections.flatMap((section) => section.sourceCitations))

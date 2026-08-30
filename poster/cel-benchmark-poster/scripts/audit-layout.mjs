@@ -71,6 +71,8 @@ const report = await withPosterPage(async ({ page, failures }) => {
       },
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
       columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
+      resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
+      scopeItems: [...document.querySelectorAll('.scope-strip li')].map(rect),
       branding: {
         header: rect(document.querySelector('.poster-header')),
         title: rect(document.querySelector('.header-copy h1')),
@@ -97,7 +99,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
-  if (screen.architecture.viewport.width < 820 || screen.architecture.viewport.height < 415) failuresFound.push('Architecture schema has not been enlarged to fill the center column')
+  if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the rebalanced center column')
   const cropScale = screen.architecture.viewport.width / 1220
   if (Math.abs(screen.architecture.image.width - 1400 * cropScale) > 1 || Math.abs(screen.architecture.viewport.left - screen.architecture.image.left - 90 * cropScale) > 1 || Math.abs(screen.architecture.viewport.top - screen.architecture.image.top - 28 * cropScale) > 1 || Math.abs(screen.architecture.viewport.height - 622 * cropScale) > 1) failuresFound.push('Architecture whitespace crop differs from its source-image bounds')
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
@@ -105,11 +107,14 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)
   if (screen.canvas.scrollWidth > screen.canvas.clientWidth || screen.canvas.scrollHeight > screen.canvas.clientHeight) failuresFound.push('Poster canvas overflows')
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
-  if (screen.sections.length !== 9 || new Set(screen.sections.map((section) => section.id)).size !== 9) failuresFound.push('Named section inventory is not exactly nine unique sections')
-  for (const [column, expected] of Object.entries({ left: ['problem', 'applicability'], center: ['protocol', 'local-tradeoff'], right: ['guidance-limitations', 'group-tradeoff'] })) {
+  if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named inventory must include seven top-level sections and three nested result panels')
+  for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope'], right: ['results', 'guidance-limitations'] })) {
     if (JSON.stringify(screen.columns[column].map((section) => section.id)) !== JSON.stringify(expected)) failuresFound.push(`${column} column is not in the requested order`)
-    if (Math.abs(screen.columns[column][1]?.top - screen.columns.center[1]?.top) > 1) failuresFound.push(`${column} bottom result is not aligned with the center result`)
+    if (screen.columns[column].length > 1 && screen.columns[column][0].bottom >= screen.columns[column][1].top) failuresFound.push(`${column} sections overlap`)
   }
+  if (JSON.stringify(screen.resultPanels.map((panel) => panel.id)) !== JSON.stringify(['applicability', 'local-tradeoff', 'group-tradeoff'])) failuresFound.push('Global, local and group-wise results must be inside the unified Results section')
+  if (screen.resultPanels.some((panel, index) => index > 0 && screen.resultPanels[index - 1].bottom >= panel.top)) failuresFound.push('Unified result panels overlap')
+  if (screen.scopeItems.length !== 6 || screen.scopeItems.slice(0, 3).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(3).some((item) => Math.abs(item.top - screen.scopeItems[3].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[3].top) failuresFound.push('Benchmark scope must be a two-row, three-column facts grid')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const logo of screen.branding.logos) {
     if (logo.width <= 0 || logo.height <= 0 || logo.objectFit !== 'contain') failuresFound.push(`${logo.id} logo is missing or distorted`)

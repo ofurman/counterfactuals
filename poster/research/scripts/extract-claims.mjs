@@ -349,6 +349,11 @@ export async function buildClaims() {
     );
   }
   const foldCount = Number(foldScope[1]);
+  const classificationMetricCount = Object.keys(parsedTables['tab:cat_metrics_mlp'][0].metrics).length;
+  for (const [label, , kind] of tableDefinitions) {
+    if (kind === 'classification' && parsedTables[label].some((row) => Object.keys(row.metrics).length !== classificationMetricCount)) throw new Error(`Inconsistent reported metric count in ${label}`);
+  }
+  requireMatch(supplementary, /combined metrics table that includes coverage, validity, sparsity, probabilistic plausibility, log-density, LOF score, Isolation Forest score, proximity \(L2-Hamming for mixed-type datasets, L2 for numerical datasets\), and wall-clock computation time/, 'reported classification metrics');
 
   const claims = [
     {
@@ -414,6 +419,19 @@ export async function buildClaims() {
       extractionRule: "Regex-extract the predictive-backbone count from the benchmark scope statement.",
       direction: "scope",
       qualifier: "Classification and regression use task-appropriate backbone pairs.",
+      status: "publishable"
+    },
+    {
+      id: "scope.metrics",
+      claimKind: "scope-count",
+      posterWording: `${classificationMetricCount} classification metrics`,
+      value: {kind: "finite", total: classificationMetricCount},
+      unit: "metrics",
+      verdict: `Classification configurations report ${classificationMetricCount} metrics, including computation time.`,
+      source: {file: "manuscript/tables/results_categorical.tex", anchor: "tab:cat_metrics_mlp metric headings"},
+      extractionRule: "Count parsed classification metric columns and cross-check all classification table schemas and the supplementary metric inventory.",
+      direction: "scope",
+      qualifier: "Classification tables only; includes runtime and counts task-appropriate proximity as one metric. This is not the total library metric registry size.",
       status: "publishable"
     },
     {

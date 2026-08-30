@@ -176,7 +176,9 @@ for (const claim of claims.claims) {
   if (claim.status === "contradictory" && !/omit/i.test(claim.qualifier)) fail(`${claim.id} contradiction is not resolved by omission or qualification`);
 }
 
-const allowedScopeCounts = new Set(["scope.datasets", "scope.methods", "scope.backbones", "scope.folds"]);
+const allowedScopeCounts = new Set(["scope.datasets", "scope.methods", "scope.backbones", "scope.folds", "scope.metrics"]);
+const metricHeadingRow = tableBlock(tableTexts[0], 'tab:cat_metrics_mlp').split('\n').find((line) => line.includes('Method') && line.includes('Cov.'));
+if (!metricHeadingRow || claims.claims.find((claim) => claim.id === 'scope.metrics')?.value.total !== metricHeadingRow.split('&').length - 2) fail('Reported metric count does not match the live classification table heading');
 const allowedResultMetrics = new Set(["coverage", "validity", "sparsity", "probabilistic_plausibility", "log_density", "lof", "isolation_forest", "l2_hamming", "time_s", "mae", "l2", "l1"]);
 const resultMetricOrder = new Map([
   ["tab:cat_metrics_mlp", ["coverage", "validity", "sparsity", "probabilistic_plausibility", "log_density", "lof", "isolation_forest", "l2_hamming", "time_s"]],

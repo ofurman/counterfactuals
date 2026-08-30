@@ -95,6 +95,7 @@ const datasetScope = resolveClaim('scope.datasets').value as Extract<ClaimValue,
 const methodScope = resolveClaim('scope.methods').value as Extract<ClaimValue, { kind: 'finite' }>
 const backboneScope = resolveClaim('scope.backbones').value as Extract<ClaimValue, { kind: 'finite' }>
 const foldScope = resolveClaim('scope.folds').value as Extract<ClaimValue, { kind: 'finite' }>
+const metricScope = resolveClaim('scope.metrics').value as Extract<ClaimValue, { kind: 'finite' }>
 
 export const posterData = {
   claims,
@@ -125,5 +126,6 @@ export const posterData = {
     },
     { claimId: 'scope.backbones', value: backboneScope.total, label: 'backbones / task' },
     { claimId: 'scope.folds', value: foldScope.total, label: 'folds' },
+    { claimId: 'scope.metrics', value: metricScope.total, label: 'classification metrics' },
   ],
 } as const

@@ -3,7 +3,7 @@
   "page": {"format": "A0", "orientation": "landscape", "widthMm": 1189, "heightMm": 841, "marginMm": 0},
   "canvas": {"widthPx": 1800, "heightPx": 1273},
   "safeArea": {"topPx": 42, "rightPx": 48, "bottomPx": 42, "leftPx": 48},
-  "macroGrid": {"columns": ["1fr", "2fr", "1fr"], "gapPx": 28, "readingOrder": ["left", "center", "right-bottom"]},
+  "macroGrid": {"columns": ["1fr", "1.85fr", "1.45fr"], "gapPx": 24, "readingOrder": ["left", "center", "right"]},
   "colors": {
     "paper": "#fffdf8",
     "navy": "#13253c",

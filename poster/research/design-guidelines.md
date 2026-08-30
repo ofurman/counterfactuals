@@ -15,8 +15,8 @@ labelled and is not presented as a NeurIPS convention.
   the local reference demonstrates the `1800 × 1273`/A0 implementation, while the observed
   NeurIPS examples support one-page overview composition. Sources: [local-reference (local-only),
   openxai-2022, tabular-dl-2022].
-- **Adapt — asymmetric macro-grid.** Keep the local reference's `1fr 2fr 1fr` body so the CEL
-  protocol owns the center; use the navigable left/center/right progression visible in OpenXAI and
+- **Adapt — asymmetric macro-grid.** Use a `1fr 1.85fr 1.45fr` body so the CEL
+  framework retains the widest column and the unified results gain room on the right; use the navigable left/center/right progression visible in OpenXAI and
   M4. Sources: [local-reference (local-only), openxai-2022, m4-2023].
 - **Avoid — manuscript columns.** Do not reproduce paper sections or equal-weight text columns;
   ADBench shows that comprehensiveness can overwhelm overview reading. Sources: [adbench-2022].

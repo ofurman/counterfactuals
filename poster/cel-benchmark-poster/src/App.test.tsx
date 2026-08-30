@@ -11,7 +11,7 @@ describe('poster scaffold', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getByRole('toolbar', { name: /Poster controls/i })).toBeInTheDocument()
     expect(screen.getAllByRole('figure')).toHaveLength(5)
-    expect(screen.getAllByRole('region')).toHaveLength(7)
+    expect(screen.getAllByRole('region')).toHaveLength(5)
     const { widthPx, heightPx } = posterData.visualSpec.canvas
     expect(screen.getByText(new RegExp(`${widthPx} × ${heightPx}`))).toBeInTheDocument()
   })
@@ -22,9 +22,9 @@ describe('poster scaffold', () => {
       .map((element) => element.getAttribute('data-section'))
     expect(sectionIds).toEqual(expect.arrayContaining([
       'header', 'problem', 'scope', 'protocol', 'local-tradeoff', 'group-tradeoff',
-      'applicability', 'guidance-limitations', 'reproducibility',
+      'applicability', 'results', 'guidance-limitations', 'reproducibility',
     ]))
-    expect(sectionIds).toHaveLength(9)
+    expect(sectionIds).toHaveLength(10)
     expect(sectionIds).not.toContain('regression-tradeoff')
   })
 
@@ -43,13 +43,16 @@ describe('poster scaffold', () => {
   it('places the concept and results in the requested columns', () => {
     const { container } = render(<App />)
     for (const [column, ids] of [
-      ['left', ['problem', 'applicability']],
-      ['center', ['protocol', 'local-tradeoff']],
-      ['right', ['guidance-limitations', 'group-tradeoff']],
+      ['left', ['problem']],
+      ['center', ['protocol', 'scope']],
+      ['right', ['results', 'guidance-limitations']],
     ] as const) {
       expect(Array.from(container.querySelectorAll(`.poster-column--${column} > [data-section]`))
         .map((element) => element.getAttribute('data-section'))).toEqual(ids)
     }
     expect(container.querySelector('[data-finding="regression"]')).toBeNull()
+    expect(Array.from(container.querySelectorAll('[data-section="results"] article[data-section]')).map((element) => element.getAttribute('data-section'))).toEqual(['applicability', 'local-tradeoff', 'group-tradeoff'])
+    expect(container.querySelectorAll('.scope-strip li')).toHaveLength(6)
+    expect(container.querySelector('.scope-strip [data-claim-id="scope.metrics"]')?.textContent).toBe('9classification metrics')
   })
 })
