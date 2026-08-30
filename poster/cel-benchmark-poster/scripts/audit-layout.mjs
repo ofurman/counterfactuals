@@ -77,6 +77,15 @@ const report = await withPosterPage(async ({ page, failures }) => {
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
       columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
+      resultFrames: [...document.querySelectorAll('.result-panel')].map((element) => {
+        const outline = element.querySelector('.result-panel__outline rect')
+        const style = getComputedStyle(outline)
+        return { background: getComputedStyle(element).backgroundColor, radius: Number(outline.getAttribute('rx')), fill: style.fill, stroke: style.stroke, strokeWidth: parseFloat(style.strokeWidth), dashArray: style.strokeDasharray.split(/[ ,]+/).map(parseFloat), outline: rect(outline), panel: rect(element) }
+      }),
+      regression: {
+        viewport: rect(document.querySelector('[data-finding="regression"] .manuscript-image-window')),
+        image: rect(document.querySelector('[data-finding="regression"] img')),
+      },
       resultCaptionCount: document.querySelectorAll('.result-manuscript-figure figcaption').length,
       localMetricPanels: [...document.querySelectorAll('.local-metric-window')].map((element) => ({ metric: element.dataset.metric, crop: element.dataset.crop.split(' ').map(Number), viewport: rect(element), image: rect(element.querySelector('img')) })),
       rasterChartLabels: 'Embedded manuscript labels; reviewed visually, not measured as DOM text.',
@@ -100,7 +109,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
           borderColor: stroke.stroke,
         }
       }),
-      centerHeadingCount: document.querySelectorAll('.poster-column--center h2').length,
+      centerHeadingCount: document.querySelectorAll('[data-section="protocol"] h2, [data-section="scope"] h2').length,
       scopeTopBorderWidth: getComputedStyle(document.querySelector('.scope-strip')).borderTopWidth,
       branding: {
         header: rect(document.querySelector('.poster-header')),
@@ -142,12 +151,18 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)
   if (screen.canvas.scrollWidth > screen.canvas.clientWidth || screen.canvas.scrollHeight > screen.canvas.clientHeight) failuresFound.push('Poster canvas overflows')
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
-  if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named inventory must include seven top-level sections and three nested result panels')
-  for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope'], right: ['results', 'guidance-limitations'] })) {
+  if (screen.sections.length !== 11 || new Set(screen.sections.map((section) => section.id)).size !== 11) failuresFound.push('Named inventory must include seven top-level sections and four nested result panels')
+  for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope', 'guidance-limitations'], right: ['results'] })) {
     if (JSON.stringify(screen.columns[column].map((section) => section.id)) !== JSON.stringify(expected)) failuresFound.push(`${column} column is not in the requested order`)
-    if (screen.columns[column].length > 1 && screen.columns[column][0].bottom >= screen.columns[column][1].top) failuresFound.push(`${column} sections overlap`)
+    if (screen.columns[column].some((section, index, sections) => index > 0 && sections[index - 1].bottom >= section.top)) failuresFound.push(`${column} sections overlap`)
   }
-  if (JSON.stringify(screen.resultPanels.map((panel) => panel.id)) !== JSON.stringify(['applicability', 'local-tradeoff', 'group-tradeoff'])) failuresFound.push('Global, local and group-wise results must be inside the unified Results section')
+  if (JSON.stringify(screen.resultPanels.map((panel) => panel.id)) !== JSON.stringify(['applicability', 'local-tradeoff', 'group-tradeoff', 'regression-tradeoff'])) failuresFound.push('Global, local, group-wise, and regression results must be inside the unified Results section')
+  if (screen.resultFrames.length !== 4 || screen.resultFrames.some((frame) => frame.background !== 'rgba(0, 0, 0, 0)' || frame.radius !== 9 || frame.fill !== 'none' || frame.stroke !== 'rgb(16, 56, 76)' || frame.strokeWidth !== 2 || JSON.stringify(frame.dashArray) !== '[10,5]')) failuresFound.push('Each result category must have a transparent rounded long-dash outline')
+  for (const frame of screen.resultFrames) {
+    if (Math.abs(frame.outline.width - frame.panel.width + 2) > 1 || Math.abs(frame.outline.height - frame.panel.height + 2) > 1 || Math.abs(frame.outline.left - frame.panel.left - 1) > 1 || Math.abs(frame.outline.top - frame.panel.top - 1) > 1) failuresFound.push('Result outline does not follow its category bounds')
+  }
+  const regressionScale = screen.regression.viewport.width / 1100
+  if (Math.abs(screen.regression.image.width - 1100 * regressionScale) > 1 || Math.abs(screen.regression.image.height - 655 * regressionScale) > 1 || Math.abs(screen.regression.viewport.height - 225 * regressionScale) > 1 || Math.abs(screen.regression.image.top - screen.regression.viewport.top) > 1) failuresFound.push('Regression figure must preserve the complete Concrete row without stretching')
   if (screen.resultPanels.some((panel, index) => index > 0 && screen.resultPanels[index - 1].bottom >= panel.top)) failuresFound.push('Unified result panels overlap')
   if (screen.resultCaptionCount !== 0) failuresFound.push('Removed result captions remain')
   if (JSON.stringify(screen.localMetricPanels.map((panel) => panel.metric)) !== JSON.stringify(['Validity', 'L2-Hamming', 'Sparsity', 'Log-density', 'Runtime'])) failuresFound.push('All five local metric panels must remain visible')

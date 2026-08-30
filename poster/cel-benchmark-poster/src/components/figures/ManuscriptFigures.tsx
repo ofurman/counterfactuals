@@ -5,6 +5,7 @@ const architectureGraphic = new URL('../../assets/manuscript/architecture.png', 
 const globalGraphic = new URL('../../assets/manuscript/global-adult.jpg', import.meta.url).href
 const groupGraphic = new URL('../../assets/manuscript/group-adult.jpg', import.meta.url).href
 const localGraphic = new URL('../../assets/manuscript/local-mixed.jpg', import.meta.url).href
+const regressionGraphic = new URL('../../assets/manuscript/regression.jpg', import.meta.url).href
 
 // The local manuscript uses much wider axes than the global/group-wise figures.
 // Reflow its complete Adult Census metric panels without stretching the raster.
@@ -20,7 +21,7 @@ type ResultFigureProps = {
   alt: string
   claimId: string
   className?: string
-  finding: 'local' | 'global' | 'group'
+  finding: 'local' | 'global' | 'group' | 'regression'
   image: string
   source: string
   sourceLabel: string
@@ -35,7 +36,7 @@ function ResultFigure({ alt, claimId, className = '', finding, image, source, so
       data-manuscript-source={source}
       data-result-surface={finding}
       aria-label={sourceLabel}
-      data-dataset="Adult Census"
+      data-dataset={finding === 'regression' ? 'Concrete' : 'Adult Census'}
     >
       {finding === 'local' ? (
         <div className="local-metric-grid">
@@ -52,7 +53,7 @@ function ResultFigure({ alt, claimId, className = '', finding, image, source, so
           ))}
         </div>
       ) : (
-        <div className="manuscript-image-window">
+        <div className="manuscript-image-window" data-crop={finding === 'regression' ? '0 0 1100 225' : undefined}>
           <img src={image} alt={alt} />
         </div>
       )}
@@ -118,6 +119,20 @@ export function GroupBenchmarkFigure() {
       image={groupGraphic}
       source="manuscript/figures/metrics_boxplot_group_wise.png"
       sourceLabel="Adult Census · group-wise methods"
+    />
+  )
+}
+
+export function RegressionBenchmarkFigure() {
+  return (
+    <ResultFigure
+      alt="Manuscript Concrete regression boxplots comparing CEARM and Wachter across target MAE, L2 distance, sparsity, log-density, and runtime"
+      claimId="result.regression.overview"
+      className="result-manuscript-figure--regression"
+      finding="regression"
+      image={regressionGraphic}
+      source="manuscript/figures/regression_metrics_boxplot.png"
+      sourceLabel="Concrete regression methods"
     />
   )
 }

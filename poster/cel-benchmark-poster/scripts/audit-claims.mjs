@@ -96,6 +96,7 @@ const expectedManuscriptFigures = [
   'manuscript/figures/metrics_boxplot_local.png',
   'manuscript/figures/metrics_boxplot_global.png',
   'manuscript/figures/metrics_boxplot_group_wise.png',
+  'manuscript/figures/regression_metrics_boxplot.png',
 ]
 if (JSON.stringify(rendered.manuscriptFigures.map((figure) => figure.source).sort()) !== JSON.stringify(expectedManuscriptFigures.sort())) throw new Error('Rendered manuscript figure inventory is incomplete or substituted')
 for (const figure of rendered.manuscriptFigures) {
@@ -103,7 +104,7 @@ for (const figure of rendered.manuscriptFigures) {
   if (figure.alt.length < 30) throw new Error(`Manuscript figure lacks meaningful alt text: ${figure.source}`)
 }
 
-if (rendered.hasRegression) throw new Error('Removed regression results still appear on the poster')
+if (!rendered.hasRegression) throw new Error('Requested regression results are missing')
 if (rendered.brands.length !== 5) throw new Error('Expected the three institutional logos and two conference logos')
 for (const brand of brands.assets) {
   const bytes = await readFile(path.join(repositoryDir, brand.localFile))

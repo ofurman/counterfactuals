@@ -10,8 +10,9 @@ describe('rendered evidence provenance', () => {
     const { container } = render(<App />)
     expect(container.querySelectorAll('.result-manuscript-figure figcaption')).toHaveLength(0)
     const figures = Array.from(container.querySelectorAll('.result-manuscript-figure'))
-    expect(figures).toHaveLength(3)
-    for (const figure of figures) expect(figure.getAttribute('data-dataset')).toBe('Adult Census')
+    expect(figures).toHaveLength(4)
+    for (const figure of figures) expect(figure.getAttribute('data-dataset')).toBe(figure.getAttribute('data-finding') === 'regression' ? 'Concrete' : 'Adult Census')
+    expect(container.querySelector('[data-finding="regression"] [data-crop]')?.getAttribute('data-crop')).toBe('0 0 1100 225')
     expect(Array.from(container.querySelectorAll('.local-metric-window')).map((element) => element.getAttribute('data-metric'))).toEqual(['Validity', 'L2-Hamming', 'Sparsity', 'Log-density', 'Runtime'])
     expect(Array.from(container.querySelectorAll('.local-metric-window')).map((element) => element.getAttribute('data-crop'))).toEqual(['0 0 290 168', '290 0 282 168', '572 0 279 168', '851 0 282 168', '1133 0 267 168'])
   })
@@ -40,8 +41,9 @@ describe('rendered evidence provenance', () => {
       'manuscript/figures/metrics_boxplot_local.png',
       'manuscript/figures/metrics_boxplot_global.png',
       'manuscript/figures/metrics_boxplot_group_wise.png',
+      'manuscript/figures/regression_metrics_boxplot.png',
     ]))
-    expect(new Set(manuscriptSources).size).toBe(4)
+    expect(new Set(manuscriptSources).size).toBe(5)
     for (const image of container.querySelectorAll<HTMLImageElement>('.manuscript-figure img')) {
       expect(image.alt.length).toBeGreaterThan(30)
     }
@@ -73,6 +75,7 @@ describe('rendered evidence provenance', () => {
     expect(container.querySelector('.poster-header [data-qr-destination]')).toBeNull()
     expect(qr?.closest('article')?.dataset.claimId).toBe('contribution.library')
     expect(qr?.closest('[data-section]')?.getAttribute('data-section')).toBe('guidance-limitations')
+    expect(qr?.closest('.poster-column--center')).not.toBeNull()
     expect(qr?.dataset.qrDestination).toBe(posterData.identity.qr.url)
     expect(qr?.getAttribute('href')).toBe(posterData.identity.links.repository)
 

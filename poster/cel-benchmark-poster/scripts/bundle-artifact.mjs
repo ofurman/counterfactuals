@@ -16,7 +16,7 @@ const bundlePath = path.join(projectDir, 'bundle.html')
 const distDir = path.join(projectDir, 'dist')
 let html = await readFile(bundlePath, 'utf8')
 const imageFiles = (await readdir(distDir)).filter((file) => /\.(?:jpe?g|png|svg)$/i.test(file)).sort()
-if (imageFiles.length !== 9) throw new Error(`Expected four manuscript graphics and five logos from Parcel, found ${imageFiles.length}`)
+if (imageFiles.length !== 10) throw new Error(`Expected five manuscript graphics and five logos from Parcel, found ${imageFiles.length}`)
 
 for (const file of imageFiles) {
   const bytes = await readFile(path.join(distDir, file))

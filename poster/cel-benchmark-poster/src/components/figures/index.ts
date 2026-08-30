@@ -8,4 +8,5 @@ export {
   GlobalBenchmarkFigure,
   GroupBenchmarkFigure,
   LocalBenchmarkFigure,
+  RegressionBenchmarkFigure,
 } from './ManuscriptFigures'

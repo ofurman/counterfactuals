@@ -14,6 +14,7 @@ import {
   GlobalBenchmarkFigure,
   GroupBenchmarkFigure,
   LocalBenchmarkFigure,
+  RegressionBenchmarkFigure,
 } from '@/components/figures'
 import { resolveSection } from '@/data/posterData'
 
@@ -35,6 +36,9 @@ export default function App() {
                 <ArchitectureFigure />
               </SectionBlock>
               <ScopeStrip section={resolveSection('scope')} />
+              <SectionBlock section={resolveSection('guidance-limitations')} className="contributions-block" showClaims={false}>
+                <ContributionStack />
+              </SectionBlock>
             </div>
             <div className="poster-column poster-column--right">
               <SectionBlock section={resolveSection('results')} className="unified-results-block" showClaims={false}>
@@ -48,10 +52,10 @@ export default function App() {
                   <SectionBlock as="article" section={resolveSection('group-tradeoff')} className="result-panel" showClaims={false}>
                     <GroupBenchmarkFigure />
                   </SectionBlock>
+                  <SectionBlock as="article" section={resolveSection('regression-tradeoff')} className="result-panel" showClaims={false}>
+                    <RegressionBenchmarkFigure />
+                  </SectionBlock>
                 </div>
-              </SectionBlock>
-              <SectionBlock section={resolveSection('guidance-limitations')} className="contributions-block" showClaims={false}>
-                <ContributionStack />
               </SectionBlock>
             </div>
           </div>

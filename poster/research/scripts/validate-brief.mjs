@@ -177,7 +177,7 @@ for (const [index, tag] of storyboardTags.entries()) {
   const citations = tag[2].split(",").map((value) => value.trim()).filter(Boolean);
   await validateClaimMapping(ids, citations, `storyboard claim tag ${index + 1}`);
 }
-const substantiveHeadings = ["Scientific argument", "Header", "Left — counterfactual concept", "Center — framework and benchmark scope", "Right — results and contributions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
+const substantiveHeadings = ["Scientific argument", "Header", "Left — counterfactual concept", "Center — framework and benchmark scope", "Right — results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
   "**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.",
   "**Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.",
@@ -185,7 +185,8 @@ const structuralLines = new Set([
   "**Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.",
   "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.",
   "**Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.",
-  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the right-column results; linked to the repository, with no header or paper QR.",
+  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the center-column scope tiles; linked to the repository, with no header or paper QR.",
+  "**Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in project files."
 ]);
@@ -229,11 +230,11 @@ for (const required of ["header", "problem", "scope", "protocol", "results", "lo
 for (const [linkId, link] of Object.entries(content.links)) {
   if (!identity.links[link.identityLink]) fail(`${linkId} does not resolve to identity.json`);
 }
-if (content.sections.length !== 10 || sectionIds.has("regression-tradeoff")) fail("Poster must contain seven top-level sections and three nested result panels without regression results");
-if (JSON.stringify([...content.resultVisuals].sort()) !== JSON.stringify(["global-manuscript-figure", "group-manuscript-figure", "local-manuscript-figure"])) fail("Poster must own exactly the local, global, and group-wise result visuals");
+if (content.sections.length !== 11 || !sectionIds.has("regression-tradeoff")) fail("Poster must contain seven top-level sections and four nested result panels including regression");
+if (JSON.stringify([...content.resultVisuals].sort()) !== JSON.stringify(["global-manuscript-figure", "group-manuscript-figure", "local-manuscript-figure", "regression-manuscript-figure"])) fail("Poster must own exactly the local, global, group-wise, and regression result visuals");
 const conceptSection = content.sections.find((section) => section.id === "problem");
 if (conceptSection.copy.join(" ") !== claimsById.get("concept.counterfactual").posterWording || !conceptSection.claimIds.includes("concept.counterfactual")) fail("CE definition must resolve to its manuscript claim");
-for (const [id, owner] of [["problem", "left"], ["applicability", "right"], ["protocol", "center"], ["scope", "center"], ["results", "right"], ["local-tradeoff", "right"], ["guidance-limitations", "right"], ["group-tradeoff", "right"]]) {
+for (const [id, owner] of [["problem", "left"], ["applicability", "right"], ["protocol", "center"], ["scope", "center"], ["results", "right"], ["local-tradeoff", "right"], ["guidance-limitations", "center"], ["group-tradeoff", "right"], ["regression-tradeoff", "right"]]) {
   if (content.sections.find((section) => section.id === id)?.owner !== owner) fail(`Incorrect column ownership for ${id}`);
 }
 const scopeSection = content.sections.find((section) => section.id === 'scope');
@@ -241,10 +242,10 @@ if (['scope', 'protocol'].some((id) => content.sections.find((section) => sectio
 if (!scopeSection.claimIds.includes('scope.metrics') || scopeSection.order <= content.sections.find((section) => section.id === 'protocol').order) fail('Scope with the reported metric count must follow the evaluation framework');
 if (JSON.stringify(scopeSection.claimIds) !== JSON.stringify(['scope.datasets', 'scope.methods', 'scope.backbones', 'scope.metrics'])) fail('Scope must contain only the four named inventory tiles');
 const resultsSection = content.sections.find((section) => section.id === 'results');
-if (resultsSection.heading !== 'Results' || resultsSection.order >= content.sections.find((section) => section.id === 'guidance-limitations').order) fail('Unified Results must precede contributions');
-for (const id of ['result.global.overview', 'result.local.overview', 'result.group.overview']) if (!resultsSection.claimIds.includes(id)) fail(`Unified Results lacks ${id}`);
+if (resultsSection.heading !== 'Results' || scopeSection.order >= content.sections.find((section) => section.id === 'guidance-limitations').order) fail('Contributions must follow the center scope tiles');
+for (const id of ['result.global.overview', 'result.local.overview', 'result.group.overview', 'result.regression.overview']) if (!resultsSection.claimIds.includes(id)) fail(`Unified Results lacks ${id}`);
 const qrOwners = content.sections.filter((section) => section.assetRoles.includes("project-qr"));
-if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "right" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the right-column Extend contribution");
+if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "center" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the center-column Extend contribution");
 const headerSection = content.sections.find((section) => section.id === "header");
 if (headerSection.heading !== identity.title) fail("Poster title must exactly match the manuscript title");
 if (headerSection.copy.length !== 0) fail("The title header must not contain a subtitle");
@@ -257,6 +258,7 @@ for (const [sectionId, claimId] of [
   ["local-tradeoff", "result.local.overview"],
   ["applicability", "result.global.overview"],
   ["group-tradeoff", "result.group.overview"],
+  ["regression-tradeoff", "result.regression.overview"],
 ]) {
   if (!content.sections.find((section) => section.id === sectionId)?.claimIds.includes(claimId)) fail(`${sectionId} lacks manuscript result claim: ${claimId}`);
   if (!storyboardTags.some((tag) => tag[1].split(",").map((value) => value.trim()).includes(claimId))) fail(`Storyboard lacks manuscript result mapping: ${claimId}`);

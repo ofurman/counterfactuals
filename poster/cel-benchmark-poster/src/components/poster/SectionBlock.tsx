@@ -19,6 +19,7 @@ export function SectionBlock({ section, className = '', children, showClaims = t
       aria-labelledby={section.showHeading === false ? undefined : `${section.id}-heading`}
       aria-label={section.showHeading === false ? section.heading : undefined}
     >
+      {Element === 'article' && <svg className="result-panel__outline" aria-hidden="true" focusable="false"><rect x="1" y="1" rx="9" /></svg>}
       {section.showHeading !== false && <Heading id={`${section.id}-heading`}>{section.heading}</Heading>}
       {section.copy.map((paragraph) => <p className="section-copy" key={paragraph}>{paragraph}</p>)}
       {showClaims && section.claims.length > 0 && (
