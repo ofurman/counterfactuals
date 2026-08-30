@@ -42,6 +42,7 @@ export function ArchitectureFigure() {
       data-claim-id="scope.protocol"
       data-manuscript-source="manuscript/figures/teaser.pdf"
       data-typography-asset="architecture"
+      data-manuscript-presentation="original"
     >
       <div className="architecture-image-window">
         <img

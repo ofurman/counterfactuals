@@ -78,13 +78,15 @@ warning about future `meshgrid` indexing defaults; this does not affect renderin
 
 ## Manuscript typography derivatives
 
-`manuscript_typography.py` creates five poster-only SVGs with outlined Arial
-labels. Run it with `uv run --no-sync python poster/plots/manuscript_typography.py`.
+`manuscript_typography.py` creates four result SVGs with outlined Arial labels
+and an original-manuscript architecture SVG. Run it with
+`uv run --no-sync python poster/plots/manuscript_typography.py`.
 It requires the existing Matplotlib, NumPy, and Pillow environment, Arial regular
 and bold fonts, and Poppler's `pdftocairo` command. It does not modify manuscript files.
 
-The architecture derivative retains the PDF's vector boxes and connectors. Only
-text glyphs are replaced, using larger labels and adjusted line breaks. The four
+The architecture is an unmodified vector conversion of `manuscript/figures/teaser.pdf`,
+using its existing CropBox. Original Poppins/Canva Sans glyphs, line breaks,
+boxes, and connectors are preserved; no poster labels are substituted. The four
 result derivatives embed lossless PNG crops of the original plot interiors,
 including every box, whisker, median, and gridline. No statistics are inferred or
 replotted. Each crop retains its source aspect ratio; local metrics keep the
@@ -96,9 +98,15 @@ thousands to keep its long negative tick labels readable. SVG metadata records
 source and generator hashes, crop pixel bounds, embedded crop hashes, method
 ordering, dataset identity, tick anchors, and minimum font sizes.
 
-Tests compare the embedded crop pixels to the original PNGs and the schema
-artwork to the source PDF conversion. The poster audit checks source hashes,
-uniform image scaling, label containment, and at least 17pt manuscript labels at A1. The
-title is 80pt, subheadings are 28pt, and body/figure text uses Arial. The A1 portrait
+Tests compare the embedded crop pixels to the original PNGs and the complete schema
+SVG, including every glyph and its viewport, to an independent source PDF conversion.
+The poster audit checks source hashes, uniform image scaling, result-label containment,
+and at least 17pt result labels at A1. The original diagram deliberately retains
+its smaller manuscript typography (approximately 13.6pt on the poster).
+The title is 80pt, subheadings are 28pt, and body/result text uses Arial. The A1 portrait
 layout uses upper example/framework columns and a lower two-by-two results grid. Logo artwork
 is unchanged.
+
+The poster's Parcel configuration bypasses SVG optimization only for
+`manuscript-architecture*.svg`: the original nested glyph definitions make the
+optimizer stall. Other assets retain their normal optimization pipeline.

@@ -11,9 +11,14 @@ export async function loadManuscriptAssets() {
     const svg = await readFile(path.join(repositoryDir, `poster/plots/generated/manuscript-${kind}.svg`), 'utf8')
     const metadata = JSON.parse(svg.match(/<metadata>([\s\S]*?)<\/metadata>/)?.[1] ?? '{}')
     if (metadata.generatorSha256 !== generatorSha256 || metadata.sourceSha256 !== hash(await readFile(path.join(repositoryDir, metadata.source)))) throw new Error(`Stale manuscript typography: ${kind}`)
-    if (metadata.fontFamily !== 'Arial' || /<text\b/.test(svg)) throw new Error(`${kind} must have outlined Arial typography`)
-    const labels = [...svg.matchAll(/data-font-size="([^"]+)"/g)].map((match) => Number(match[1]))
-    if (!labels.length || Math.min(...labels) !== metadata.minimumFontSize) throw new Error(`Unverified font size: ${kind}`)
+    if (kind === 'architecture') {
+      const original = svg.replace(/^<\?xml[^>]*>\s*/, '').replace(/<metadata>[\s\S]*?<\/metadata>/, '')
+      if (metadata.presentation !== 'original-manuscript' || !svg.includes('id="glyph-') || svg.includes('poster-typography') || hash(original) !== metadata.sourceSvgSha256) throw new Error('Architecture must preserve the complete original manuscript SVG conversion, including glyphs')
+    } else {
+      if (metadata.fontFamily !== 'Arial' || /<text\b/.test(svg)) throw new Error(`${kind} must have outlined Arial typography`)
+      const labels = [...svg.matchAll(/data-font-size="([^"]+)"/g)].map((match) => Number(match[1]))
+      if (!labels.length || Math.min(...labels) !== metadata.minimumFontSize) throw new Error(`Unverified font size: ${kind}`)
+    }
     const viewBox = svg.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number)
     if (kind !== 'architecture') {
       const images = [...svg.matchAll(/href="data:image\/png;base64,([^"]+)"/g)]
@@ -30,6 +35,9 @@ export async function auditManuscriptLabelBounds(page, assets) {
   const inspection = await page.context().newPage()
   try {
     for (const asset of assets) {
+      // The original schema is validated as an intact source conversion above;
+      // only result derivatives contain replacement-label bounding boxes.
+      if (asset.kind === 'architecture') continue
       await inspection.setContent(asset.svg.replace(/<\?xml[^>]*>/, ''))
       const errors = await inspection.locator('svg').evaluate((svg) => {
         const canvas = svg.getBoundingClientRect()

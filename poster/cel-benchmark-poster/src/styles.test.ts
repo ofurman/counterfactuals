@@ -18,6 +18,11 @@ function cssToken(name: string): string {
 }
 
 describe('print contract', () => {
+  it('preserves the original manuscript glyphs by bypassing schema SVG optimization', () => {
+    const parcel = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.parcelrc'), 'utf8'))
+    expect(parcel.optimizers).toEqual({ '**/manuscript-architecture*.svg': [] })
+  })
+
   it('uses an explicit Georgia/Arial scale with an 80pt title and 28pt subheadings', () => {
     const pointsPerPixel = cssNumber('print-scale') * 0.75
     expect(cssNumber('title-size') * pointsPerPixel).toBeCloseTo(80, 6)

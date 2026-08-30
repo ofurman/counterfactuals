@@ -886,23 +886,23 @@
     "titleAlign": "center",
     "logos": [
       {
-        "id": "xkdd",
-        "top": 147.703125,
-        "right": 440,
-        "bottom": 195.703125,
-        "left": 330,
-        "width": 110,
-        "height": 48,
-        "objectFit": "contain"
-      },
-      {
         "id": "ecml-pkdd",
-        "top": 209.703125,
+        "top": 147.703125,
         "right": 437.5,
-        "bottom": 272.703125,
+        "bottom": 210.703125,
         "left": 332.5,
         "width": 105,
         "height": 63,
+        "objectFit": "contain"
+      },
+      {
+        "id": "xkdd",
+        "top": 224.703125,
+        "right": 440,
+        "bottom": 272.703125,
+        "left": 330,
+        "width": 110,
+        "height": 48,
         "objectFit": "contain"
       },
       {
@@ -971,67 +971,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:52247/xkdd-logo.cf4f3461.png",
-      "complete": true,
-      "naturalWidth": 604
-    },
-    {
-      "src": "http://127.0.0.1:52247/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:53035/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:52247/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:53035/xkdd-logo.cf4f3461.png",
+      "complete": true,
+      "naturalWidth": 604
+    },
+    {
+      "src": "http://127.0.0.1:53035/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:52247/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:53035/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:52247/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:53035/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:52247/ce-example-local.af2419fc.svg",
+      "src": "http://127.0.0.1:53035/ce-example-local.af2419fc.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:52247/ce-example-global.ce0c7005.svg",
+      "src": "http://127.0.0.1:53035/ce-example-global.ce0c7005.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:52247/ce-example-group-wise.3d195281.svg",
+      "src": "http://127.0.0.1:53035/ce-example-group-wise.3d195281.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:52247/manuscript-architecture.405880f8.svg",
+      "src": "http://127.0.0.1:53035/manuscript-architecture.a03f0a9f.svg",
       "complete": true,
-      "naturalWidth": 787
+      "naturalWidth": 1050
     },
     {
-      "src": "http://127.0.0.1:52247/manuscript-global.6750369f.svg",
-      "complete": true,
-      "naturalWidth": 566
-    },
-    {
-      "src": "http://127.0.0.1:52247/manuscript-local.8f8e2035.svg",
+      "src": "http://127.0.0.1:53035/manuscript-global.6750369f.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:52247/manuscript-group.7492d0ef.svg",
+      "src": "http://127.0.0.1:53035/manuscript-local.8f8e2035.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:52247/manuscript-regression.90db40cc.svg",
+      "src": "http://127.0.0.1:53035/manuscript-group.7492d0ef.svg",
+      "complete": true,
+      "naturalWidth": 566
+    },
+    {
+      "src": "http://127.0.0.1:53035/manuscript-regression.90db40cc.svg",
       "complete": true,
       "naturalWidth": 566
     }

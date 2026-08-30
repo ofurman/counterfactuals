@@ -1,7 +1,8 @@
 """Poster-only typography derivatives; never reconstruct benchmark statistics.
 
 Boxplot interiors are lossless crops of the manuscript PNGs. Only surrounding
-labels are replaced. The schema keeps the PDF's vector artwork and connectors.
+labels are replaced. The schema is an unmodified vector conversion of the PDF,
+including its original font glyphs, line breaks, artwork, and connectors.
 """
 
 from __future__ import annotations
@@ -273,81 +274,22 @@ def result_figure(kind):
 
 
 def architecture_figure():
+    """Convert the original manuscript diagram without replacing any artwork or text."""
     source = ROOT / "manuscript/figures/teaser.pdf"
     with tempfile.TemporaryDirectory(prefix="cel-schema-") as temporary:
         target = Path(temporary) / "schema.svg"
         subprocess.run(["pdftocairo", "-svg", str(source), str(target)], check=True)
         svg = ET.parse(target).getroot()
-    # Remove only text glyph uses and their definitions, retaining all artwork.
-    for parent in svg.iter():
-        for child in list(parent):
-            if child.get(f"{{{XLINK}}}href", "").startswith("#glyph-") or child.get(
-                "id", ""
-            ).startswith("glyph-"):
-                parent.remove(child)
-    # Coordinates are in the original PDF MediaBox; pdftocairo uses its CropBox.
-    dx, dy = 55.879026, 17.125
-    size = 13.0
-    items = [
-        (253, 57, ["Data Module"], True),
-        (648, 35, ["Model Module"], True),
-        (102, 89, ["Datasets"], False),
-        (184, 89, ["Preprocessing"], False),
-        (285, 82, ["Actionability", "Constraints"], False),
-        (391, 82, ["Feature", "Bounds"], False),
-        (555, 60, ["Predictive"], True),
-        (742, 60, ["Probabilistic"], True),
-        (553, 79, ["Classifiers:", "LR, MLP"], False),
-        (553, 111, ["Regressors:", "Linear, MLP"], False),
-        (742, 79, ["Density Estimation:", "KDE, GMM"], False),
-        (742, 120, ["Normalizing Flows"], False),
-        (444, 177, ["Explanation Engine"], True),
-        (316, 201, ["Local: CCHVAE,", "DICE, PPCEF, ..."], False),
-        (444, 201, ["Global: AReS,", "GLOBE-CE"], False),
-        (572, 201, ["Group-Wise:", "GLANCE, TCREx"], False),
-        (447, 278, ["Metrics Orchestrator"], True),
-        (296, 309, ["Coverage &", "Validity"], False),
-        (377, 302, ["Proximity:", "L1, L2,", "MAD"], False),
-        (456, 317, ["Sparsity"], False),
-        (569, 302, ["Plausibility:", "Likelihood, LOF,", "IsoForest"], False),
-        (444, 391, ["Counterfactual", "Reports & Visualisations"], False),
-    ]
-    labels = element(svg, "g", id="poster-typography")
-    containers = [
-        5,
-        14,
-        8,
-        11,
-        35,
-        38,
-        14,
-        14,
-        29,
-        32,
-        41,
-        44,
-        17,
-        20,
-        23,
-        26,
-        47,
-        50,
-        53,
-        56,
-        59,
-        62,
-    ]
-    for (x, y, lines, bold), container in zip(items, containers, strict=True):
-        for index, text in enumerate(lines):
-            node = label(labels, text, x - dx, y - dy + index * 14, size=size, bold=bold)
-            node.set("data-container", f"#source-{container}")
-    svg.set("width", "787.13903")
-    svg.set("height", "403.22142")
+    source_svg_sha256 = hashlib.sha256(ET.tostring(svg, encoding="utf-8")).hexdigest()
     metadata(
         svg,
         source,
-        minimumFontSize=size,
-        transformation="Original vector artwork; larger outlined Arial labels.",
+        fontFamily="Poppins / Canva Sans (manuscript originals)",
+        # All source PDF glyphs have this size, measured with pdfplumber.
+        minimumFontSize=9.9975,
+        presentation="original-manuscript",
+        sourceSvgSha256=source_svg_sha256,
+        transformation="Unmodified pdftocairo vector conversion of the source PDF CropBox.",
     )
     return svg
 

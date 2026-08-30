@@ -18,12 +18,13 @@ describe('rendered evidence provenance', () => {
     }
   })
 
-  it('uses the vector architecture derivative without a repeated caption', () => {
+  it('uses the original manuscript vector architecture without a repeated caption', () => {
     const { container } = render(<App />)
     const figure = container.querySelector('.architecture-figure')
     expect(figure?.querySelector('figcaption')).toBeNull()
     expect(figure?.textContent).not.toContain('Shared evaluation protocol')
     expect(figure?.getAttribute('data-typography-asset')).toBe('architecture')
+    expect(figure?.getAttribute('data-manuscript-presentation')).toBe('original')
     expect(figure?.querySelector('img')?.getAttribute('src')).toContain('manuscript-architecture.svg')
     expect(figure?.querySelector('img')?.getAttribute('data-claim-id')).toBe('scope.methods')
   })

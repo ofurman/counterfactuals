@@ -18,8 +18,8 @@ path, not a dump of manuscript sections or a full result table.
 
 - Paper identity and a direct benchmark hook: CEL enables controlled comparison of counterfactual explanations across multiple quality dimensions. <!-- claims: scope.protocol, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Benchmark, manuscript/main_lncs.tex#Conclusions -->
 **Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.
-**Typography:** Use an eighty-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and figure labels. Set body copy near eighteen points and manuscript figure labels to at least seventeen points at A1. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.
-**Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.
+**Typography:** Use an eighty-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and result labels. Set body copy near eighteen points and result labels to at least seventeen points at A1. Restore the original manuscript diagram with its original fonts, sizes, and line breaks. Preserve lossless plot interiors in poster-only result derivatives; do not infer or reconstruct benchmark statistics.
+**Logo inventory:** ECML-PKDD above XKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.
 **QR inventory:** One labelled `Code & project` QR inside the Extend contribution at the bottom of the poster; linked to the repository, with no header or paper QR.
 
 ## Upper left — counterfactual concept

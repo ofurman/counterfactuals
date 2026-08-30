@@ -1,4 +1,7 @@
 {
   "extends": "@parcel/config-default",
-  "resolvers": ["parcel-resolver-tspaths", "..."]
+  "resolvers": ["parcel-resolver-tspaths", "..."],
+  "optimizers": {
+    "**/manuscript-architecture*.svg": []
+  }
 }

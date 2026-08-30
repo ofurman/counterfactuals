@@ -11,7 +11,7 @@ const imageById = {
 export function BrandStrip({ side }: { side: 'left' | 'right' }) {
   const assets = brands.assets.filter((brand) => brand.side === side)
   return (
-    <div className={`brand-strip brand-strip--${side}`} data-brand-side={side} aria-label={side === 'left' ? 'XKDD and ECML-PKDD logos' : 'PWr, genwro.AI and Tooploox logos'}>
+    <div className={`brand-strip brand-strip--${side}`} data-brand-side={side} aria-label={side === 'left' ? 'ECML-PKDD and XKDD logos' : 'PWr, genwro.AI and Tooploox logos'}>
       {assets.map((brand) => (
         <img
           key={brand.id}

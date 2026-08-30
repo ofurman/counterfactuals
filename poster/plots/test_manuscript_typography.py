@@ -39,36 +39,23 @@ def test_result_crops_are_lossless_and_uniformly_scaled(kind):
     assert len(svg.findall(f".//{{{figures.SVG}}}text")) == 0
 
 
-def test_schema_preserves_original_nontext_vector_artwork(tmp_path):
+def test_schema_preserves_all_original_vectors_and_font_glyphs(tmp_path):
     target = tmp_path / "source.svg"
     subprocess.run(
         ["pdftocairo", "-svg", str(figures.ROOT / "manuscript/figures/teaser.pdf"), str(target)],
         check=True,
     )
     original = ET.parse(target).getroot()
-    for parent in original.iter():
-        for child in list(parent):
-            if child.get(f"{{{figures.XLINK}}}href", "").startswith("#glyph-") or child.get(
-                "id", ""
-            ).startswith("glyph-"):
-                parent.remove(child)
     actual = figures.architecture_figure()
-    actual.remove(actual.find(f"{{{figures.SVG}}}metadata"))
-    labels = actual.find(".//*[@id='poster-typography']")
-    assert labels is not None
-    for text in (
-        "Datasets",
-        "Preprocessing",
-        "Classifiers:",
-        "LR, MLP",
-        "GLANCE, TCREx",
-        "L1, L2,",
-        "MAD",
-        "Reports & Visualisations",
-    ):
-        assert any(label.get("data-label") == text for label in labels)
-    actual.remove(labels)
-    assert [ET.tostring(child) for child in actual] == [ET.tostring(child) for child in original]
+    meta_node = actual.find(f"{{{figures.SVG}}}metadata")
+    meta = json.loads(meta_node.text)
+    assert meta["presentation"] == "original-manuscript"
+    assert meta["sourceSha256"] == figures.digest(figures.ROOT / meta["source"])
+    actual.remove(meta_node)
+    assert actual.find(".//*[@id='poster-typography']") is None
+    assert any(node.get("id", "").startswith("glyph-") for node in actual.iter())
+    assert ET.tostring(actual) == ET.tostring(original)
+    assert hashlib.sha256(ET.tostring(actual)).hexdigest() == meta["sourceSvgSha256"]
 
 
 def test_metric_ticks_match_source_inventory():
