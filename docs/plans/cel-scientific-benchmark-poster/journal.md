@@ -112,3 +112,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Verification**: `pnpm run verify:all` passed all 15 tests, source/brief checks, offline build, layout, claims, one-page A0 PDF, and package audits. New checks require a zero-width canvas top border and no printed venue marker in the header or PDF. Manual checksums and final PDF-derived visual inspection passed; visible words=185/260.
 **Problems**: none.
 **Commit**: `this commit` (`feat(poster): remove top line and venue label`)
+
+## 2026-08-30 13:57 -- Post-plan revision: Conference logos left, institutional logos right -- DONE
+**Did**: Added the existing XKDD PNG and ECML-PKDD SVG assets to the left header stack. Moved PWr above genwro.AI and Tooploox on the right, preserving a centered manuscript title and each asset's proportions. Added conference asset hashes and side ownership to the brand manifest; extended the self-contained bundler to embed SVG assets.
+**Verification**: `pnpm run verify:all` passed all 15 tests, source/brief checks, five-logo inventory and byte hashes, left/right stack ordering and non-overlap, offline rendering, one-page A0 PDF, and package audits. Manual SHA-256 recheck and final PDF-derived visual inspection passed. REPORT embedded graphics=9; logos=5; required remote requests=0; visible words=185/260.
+**Provenance**: Conference files already existed as untracked project assets at the start of this request and were used unchanged. Their external origins were not recorded and are not asserted. The original three institutional logos remain unchanged copies from the supplied reference poster.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): add conference logos and regroup header branding`)

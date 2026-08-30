@@ -15,13 +15,13 @@ if (bundle.status !== 0) throw new Error(`Named artifact bundler failed with sta
 const bundlePath = path.join(projectDir, 'bundle.html')
 const distDir = path.join(projectDir, 'dist')
 let html = await readFile(bundlePath, 'utf8')
-const imageFiles = (await readdir(distDir)).filter((file) => /\.(?:jpe?g|png)$/i.test(file)).sort()
-if (imageFiles.length !== 7) throw new Error(`Expected four manuscript graphics and three logos from Parcel, found ${imageFiles.length}`)
+const imageFiles = (await readdir(distDir)).filter((file) => /\.(?:jpe?g|png|svg)$/i.test(file)).sort()
+if (imageFiles.length !== 9) throw new Error(`Expected four manuscript graphics and five logos from Parcel, found ${imageFiles.length}`)
 
 for (const file of imageFiles) {
   const bytes = await readFile(path.join(distDir, file))
   const extension = path.extname(file).toLowerCase()
-  const mime = extension === '.png' ? 'image/png' : 'image/jpeg'
+  const mime = extension === '.svg' ? 'image/svg+xml' : extension === '.png' ? 'image/png' : 'image/jpeg'
   const dataUrl = `data:${mime};base64,${bytes.toString('base64')}`
   const occurrences = html.split(file).length - 1
   if (occurrences === 0) throw new Error(`Bundle does not reference emitted image asset: ${file}`)

@@ -105,10 +105,17 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (screen.branding.identityText.some((text) => screen.branding.logos.some((logo) => overlaps(logo, text)))) failuresFound.push('Brand logos overlap header text')
   const centerX = (rect) => (rect.left + rect.right) / 2
   if (screen.branding.titleAlign !== 'center' || Math.abs(centerX(screen.branding.title) - centerX(screen.branding.header)) > 1) failuresFound.push('Manuscript title is not centered in the header')
-  const pwr = screen.branding.logos.find((logo) => logo.id === 'pwr')
-  const genwro = screen.branding.logos.find((logo) => logo.id === 'genwro')
-  const tooploox = screen.branding.logos.find((logo) => logo.id === 'tooploox')
-  if (!pwr || !genwro || !tooploox || pwr.right > screen.branding.title.left || genwro.left < screen.branding.title.right || tooploox.left < screen.branding.title.right || genwro.bottom >= tooploox.top || Math.abs(centerX(genwro) - centerX(tooploox)) > 1) failuresFound.push('Header logos must be PWr left and genwro.AI above Tooploox right')
+  for (const [side, ids] of Object.entries({ left: ['xkdd', 'ecml-pkdd'], right: ['pwr', 'genwro', 'tooploox'] })) {
+    const logos = ids.map((id) => screen.branding.logos.find((logo) => logo.id === id))
+    if (logos.some((logo) => !logo)) {
+      failuresFound.push(`Missing ${side} header logo`)
+      continue
+    }
+    for (const [index, logo] of logos.entries()) {
+      if (side === 'left' ? logo.right > screen.branding.title.left : logo.left < screen.branding.title.right) failuresFound.push(`${logo.id} is not on the ${side} of the title`)
+      if (index > 0 && (logos[index - 1].bottom >= logo.top || Math.abs(centerX(logos[0]) - centerX(logo)) > 1)) failuresFound.push(`${side} logos must be vertically stacked in order: ${ids.join(', ')}`)
+    }
+  }
   for (const section of screen.sections) {
     if (section.scrollWidth > section.clientWidth + 1 || section.scrollHeight > section.clientHeight + 1) failuresFound.push(`${section.id} has clipped or overflowing content`)
     if (section.rect.left < screen.safeBounds.left - 1 || section.rect.right > screen.safeBounds.right + 1 || section.rect.top < screen.safeBounds.top - 1 || section.rect.bottom > screen.safeBounds.bottom + 1) failuresFound.push(`${section.id} breaches the safe area`)

@@ -4,6 +4,7 @@
   "assets": [
     {
       "id": "pwr",
+      "side": "right",
       "label": "Wrocław University of Science and Technology",
       "sourceFile": "src/assets/pwr-logo.png",
       "localFile": "poster/cel-benchmark-poster/src/assets/brands/pwr-logo.png",
@@ -11,6 +12,7 @@
     },
     {
       "id": "genwro",
+      "side": "right",
       "label": "genwro.AI",
       "sourceFile": "src/assets/genwro-logo.png",
       "localFile": "poster/cel-benchmark-poster/src/assets/brands/genwro-logo.png",
@@ -18,10 +20,27 @@
     },
     {
       "id": "tooploox",
+      "side": "right",
       "label": "Tooploox",
       "sourceFile": "src/assets/tpx-logo.png",
       "localFile": "poster/cel-benchmark-poster/src/assets/brands/tpx-logo.png",
       "sha256": "d24e7d79f739215a190eaabe883d17c76b882157859c06024afc98035daf6c77"
+    },
+    {
+      "id": "xkdd",
+      "side": "left",
+      "label": "XKDD and Beyond Workshop",
+      "sourceDescription": "Existing user-provided project asset; original external source not recorded.",
+      "localFile": "poster/cel-benchmark-poster/src/assets/brands/xkdd-logo.png",
+      "sha256": "ce498ed4f745eda8e0b998b478616602afe24550759ddac2e254502a6f809ea0"
+    },
+    {
+      "id": "ecml-pkdd",
+      "side": "left",
+      "label": "ECML-PKDD",
+      "sourceDescription": "Existing user-provided project asset; original external source not recorded.",
+      "localFile": "poster/cel-benchmark-poster/src/assets/brands/ecml-pkdd-logo.svg",
+      "sha256": "d3ecc7056151032fafa46ddaf4ff9fe21d2c5ca3b69f44b857ee1e3f7f0073ab"
     }
   ]
 }

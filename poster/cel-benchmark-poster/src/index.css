@@ -101,11 +101,13 @@ h1 {
 .authors { margin: 18px 0 0; font-size: 16px; font-weight: 750; }
 .affiliation { margin: 4px 0 0; font-size: 14px; color: var(--navy-muted); }
 .header-copy { min-width: 0; text-align: center; }
-.brand-strip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+.brand-strip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
 .brand-logo { display: block; object-fit: contain; }
-.brand-logo--pwr { width: 88px; height: 140px; }
-.brand-logo--genwro { width: 180px; height: 45px; }
-.brand-logo--tooploox { width: 180px; height: 46px; }
+.brand-logo--pwr { width: 60px; height: 96px; }
+.brand-logo--genwro { width: 148px; height: 37px; }
+.brand-logo--tooploox { width: 148px; height: 38px; }
+.brand-logo--xkdd { width: 180px; height: 78px; }
+.brand-logo--ecml-pkdd { width: 160px; height: 96px; }
 .project-mark {
   display: grid;
   gap: 6px;

@@ -101,7 +101,7 @@ for (const figure of rendered.manuscriptFigures) {
 }
 
 if (rendered.hasRegression) throw new Error('Removed regression results still appear on the poster')
-if (rendered.brands.length !== 3) throw new Error('Expected the three requested reference-poster logos')
+if (rendered.brands.length !== 5) throw new Error('Expected the three institutional logos and two conference logos')
 for (const brand of brands.assets) {
   const bytes = await readFile(path.join(repositoryDir, brand.localFile))
   if (createHash('sha256').update(bytes).digest('hex') !== brand.sha256) throw new Error(`Reference logo was modified: ${brand.id}`)

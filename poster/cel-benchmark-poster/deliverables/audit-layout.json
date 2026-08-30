@@ -23,22 +23,22 @@
       "rect": {
         "top": 135,
         "right": 1812,
-        "bottom": 336.65625,
+        "bottom": 355,
         "left": 108,
         "width": 1704,
-        "height": 201.65625
+        "height": 220
       },
       "clientWidth": 1704,
       "scrollWidth": 1704,
-      "clientHeight": 199,
-      "scrollHeight": 199
+      "clientHeight": 217,
+      "scrollHeight": 217
     },
     {
       "id": "scope",
       "rect": {
-        "top": 356.65625,
+        "top": 375,
         "right": 1812,
-        "bottom": 433.78125,
+        "bottom": 452.125,
         "left": 108,
         "width": 1704,
         "height": 77.125
@@ -51,92 +51,92 @@
     {
       "id": "problem",
       "rect": {
-        "top": 453.78125,
+        "top": 472.125,
         "right": 522,
-        "bottom": 933.796875,
+        "bottom": 941,
         "left": 108,
         "width": 414,
-        "height": 480.015625
+        "height": 468.875
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 476,
-      "scrollHeight": 476
+      "clientHeight": 465,
+      "scrollHeight": 465
     },
     {
       "id": "applicability",
       "rect": {
-        "top": 949.796875,
+        "top": 957,
         "right": 522,
         "bottom": 1259.5,
         "left": 108,
         "width": 414,
-        "height": 309.703125
+        "height": 302.5
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 306,
-      "scrollHeight": 306
+      "clientHeight": 299,
+      "scrollHeight": 299
     },
     {
       "id": "protocol",
       "rect": {
-        "top": 453.78125,
+        "top": 472.125,
         "right": 1374,
-        "bottom": 933.796875,
+        "bottom": 941,
         "left": 546,
         "width": 828,
-        "height": 480.015625
+        "height": 468.875
       },
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 480,
-      "scrollHeight": 480
+      "clientHeight": 469,
+      "scrollHeight": 469
     },
     {
       "id": "local-tradeoff",
       "rect": {
-        "top": 949.796875,
+        "top": 957,
         "right": 1374,
         "bottom": 1259.5,
         "left": 546,
         "width": 828,
-        "height": 309.703125
+        "height": 302.5
       },
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 306,
-      "scrollHeight": 306
+      "clientHeight": 299,
+      "scrollHeight": 299
     },
     {
       "id": "guidance-limitations",
       "rect": {
-        "top": 453.78125,
+        "top": 472.125,
         "right": 1812,
-        "bottom": 933.796875,
+        "bottom": 941,
         "left": 1398,
         "width": 414,
-        "height": 480.015625
+        "height": 468.875
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 476,
-      "scrollHeight": 476
+      "clientHeight": 465,
+      "scrollHeight": 465
     },
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 949.796875,
+        "top": 957,
         "right": 1812,
         "bottom": 1259.5,
         "left": 1398,
         "width": 414,
-        "height": 309.703125
+        "height": 302.5
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 306,
-      "scrollHeight": 306
+      "clientHeight": 299,
+      "scrollHeight": 299
     },
     {
       "id": "reproducibility",
@@ -193,61 +193,61 @@
     "left": [
       {
         "id": "problem",
-        "top": 453.78125,
+        "top": 472.125,
         "right": 522,
-        "bottom": 933.796875,
+        "bottom": 941,
         "left": 108,
         "width": 414,
-        "height": 480.015625
+        "height": 468.875
       },
       {
         "id": "applicability",
-        "top": 949.796875,
+        "top": 957,
         "right": 522,
         "bottom": 1259.5,
         "left": 108,
         "width": 414,
-        "height": 309.703125
+        "height": 302.5
       }
     ],
     "center": [
       {
         "id": "protocol",
-        "top": 453.78125,
+        "top": 472.125,
         "right": 1374,
-        "bottom": 933.796875,
+        "bottom": 941,
         "left": 546,
         "width": 828,
-        "height": 480.015625
+        "height": 468.875
       },
       {
         "id": "local-tradeoff",
-        "top": 949.796875,
+        "top": 957,
         "right": 1374,
         "bottom": 1259.5,
         "left": 546,
         "width": 828,
-        "height": 309.703125
+        "height": 302.5
       }
     ],
     "right": [
       {
         "id": "guidance-limitations",
-        "top": 453.78125,
+        "top": 472.125,
         "right": 1812,
-        "bottom": 933.796875,
+        "bottom": 941,
         "left": 1398,
         "width": 414,
-        "height": 480.015625
+        "height": 468.875
       },
       {
         "id": "group-tradeoff",
-        "top": 949.796875,
+        "top": 957,
         "right": 1812,
         "bottom": 1259.5,
         "left": 1398,
         "width": 414,
-        "height": 309.703125
+        "height": 302.5
       }
     ]
   },
@@ -255,15 +255,15 @@
     "header": {
       "top": 135,
       "right": 1812,
-      "bottom": 336.65625,
+      "bottom": 355,
       "left": 108,
       "width": 1704,
-      "height": 201.65625
+      "height": 220
     },
     "title": {
-      "top": 135,
+      "top": 144.171875,
       "right": 1604,
-      "bottom": 248.65625,
+      "bottom": 257.828125,
       "left": 316,
       "width": 1288,
       "height": 113.65625
@@ -271,57 +271,77 @@
     "titleAlign": "center",
     "logos": [
       {
+        "id": "xkdd",
+        "top": 140.5,
+        "right": 288,
+        "bottom": 218.5,
+        "left": 108,
+        "width": 180,
+        "height": 78,
+        "objectFit": "contain"
+      },
+      {
+        "id": "ecml-pkdd",
+        "top": 232.5,
+        "right": 278,
+        "bottom": 328.5,
+        "left": 118,
+        "width": 160,
+        "height": 96,
+        "objectFit": "contain"
+      },
+      {
         "id": "pwr",
-        "top": 155.328125,
-        "right": 242,
-        "bottom": 295.328125,
-        "left": 154,
-        "width": 88,
-        "height": 140,
+        "top": 135,
+        "right": 1752,
+        "bottom": 231,
+        "left": 1692,
+        "width": 60,
+        "height": 96,
         "objectFit": "contain"
       },
       {
         "id": "genwro",
-        "top": 167.828125,
-        "right": 1812,
-        "bottom": 212.828125,
-        "left": 1632,
-        "width": 180,
-        "height": 45,
+        "top": 245,
+        "right": 1796,
+        "bottom": 282,
+        "left": 1648,
+        "width": 148,
+        "height": 37,
         "objectFit": "contain"
       },
       {
         "id": "tooploox",
-        "top": 236.828125,
-        "right": 1812,
-        "bottom": 282.828125,
-        "left": 1632,
-        "width": 180,
-        "height": 46,
+        "top": 296,
+        "right": 1796,
+        "bottom": 334,
+        "left": 1648,
+        "width": 148,
+        "height": 38,
         "objectFit": "contain"
       }
     ],
     "identityText": [
       {
-        "top": 130,
+        "top": 139.171875,
         "right": 1570.921875,
-        "bottom": 252.828125,
+        "bottom": 262,
         "left": 349.0625,
         "width": 1221.859375,
         "height": 122.828125
       },
       {
-        "top": 269.65625,
+        "top": 278.828125,
         "right": 1219.640625,
-        "bottom": 286.65625,
+        "bottom": 295.828125,
         "left": 700.34375,
         "width": 519.296875,
         "height": 17
       },
       {
-        "top": 296.65625,
+        "top": 305.828125,
         "right": 1160.25,
-        "bottom": 312.65625,
+        "bottom": 321.828125,
         "left": 759.75,
         "width": 400.5,
         "height": 16
@@ -336,37 +356,47 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:59201/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:60079/xkdd-logo.cf4f3461.png",
+      "complete": true,
+      "naturalWidth": 604
+    },
+    {
+      "src": "http://127.0.0.1:60079/ecml-pkdd-logo.acecf1b1.svg",
+      "complete": true,
+      "naturalWidth": 1019
+    },
+    {
+      "src": "http://127.0.0.1:60079/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:59201/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:60079/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:59201/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:60079/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:59201/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:60079/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:59201/architecture.bded2544.png",
+      "src": "http://127.0.0.1:60079/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:59201/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:60079/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:59201/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:60079/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

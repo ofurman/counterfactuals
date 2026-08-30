@@ -57,6 +57,7 @@ Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.g
 
 - The loan application example uses invented profiles and an illustrative affordability rule, not benchmark data or lending advice. Its feature values, unchanged fields, and model assumptions are recorded in \`poster/research/ce-example.json\`; these provenance notes are not printed on the poster.
 - PWr, genwro.AI, and Tooploox logos are unchanged copies from the user-supplied PUMAL reference poster; their provenance and hashes are recorded in \`poster/research/brand-assets.json\`.
+- XKDD and ECML-PKDD logos use the supplied project assets unchanged; their original external sources are not recorded. Local file hashes are retained in the same brand manifest.
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
 - Raster result panels preserve the manuscript's published plotting style and are intended for A0 print or zoomed digital inspection.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.
