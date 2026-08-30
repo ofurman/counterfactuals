@@ -13,6 +13,9 @@ export function ScopeStrip({ section }: { section: ResolvedSection }) {
       <ul className="scope-tiles" data-result-surface="scope">
         {posterData.scopeFacts.map((fact) => (
           <li className="scope-tile" key={fact.claimId} data-claim-id={fact.claimId}>
+            <svg className="scope-tile__outline" aria-hidden="true" focusable="false">
+              <rect x="1" y="1" rx="9" />
+            </svg>
             <h3 className="scope-tile__heading"><strong>{fact.value}</strong><span>{fact.label}</span></h3>
             <div className="scope-tile__inventory">
               {fact.inventory.map((group) => (

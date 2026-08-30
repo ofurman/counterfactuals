@@ -68,15 +68,15 @@
       "rect": {
         "top": 764.234375,
         "right": 1229.578125,
-        "bottom": 1194.703125,
+        "bottom": 1196.703125,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 430.46875
+        "height": 432.46875
       },
       "clientWidth": 712,
       "scrollWidth": 712,
-      "clientHeight": 430,
-      "scrollHeight": 430
+      "clientHeight": 432,
+      "scrollHeight": 432
     },
     {
       "id": "results",
@@ -252,10 +252,10 @@
         "id": "scope",
         "top": 764.234375,
         "right": 1229.578125,
-        "bottom": 1194.703125,
+        "bottom": 1196.703125,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 430.46875
+        "height": 432.46875
       }
     ],
     "right": [
@@ -441,44 +441,59 @@
     {
       "top": 764.234375,
       "right": 867.34375,
-      "bottom": 995.015625,
+      "bottom": 996.015625,
       "left": 517.109375,
       "width": 350.234375,
-      "height": 230.78125
+      "height": 231.78125
     },
     {
       "top": 764.234375,
       "right": 1229.578125,
-      "bottom": 995.015625,
+      "bottom": 996.015625,
       "left": 879.34375,
       "width": 350.234375,
-      "height": 230.78125
+      "height": 231.78125
     },
     {
-      "top": 1007.015625,
+      "top": 1008.015625,
       "right": 867.34375,
-      "bottom": 1194.703125,
+      "bottom": 1196.703125,
       "left": 517.109375,
       "width": 350.234375,
-      "height": 187.6875
+      "height": 188.6875
     },
     {
-      "top": 1007.015625,
+      "top": 1008.015625,
       "right": 1229.578125,
-      "bottom": 1194.703125,
+      "bottom": 1196.703125,
       "left": 879.34375,
       "width": 350.234375,
-      "height": 187.6875
+      "height": 188.6875
     }
   ],
   "scopeTileStyles": [
     {
       "radius": 10,
-      "borderStyles": [
-        "dashed",
-        "dashed",
-        "dashed",
-        "dashed"
+      "outline": {
+        "top": 765.234375,
+        "right": 866.34375,
+        "bottom": 995.015625,
+        "left": 518.109375,
+        "width": 348.234375,
+        "height": 229.78125
+      },
+      "tile": {
+        "top": 764.234375,
+        "right": 867.34375,
+        "bottom": 996.015625,
+        "left": 517.109375,
+        "width": 350.234375,
+        "height": 231.78125
+      },
+      "strokeWidth": 2,
+      "dashArray": [
+        10,
+        5
       ],
       "background": "rgb(230, 244, 252)",
       "headingRadius": 7,
@@ -489,11 +504,26 @@
     },
     {
       "radius": 10,
-      "borderStyles": [
-        "dashed",
-        "dashed",
-        "dashed",
-        "dashed"
+      "outline": {
+        "top": 765.234375,
+        "right": 1228.578125,
+        "bottom": 995.015625,
+        "left": 880.34375,
+        "width": 348.234375,
+        "height": 229.78125
+      },
+      "tile": {
+        "top": 764.234375,
+        "right": 1229.578125,
+        "bottom": 996.015625,
+        "left": 879.34375,
+        "width": 350.234375,
+        "height": 231.78125
+      },
+      "strokeWidth": 2,
+      "dashArray": [
+        10,
+        5
       ],
       "background": "rgb(230, 244, 252)",
       "headingRadius": 7,
@@ -504,11 +534,26 @@
     },
     {
       "radius": 10,
-      "borderStyles": [
-        "dashed",
-        "dashed",
-        "dashed",
-        "dashed"
+      "outline": {
+        "top": 1009.015625,
+        "right": 866.34375,
+        "bottom": 1195.703125,
+        "left": 518.109375,
+        "width": 348.234375,
+        "height": 186.6875
+      },
+      "tile": {
+        "top": 1008.015625,
+        "right": 867.34375,
+        "bottom": 1196.703125,
+        "left": 517.109375,
+        "width": 350.234375,
+        "height": 188.6875
+      },
+      "strokeWidth": 2,
+      "dashArray": [
+        10,
+        5
       ],
       "background": "rgb(230, 244, 252)",
       "headingRadius": 7,
@@ -519,11 +564,26 @@
     },
     {
       "radius": 10,
-      "borderStyles": [
-        "dashed",
-        "dashed",
-        "dashed",
-        "dashed"
+      "outline": {
+        "top": 1009.015625,
+        "right": 1228.578125,
+        "bottom": 1195.703125,
+        "left": 880.34375,
+        "width": 348.234375,
+        "height": 186.6875
+      },
+      "tile": {
+        "top": 1008.015625,
+        "right": 1229.578125,
+        "bottom": 1196.703125,
+        "left": 879.34375,
+        "width": 350.234375,
+        "height": 188.6875
+      },
+      "strokeWidth": 2,
+      "dashArray": [
+        10,
+        5
       ],
       "background": "rgb(230, 244, 252)",
       "headingRadius": 7,
@@ -640,67 +700,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:61780/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:61936/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:61780/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:61936/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:61780/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:61936/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:61780/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:61936/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:61780/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:61936/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:61780/architecture.bded2544.png",
+      "src": "http://127.0.0.1:61936/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61780/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:61936/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61936/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61936/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61936/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61936/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61936/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61780/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:61936/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

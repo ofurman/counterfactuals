@@ -74,10 +74,10 @@ for (const marker of rendered.claims) {
   }
 }
 const expectedScope = [
-  ['scope.datasets', claimsById.get('scope.datasets').value.total, 'datasets'],
-  ['scope.methods', claimsById.get('scope.methods').value.total, 'methods'],
-  ['scope.backbones', claimsById.get('scope.backbones').value.total, 'backbones / task'],
-  ['scope.metrics', claimsById.get('scope.metrics').value.total, 'classification metrics'],
+  ['scope.datasets', claimsById.get('scope.datasets').value.total, 'Datasets'],
+  ['scope.methods', claimsById.get('scope.methods').value.total, 'Methods'],
+  ['scope.backbones', claimsById.get('scope.backbones').value.total, 'Backbones / Task'],
+  ['scope.metrics', claimsById.get('scope.metrics').value.total, 'Classification Metrics'],
 ]
 if (JSON.stringify(rendered.scope) !== JSON.stringify(expectedScope.map(([id, value, label]) => ({ id, text: `${value}${label}`, inventory: claimsById.get(id).inventory })))) throw new Error('Rendered scope tiles and named inventories do not match the generated ledger')
 const allowedSources = new Set(content.sections.flatMap((section) => section.sourceCitations))

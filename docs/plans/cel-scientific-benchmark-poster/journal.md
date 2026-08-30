@@ -160,3 +160,9 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: Styling follows visual inspection of the unchanged manuscript architecture raster; no benchmark content or source graphics were altered.
 **Problems**: none.
 **Commit**: `this commit` (`feat(poster): align scope tiles with manuscript schema`)
+
+## 2026-08-30 14:43 -- Post-plan revision: Longer tile dashes and capitalized titles -- DONE
+**Did**: Capitalized the four inventory titles using title case. Replaced browser-defined dashed borders with decorative SVG outlines using 10-pixel dashes, 5-pixel gaps, and a 2-pixel stroke, slightly thicker than the prior 1.5-pixel border. Preserved rounded corners, colors, inventory text, and spacing.
+**Verification**: `pnpm run verify:all` passed 19/19 tests, exact heading and inventory checks, live SVG dash/stroke measurements and container-bound checks, offline rendering, one-page A0 export, and package audits. Manual checksums and `git diff --check` passed. Final PDF-derived preview visually inspected with longer dashes, capitalized headings, and no clipping. REPORT visible words=242/260; body text=15 px; required remote requests=0.
+**Problems**: The storyboard's scientific-number validator treated new pixel dimensions as benchmark claims. Kept that check intact and described the styling qualitatively in the storyboard; precise dimensions remain in CSS and the live layout audit.
+**Commit**: `this commit` (`feat(poster): refine tile dashes and capitalize headings`)

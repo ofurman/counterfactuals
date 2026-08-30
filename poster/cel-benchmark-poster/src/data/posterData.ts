@@ -124,9 +124,9 @@ export const posterData = {
     controls: protocolControls,
   },
   scopeFacts: [
-    { claimId: 'scope.datasets', value: datasetScope.total, label: 'datasets', inventory: scopeInventory('scope.datasets') },
-    { claimId: 'scope.methods', value: methodScope.total, label: 'methods', inventory: scopeInventory('scope.methods') },
-    { claimId: 'scope.backbones', value: backboneScope.total, label: 'backbones / task', inventory: scopeInventory('scope.backbones') },
-    { claimId: 'scope.metrics', value: metricScope.total, label: 'classification metrics', inventory: scopeInventory('scope.metrics') },
+    { claimId: 'scope.datasets', value: datasetScope.total, label: 'Datasets', inventory: scopeInventory('scope.datasets') },
+    { claimId: 'scope.methods', value: methodScope.total, label: 'Methods', inventory: scopeInventory('scope.methods') },
+    { claimId: 'scope.backbones', value: backboneScope.total, label: 'Backbones / Task', inventory: scopeInventory('scope.backbones') },
+    { claimId: 'scope.metrics', value: metricScope.total, label: 'Classification Metrics', inventory: scopeInventory('scope.metrics') },
   ],
 } as const

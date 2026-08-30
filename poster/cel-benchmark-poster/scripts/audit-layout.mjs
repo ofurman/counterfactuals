@@ -79,15 +79,20 @@ const report = await withPosterPage(async ({ page, failures }) => {
       scopeTileStyles: [...document.querySelectorAll('.scope-tile')].map((element) => {
         const style = getComputedStyle(element)
         const heading = getComputedStyle(element.querySelector('.scope-tile__heading'))
+        const outline = element.querySelector('.scope-tile__outline rect')
+        const stroke = getComputedStyle(outline)
         return {
           radius: parseFloat(style.borderTopLeftRadius),
-          borderStyles: [style.borderTopStyle, style.borderRightStyle, style.borderBottomStyle, style.borderLeftStyle],
+          outline: rect(outline),
+          tile: rect(element),
+          strokeWidth: parseFloat(stroke.strokeWidth),
+          dashArray: stroke.strokeDasharray.split(/[ ,]+/).map(parseFloat),
           background: style.backgroundColor,
           headingRadius: parseFloat(heading.borderTopLeftRadius),
           headingBorder: heading.borderTopStyle,
           headingBackground: heading.backgroundColor,
           headingColor: heading.color,
-          borderColor: style.borderTopColor,
+          borderColor: stroke.stroke,
         }
       }),
       centerHeadingCount: document.querySelectorAll('.poster-column--center h2').length,
@@ -116,7 +121,10 @@ const report = await withPosterPage(async ({ page, failures }) => {
 
   const failuresFound = [...failures]
   if (screen.centerHeadingCount !== 0 || screen.scopeTopBorderWidth !== '0px') failuresFound.push('Removed center-column headings or divider remain')
-  if (screen.scopeTileStyles.length !== 4 || screen.scopeTileStyles.some((tile) => tile.radius < 6 || tile.headingRadius < 4 || tile.borderStyles.some((style) => style !== 'dashed') || tile.headingBorder !== 'solid' || tile.background !== 'rgb(230, 244, 252)' || tile.headingBackground !== 'rgb(252, 232, 198)' || tile.headingColor !== tile.borderColor)) failuresFound.push('Scope tiles must match the schema: rounded blue dashed containers and cream solid-border headings')
+  if (screen.scopeTileStyles.length !== 4 || screen.scopeTileStyles.some((tile) => tile.radius < 6 || tile.headingRadius < 4 || tile.strokeWidth !== 2 || JSON.stringify(tile.dashArray) !== '[10,5]' || tile.headingBorder !== 'solid' || tile.background !== 'rgb(230, 244, 252)' || tile.headingBackground !== 'rgb(252, 232, 198)' || tile.headingColor !== tile.borderColor)) failuresFound.push('Scope tiles must match the schema with 10px dashes, 5px gaps, and a 2px outline')
+  for (const tile of screen.scopeTileStyles) {
+    if (Math.abs(tile.outline.width - tile.tile.width + 2) > 1 || Math.abs(tile.outline.height - tile.tile.height + 2) > 1 || Math.abs(tile.outline.left - tile.tile.left - 1) > 1 || Math.abs(tile.outline.top - tile.tile.top - 1) > 1) failuresFound.push('Scope tile outline does not follow its container bounds')
+  }
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
