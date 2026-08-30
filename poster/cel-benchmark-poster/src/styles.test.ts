@@ -18,6 +18,12 @@ function cssToken(name: string): string {
 }
 
 describe('print contract', () => {
+  it('enlarges PWr by fifteen percent and reduces partner logos by ten percent', () => {
+    expect(css).toContain('.brand-logo--pwr { width: 52.9px; height: 85.1px; }')
+    expect(css).toContain('.brand-logo--genwro { width: 99px; height: 25.2px; }')
+    expect(css).toContain('.brand-logo--tooploox { width: 99px; height: 26.1px; }')
+  })
+
   it('preserves the original manuscript glyphs by bypassing schema SVG optimization', () => {
     const parcel = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.parcelrc'), 'utf8'))
     expect(parcel.optimizers).toEqual({ '**/manuscript-architecture*.svg': [] })

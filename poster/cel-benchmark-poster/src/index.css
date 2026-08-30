@@ -107,9 +107,9 @@ h1 {
 .header-copy { min-width: 0; text-align: center; }
 .brand-strip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
 .brand-logo { display: block; object-fit: contain; }
-.brand-logo--pwr { width: 46px; height: 74px; }
-.brand-logo--genwro { width: 110px; height: 28px; }
-.brand-logo--tooploox { width: 110px; height: 29px; }
+.brand-logo--pwr { width: 52.9px; height: 85.1px; }
+.brand-logo--genwro { width: 99px; height: 25.2px; }
+.brand-logo--tooploox { width: 99px; height: 26.1px; }
 .brand-logo--xkdd { width: 110px; height: 48px; }
 .brand-logo--ecml-pkdd { width: 105px; height: 63px; }
 .project-mark {

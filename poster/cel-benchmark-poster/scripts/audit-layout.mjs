@@ -248,6 +248,10 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   if (Math.abs(screen.columns.center[1].bottom - screen.columns.left[0].bottom) > 1) failuresFound.push('Expanded scope tiles must align with the bottom of the example column')
   if (screen.scopeItems.length !== 4 || screen.scopeItems.slice(0, 2).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(2).some((item) => Math.abs(item.top - screen.scopeItems[2].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[2].top) failuresFound.push('Benchmark scope must be a two-by-two named tile grid')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+  for (const [id, [width, height]] of Object.entries({ pwr: [52.9, 85.1], genwro: [99, 25.2], tooploox: [99, 26.1] })) {
+    const logo = screen.branding.logos.find((item) => item.id === id)
+    if (!logo || Math.abs(logo.width - width) > 0.1 || Math.abs(logo.height - height) > 0.1) failuresFound.push(`${id} does not match the requested header logo scale`)
+  }
   for (const logo of screen.branding.logos) {
     if (logo.width <= 0 || logo.height <= 0 || logo.objectFit !== 'contain') failuresFound.push(`${logo.id} logo is missing or distorted`)
     if (logo.left < screen.branding.header.left || logo.right > screen.branding.header.right || logo.top < screen.branding.header.top || logo.bottom > screen.branding.header.bottom) failuresFound.push(`${logo.id} logo exceeds the header`)
