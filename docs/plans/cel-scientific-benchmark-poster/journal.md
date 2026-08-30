@@ -119,3 +119,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: Conference files already existed as untracked project assets at the start of this request and were used unchanged. Their external origins were not recorded and are not asserted. The original three institutional logos remain unchanged copies from the supplied reference poster.
 **Problems**: none.
 **Commit**: `this commit` (`feat(poster): add conference logos and regroup header branding`)
+
+## 2026-08-30 14:01 -- Post-plan revision: Enlarge and simplify architecture section -- DONE
+**Did**: Removed the Shared evaluation protocol caption, tinted panel background, and outline. Cropped only outer whitespace through a CSS viewport at source coordinates 90/28/1220/622, leaving the 1400 × 735 manuscript raster unchanged. Expanded the schema to the full 828-pixel center-column width and blended its white image background into the poster paper.
+**Verification**: `pnpm run verify:all` passed 16/16 tests, source/brief checks, source-crop geometry and enlarged viewport checks, transparent panel checks, caption absence in the PDF, offline rendering, one-page A0 export, and packaging. Manual SHA-256 recheck and `git diff --check` passed. Final PDF-derived preview visually inspected: all schema boxes and arrows remain visible, with no panel background, repeated caption, or overlap. REPORT visible words=182/260.
+**Provenance**: The architecture asset and source mapping remain unchanged; cropping is presentation-only. All manuscript diagram content is preserved.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): enlarge schema and simplify architecture panel`)

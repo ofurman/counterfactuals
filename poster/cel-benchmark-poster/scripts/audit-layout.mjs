@@ -61,6 +61,14 @@ const report = await withPosterPage(async ({ page, failures }) => {
       figures,
       exampleBackground: getComputedStyle(document.querySelector('.problem-block')).backgroundColor,
       canvasTopBorderWidth: getComputedStyle(canvas).borderTopWidth,
+      architecture: {
+        viewport: rect(document.querySelector('.architecture-image-window')),
+        image: rect(document.querySelector('.architecture-image-window img')),
+        background: getComputedStyle(document.querySelector('.protocol-block')).backgroundColor,
+        outline: getComputedStyle(document.querySelector('.protocol-block')).outlineStyle,
+        blend: getComputedStyle(document.querySelector('.architecture-image-window img')).mixBlendMode,
+        captionCount: document.querySelectorAll('.architecture-figure figcaption').length,
+      },
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
       columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       branding: {
@@ -87,6 +95,11 @@ const report = await withPosterPage(async ({ page, failures }) => {
 
   const failuresFound = [...failures]
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
+  if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
+  if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
+  if (screen.architecture.viewport.width < 820 || screen.architecture.viewport.height < 415) failuresFound.push('Architecture schema has not been enlarged to fill the center column')
+  const cropScale = screen.architecture.viewport.width / 1220
+  if (Math.abs(screen.architecture.image.width - 1400 * cropScale) > 1 || Math.abs(screen.architecture.viewport.left - screen.architecture.image.left - 90 * cropScale) > 1 || Math.abs(screen.architecture.viewport.top - screen.architecture.image.top - 28 * cropScale) > 1 || Math.abs(screen.architecture.viewport.height - 622 * cropScale) > 1) failuresFound.push('Architecture whitespace crop differs from its source-image bounds')
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
   if (screen.visibleProvenance !== 0) failuresFound.push('Source metadata must not appear on the poster')
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)

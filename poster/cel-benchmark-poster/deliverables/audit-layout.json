@@ -168,10 +168,10 @@
       "scrollHeight": 116
     },
     {
-      "clientWidth": 792,
-      "scrollWidth": 792,
-      "clientHeight": 329,
-      "scrollHeight": 329
+      "clientWidth": 828,
+      "scrollWidth": 828,
+      "clientHeight": 422,
+      "scrollHeight": 422
     },
     {
       "clientWidth": 828,
@@ -188,6 +188,28 @@
   ],
   "exampleBackground": "rgba(0, 0, 0, 0)",
   "canvasTopBorderWidth": "0px",
+  "architecture": {
+    "viewport": {
+      "top": 518.4375,
+      "right": 1374,
+      "bottom": 940.578125,
+      "left": 546,
+      "width": 828,
+      "height": 422.140625
+    },
+    "image": {
+      "top": 499.4375,
+      "right": 1435.078125,
+      "bottom": 998.265625,
+      "left": 484.921875,
+      "width": 950.15625,
+      "height": 498.828125
+    },
+    "background": "rgba(0, 0, 0, 0)",
+    "outline": "none",
+    "blend": "multiply",
+    "captionCount": 0
+  },
   "visibleProvenance": 0,
   "columns": {
     "left": [
@@ -356,47 +378,47 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:60079/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:60258/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:60079/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:60258/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:60079/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:60258/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:60079/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:60258/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:60079/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:60258/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:60079/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:60258/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:60079/architecture.bded2544.png",
+      "src": "http://127.0.0.1:60258/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:60079/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:60258/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:60079/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:60258/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

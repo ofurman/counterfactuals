@@ -41,14 +41,13 @@ export function ArchitectureFigure() {
       data-claim-id="scope.protocol"
       data-manuscript-source="manuscript/figures/teaser.pdf"
     >
-      <img
-        src={architectureGraphic}
-        alt="CEL manuscript architecture: data and model modules feed local, global, and group-wise counterfactual methods, then shared metrics and reports"
-        data-claim-id="scope.methods"
-      />
-      <figcaption>
-        <span>Shared evaluation protocol</span>
-      </figcaption>
+      <div className="architecture-image-window" data-crop="90 28 1220 622">
+        <img
+          src={architectureGraphic}
+          alt="CEL manuscript architecture: data and model modules feed local, global, and group-wise counterfactual methods, then shared metrics and reports"
+          data-claim-id="scope.methods"
+        />
+      </div>
     </figure>
   )
 }

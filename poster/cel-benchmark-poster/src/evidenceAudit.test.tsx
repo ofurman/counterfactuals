@@ -6,6 +6,15 @@ import { posterData } from './data/posterData'
 const liveClaimIds = new Set(posterData.claims.map((claim) => claim.id))
 
 describe('rendered evidence provenance', () => {
+  it('crops the unchanged architecture graphic without a repeated caption', () => {
+    const { container } = render(<App />)
+    const figure = container.querySelector('.architecture-figure')
+    expect(figure?.querySelector('figcaption')).toBeNull()
+    expect(figure?.textContent).not.toContain('Shared evaluation protocol')
+    expect(figure?.querySelector('.architecture-image-window')?.getAttribute('data-crop')).toBe('90 28 1220 622')
+    expect(figure?.querySelector('img')?.getAttribute('data-claim-id')).toBe('scope.methods')
+  })
+
   it('binds every rendered claim marker to the live generated ledger', () => {
     const { container } = render(<App />)
     const markers = Array.from(container.querySelectorAll<HTMLElement>('[data-claim-id]'))

@@ -28,7 +28,7 @@ path, not a dump of manuscript sections or a full result table.
 
 ## Center — controlled protocol
 
-1. Use the manuscript architecture figure at readable scale: Data Module and Model Module feed the Explanation Engine, then the Metrics Orchestrator and counterfactual reports. <!-- claims: scope.protocol, scope.methods, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
+1. Use the manuscript architecture figure at readable scale: crop its outer whitespace, enlarge it to the center-column width, and omit the repeated caption and panel background. Preserve all schema content: Data Module and Model Module feed the Explanation Engine, then the Metrics Orchestrator and counterfactual reports. <!-- claims: scope.protocol, scope.methods, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
 2. The architecture must make the benchmark surface explicit: local, global, and group-wise CEs share data, models, constraints, and metrics. <!-- claims: scope.methods, contribution.protocol | sources: manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Introduction -->
 3. Use a focused crop of the manuscript local-results figure rather than a redrawn chart. Its role is to show multi-dimensional behavior, not an aggregate ranking. <!-- claims: result.local.overview, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Results, manuscript/main_lncs.tex#Conclusions -->
 4. Keep dataset/method captions visible; retain source mappings and derivative-crop provenance in project files, without printing source labels or marginal notes. <!-- claims: result.local.overview | sources: manuscript/main_lncs.tex#Results -->
