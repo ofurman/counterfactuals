@@ -1,5 +1,4 @@
 export { PosterCanvas } from './PosterCanvas'
-export { PosterFooter } from './PosterFooter'
 export { PosterHeader } from './PosterHeader'
 export { PosterStage } from './PosterStage'
 export { PrintToolbar } from './PrintToolbar'

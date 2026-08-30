@@ -31,6 +31,8 @@ if (requiredSectionText[0] !== identity.title) throw new Error('PDF title contra
 for (const expected of requiredSectionText) if (!normalizedText.includes(expected)) throw new Error(`PDF text is missing required section content: ${expected}`)
 if (normalizedText.includes('One protocol. Multiple CE paradigms. Measurable trade-offs.')) throw new Error('Removed header subtitle remains in the PDF')
 if (normalizedText.includes(identity.venue)) throw new Error('Removed venue marker remains in the PDF')
+if (/Reproduce and extend|uv add ce-library|Documentation/.test(normalizedText)) throw new Error('Removed footer text remains in the PDF')
+if ((normalizedText.match(/Code & project/g) ?? []).length !== 1) throw new Error('Only the contribution QR label should remain')
 if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed architecture caption remains in the PDF')
 if (/One evaluation framework|Benchmark scope/i.test(normalizedText)) throw new Error('Removed center-column heading remains in the PDF')
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')

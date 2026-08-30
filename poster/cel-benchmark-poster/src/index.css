@@ -67,8 +67,8 @@ a { color: inherit; }
   height: var(--poster-height);
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 20px;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   color: var(--navy);
   background: var(--paper);
@@ -79,7 +79,7 @@ a { color: inherit; }
   grid-template-columns: 180px minmax(0, 1fr) 180px;
   gap: 28px;
   align-items: center;
-  padding-bottom: 18px;
+  padding-bottom: 0;
   border-bottom: 0;
 }
 .section-kicker {
@@ -193,19 +193,7 @@ h1 {
 .poster-bottom-grid .section-block { min-height: 205px; }
 .poster-bottom-grid .claim-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 14px; }
 .poster-bottom-grid .claim-list li { margin: 0; }
-.poster-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px;
-  padding-top: 13px;
-  border-top: 0;
-  font-size: 13px;
-}
-.poster-footer div { display: flex; align-items: center; gap: 16px; }
-.poster-footer code { padding: 5px 9px; color: var(--navy); background: var(--teal-light); font-size: 13px; }
 .precedent-citations { margin: 0; color: var(--navy-muted); font-size: 9px; }
-.poster-footer nav { display: flex; gap: 18px; font-weight: 750; }
 
 .pipeline-figure, .confound-figure, .evidence-figure, .applicability-figure { margin: 0; }
 .pipeline-figure svg { display: block; width: 100%; height: 195px; margin-top: 4px; }

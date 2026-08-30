@@ -121,17 +121,6 @@
       "sourceCitations": ["manuscript/main_lncs.tex#Results"],
       "linkIds": [],
       "assetRoles": ["regression-manuscript-figure"]
-    },
-    {
-      "id": "reproducibility",
-      "owner": "footer",
-      "order": 11,
-      "heading": "Reproduce and extend",
-      "copy": ["uv add ce-library"],
-      "claimIds": [],
-      "sourceCitations": ["pyproject.toml#project", "poster/research/claims/claims.generated.json"],
-      "linkIds": ["repository", "documentation"],
-      "assetRoles": ["provenance-note"]
     }
   ],
   "resultVisuals": ["local-manuscript-figure", "group-manuscript-figure", "global-manuscript-figure", "regression-manuscript-figure"]

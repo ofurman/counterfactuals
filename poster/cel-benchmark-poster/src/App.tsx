@@ -1,6 +1,5 @@
 import {
   PosterCanvas,
-  PosterFooter,
   PosterHeader,
   PosterStage,
   PrintToolbar,
@@ -59,7 +58,6 @@ export default function App() {
               </SectionBlock>
             </div>
           </div>
-          <PosterFooter section={resolveSection('reproducibility')} />
         </PosterCanvas>
       </PosterStage>
     </>

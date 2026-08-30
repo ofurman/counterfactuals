@@ -27,7 +27,7 @@ const result = await withPosterPage(async ({ page, failures, remoteRequests, con
   }))
   const defects = [...failures, ...consoleErrors]
   if (remoteRequests.length) defects.push(`Required remote requests: ${remoteRequests.join(', ')}`)
-  if (!rendered.canvas || rendered.sections !== 11 || rendered.claimMarkers < 13 || rendered.manuscriptFigures !== 5 || rendered.brandLogos !== 5 || !rendered.example || rendered.examplePlots !== 3 || !rendered.regression || rendered.readyState !== 'complete') defects.push(`Incomplete offline render: ${JSON.stringify(rendered)}`)
+  if (!rendered.canvas || rendered.sections !== 10 || rendered.claimMarkers < 13 || rendered.manuscriptFigures !== 5 || rendered.brandLogos !== 5 || !rendered.example || rendered.examplePlots !== 3 || !rendered.regression || rendered.readyState !== 'complete') defects.push(`Incomplete offline render: ${JSON.stringify(rendered)}`)
   if (defects.length) throw new Error(defects.join('\n'))
   return rendered
 }, { entry: 'bundle', blockRemote: true })

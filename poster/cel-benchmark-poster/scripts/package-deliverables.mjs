@@ -29,7 +29,7 @@ Source revision: \`${revision}\`
 
 - \`${pdfName}\` — one-page A0 landscape PDF (1189 × 841 mm).
 - \`${previewName}\` — 72 DPI PNG rendered from the final PDF with Poppler.
-- \`${htmlName}\` — self-contained offline HTML poster; repository and documentation links remain clickable but are not required for rendering.
+- \`${htmlName}\` — self-contained offline HTML poster; the contribution QR links to the repository but is not required for rendering. No bottom reproduction strip is shown.
 - \`SHA256SUMS\` — SHA-256 hashes for the three final artifacts above.
 - \`audit-layout.json\` — measured native-canvas layout report.
 - \`cel-benchmark-poster-print-review.png\` — retained Stage 6 print-review evidence.

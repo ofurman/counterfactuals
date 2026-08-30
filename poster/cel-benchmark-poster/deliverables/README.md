@@ -1,12 +1,12 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `454a51fefa02fb28353a8b6d61163f531c678b16`
+Source revision: `d98120786fcc549fa8c91dc4434a718bfa045896`
 
 ## Contents
 
 - `cel-benchmark-poster-a0.pdf` — one-page A0 landscape PDF (1189 × 841 mm).
 - `cel-benchmark-poster-preview.png` — 72 DPI PNG rendered from the final PDF with Poppler.
-- `cel-benchmark-poster.html` — self-contained offline HTML poster; repository and documentation links remain clickable but are not required for rendering.
+- `cel-benchmark-poster.html` — self-contained offline HTML poster; the contribution QR links to the repository but is not required for rendering. No bottom reproduction strip is shown.
 - `SHA256SUMS` — SHA-256 hashes for the three final artifacts above.
 - `audit-layout.json` — measured native-canvas layout report.
 - `cel-benchmark-poster-print-review.png` — retained Stage 6 print-review evidence.

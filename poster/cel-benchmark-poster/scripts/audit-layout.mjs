@@ -74,6 +74,9 @@ const report = await withPosterPage(async ({ page, failures }) => {
         loaded: plot.complete && plot.naturalWidth > 0,
       })),
       canvasTopBorderWidth: getComputedStyle(canvas).borderTopWidth,
+      headerBodyGap: document.querySelector('.poster-grid').getBoundingClientRect().top - document.querySelector('.poster-header').getBoundingClientRect().bottom,
+      headerBottomPadding: parseFloat(getComputedStyle(document.querySelector('.poster-header')).paddingBottom),
+      footerCount: document.querySelectorAll('.poster-footer, [data-section="reproducibility"]').length,
       architecture: {
         viewport: rect(document.querySelector('.architecture-image-window')),
         image: rect(document.querySelector('.architecture-image-window img')),
@@ -142,6 +145,8 @@ const report = await withPosterPage(async ({ page, failures }) => {
   })
 
   const failuresFound = [...failures]
+  if (Math.abs(screen.headerBodyGap - 12) > 0.1 || screen.headerBottomPadding !== 0) failuresFound.push('Header-to-body spacing must be compact: 12px gap and no bottom padding')
+  if (screen.footerCount !== 0) failuresFound.push('Removed reproduction footer remains')
   if (screen.horizontalRuleCount !== 0 || screen.sectionRules.some((section) => section.top !== 0 || section.bottom !== 0)) failuresFound.push('Horizontal section dividers must be absent, including header and footer rules')
   if (screen.centerHeadingCount !== 0 || screen.scopeTopBorderWidth !== '0px') failuresFound.push('Removed center-column headings or divider remain')
   if (screen.scopeTileStyles.length !== 4 || screen.scopeTileStyles.some((tile) => tile.radius < 6 || tile.headingRadius < 4 || tile.strokeWidth !== 2 || JSON.stringify(tile.dashArray) !== '[10,5]' || tile.headingBorder !== 'solid' || tile.background !== 'rgb(230, 244, 252)' || tile.headingBackground !== 'rgb(252, 232, 198)' || tile.headingColor !== tile.borderColor)) failuresFound.push('Scope tiles must match the schema with 10px dashes, 5px gaps, and a 2px outline')
@@ -168,7 +173,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)
   if (screen.canvas.scrollWidth > screen.canvas.clientWidth || screen.canvas.scrollHeight > screen.canvas.clientHeight) failuresFound.push('Poster canvas overflows')
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
-  if (screen.sections.length !== 11 || new Set(screen.sections.map((section) => section.id)).size !== 11) failuresFound.push('Named inventory must include seven top-level sections and four nested result panels')
+  if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named inventory must include six top-level sections and four nested result panels')
   for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope', 'guidance-limitations'], right: ['results'] })) {
     if (JSON.stringify(screen.columns[column].map((section) => section.id)) !== JSON.stringify(expected)) failuresFound.push(`${column} column is not in the requested order`)
     if (screen.columns[column].some((section, index, sections) => index > 0 && sections[index - 1].bottom >= section.top)) failuresFound.push(`${column} sections overlap`)

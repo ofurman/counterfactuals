@@ -56,7 +56,7 @@ Compare plausibility or density only within a named dataset and model. <!-- clai
 Displayed zeroes can be rounded rather than exact. <!-- claims: group.adult.tcrex.distance | sources: manuscript/tables/results_group.tex#tab:group_metrics_mlp -->
 Do not use the unresolved sparsity direction. <!-- claims: caveat.sparsity-direction | sources: manuscript/supplementary.tex#app:metrics -->
 
-**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in project files.
+**Footer inventory:** No bottom reproduction strip or repository/documentation links. Retain the contribution QR and non-printing provenance. Keep a compact twelve-pixel gap between the header and main body with no header bottom padding.
 
 ## Thirty-second visitor narrative
 

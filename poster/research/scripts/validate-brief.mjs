@@ -188,7 +188,7 @@ const structuralLines = new Set([
   "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the center-column scope tiles; linked to the repository, with no header or paper QR.",
   "**Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.",
   "**Evidence-view inventory:**",
-  "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in project files."
+  "**Footer inventory:** No bottom reproduction strip or repository/documentation links. Retain the contribution QR and non-printing provenance. Keep a compact twelve-pixel gap between the header and main body with no header bottom padding."
 ]);
 for (const heading of substantiveHeadings) {
   const body = sectionBody(heading);
@@ -224,13 +224,13 @@ for (const section of content.sections) {
   await validateClaimMapping(section.claimIds, section.sourceCitations, `poster section ${section.id}`, {required: scientific});
   for (const linkId of section.linkIds) if (!linkIds.has(linkId)) fail(`${section.id} references unknown link ID: ${linkId}`);
 }
-for (const required of ["header", "problem", "scope", "protocol", "results", "local-tradeoff", "group-tradeoff", "applicability", "guidance-limitations", "reproducibility"]) {
+for (const required of ["header", "problem", "scope", "protocol", "results", "local-tradeoff", "group-tradeoff", "applicability", "guidance-limitations"]) {
   if (!sectionIds.has(required)) fail(`Missing required poster section: ${required}`);
 }
 for (const [linkId, link] of Object.entries(content.links)) {
   if (!identity.links[link.identityLink]) fail(`${linkId} does not resolve to identity.json`);
 }
-if (content.sections.length !== 11 || !sectionIds.has("regression-tradeoff")) fail("Poster must contain seven top-level sections and four nested result panels including regression");
+if (content.sections.length !== 10 || !sectionIds.has("regression-tradeoff") || sectionIds.has("reproducibility")) fail("Poster must contain six top-level sections and four nested result panels including regression, without a footer");
 if (JSON.stringify([...content.resultVisuals].sort()) !== JSON.stringify(["global-manuscript-figure", "group-manuscript-figure", "local-manuscript-figure", "regression-manuscript-figure"])) fail("Poster must own exactly the local, global, group-wise, and regression result visuals");
 const conceptSection = content.sections.find((section) => section.id === "problem");
 if (conceptSection.copy.join(" ") !== claimsById.get("concept.counterfactual").posterWording || !conceptSection.claimIds.includes("concept.counterfactual")) fail("CE definition must resolve to its manuscript claim");

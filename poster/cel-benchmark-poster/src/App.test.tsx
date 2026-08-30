@@ -8,7 +8,7 @@ describe('poster scaffold', () => {
     render(<App />)
     expect(screen.getByRole('main', { name: /CEL scientific benchmark poster/i })).toBeInTheDocument()
     expect(screen.getByRole('banner')).toBeInTheDocument()
-    expect(screen.getByRole('contentinfo')).toBeInTheDocument()
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
     expect(screen.getByRole('toolbar', { name: /Poster controls/i })).toBeInTheDocument()
     expect(screen.getAllByRole('figure')).toHaveLength(6)
     expect(screen.getAllByRole('region')).toHaveLength(5)
@@ -22,9 +22,21 @@ describe('poster scaffold', () => {
       .map((element) => element.getAttribute('data-section'))
     expect(sectionIds).toEqual(expect.arrayContaining([
       'header', 'problem', 'scope', 'protocol', 'local-tradeoff', 'group-tradeoff',
-      'applicability', 'results', 'guidance-limitations', 'reproducibility', 'regression-tradeoff',
+      'applicability', 'results', 'guidance-limitations', 'regression-tradeoff',
     ]))
-    expect(sectionIds).toHaveLength(11)
+    expect(sectionIds).toHaveLength(10)
+  })
+
+  it('omits the bottom reproduction strip while retaining the contribution QR', () => {
+    const { container } = render(<App />)
+    const poster = within(container)
+    expect(container.querySelector('.poster-footer, [data-section="reproducibility"]')).toBeNull()
+    expect(poster.queryByText('Reproduce and extend')).not.toBeInTheDocument()
+    expect(poster.queryByText('uv add ce-library')).not.toBeInTheDocument()
+    expect(poster.queryByText('Documentation')).not.toBeInTheDocument()
+    expect(poster.queryByRole('navigation', { name: 'Project links' })).not.toBeInTheDocument()
+    expect(poster.getAllByText('Code & project')).toHaveLength(1)
+    expect(container.querySelector('[data-section="guidance-limitations"] [data-qr-destination]')).not.toBeNull()
   })
 
   it('uses the exact manuscript title and keeps the poster copy concise', () => {
