@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
+import { loadExampleAssets } from './example-assets.mjs'
 import { repositoryDir, withPosterPage } from './harness.mjs'
 
 for (const validator of ['validate-claims.mjs', 'validate-brief.mjs']) {
@@ -15,6 +16,7 @@ const identity = JSON.parse(await readFile(path.join(repositoryDir, 'poster/rese
 const content = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/poster-content.json'), 'utf8'))
 const brands = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/brand-assets.json'), 'utf8'))
 const example = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/ce-example.json'), 'utf8'))
+const exampleAssets = await loadExampleAssets()
 const claimsById = new Map(claims.claims.map((claim) => [claim.id, claim]))
 
 const rendered = await withPosterPage(async ({ page, failures }) => {
@@ -49,11 +51,10 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
       predictions: [...document.querySelectorAll('.example-prediction')].map((element) => element.textContent),
       paradigms: [...document.querySelectorAll('[data-example-plot]')].map((plot) => ({
         paradigm: plot.dataset.examplePlot,
-        transitions: [...plot.querySelectorAll('[data-example-transition]')].map((element) => ({
-          id: element.dataset.exampleTransition, from: element.dataset.from, to: element.dataset.to,
-          original: element.dataset.original, counterfactual: element.dataset.counterfactual,
-          arrow: element.querySelector('line')?.getAttribute('marker-end'),
-        })),
+        source: plot.dataset.exampleAsset,
+        renderer: plot.dataset.exampleRenderer,
+        src: plot.currentSrc,
+        loaded: plot.complete && plot.naturalWidth > 0,
       })),
       isResult: Boolean(document.querySelector('.ce-example[data-result-surface], .ce-example[data-finding], .ce-example[data-manuscript-source]')),
     },
@@ -134,7 +135,9 @@ if (expectedFeatures.length !== 3 || changedCount !== 2 || expectedFeatures.find
 const predict = (profile) => profile.monthlyIncome - profile.monthlyDebt >= example.model.minimumIncomeAfterDebt && profile.creditHistoryYears >= example.model.minimumCreditHistoryYears && profile.loanAmount / (12 * profile.monthlyIncome) <= example.model.maximumLoanToAnnualIncomeRatio ? 'Approved' : 'Declined'
 if (predict(example.original) !== 'Declined' || predict(example.counterfactual) !== 'Approved' || JSON.stringify(rendered.example.predictions) !== JSON.stringify(['Declined', 'Approved'])) throw new Error('Counterfactual does not flip the declared example prediction')
 if (JSON.stringify(rendered.example.paradigms.map(({ paradigm }) => paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) throw new Error('Missing local, global, or group-wise example plot')
-for (const { paradigm, transitions } of rendered.example.paradigms) {
+for (const { paradigm, transitions, source } of exampleAssets) {
+  const image = rendered.example.paradigms.find((plot) => plot.paradigm === paradigm)
+  if (!image?.loaded || image.renderer !== 'matplotlib' || image.source !== source || !image.src.includes(`ce-example-${paradigm}.`)) throw new Error(`${paradigm} must use its generated Matplotlib SVG`)
   const applicants = paradigm === 'local' ? example.applicants.slice(0, 1) : example.applicants
   if (transitions.length !== applicants.length) throw new Error(`Wrong applicant count in ${paradigm}`)
   for (const [index, applicant] of applicants.entries()) {
@@ -142,8 +145,8 @@ for (const { paradigm, transitions } of rendered.example.paradigms) {
     const change = paradigm === 'global' ? example.globalChange : example.groups.find((group) => group.applicants.includes(applicant.id)).change
     const counterfactual = paradigm === 'local' ? example.counterfactual : { ...original, monthlyIncome: original.monthlyIncome + change.monthlyIncome, monthlyDebt: original.monthlyDebt + change.monthlyDebt }
     const renderedTransition = transitions[index]
-    if (predict(original) !== 'Declined' || predict(counterfactual) !== 'Approved' || renderedTransition.from !== 'Declined' || renderedTransition.to !== 'Approved' || !renderedTransition.arrow) throw new Error(`${paradigm} ${applicant.id} must have a Declined-to-Approved arrow`)
-    if (renderedTransition.id !== applicant.id || renderedTransition.original !== `${original.monthlyIncome},${original.monthlyDebt}` || renderedTransition.counterfactual !== `${counterfactual.monthlyIncome},${counterfactual.monthlyDebt}`) throw new Error(`${paradigm} ${applicant.id} does not match the example data`)
+    if (predict(original) !== 'Declined' || predict(counterfactual) !== 'Approved') throw new Error(`${paradigm} ${applicant.id} must have a Declined-to-Approved arrow`)
+    if (renderedTransition.id !== applicant.id || JSON.stringify(renderedTransition.original) !== JSON.stringify(original) || JSON.stringify(renderedTransition.counterfactual) !== JSON.stringify(counterfactual)) throw new Error(`${paradigm} ${applicant.id} does not match the example data`)
   }
 }
 if (/toy|source|not benchmark|threshold/i.test(rendered.example.text)) throw new Error('Removed explanatory footnotes remain visible in the example')

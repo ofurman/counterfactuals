@@ -19,6 +19,7 @@ const result = await withPosterPage(async ({ page, failures, remoteRequests, con
     claimMarkers: document.querySelectorAll('[data-claim-id]').length,
     manuscriptFigures: document.querySelectorAll('[data-manuscript-source]').length,
     brandLogos: document.querySelectorAll('[data-brand-id]').length,
+    examplePlots: [...document.querySelectorAll('[data-example-plot]')].filter((image) => image.complete && image.naturalWidth > 0).length,
     example: Boolean(document.querySelector('[data-example-kind="illustrative"]')),
     regression: Boolean(document.querySelector('[data-finding="regression"]')),
     links: [...document.querySelectorAll('a[href]')].map((link) => link.href),
@@ -26,7 +27,7 @@ const result = await withPosterPage(async ({ page, failures, remoteRequests, con
   }))
   const defects = [...failures, ...consoleErrors]
   if (remoteRequests.length) defects.push(`Required remote requests: ${remoteRequests.join(', ')}`)
-  if (!rendered.canvas || rendered.sections !== 11 || rendered.claimMarkers < 13 || rendered.manuscriptFigures !== 5 || rendered.brandLogos !== 5 || !rendered.example || !rendered.regression || rendered.readyState !== 'complete') defects.push(`Incomplete offline render: ${JSON.stringify(rendered)}`)
+  if (!rendered.canvas || rendered.sections !== 11 || rendered.claimMarkers < 13 || rendered.manuscriptFigures !== 5 || rendered.brandLogos !== 5 || !rendered.example || rendered.examplePlots !== 3 || !rendered.regression || rendered.readyState !== 'complete') defects.push(`Incomplete offline render: ${JSON.stringify(rendered)}`)
   if (defects.length) throw new Error(defects.join('\n'))
   return rendered
 }, { entry: 'bundle', blockRemote: true })

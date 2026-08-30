@@ -1,8 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { loadExampleAssets } from './example-assets.mjs'
 import { deliverablesDir, repositoryDir, withPosterPage } from './harness.mjs'
 
 const visualSpec = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/visual-spec.json'), 'utf8'))
+
+const exampleAssets = await loadExampleAssets()
 
 const report = await withPosterPage(async ({ page, failures }) => {
   const screen = await page.evaluate(() => {
@@ -66,10 +69,9 @@ const report = await withPosterPage(async ({ page, failures }) => {
       figures,
       exampleBackground: getComputedStyle(document.querySelector('.problem-block')).backgroundColor,
       examplePlots: [...document.querySelectorAll('[data-example-plot]')].map((plot) => ({
-        paradigm: plot.dataset.examplePlot, viewport: rect(plot), viewBox: plot.getAttribute('viewBox'),
-        boundary: plot.querySelector('.recourse-boundary').getAttribute('d'),
-        arrowCount: plot.querySelectorAll('.recourse-arrow[marker-end]').length,
-        labels: [...plot.querySelectorAll('text')].map((label) => ({ text: label.textContent, ...rect(label), fontSize: parseFloat(getComputedStyle(label).fontSize) })),
+        paradigm: plot.dataset.examplePlot, viewport: rect(plot),
+        renderer: plot.dataset.exampleRenderer,
+        loaded: plot.complete && plot.naturalWidth > 0,
       })),
       canvasTopBorderWidth: getComputedStyle(canvas).borderTopWidth,
       architecture: {
@@ -153,12 +155,14 @@ const report = await withPosterPage(async ({ page, failures }) => {
   const cropScale = screen.architecture.viewport.width / 1220
   if (Math.abs(screen.architecture.image.width - 1400 * cropScale) > 1 || Math.abs(screen.architecture.viewport.left - screen.architecture.image.left - 90 * cropScale) > 1 || Math.abs(screen.architecture.viewport.top - screen.architecture.image.top - 28 * cropScale) > 1 || Math.abs(screen.architecture.viewport.height - 622 * cropScale) > 1) failuresFound.push('Architecture whitespace crop differs from its source-image bounds')
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
-  if (JSON.stringify(screen.examplePlots.map((plot) => [plot.paradigm, plot.arrowCount])) !== JSON.stringify([['local', 1], ['global', 4], ['group-wise', 4]])) failuresFound.push('All three practical examples and their forward arrows must be visible')
-  if (new Set(screen.examplePlots.map((plot) => `${plot.viewBox}|${plot.boundary}|${plot.viewport.width}|${plot.viewport.height}`)).size !== 1) failuresFound.push('The example plots must share identical axes, scales, and decision boundaries')
+  if (JSON.stringify(screen.examplePlots.map((plot) => plot.paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) failuresFound.push('All three Matplotlib examples must be visible')
+  if (new Set(screen.examplePlots.map((plot) => plot.viewport.width)).size !== 1) failuresFound.push('Example plots must share identical widths')
+  if (Math.abs(screen.examplePlots[0].viewport.height - screen.examplePlots[1].viewport.height) > 1 || screen.examplePlots[2].viewport.height <= screen.examplePlots[1].viewport.height) failuresFound.push('Only group-wise must reserve the extra legend row')
   for (const plot of screen.examplePlots) {
-    for (const label of plot.labels) {
-      if (label.fontSize < 12 || label.left < plot.viewport.left - 1 || label.right > plot.viewport.right + 1 || label.top < plot.viewport.top - 1 || label.bottom > plot.viewport.bottom + 1) failuresFound.push(`${plot.paradigm} label is clipped or too small: ${label.text}`)
-    }
+    const asset = exampleAssets.find((candidate) => candidate.paradigm === plot.paradigm)
+    if (!plot.loaded || plot.renderer !== 'matplotlib') failuresFound.push(`${plot.paradigm} SVG failed to load`)
+    if (Math.abs(plot.viewport.height - plot.viewport.width * asset.height / asset.width) > 1) failuresFound.push(`${plot.paradigm} SVG is stretched`)
+    if (asset.minimumFontPt * plot.viewport.width / asset.width < 12) failuresFound.push(`${plot.paradigm} SVG labels are smaller than twelve native pixels`)
   }
   if (screen.visibleProvenance !== 0) failuresFound.push('Source metadata must not appear on the poster')
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)

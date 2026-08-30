@@ -1,6 +1,6 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `6b1a51a19845d73d78cf894b099eb1a08656b099`
+Source revision: `454a51fefa02fb28353a8b6d61163f531c678b16`
 
 ## Contents
 
@@ -26,7 +26,7 @@ cd deliverables
 shasum -a 256 -c SHA256SUMS
 ```
 
-The full check validates manuscript-derived claims and graphics, the three-feature CE example, local/global/group-wise actions and declined-to-approved transitions, non-printing provenance, reference-logo hashes, column order, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
+The full check validates manuscript-derived claims and graphics, the three-feature CE example, regenerated plot-only Matplotlib SVGs, local/global/group-wise actions and declined-to-approved transitions, non-printing provenance, reference-logo hashes, column order, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
 
 Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.github.io/counterfactuals/
 
@@ -36,5 +36,6 @@ Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.g
 - PWr, genwro.AI, and Tooploox logos are unchanged copies from the user-supplied PUMAL reference poster; their provenance and hashes are recorded in `poster/research/brand-assets.json`.
 - XKDD and ECML-PKDD logos use the supplied project assets unchanged; their original external sources are not recorded. Local file hashes are retained in the same brand manifest.
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
+- The example plots are transparent, font-outlined SVGs generated with CEL plotting helpers. Their data, generator, and style hashes are validated before packaging.
 - Raster result panels preserve the manuscript's published plotting style and are intended for A0 print or zoomed digital inspection.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.

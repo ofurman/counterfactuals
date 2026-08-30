@@ -18,7 +18,9 @@
     "audit:offline": "node scripts/audit-offline.mjs",
     "package": "node scripts/package-deliverables.mjs",
     "audit:package": "node scripts/audit-package.mjs",
-    "verify:all": "node ../research/scripts/validate-claims.mjs && node ../research/scripts/validate-brief.mjs && pnpm run typecheck && pnpm test && pnpm run build && pnpm run bundle && pnpm run audit:offline && pnpm run render && pnpm run audit:layout && pnpm run audit:claims && pnpm run audit:pdf && pnpm run package && pnpm run audit:package"
+    "plots:generate": "uv run --project ../.. --no-sync python ../plots/plot_ce_examples.py --transparent",
+    "plots:test": "uv run --project ../.. --no-sync pytest -q ../plots/test_plot_ce_examples.py",
+    "verify:all": "pnpm run plots:generate && pnpm run plots:test && node ../research/scripts/validate-claims.mjs && node ../research/scripts/validate-brief.mjs && pnpm run typecheck && pnpm test && pnpm run build && pnpm run bundle && pnpm run audit:offline && pnpm run render && pnpm run audit:layout && pnpm run audit:claims && pnpm run audit:pdf && pnpm run package && pnpm run audit:package"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

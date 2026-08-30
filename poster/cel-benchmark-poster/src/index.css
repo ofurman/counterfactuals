@@ -293,7 +293,7 @@ h1 {
   background: transparent;
 }
 .problem-block .section-copy { color: var(--navy-muted); }
-.ce-example { display: grid; gap: 6px; margin: 8px 0 0; }
+.ce-example { display: grid; gap: 3px; margin: 2px 0 0; }
 .ce-example figcaption { color: var(--teal); font-size: 12px; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
 .example-profile { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 15px; line-height: 1.2; }
 .example-profile th, .example-profile td { padding: 4px 6px; border-bottom: 0; text-align: left; vertical-align: middle; }
@@ -313,22 +313,8 @@ h1 {
 .recourse-action { margin: 4px 0; font-size: 15px; line-height: 1.2; }
 .recourse-action b { display: inline-block; min-width: 36px; }
 .recourse-action--lower-income { color: var(--teal); }
-.recourse-plot { display: block; width: 100%; height: auto; margin-top: 4px; overflow: visible; }
-.recourse-plot text { fill: var(--navy-muted); font-size: 12px; }
-.recourse-plot .recourse-axis-label { font-size: 12px; }
-.recourse-region { fill: var(--teal-light); fill-opacity: 0.5; }
-.recourse-boundary { fill: none; stroke: var(--teal); stroke-width: 1.3; stroke-dasharray: 5 4; }
-.recourse-axis { fill: none; stroke: var(--navy-muted); stroke-width: 0.8; }
-.recourse-plot .recourse-region-label { font-size: 13px; font-weight: 750; }
-.recourse-plot .recourse-region-label--declined { fill: #a53a0e; }
-.recourse-plot .recourse-region-label--approved { fill: var(--teal); }
-.recourse-group--individual, .recourse-group--shared, .recourse-group--higher-debt { color: var(--navy); }
-.recourse-group--lower-income { color: var(--teal); }
-.recourse-arrow { stroke: currentColor; stroke-width: 1.8; }
-.recourse-arrowhead { fill: currentColor; }
-.recourse-point--original { fill: var(--orange); stroke: #a53a0e; stroke-width: 1; }
-.recourse-point--counterfactual { fill: var(--paper); stroke: var(--teal); stroke-width: 2; }
-.recourse-plot .recourse-applicant { fill: var(--navy); font-size: 12px; font-weight: 750; paint-order: stroke; stroke: var(--paper); stroke-width: 2px; }
+.recourse-plot { display: block; width: 100%; height: auto; margin-top: 4px; }
+
 
 .contribution-stack { display: grid; grid-template-columns: 1fr 1fr 1.55fr; gap: 6px; margin-top: 6px; }
 .contribution-item {

@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { CounterfactualExample } from './components/figures/BenchmarkFraming'
-import { counterfactualExample as example, changedFeatureCount, exampleFeatureRows, examplePrediction, exampleApplicants, exampleTransitions, examplePlotPoint, examplePlotBounds, type ExampleParadigm } from './data/counterfactualExample'
+import { counterfactualExample as example, changedFeatureCount, exampleFeatureRows, examplePrediction, exampleApplicants, exampleTransitions, type ExampleParadigm } from './data/counterfactualExample'
 
 describe('illustrative CE example', () => {
   it('shows three features and changes only income and debt payments', () => {
@@ -61,41 +61,23 @@ describe('illustrative CE example', () => {
     ])
   })
 
-  it('renders three plots at the same scale with nine forward arrows and declined originals', () => {
+  it('imports the three Matplotlib SVG assets with accurate accessible descriptions', () => {
     const { container } = render(<CounterfactualExample />)
-    const plots = [...container.querySelectorAll('[data-example-plot]')]
-    expect(plots.map((plot) => plot.getAttribute('data-example-plot'))).toEqual(['local', 'global', 'group-wise'])
-    expect(new Set(plots.map((plot) => plot.getAttribute('viewBox'))).size).toBe(1)
-    expect(new Set(plots.map((plot) => plot.querySelector('.recourse-boundary')?.getAttribute('d'))).size).toBe(1)
-    expect(container.querySelectorAll('[data-example-transition]')).toHaveLength(9)
+    const plots = [...container.querySelectorAll<HTMLImageElement>('[data-example-plot]')]
+    expect(plots.map((plot) => plot.dataset.examplePlot)).toEqual(['local', 'global', 'group-wise'])
+    expect(container.querySelector('svg.recourse-plot')).toBeNull()
     for (const plot of plots) {
-      const paradigm = plot.getAttribute('data-example-plot') as ExampleParadigm
-      const transitions = exampleTransitions(paradigm)
-      for (const transition of transitions) {
-        const mark = plot.querySelector(`[data-example-transition="${transition.id}"]`)!
-        expect(mark.getAttribute('data-from')).toBe('Declined')
-        expect(mark.getAttribute('data-to')).toBe('Approved')
-        const start = examplePlotPoint(transition.original)
-        const end = examplePlotPoint(transition.counterfactual)
-        const circle = mark.querySelector('.recourse-point--original')!
-        expect(Number(circle.getAttribute('cx'))).toBe(start.x)
-        expect(Number(circle.getAttribute('cy'))).toBe(start.y)
-        const arrow = mark.querySelector('line')!
-        expect(arrow.getAttribute('marker-end')).toBe(`url(#${paradigm}-arrow-${transition.group})`)
-        expect(Number(arrow.getAttribute('x1'))).toBe(start.x)
-        expect(Number(arrow.getAttribute('y1'))).toBe(start.y)
-        const tip = { x: Number(arrow.getAttribute('x2')), y: Number(arrow.getAttribute('y2')) }
-        expect((tip.x - start.x) * (end.x - start.x) + (tip.y - start.y) * (end.y - start.y)).toBeGreaterThan(0)
-        const tipIncome = example.plot.minimumIncome + (tip.x - examplePlotBounds.left) / (examplePlotBounds.right - examplePlotBounds.left) * (example.plot.maximumIncome - example.plot.minimumIncome)
-        const tipDebt = (examplePlotBounds.bottom - tip.y) / (examplePlotBounds.bottom - examplePlotBounds.top) * example.plot.maximumDebt
-        expect(tipIncome - tipDebt).toBeGreaterThan(example.model.minimumIncomeAfterDebt)
-        for (const point of [start, end]) {
-          expect(point.x).toBeGreaterThanOrEqual(examplePlotBounds.left)
-          expect(point.x).toBeLessThanOrEqual(examplePlotBounds.right)
-          expect(point.y).toBeGreaterThanOrEqual(examplePlotBounds.top)
-          expect(point.y).toBeLessThanOrEqual(examplePlotBounds.bottom)
-        }
+      const paradigm = plot.dataset.examplePlot as ExampleParadigm
+      expect(plot.dataset.exampleRenderer).toBe('matplotlib')
+      expect(plot.dataset.exampleAsset).toBe(`poster/plots/generated/ce-example-${paradigm}.svg`)
+      expect(plot.getAttribute('src')).toContain(`ce-example-${paradigm}.svg`)
+      expect(plot.getAttribute('width')).toBe('640')
+      expect(plot.getAttribute('height')).toBe(paradigm === 'group-wise' ? '298' : '265')
+      expect(plot.alt.includes('Legend:')).toBe(paradigm === 'group-wise')
+      for (const { id, original, counterfactual } of exampleTransitions(paradigm)) {
+        expect(plot.alt).toContain(`${id}: Declined at income €${original.monthlyIncome} and debt payments €${original.monthlyDebt}; Approved at income €${counterfactual.monthlyIncome} and debt payments €${counterfactual.monthlyDebt}`)
       }
+      expect(plot.alt).toContain('employment stays full-time')
     }
   })
 })

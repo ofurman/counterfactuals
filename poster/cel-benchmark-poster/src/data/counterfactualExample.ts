@@ -55,14 +55,3 @@ export function exampleTransitions(paradigm: ExampleParadigm) {
     }
   })
 }
-
-// The other model conditions are satisfied across the entire plotted domain.
-// This affine projection therefore gives the exact decision boundary shown.
-export const examplePlotBounds = { left: 52, right: 370, top: 18, bottom: 122 }
-export function examplePlotPoint(profile: Pick<ExampleProfile, 'monthlyIncome' | 'monthlyDebt'>) {
-  const { left, right, top, bottom } = examplePlotBounds
-  return {
-    x: left + (profile.monthlyIncome - example.plot.minimumIncome) / (example.plot.maximumIncome - example.plot.minimumIncome) * (right - left),
-    y: bottom - profile.monthlyDebt / example.plot.maximumDebt * (bottom - top),
-  }
-}
