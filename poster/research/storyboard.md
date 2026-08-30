@@ -22,7 +22,7 @@ path, not a dump of manuscript sections or a full result table.
 
 ## Left — concept and global results
 
-1. **Counterfactual example:** explain a prediction-changing input modification through a labelled toy loan model. Invented inputs and the approval rule live separately from experimental claims; they are not benchmark data or lending advice. <!-- claims: concept.counterfactual | sources: manuscript/main_lncs.tex#Introduction -->
+1. **Counterfactual example:** show the original and counterfactual applicant profiles side by side on the light poster background. Highlight income and debt changes while age, employment, credit history, and loan amount stay fixed. Keep the example caption and decision flip; retain invented-data provenance and model assumptions in project files rather than visible notes. <!-- claims: concept.counterfactual | sources: manuscript/main_lncs.tex#Introduction -->
 2. **Scope strip:** show the benchmark's dataset, method-paradigm, backbone, and cross-validation scope from the claim ledger. <!-- claims: scope.datasets, scope.methods, scope.backbones, scope.folds | sources: manuscript/main_lncs.tex#Datasets, manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Benchmark, manuscript/supplementary.tex#app:full_results -->
 3. **Global results below the example:** show the manuscript's global-method figure with its validity and missing-output takeaway. <!-- claims: result.global.overview, global.blobs.ares.missing | sources: manuscript/main_lncs.tex#Results, manuscript/tables/results_global.tex#tab:global_metrics_mlp -->
 
@@ -31,7 +31,7 @@ path, not a dump of manuscript sections or a full result table.
 1. Use the manuscript architecture figure at readable scale: Data Module and Model Module feed the Explanation Engine, then the Metrics Orchestrator and counterfactual reports. <!-- claims: scope.protocol, scope.methods, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
 2. The architecture must make the benchmark surface explicit: local, global, and group-wise CEs share data, models, constraints, and metrics. <!-- claims: scope.methods, contribution.protocol | sources: manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Introduction -->
 3. Use a focused crop of the manuscript local-results figure rather than a redrawn chart. Its role is to show multi-dimensional behavior, not an aggregate ranking. <!-- claims: result.local.overview, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Results, manuscript/main_lncs.tex#Conclusions -->
-4. Keep the source figure label and derivative-crop note visible so the graphic remains traceable to the manuscript. <!-- claims: result.local.overview | sources: manuscript/main_lncs.tex#Results -->
+4. Keep dataset/method captions visible; retain source mappings and derivative-crop provenance in project files, without printing source labels or marginal notes. <!-- claims: result.local.overview | sources: manuscript/main_lncs.tex#Results -->
 
 ## Right — contributions and group-wise results
 
@@ -47,7 +47,7 @@ Compare plausibility or density only within a named dataset and model. <!-- clai
 Displayed zeroes can be rounded rather than exact. <!-- claims: group.adult.tcrex.distance | sources: manuscript/tables/results_group.tex#tab:group_metrics_mlp -->
 Do not use the unresolved sparsity direction. <!-- claims: caveat.sparsity-direction | sources: manuscript/supplementary.tex#app:metrics -->
 
-**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in the source notes.
+**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in project files.
 
 ## Thirty-second visitor narrative
 

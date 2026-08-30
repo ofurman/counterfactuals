@@ -39,7 +39,15 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
     example: {
       kind: document.querySelector('[data-example-kind]')?.getAttribute('data-example-kind'),
       text: document.querySelector('.ce-example')?.textContent ?? '',
-      values: [...document.querySelectorAll('[data-example-value]')].map((element) => [element.dataset.exampleValue, element.textContent]),
+      features: [...document.querySelectorAll('[data-example-feature]')].map((element) => ({
+        key: element.dataset.exampleFeature,
+        changed: element.dataset.changed === 'true',
+        original: element.querySelector('[data-example-value="original"]')?.textContent,
+        counterfactual: element.querySelector('[data-example-value="counterfactual"]')?.textContent,
+        highlighted: Boolean(element.querySelector('.example-value--changed')),
+      })),
+      summary: document.querySelector('.example-summary')?.textContent,
+      predictions: [...document.querySelectorAll('.example-prediction')].map((element) => element.textContent),
       isResult: Boolean(document.querySelector('.ce-example[data-result-surface], .ce-example[data-finding], .ce-example[data-manuscript-source]')),
     },
     hasRegression: Boolean(document.querySelector('[data-section="regression-tradeoff"], [data-finding="regression"]')),
@@ -100,9 +108,18 @@ for (const brand of brands.assets) {
   if (!visible?.loaded || visible.alt !== brand.label) throw new Error(`Missing or mislabelled reference logo: ${brand.id}`)
 }
 const money = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: example.currency, maximumFractionDigits: 0 }).format(value)
-const expectedExampleValues = [['original', money(example.originalIncome)], ['counterfactual', money(example.counterfactualIncome)], ['threshold', money(example.approvalThreshold)]]
-if (rendered.example.kind !== 'illustrative' || rendered.example.isResult || !rendered.example.text.includes(example.disclaimer) || !rendered.example.text.includes(example.fixedFeatures)) throw new Error('Toy example is missing its illustrative provenance or fixed-feature note')
-if (JSON.stringify(rendered.example.values) !== JSON.stringify(expectedExampleValues)) throw new Error('Displayed toy example does not match its declared inputs')
-if (!(example.originalIncome < example.approvalThreshold && example.counterfactualIncome === example.approvalThreshold) || !rendered.example.text.includes('Declined') || !rendered.example.text.includes('Approved')) throw new Error('Toy counterfactual does not flip its stated model prediction')
+const expectedFeatures = example.features.map((feature) => {
+  const format = (value) => feature.format === 'currency' ? money(value) : feature.format === 'years' ? `${value} years` : String(value)
+  const changed = example.original[feature.key] !== example.counterfactual[feature.key]
+  if (changed && !feature.actionable) throw new Error(`Example changes a fixed feature: ${feature.key}`)
+  return { key: feature.key, changed, original: format(example.original[feature.key]), counterfactual: format(example.counterfactual[feature.key]), highlighted: changed }
+})
+if (rendered.example.kind !== 'illustrative' || rendered.example.isResult || !rendered.example.text.includes(example.label) || !example.provenance) throw new Error('Example is not separated from benchmark evidence')
+if (JSON.stringify(rendered.example.features) !== JSON.stringify(expectedFeatures)) throw new Error('Displayed example does not match its feature profiles and highlights')
+const changedCount = expectedFeatures.filter((feature) => feature.changed).length
+if (expectedFeatures.length !== 6 || changedCount !== 2 || rendered.example.summary !== `Only ${changedCount} of ${expectedFeatures.length} features change.`) throw new Error('Example must show two changed features and four unchanged features')
+const predict = (profile) => profile.monthlyIncome - profile.monthlyDebt >= example.model.minimumIncomeAfterDebt && profile.creditHistoryYears >= example.model.minimumCreditHistoryYears && profile.loanAmount / (12 * profile.monthlyIncome) <= example.model.maximumLoanToAnnualIncomeRatio ? 'Approved' : 'Declined'
+if (predict(example.original) !== 'Declined' || predict(example.counterfactual) !== 'Approved' || JSON.stringify(rendered.example.predictions) !== JSON.stringify(['Declined', 'Approved'])) throw new Error('Counterfactual does not flip the declared example prediction')
+if (/toy|source|not benchmark|threshold/i.test(rendered.example.text)) throw new Error('Removed explanatory footnotes remain visible in the example')
 
-console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source notes=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, toy example=labelled, visible words=${rendered.visibleWordCount}/260, manuscript title=exact`)
+console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source metadata=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, example features=${expectedFeatures.length} (${changedCount} changed), visible words=${rendered.visibleWordCount}/260, manuscript title=exact`)

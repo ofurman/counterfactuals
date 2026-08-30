@@ -92,3 +92,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: QR payload and label still resolve to the frozen project identity. The vector QR has a four-module quiet zone and is contained within the Extend card.
 **Problems**: none.
 **Commit**: `this commit` (`feat(poster): move project QR to Extend contribution`)
+
+## 2026-08-30 13:09 -- Post-plan revision: Multi-feature CE example and clean annotations -- DONE
+**Did**: Replaced the dark single-feature example with a light, side-by-side six-feature applicant profile. Income and monthly debt change; age, employment, credit history, and loan amount remain fixed. Highlighted only the changed counterfactual values and retained the prediction flip. Removed printed source labels, model disclaimers/rules, and marginal provenance notes; kept dataset captions and all provenance in project files/non-printing metadata.
+**Verification**: `pnpm run verify:all` passed 31 source-backed claims, 15/15 tests, exact manuscript title, the two-of-six feature-change audit, fixed-feature preservation, prediction consistency, light-background and hidden-metadata checks, offline loading, one-page A0 PDF, and package audits. Manual checksums passed. REPORT visible words=194/260; body/caption/chart text=15/12/12 px. Final PDF-derived preview visually inspected without clipping.
+**Provenance**: `ce-example.json` records the invented profiles and affordability rule separately from manuscript evidence. Tests confirm both changed features are actionable, the other four are unchanged, and neither single change alone flips the stated example prediction. Source mappings and the existing sparsity caveat remain available in metadata; no sparsity ranking was added.
+**Problems**: Initial table spacing clipped the change-count summary; reduced cell padding without shrinking text. The first PDF annotation scan also matched the word “source” inside “open-source”; narrowed it to source-label punctuation and reran the complete pipeline successfully.
+**Commit**: `this commit` (`feat(poster): refine multi-feature counterfactual example`)

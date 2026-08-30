@@ -60,8 +60,8 @@
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 432,
-      "scrollHeight": 432
+      "clientHeight": 428,
+      "scrollHeight": 428
     },
     {
       "id": "applicability",
@@ -156,10 +156,10 @@
   ],
   "figures": [
     {
-      "clientWidth": 378,
-      "scrollWidth": 378,
-      "clientHeight": 323,
-      "scrollHeight": 323
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 340,
+      "scrollHeight": 340
     },
     {
       "clientWidth": 414,
@@ -186,6 +186,8 @@
       "scrollHeight": 116
     }
   ],
+  "exampleBackground": "rgba(0, 0, 0, 0)",
+  "visibleProvenance": 0,
   "columns": {
     "left": [
       {
@@ -340,37 +342,37 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:58087/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:58674/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:58087/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:58674/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:58087/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:58674/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:58087/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:58674/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:58087/architecture.bded2544.png",
+      "src": "http://127.0.0.1:58674/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:58087/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:58674/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:58087/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:58674/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }
@@ -380,7 +382,7 @@
   },
   "minimumFontPx": {
     "body": 15,
-    "caption": 9,
+    "caption": 12,
     "chartLabel": 12
   },
   "print": {

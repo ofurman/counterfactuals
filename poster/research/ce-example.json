@@ -1,13 +1,37 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "illustrative",
   "conceptClaimId": "concept.counterfactual",
-  "label": "Illustrative loan model",
-  "feature": "Monthly income",
+  "label": "Loan application example",
   "currency": "EUR",
-  "originalIncome": 3000,
-  "counterfactualIncome": 4000,
-  "approvalThreshold": 4000,
-  "fixedFeatures": "All other features unchanged.",
-  "disclaimer": "Toy model, not benchmark data."
+  "features": [
+    {"key": "age", "label": "Age", "format": "years", "actionable": false},
+    {"key": "employment", "label": "Employment", "format": "text", "actionable": true},
+    {"key": "creditHistoryYears", "label": "Credit history", "format": "years", "actionable": false},
+    {"key": "loanAmount", "label": "Loan amount", "format": "currency", "actionable": true},
+    {"key": "monthlyIncome", "label": "Monthly income", "format": "currency", "actionable": true},
+    {"key": "monthlyDebt", "label": "Monthly debt", "format": "currency", "actionable": true}
+  ],
+  "original": {
+    "age": 35,
+    "employment": "Full-time",
+    "creditHistoryYears": 6,
+    "loanAmount": 15000,
+    "monthlyIncome": 3000,
+    "monthlyDebt": 1200
+  },
+  "counterfactual": {
+    "age": 35,
+    "employment": "Full-time",
+    "creditHistoryYears": 6,
+    "loanAmount": 15000,
+    "monthlyIncome": 3500,
+    "monthlyDebt": 700
+  },
+  "model": {
+    "minimumIncomeAfterDebt": 2800,
+    "minimumCreditHistoryYears": 2,
+    "maximumLoanToAnnualIncomeRatio": 0.5
+  },
+  "provenance": "Invented applicant profiles and an illustrative affordability rule explain selective feature changes. This is not a trained lending model, manuscript result, or lending recommendation; provenance is kept in project files rather than printed on the poster."
 }

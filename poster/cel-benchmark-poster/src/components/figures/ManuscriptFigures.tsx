@@ -64,7 +64,7 @@ export function LocalBenchmarkFigure() {
         source="manuscript/figures/metrics_boxplot_local.png"
         sourceLabel="Adult Census · local methods"
       />
-      <p className="figure-caveat" data-claim-id="caveat.sparsity-direction"><ClaimWording claimId="caveat.sparsity-direction" /></p>
+      <span hidden data-claim-id="caveat.sparsity-direction"><ClaimWording claimId="caveat.sparsity-direction" /></span>
     </div>
   )
 }

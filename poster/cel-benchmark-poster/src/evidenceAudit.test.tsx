@@ -43,7 +43,7 @@ describe('rendered evidence provenance', () => {
     }
   })
 
-  it('binds project links, the QR, and visible source notes to frozen inputs', () => {
+  it('binds project links, the QR, and non-printing source metadata to frozen inputs', () => {
     const { container } = render(<App />)
     const allowedLinks = new Set(Object.values(posterData.identity.links))
     for (const anchor of container.querySelectorAll<HTMLAnchorElement>('a[href]')) {
@@ -58,6 +58,7 @@ describe('rendered evidence provenance', () => {
     expect(qr?.getAttribute('href')).toBe(posterData.identity.links.repository)
 
     for (const note of container.querySelectorAll<HTMLElement>('[data-source-section]')) {
+      expect(note).not.toBeVisible()
       const section = posterData.sections.find((item) => item.id === note.dataset.sourceSection)
       expect(section).toBeDefined()
       for (const citation of note.querySelectorAll<HTMLElement>('[data-source-citation]')) {
@@ -71,5 +72,6 @@ describe('rendered evidence provenance', () => {
     for (const precedent of posterData.precedents) {
       expect(renderedCitations.has(precedent.sourceCitation)).toBe(true)
     }
+    expect(container.querySelector('.source-note, .example-disclaimer, .example-rule')).toBeNull()
   })
 })

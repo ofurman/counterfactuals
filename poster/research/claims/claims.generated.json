@@ -25,7 +25,7 @@
       },
       "extractionRule": "Require the introductory definition of counterfactual explanations.",
       "direction": "qualitative",
-      "qualifier": "The poster's loan example is an explicitly labelled toy model, not a manuscript experiment or lending recommendation.",
+      "qualifier": "The loan application example uses invented profiles and a consistency rule recorded separately in ce-example.json; it is not a manuscript experiment or lending recommendation.",
       "status": "publishable"
     },
     {

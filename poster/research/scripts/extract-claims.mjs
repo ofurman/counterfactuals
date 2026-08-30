@@ -361,7 +361,7 @@ export async function buildClaims() {
       source: {file: "manuscript/main_lncs.tex", anchor: "Introduction > identifying minimal changes required to alter a model’s prediction"},
       extractionRule: "Require the introductory definition of counterfactual explanations.",
       direction: "qualitative",
-      qualifier: "The poster's loan example is an explicitly labelled toy model, not a manuscript experiment or lending recommendation.",
+      qualifier: "The loan application example uses invented profiles and a consistency rule recorded separately in ce-example.json; it is not a manuscript experiment or lending recommendation.",
       status: "publishable"
     },
     {
