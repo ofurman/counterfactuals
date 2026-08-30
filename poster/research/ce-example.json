@@ -1,16 +1,13 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "kind": "illustrative",
   "conceptClaimId": "concept.counterfactual",
   "label": "Loan application example",
   "currency": "EUR",
   "features": [
-    {"key": "age", "label": "Age", "format": "years", "actionable": false},
-    {"key": "employment", "label": "Employment", "format": "text", "actionable": true},
-    {"key": "creditHistoryYears", "label": "Credit history", "format": "years", "actionable": false},
-    {"key": "loanAmount", "label": "Loan amount", "format": "currency", "actionable": true},
     {"key": "monthlyIncome", "label": "Monthly income", "format": "currency", "actionable": true},
-    {"key": "monthlyDebt", "label": "Monthly debt", "format": "currency", "actionable": true}
+    {"key": "monthlyDebt", "label": "Debt payments", "format": "currency", "actionable": true},
+    {"key": "employment", "label": "Employment", "format": "text", "actionable": false}
   ],
   "original": {
     "age": 35,
@@ -29,9 +26,22 @@
     "monthlyDebt": 700
   },
   "model": {
-    "minimumIncomeAfterDebt": 2800,
+    "minimumIncomeAfterDebt": 2600,
     "minimumCreditHistoryYears": 2,
     "maximumLoanToAnnualIncomeRatio": 0.5
   },
-  "provenance": "Invented applicant profiles and an illustrative affordability rule explain selective feature changes. This is not a trained lending model, manuscript result, or lending recommendation; provenance is kept in project files rather than printed on the poster."
+  "applicants": [
+    {"id": "A", "monthlyIncome": 3000, "monthlyDebt": 1200},
+    {"id": "B", "monthlyIncome": 3200, "monthlyDebt": 1300},
+    {"id": "C", "monthlyIncome": 2200, "monthlyDebt": 700},
+    {"id": "D", "monthlyIncome": 2400, "monthlyDebt": 800}
+  ],
+  "globalChange": {"monthlyIncome": 1300, "monthlyDebt": 0},
+  "groups": [
+    {"id": "higher-debt", "applicants": ["A", "B"], "change": {"monthlyIncome": 0, "monthlyDebt": -1000}},
+    {"id": "lower-income", "applicants": ["C", "D"], "change": {"monthlyIncome": 1300, "monthlyDebt": 0}}
+  ],
+  "plot": {"minimumIncome": 2000, "maximumIncome": 4800, "maximumDebt": 1600},
+  "reference": "/Users/ofurman/pwr/unified_cfs/pumal-scientific-poster/conference-presentation/generated/slides/03-granularity-gap.html",
+  "provenance": "Invented applicant profiles and an illustrative affordability rule explain selective feature changes. Three displayed features are monthly income, monthly debt payments, and unchanged full-time employment. Age, credit history, and loan amount retain their original values for every applicant. All original profiles are declined and every illustrated endpoint is approved. Global uses one fixed shared action as a concrete example, not a requirement on all global methods. The granularity comparison follows the user-supplied PUMAL presentation. This is not a trained lending model, manuscript result, or lending recommendation; provenance is kept in project files rather than printed on the poster."
 }

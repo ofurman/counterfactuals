@@ -38,15 +38,15 @@
       "rect": {
         "top": 372,
         "right": 493.109375,
-        "bottom": 787.8125,
+        "bottom": 1252.90625,
         "left": 108,
         "width": 385.109375,
-        "height": 415.8125
+        "height": 880.90625
       },
       "clientWidth": 385,
       "scrollWidth": 385,
-      "clientHeight": 416,
-      "scrollHeight": 416
+      "clientHeight": 881,
+      "scrollHeight": 881
     },
     {
       "id": "protocol",
@@ -246,8 +246,8 @@
     {
       "clientWidth": 385,
       "scrollWidth": 385,
-      "clientHeight": 340,
-      "scrollHeight": 340
+      "clientHeight": 816,
+      "scrollHeight": 816
     },
     {
       "clientWidth": 712,
@@ -281,6 +281,446 @@
     }
   ],
   "exampleBackground": "rgba(0, 0, 0, 0)",
+  "examplePlots": [
+    {
+      "paradigm": "local",
+      "viewport": {
+        "top": 636.625,
+        "right": 493.109375,
+        "bottom": 796.65625,
+        "left": 108,
+        "width": 385.109375,
+        "height": 160.03125
+      },
+      "viewBox": "0 0 385 160",
+      "boundary": "M 120.14285714285714 122 L 301.8571428571429 18",
+      "arrowCount": 1,
+      "labels": [
+        {
+          "text": "2,000",
+          "top": 763.6519775390625,
+          "right": 175.04287719726562,
+          "bottom": 777.6519775390625,
+          "left": 145.01162719726562,
+          "width": 30.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "3,000",
+          "top": 763.6519775390625,
+          "right": 288.636474609375,
+          "bottom": 777.6519775390625,
+          "left": 258.605224609375,
+          "width": 30.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "4,000",
+          "top": 763.6519775390625,
+          "right": 402.2301025390625,
+          "bottom": 777.6519775390625,
+          "left": 372.1988220214844,
+          "width": 30.031280517578125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "0",
+          "top": 751.6495971679688,
+          "right": 153.02587890625,
+          "bottom": 765.6495971679688,
+          "left": 146.33837890625,
+          "width": 6.6875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "800",
+          "top": 699.6394653320312,
+          "right": 153.02587890625,
+          "bottom": 713.6394653320312,
+          "left": 132.99462890625,
+          "width": 20.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "1,600",
+          "top": 647.6292724609375,
+          "right": 153.02587890625,
+          "bottom": 661.6292724609375,
+          "left": 122.99462127685547,
+          "width": 30.03125762939453,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "Monthly income (€)",
+          "top": 781.6554565429688,
+          "right": 399.0873718261719,
+          "bottom": 795.6554565429688,
+          "left": 297.04052734375,
+          "width": 102.04684448242188,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "Debt payments (€)",
+          "top": 662.2802734375,
+          "right": 123.0194320678711,
+          "bottom": 760.9990234375,
+          "left": 109.0194320678711,
+          "width": 14,
+          "height": 98.71875,
+          "fontSize": 12
+        },
+        {
+          "text": "Declined",
+          "top": 655.6310424804688,
+          "right": 226.21710205078125,
+          "bottom": 670.6310424804688,
+          "left": 172.0295867919922,
+          "width": 54.18751525878906,
+          "height": 15,
+          "fontSize": 13
+        },
+        {
+          "text": "Approved",
+          "top": 736.6468505859375,
+          "right": 472.08819580078125,
+          "bottom": 751.6468505859375,
+          "left": 411.4162902832031,
+          "width": 60.671905517578125,
+          "height": 15,
+          "fontSize": 13
+        },
+        {
+          "text": "A",
+          "top": 661.6320190429688,
+          "right": 268.619873046875,
+          "bottom": 675.6320190429688,
+          "left": 259.947998046875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        }
+      ]
+    },
+    {
+      "paradigm": "global",
+      "viewport": {
+        "top": 853.75,
+        "right": 493.109375,
+        "bottom": 1013.78125,
+        "left": 108,
+        "width": 385.109375,
+        "height": 160.03125
+      },
+      "viewBox": "0 0 385 160",
+      "boundary": "M 120.14285714285714 122 L 301.8571428571429 18",
+      "arrowCount": 4,
+      "labels": [
+        {
+          "text": "2,000",
+          "top": 980.7769775390625,
+          "right": 175.04287719726562,
+          "bottom": 994.7769775390625,
+          "left": 145.01162719726562,
+          "width": 30.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "3,000",
+          "top": 980.7769775390625,
+          "right": 288.636474609375,
+          "bottom": 994.7769775390625,
+          "left": 258.605224609375,
+          "width": 30.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "4,000",
+          "top": 980.7769775390625,
+          "right": 402.2301025390625,
+          "bottom": 994.7769775390625,
+          "left": 372.1988220214844,
+          "width": 30.031280517578125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "0",
+          "top": 968.7745971679688,
+          "right": 153.02587890625,
+          "bottom": 982.7745971679688,
+          "left": 146.33837890625,
+          "width": 6.6875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "800",
+          "top": 916.7644653320312,
+          "right": 153.02587890625,
+          "bottom": 930.7644653320312,
+          "left": 132.99462890625,
+          "width": 20.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "1,600",
+          "top": 864.7542724609375,
+          "right": 153.02587890625,
+          "bottom": 878.7542724609375,
+          "left": 122.99462127685547,
+          "width": 30.03125762939453,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "Monthly income (€)",
+          "top": 998.7804565429688,
+          "right": 399.0873718261719,
+          "bottom": 1012.7804565429688,
+          "left": 297.04052734375,
+          "width": 102.04684448242188,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "Debt payments (€)",
+          "top": 879.4052734375,
+          "right": 123.0194320678711,
+          "bottom": 978.1240234375,
+          "left": 109.0194320678711,
+          "width": 14,
+          "height": 98.71875,
+          "fontSize": 12
+        },
+        {
+          "text": "Declined",
+          "top": 872.7560424804688,
+          "right": 226.21710205078125,
+          "bottom": 887.7560424804688,
+          "left": 172.0295867919922,
+          "width": 54.18751525878906,
+          "height": 15,
+          "fontSize": 13
+        },
+        {
+          "text": "Approved",
+          "top": 953.7718505859375,
+          "right": 472.08819580078125,
+          "bottom": 968.7718505859375,
+          "left": 411.4162902832031,
+          "width": 60.671905517578125,
+          "height": 15,
+          "fontSize": 13
+        },
+        {
+          "text": "A",
+          "top": 878.7570190429688,
+          "right": 268.619873046875,
+          "bottom": 892.7570190429688,
+          "left": 259.947998046875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "B",
+          "top": 872.2557373046875,
+          "right": 291.338623046875,
+          "bottom": 886.2557373046875,
+          "left": 282.666748046875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "C",
+          "top": 911.2633666992188,
+          "right": 177.7449951171875,
+          "bottom": 925.2633666992188,
+          "left": 169.0731201171875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "D",
+          "top": 904.7620849609375,
+          "right": 200.46371459960938,
+          "bottom": 918.7620849609375,
+          "left": 191.79183959960938,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        }
+      ]
+    },
+    {
+      "paradigm": "group-wise",
+      "viewport": {
+        "top": 1092.875,
+        "right": 493.109375,
+        "bottom": 1252.90625,
+        "left": 108,
+        "width": 385.109375,
+        "height": 160.03125
+      },
+      "viewBox": "0 0 385 160",
+      "boundary": "M 120.14285714285714 122 L 301.8571428571429 18",
+      "arrowCount": 4,
+      "labels": [
+        {
+          "text": "2,000",
+          "top": 1219.9019775390625,
+          "right": 175.04287719726562,
+          "bottom": 1233.9019775390625,
+          "left": 145.01162719726562,
+          "width": 30.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "3,000",
+          "top": 1219.9019775390625,
+          "right": 288.636474609375,
+          "bottom": 1233.9019775390625,
+          "left": 258.605224609375,
+          "width": 30.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "4,000",
+          "top": 1219.9019775390625,
+          "right": 402.2301025390625,
+          "bottom": 1233.9019775390625,
+          "left": 372.1988220214844,
+          "width": 30.031280517578125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "0",
+          "top": 1207.899658203125,
+          "right": 153.02587890625,
+          "bottom": 1221.899658203125,
+          "left": 146.33837890625,
+          "width": 6.6875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "800",
+          "top": 1155.889404296875,
+          "right": 153.02587890625,
+          "bottom": 1169.889404296875,
+          "left": 132.99462890625,
+          "width": 20.03125,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "1,600",
+          "top": 1103.8792724609375,
+          "right": 153.02587890625,
+          "bottom": 1117.8792724609375,
+          "left": 122.99462127685547,
+          "width": 30.03125762939453,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "Monthly income (€)",
+          "top": 1237.905517578125,
+          "right": 399.0873718261719,
+          "bottom": 1251.905517578125,
+          "left": 297.04052734375,
+          "width": 102.04684448242188,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "Debt payments (€)",
+          "top": 1118.5302734375,
+          "right": 123.0194320678711,
+          "bottom": 1217.2490234375,
+          "left": 109.0194320678711,
+          "width": 14,
+          "height": 98.71875,
+          "fontSize": 12
+        },
+        {
+          "text": "Declined",
+          "top": 1111.881103515625,
+          "right": 226.21710205078125,
+          "bottom": 1126.881103515625,
+          "left": 172.0295867919922,
+          "width": 54.18751525878906,
+          "height": 15,
+          "fontSize": 13
+        },
+        {
+          "text": "Approved",
+          "top": 1192.8968505859375,
+          "right": 472.08819580078125,
+          "bottom": 1207.8968505859375,
+          "left": 411.4162902832031,
+          "width": 60.671905517578125,
+          "height": 15,
+          "fontSize": 13
+        },
+        {
+          "text": "A",
+          "top": 1117.882080078125,
+          "right": 268.619873046875,
+          "bottom": 1131.882080078125,
+          "left": 259.947998046875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "B",
+          "top": 1111.3807373046875,
+          "right": 291.338623046875,
+          "bottom": 1125.3807373046875,
+          "left": 282.666748046875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "C",
+          "top": 1150.388427734375,
+          "right": 177.7449951171875,
+          "bottom": 1164.388427734375,
+          "left": 169.0731201171875,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        },
+        {
+          "text": "D",
+          "top": 1143.8870849609375,
+          "right": 200.46371459960938,
+          "bottom": 1157.8870849609375,
+          "left": 191.79183959960938,
+          "width": 8.671875,
+          "height": 14,
+          "fontSize": 12
+        }
+      ]
+    }
+  ],
   "canvasTopBorderWidth": "0px",
   "architecture": {
     "viewport": {
@@ -311,10 +751,10 @@
         "id": "problem",
         "top": 372,
         "right": 493.109375,
-        "bottom": 787.8125,
+        "bottom": 1252.90625,
         "left": 108,
         "width": 385.109375,
-        "height": 415.8125
+        "height": 880.90625
       }
     ],
     "center": [
@@ -916,72 +1356,72 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:62631/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:64673/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:62631/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:64673/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:62631/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:64673/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:62631/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:64673/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:62631/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:64673/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:62631/architecture.bded2544.png",
+      "src": "http://127.0.0.1:64673/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62631/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:64673/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:62631/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:64673/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62631/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:64673/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62631/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:64673/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62631/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:64673/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62631/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:64673/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62631/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:64673/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:62631/regression.ee8ae60a.jpg",
+      "src": "http://127.0.0.1:64673/regression.ee8ae60a.jpg",
       "complete": true,
       "naturalWidth": 1100
     }

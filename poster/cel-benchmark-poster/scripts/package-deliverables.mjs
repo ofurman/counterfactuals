@@ -49,7 +49,7 @@ cd deliverables
 shasum -a 256 -c SHA256SUMS
 \`\`\`
 
-The full check validates manuscript-derived claims and graphics, the six-feature CE example and its two changed features, non-printing provenance, reference-logo hashes, column order, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
+The full check validates manuscript-derived claims and graphics, the three-feature CE example, local/global/group-wise actions and declined-to-approved transitions, non-printing provenance, reference-logo hashes, column order, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
 
 Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.github.io/counterfactuals/
 

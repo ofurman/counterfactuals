@@ -23,7 +23,7 @@ path, not a dump of manuscript sections or a full result table.
 
 ## Left — counterfactual concept
 
-1. **Counterfactual example:** show the original and counterfactual applicant profiles side by side on the light poster background. Highlight income and debt changes while age, employment, credit history, and loan amount stay fixed. Keep the example caption and decision flip; retain invented-data provenance and model assumptions in project files rather than visible notes. <!-- claims: concept.counterfactual | sources: manuscript/main_lncs.tex#Introduction -->
+1. **Counterfactual example:** show income, debt payments, and unchanged employment in a local before/after profile. Extend it to global and group-wise examples using the same original applicants, shared axes, and decision boundary. Every original is declined and every arrow ends at an approved counterfactual. Show a shared income increase globally, and distinct debt-payment or income changes per group. Retain invented-data provenance and model assumptions in project files rather than visible notes; keep the light background and concise captions. <!-- claims: concept.counterfactual | sources: manuscript/main_lncs.tex#Introduction -->
 
 ## Center — framework and benchmark scope
 

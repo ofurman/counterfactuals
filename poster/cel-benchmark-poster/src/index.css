@@ -293,22 +293,42 @@ h1 {
   background: transparent;
 }
 .problem-block .section-copy { color: var(--navy-muted); }
-.ce-example { display: grid; gap: 10px; margin: 18px 0 0; }
+.ce-example { display: grid; gap: 6px; margin: 8px 0 0; }
 .ce-example figcaption { color: var(--teal); font-size: 12px; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
-.example-profile { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; line-height: 1.2; }
-.example-profile th, .example-profile td { padding: 8px 6px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: middle; }
+.example-profile { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 15px; line-height: 1.2; }
+.example-profile th, .example-profile td { padding: 4px 6px; border-bottom: 0; text-align: left; vertical-align: middle; }
 .example-profile th:first-child { width: 40%; padding-left: 0; }
 .example-profile thead th { padding-top: 5px; color: var(--navy); font-size: 12px; font-weight: 800; }
 .example-profile tbody th { font-weight: 550; }
 .example-profile tbody td { color: var(--navy-muted); }
 .example-profile tbody tr[data-changed="true"] th { color: var(--teal); font-weight: 800; }
 .example-profile tbody .example-value--changed { color: var(--teal); background: var(--teal-light); font-weight: 800; box-shadow: inset 3px 0 var(--teal); }
-.example-profile tfoot th, .example-profile tfoot td { padding-top: 15px; padding-bottom: 8px; border-bottom: 0; }
+.example-profile tfoot th, .example-profile tfoot td { padding-top: 6px; padding-bottom: 6px; border-bottom: 0; }
 .example-prediction { display: inline-block; padding: 6px 8px; font-size: 14px; font-weight: 800; }
 .example-prediction--declined { color: #a53a0e; background: var(--orange-light); }
 .example-prediction--approved { color: var(--teal); background: var(--teal-light); }
-.example-summary { display: flex; align-items: center; gap: 5px; margin: 0; color: var(--navy-muted); font-size: 13px; }
-.example-change-key { width: 10px; height: 10px; margin-right: 3px; background: var(--teal-light); border-left: 3px solid var(--teal); }
+.recourse-panel { min-width: 0; }
+.recourse-panel h3 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 6px; font-size: 21px; line-height: 1.1; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
+.recourse-panel h3 span { color: var(--navy-muted); font-family: Aptos, 'Segoe UI', Arial, sans-serif; font-size: 14px; }
+.recourse-action { margin: 4px 0; font-size: 15px; line-height: 1.2; }
+.recourse-action b { display: inline-block; min-width: 36px; }
+.recourse-action--lower-income { color: var(--teal); }
+.recourse-plot { display: block; width: 100%; height: auto; margin-top: 4px; overflow: visible; }
+.recourse-plot text { fill: var(--navy-muted); font-size: 12px; }
+.recourse-plot .recourse-axis-label { font-size: 12px; }
+.recourse-region { fill: var(--teal-light); fill-opacity: 0.5; }
+.recourse-boundary { fill: none; stroke: var(--teal); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.recourse-axis { fill: none; stroke: var(--navy-muted); stroke-width: 0.8; }
+.recourse-plot .recourse-region-label { font-size: 13px; font-weight: 750; }
+.recourse-plot .recourse-region-label--declined { fill: #a53a0e; }
+.recourse-plot .recourse-region-label--approved { fill: var(--teal); }
+.recourse-group--individual, .recourse-group--shared, .recourse-group--higher-debt { color: var(--navy); }
+.recourse-group--lower-income { color: var(--teal); }
+.recourse-arrow { stroke: currentColor; stroke-width: 1.8; }
+.recourse-arrowhead { fill: currentColor; }
+.recourse-point--original { fill: var(--orange); stroke: #a53a0e; stroke-width: 1; }
+.recourse-point--counterfactual { fill: var(--paper); stroke: var(--teal); stroke-width: 2; }
+.recourse-plot .recourse-applicant { fill: var(--navy); font-size: 12px; font-weight: 750; paint-order: stroke; stroke: var(--paper); stroke-width: 2px; }
 
 .contribution-stack { display: grid; grid-template-columns: 1fr 1fr 1.55fr; gap: 6px; margin-top: 6px; }
 .contribution-item {

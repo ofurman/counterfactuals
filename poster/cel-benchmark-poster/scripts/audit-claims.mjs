@@ -46,8 +46,15 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
         counterfactual: element.querySelector('[data-example-value="counterfactual"]')?.textContent,
         highlighted: Boolean(element.querySelector('.example-value--changed')),
       })),
-      summary: document.querySelector('.example-summary')?.textContent,
       predictions: [...document.querySelectorAll('.example-prediction')].map((element) => element.textContent),
+      paradigms: [...document.querySelectorAll('[data-example-plot]')].map((plot) => ({
+        paradigm: plot.dataset.examplePlot,
+        transitions: [...plot.querySelectorAll('[data-example-transition]')].map((element) => ({
+          id: element.dataset.exampleTransition, from: element.dataset.from, to: element.dataset.to,
+          original: element.dataset.original, counterfactual: element.dataset.counterfactual,
+          arrow: element.querySelector('line')?.getAttribute('marker-end'),
+        })),
+      })),
       isResult: Boolean(document.querySelector('.ce-example[data-result-surface], .ce-example[data-finding], .ce-example[data-manuscript-source]')),
     },
     hasRegression: Boolean(document.querySelector('[data-section="regression-tradeoff"], [data-finding="regression"]')),
@@ -87,7 +94,8 @@ for (const link of rendered.links) if (!allowedLinks.has(link)) throw new Error(
 if (rendered.qr !== identity.qr.url) throw new Error('Rendered QR destination does not match identity')
 if (rendered.qrCount !== 1 || rendered.qrOwner !== 'contribution.library' || rendered.qrSection !== 'guidance-limitations') throw new Error('The unique project QR must be inside the Extend contribution')
 if (rendered.title !== identity.title) throw new Error('Poster title differs from the manuscript title')
-if (!rendered.visibleWordCount || rendered.visibleWordCount > 260) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/260`)
+// The expanded left column adds two requested practical paradigm examples.
+if (!rendered.visibleWordCount || rendered.visibleWordCount > 320) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/320`)
 for (const text of [identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)
 if (rendered.header.includes(identity.venue)) throw new Error('Removed venue marker remains in the header')
 
@@ -122,9 +130,22 @@ const expectedFeatures = example.features.map((feature) => {
 if (rendered.example.kind !== 'illustrative' || rendered.example.isResult || !rendered.example.text.includes(example.label) || !example.provenance) throw new Error('Example is not separated from benchmark evidence')
 if (JSON.stringify(rendered.example.features) !== JSON.stringify(expectedFeatures)) throw new Error('Displayed example does not match its feature profiles and highlights')
 const changedCount = expectedFeatures.filter((feature) => feature.changed).length
-if (expectedFeatures.length !== 6 || changedCount !== 2 || rendered.example.summary !== `Only ${changedCount} of ${expectedFeatures.length} features change.`) throw new Error('Example must show two changed features and four unchanged features')
+if (expectedFeatures.length !== 3 || changedCount !== 2 || expectedFeatures.find((feature) => feature.key === 'employment')?.changed !== false) throw new Error('Example must show two changed features and unchanged employment')
 const predict = (profile) => profile.monthlyIncome - profile.monthlyDebt >= example.model.minimumIncomeAfterDebt && profile.creditHistoryYears >= example.model.minimumCreditHistoryYears && profile.loanAmount / (12 * profile.monthlyIncome) <= example.model.maximumLoanToAnnualIncomeRatio ? 'Approved' : 'Declined'
 if (predict(example.original) !== 'Declined' || predict(example.counterfactual) !== 'Approved' || JSON.stringify(rendered.example.predictions) !== JSON.stringify(['Declined', 'Approved'])) throw new Error('Counterfactual does not flip the declared example prediction')
+if (JSON.stringify(rendered.example.paradigms.map(({ paradigm }) => paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) throw new Error('Missing local, global, or group-wise example plot')
+for (const { paradigm, transitions } of rendered.example.paradigms) {
+  const applicants = paradigm === 'local' ? example.applicants.slice(0, 1) : example.applicants
+  if (transitions.length !== applicants.length) throw new Error(`Wrong applicant count in ${paradigm}`)
+  for (const [index, applicant] of applicants.entries()) {
+    const original = { ...example.original, monthlyIncome: applicant.monthlyIncome, monthlyDebt: applicant.monthlyDebt }
+    const change = paradigm === 'global' ? example.globalChange : example.groups.find((group) => group.applicants.includes(applicant.id)).change
+    const counterfactual = paradigm === 'local' ? example.counterfactual : { ...original, monthlyIncome: original.monthlyIncome + change.monthlyIncome, monthlyDebt: original.monthlyDebt + change.monthlyDebt }
+    const renderedTransition = transitions[index]
+    if (predict(original) !== 'Declined' || predict(counterfactual) !== 'Approved' || renderedTransition.from !== 'Declined' || renderedTransition.to !== 'Approved' || !renderedTransition.arrow) throw new Error(`${paradigm} ${applicant.id} must have a Declined-to-Approved arrow`)
+    if (renderedTransition.id !== applicant.id || renderedTransition.original !== `${original.monthlyIncome},${original.monthlyDebt}` || renderedTransition.counterfactual !== `${counterfactual.monthlyIncome},${counterfactual.monthlyDebt}`) throw new Error(`${paradigm} ${applicant.id} does not match the example data`)
+  }
+}
 if (/toy|source|not benchmark|threshold/i.test(rendered.example.text)) throw new Error('Removed explanatory footnotes remain visible in the example')
 
-console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source metadata=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, example features=${expectedFeatures.length} (${changedCount} changed), visible words=${rendered.visibleWordCount}/260, manuscript title=exact`)
+console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source metadata=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, example features=${expectedFeatures.length} (${changedCount} changed), visible words=${rendered.visibleWordCount}/320, manuscript title=exact`)

@@ -29,3 +29,40 @@ export const exampleFeatureRows = example.features.map((feature) => {
 })
 
 export const changedFeatureCount = exampleFeatureRows.filter((feature) => feature.changed).length
+
+export type ExampleParadigm = 'local' | 'global' | 'group-wise'
+
+export const exampleApplicants = example.applicants.map(({ id, ...values }) => ({
+  id,
+  profile: { ...example.original, ...values },
+}))
+
+export function exampleTransitions(paradigm: ExampleParadigm) {
+  if (paradigm === 'local') return [{ id: 'A', group: 'individual', original: example.original, counterfactual: example.counterfactual }]
+  return exampleApplicants.map(({ id, profile }) => {
+    const group = example.groups.find((candidate) => candidate.applicants.includes(id))
+    if (!group) throw new Error(`Applicant ${id} has no example group`)
+    const change = paradigm === 'global' ? example.globalChange : group.change
+    return {
+      id,
+      group: paradigm === 'global' ? 'shared' : group.id,
+      original: profile,
+      counterfactual: {
+        ...profile,
+        monthlyIncome: profile.monthlyIncome + change.monthlyIncome,
+        monthlyDebt: profile.monthlyDebt + change.monthlyDebt,
+      },
+    }
+  })
+}
+
+// The other model conditions are satisfied across the entire plotted domain.
+// This affine projection therefore gives the exact decision boundary shown.
+export const examplePlotBounds = { left: 52, right: 370, top: 18, bottom: 122 }
+export function examplePlotPoint(profile: Pick<ExampleProfile, 'monthlyIncome' | 'monthlyDebt'>) {
+  const { left, right, top, bottom } = examplePlotBounds
+  return {
+    x: left + (profile.monthlyIncome - example.plot.minimumIncome) / (example.plot.maximumIncome - example.plot.minimumIncome) * (right - left),
+    y: bottom - profile.monthlyDebt / example.plot.maximumDebt * (bottom - top),
+  }
+}

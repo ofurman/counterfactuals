@@ -34,7 +34,7 @@ if (normalizedText.includes(identity.venue)) throw new Error('Removed venue mark
 if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed architecture caption remains in the PDF')
 if (/One evaluation framework|Benchmark scope/i.test(normalizedText)) throw new Error('Removed center-column heading remains in the PDF')
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')
-for (const expected of ['Loan application example', 'Age', 'Employment', 'Credit history', 'Loan amount', 'Monthly income', 'Monthly debt', 'Original', 'Counterfactual', 'Declined', 'Approved', 'Only 2 of 6 features change.']) if (!normalizedText.toLowerCase().includes(expected.toLowerCase())) throw new Error(`PDF is missing the applicant comparison: ${expected}`)
+for (const expected of ['Loan application example', 'Employment', 'Monthly income', 'Debt payments', 'Original A', 'Counterfactual', 'Declined', 'Approved', 'One applicant', 'One shared change', 'One change per group', 'Income +€1,300', 'Debt −€1,000']) if (!normalizedText.toLowerCase().includes(expected.toLowerCase())) throw new Error(`PDF is missing the applicant comparison: ${expected}`)
 if (/\bSource\s*[·:]|\btoy\b|not benchmark data|Sparsity direction unresolved|Benchmark context/i.test(normalizedText)) throw new Error('Removed source or disclaimer text remains in the PDF')
 if (!normalizedText.includes('Regression: accuracy versus change')) throw new Error('Requested regression result heading is missing from the PDF')
 if (/\b5\s+folds\b|\b3\s+paradigms\b/i.test(normalizedText)) throw new Error('Removed folds or paradigms tiles remain in the PDF')
