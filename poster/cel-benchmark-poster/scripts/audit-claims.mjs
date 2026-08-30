@@ -86,7 +86,7 @@ const expectedScope = [
   ['scope.datasets', claimsById.get('scope.datasets').value.total, 'Datasets'],
   ['scope.methods', claimsById.get('scope.methods').value.total, 'Methods'],
   ['scope.backbones', claimsById.get('scope.backbones').value.total, 'Backbones / Task'],
-  ['scope.metrics', claimsById.get('scope.metrics').value.total, 'Classification Metrics'],
+  ['scope.metrics', claimsById.get('scope.metrics').value.total, 'Counterfactual Explanations Metrics'],
 ]
 if (JSON.stringify(rendered.contributions) !== JSON.stringify(['contribution.protocol', 'contribution.benchmark', 'contribution.library'].map((id) => ({ id, heading: claimsById.get(id).posterWording, detail: claimsById.get(id).posterDetail })))) throw new Error('Contribution headings and supporting lines must match the manuscript-backed ledger')
 if (JSON.stringify(rendered.scope) !== JSON.stringify(expectedScope.map(([id, value, label]) => ({ id, text: `${value}${label}`, inventory: claimsById.get(id).inventory })))) throw new Error('Rendered scope tiles and named inventories do not match the generated ledger')

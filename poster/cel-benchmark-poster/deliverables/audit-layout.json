@@ -654,7 +654,7 @@
       "width": 22,
       "height": 22
     },
-    "logoSource": "http://127.0.0.1:56818/GitHub_Invertocat_Black_Clearspace.8cdef879.svg",
+    "logoSource": "http://127.0.0.1:57040/GitHub_Invertocat_Black_Clearspace.8cdef879.svg",
     "errorLevel": "H",
     "margin": "4",
     "visibleText": ""
@@ -1188,67 +1188,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:56818/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:57040/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:56818/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:57040/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:56818/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:57040/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:56818/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:57040/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:56818/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:57040/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:56818/ce-example-local.f86c716c.svg",
+      "src": "http://127.0.0.1:57040/ce-example-local.f86c716c.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:56818/ce-example-global.848f640c.svg",
+      "src": "http://127.0.0.1:57040/ce-example-global.848f640c.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:56818/ce-example-group-wise.61b23061.svg",
+      "src": "http://127.0.0.1:57040/ce-example-group-wise.61b23061.svg",
       "complete": true,
       "naturalWidth": 614
     },
     {
-      "src": "http://127.0.0.1:56818/manuscript-architecture.d5e0d17a.svg",
+      "src": "http://127.0.0.1:57040/manuscript-architecture.d5e0d17a.svg",
       "complete": true,
       "naturalWidth": 1050
     },
     {
-      "src": "http://127.0.0.1:56818/manuscript-global.1c192b43.svg",
+      "src": "http://127.0.0.1:57040/manuscript-global.1c192b43.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:56818/manuscript-local.acd6828f.svg",
+      "src": "http://127.0.0.1:57040/manuscript-local.acd6828f.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:56818/manuscript-group.ad8ede3b.svg",
+      "src": "http://127.0.0.1:57040/manuscript-group.ad8ede3b.svg",
       "complete": true,
       "naturalWidth": 566
     },
     {
-      "src": "http://127.0.0.1:56818/manuscript-regression.0376a331.svg",
+      "src": "http://127.0.0.1:57040/manuscript-regression.0376a331.svg",
       "complete": true,
       "naturalWidth": 566
     }

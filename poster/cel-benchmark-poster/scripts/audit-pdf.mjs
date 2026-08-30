@@ -33,6 +33,7 @@ if (normalizedText.includes('One protocol. Multiple CE paradigms. Measurable tra
 if (normalizedText.includes(identity.venue)) throw new Error('Removed venue marker remains in the PDF')
 if (/Reproduce and extend|uv add ce-library|Documentation/.test(normalizedText)) throw new Error('Removed footer text remains in the PDF')
 if (/Code & project|Three contributions/.test(normalizedText)) throw new Error('Removed QR caption or old Contributions heading remains')
+if (!normalizedText.includes('Counterfactual Explanations Metrics') || normalizedText.includes('Classification Metrics')) throw new Error('Metrics tile must use the updated Counterfactual Explanations Metrics label')
 if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed architecture caption remains in the PDF')
 if (/One evaluation framework|Benchmark scope/i.test(normalizedText)) throw new Error('Removed center-column heading remains in the PDF')
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')

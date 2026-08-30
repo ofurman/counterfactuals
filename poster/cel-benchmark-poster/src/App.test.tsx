@@ -67,7 +67,7 @@ describe('poster scaffold', () => {
     expect(Array.from(container.querySelectorAll('[data-section="results"] article[data-section]')).map((element) => element.getAttribute('data-section'))).toEqual(['applicability', 'local-tradeoff', 'group-tradeoff', 'regression-tradeoff'])
     expect(container.querySelectorAll('.result-panel > .result-panel__outline[aria-hidden="true"]')).toHaveLength(4)
     expect(container.querySelectorAll('.scope-tile')).toHaveLength(4)
-    expect(Array.from(container.querySelectorAll('.scope-tile__heading')).map((element) => element.textContent)).toEqual(['18Datasets', '14Methods', '2Backbones / Task', '9Classification Metrics'])
+    expect(Array.from(container.querySelectorAll('.scope-tile__heading')).map((element) => element.textContent)).toEqual(['18Datasets', '14Methods', '2Backbones / Task', '9Counterfactual Explanations Metrics'])
     expect(container.querySelector('.scope-strip [data-claim-id="scope.folds"]')).toBeNull()
     expect(container.querySelector('.scope-strip')?.textContent).not.toMatch(/5folds|3paradigms/)
   })

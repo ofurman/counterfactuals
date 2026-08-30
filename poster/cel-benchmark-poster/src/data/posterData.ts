@@ -128,6 +128,6 @@ export const posterData = {
     { claimId: 'scope.datasets', value: datasetScope.total, label: 'Datasets', inventory: scopeInventory('scope.datasets') },
     { claimId: 'scope.methods', value: methodScope.total, label: 'Methods', inventory: scopeInventory('scope.methods') },
     { claimId: 'scope.backbones', value: backboneScope.total, label: 'Backbones / Task', inventory: scopeInventory('scope.backbones') },
-    { claimId: 'scope.metrics', value: metricScope.total, label: 'Classification Metrics', inventory: scopeInventory('scope.metrics') },
+    { claimId: 'scope.metrics', value: metricScope.total, label: 'Counterfactual Explanations Metrics', inventory: scopeInventory('scope.metrics') },
   ],
 } as const
