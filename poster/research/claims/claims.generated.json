@@ -11,6 +11,24 @@
   ],
   "claims": [
     {
+      "id": "concept.counterfactual",
+      "claimKind": "qualitative",
+      "posterWording": "A small input change that flips a model's prediction.",
+      "value": {
+        "kind": "qualitative"
+      },
+      "unit": null,
+      "verdict": "Counterfactual explanations identify input changes that produce a desired model prediction.",
+      "source": {
+        "file": "manuscript/main_lncs.tex",
+        "anchor": "Introduction > identifying minimal changes required to alter a model’s prediction"
+      },
+      "extractionRule": "Require the introductory definition of counterfactual explanations.",
+      "direction": "qualitative",
+      "qualifier": "The poster's loan example is an explicitly labelled toy model, not a manuscript experiment or lending recommendation.",
+      "status": "publishable"
+    },
+    {
       "id": "scope.datasets",
       "claimKind": "scope-count",
       "posterWording": "18 datasets: 13 classification + 5 regression",

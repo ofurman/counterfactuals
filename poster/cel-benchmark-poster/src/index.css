@@ -102,6 +102,12 @@ h1 {
 .poster-thesis { margin: 14px 0 10px; font-size: 23px; color: var(--navy-muted); }
 .authors { margin: 0; font-size: 16px; font-weight: 750; }
 .affiliation { margin: 4px 0 0; font-size: 14px; color: var(--navy-muted); }
+.header-copy { position: relative; }
+.brand-strip { position: absolute; right: 0; bottom: 0; display: flex; align-items: center; gap: 24px; height: 58px; }
+.brand-logo { display: block; object-fit: contain; }
+.brand-logo--pwr { width: 37px; height: 58px; }
+.brand-logo--genwro { width: 136px; height: 34px; }
+.brand-logo--tooploox { width: 142px; height: 37px; }
 .project-mark {
   display: grid;
   gap: 8px;
@@ -235,9 +241,9 @@ h1 {
   gap: 16px;
   overflow: hidden;
 }
-.poster-column--left { grid-template-rows: auto auto; align-content: start; gap: 24px; }
+.poster-column--left { grid-template-rows: 1.55fr 1fr; }
 .poster-column--center { grid-template-rows: 1.55fr 1fr; }
-.poster-column--right { grid-template-rows: 1.1fr 1.1fr 1.45fr; }
+.poster-column--right { grid-template-rows: 1.55fr 1fr; }
 .poster-column > .section-block {
   min-height: 0;
   overflow: hidden;
@@ -258,39 +264,35 @@ h1 {
 .problem-block .section-copy { color: #bde8e3; }
 .problem-block .source-note { color: #c9d0d7; }
 .problem-block h2 { font-size: 28px; }
-.benchmark-motivation { display: grid; gap: 12px; }
-.motivation-question {
-  margin: 3px 0 0;
-  color: white;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 22px;
-  line-height: 1.1;
-}
-.confound-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.confound-list span {
-  padding: 5px 7px;
-  color: var(--navy);
-  background: var(--orange-light);
-  font-size: 11px;
-  font-weight: 800;
-}
-.motivation-answer { margin: 0; color: white; font-size: 13px; line-height: 1.3; }
+.ce-example { display: grid; gap: 8px; margin: 14px 0 0; }
+.ce-example figcaption { color: #bde8e3; font-size: 12px; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
+.example-case { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; color: var(--navy); background: var(--orange-light); border-left: 4px solid var(--orange); }
+.example-case--counterfactual { background: var(--teal-light); border-left-color: #27b9ad; }
+.example-case > div { display: grid; gap: 2px; }
+.example-case-label { font-size: 12px; font-weight: 750; }
+.example-case strong { font-family: Georgia, 'Times New Roman', serif; font-size: 29px; line-height: 1; }
+.example-feature { font-size: 12px; color: var(--navy-muted); }
+.example-prediction { padding: 5px 8px; background: white; color: #a53a0e; font-size: 15px; font-weight: 800; }
+.example-case--counterfactual .example-prediction { color: var(--teal); }
+.example-change { display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 14px; font-weight: 700; }
+.example-fixed { margin: 0; font-size: 13px; }
+.example-rule, .example-disclaimer { margin: 0; color: #c9d0d7; font-size: 11px; line-height: 1.2; }
 
 .contributions-block { border-top-color: var(--teal); }
-.contribution-stack { display: grid; gap: 8px; }
+.contribution-stack { display: grid; gap: 18px; margin-top: 22px; }
 .contribution-item {
   display: grid;
-  grid-template-columns: 62px 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 9px;
   align-items: start;
-  padding: 9px 10px;
+  padding: 18px 20px;
   background: #f4f8f7;
   border-left: 5px solid var(--teal);
 }
 .contribution-item:nth-child(2) { border-left-color: var(--orange); }
-.contribution-item > span { color: var(--teal); font-size: 10px; font-weight: 900; letter-spacing: 0.09em; }
+.contribution-item > span { color: var(--teal); font-size: 12px; font-weight: 900; letter-spacing: 0.09em; }
 .contribution-item:nth-child(2) > span { color: var(--orange); }
-.contribution-item p { margin: 0; font-size: 16px; line-height: 1.26; }
+.contribution-item p { margin: 0; font-size: 20px; line-height: 1.2; }
 
 .protocol-block {
   padding: 14px 18px !important;
@@ -344,9 +346,6 @@ h1 {
   line-height: 1.1;
 }
 .result-manuscript-figure--strip .manuscript-image-window { height: auto; aspect-ratio: 1000 / 240; }
-.result-manuscript-figure--regression .manuscript-image-window { height: 150px; }
-.result-manuscript-figure--regression .manuscript-image-window img { height: 100%; object-fit: contain; }
-.regression-results-block { border-top-color: var(--orange); }
 
 @page { size: 1189mm 841mm; margin: 0; }
 @media print {

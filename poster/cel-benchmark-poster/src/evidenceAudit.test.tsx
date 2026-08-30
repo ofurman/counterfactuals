@@ -21,9 +21,8 @@ describe('rendered evidence provenance', () => {
       'manuscript/figures/metrics_boxplot_local.png',
       'manuscript/figures/metrics_boxplot_global.png',
       'manuscript/figures/metrics_boxplot_group_wise.png',
-      'manuscript/figures/regression_metrics_boxplot.png',
     ]))
-    expect(new Set(manuscriptSources).size).toBe(5)
+    expect(new Set(manuscriptSources).size).toBe(4)
     for (const image of container.querySelectorAll<HTMLImageElement>('.manuscript-figure img')) {
       expect(image.alt.length).toBeGreaterThan(30)
     }

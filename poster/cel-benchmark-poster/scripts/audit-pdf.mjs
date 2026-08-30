@@ -29,6 +29,8 @@ const identity = JSON.parse(await readFile(path.join(repositoryDir, 'poster/rese
 const requiredSectionText = content.sections.map((section) => section.heading)
 if (requiredSectionText[0] !== identity.title) throw new Error('PDF title contract differs from the manuscript')
 for (const expected of requiredSectionText) if (!normalizedText.includes(expected)) throw new Error(`PDF text is missing required section content: ${expected}`)
+for (const expected of ['Illustrative loan model', 'Declined', 'Approved', 'Toy model, not benchmark data.']) if (!normalizedText.toLowerCase().includes(expected.toLowerCase())) throw new Error(`PDF is missing the illustrative example label: ${expected}`)
+if (/Regression:|CEARM|Wachter/.test(normalizedText)) throw new Error('Removed regression results remain in the PDF')
 const pngSignature = await readFile(reviewPath).then((bytes) => bytes.subarray(0, 8).toString('hex'))
 if (pngSignature !== '89504e470d0a1a0a') throw new Error('PDF-derived preview is not a PNG')
 console.log(info.stdout.trim())

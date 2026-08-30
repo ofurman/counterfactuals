@@ -59,6 +59,17 @@ const report = await withPosterPage(async ({ page, failures }) => {
       },
       sections,
       figures,
+      columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
+      branding: {
+        header: rect(document.querySelector('.poster-header')),
+        strip: rect(document.querySelector('.brand-strip')),
+        logos: [...document.querySelectorAll('[data-brand-id]')].map((element) => ({ id: element.dataset.brandId, ...rect(element), objectFit: getComputedStyle(element).objectFit })),
+        identityText: [...document.querySelectorAll('.header-copy h1, .poster-thesis, .authors, .affiliation')].map((element) => {
+          const range = document.createRange()
+          range.selectNodeContents(element)
+          return rect(range)
+        }),
+      },
       safeBounds,
       images: [...document.images].map((image) => ({ src: image.currentSrc || image.src, complete: image.complete, naturalWidth: image.naturalWidth })),
       fonts: { status: document.fonts.status },
@@ -74,7 +85,17 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)
   if (screen.canvas.scrollWidth > screen.canvas.clientWidth || screen.canvas.scrollHeight > screen.canvas.clientHeight) failuresFound.push('Poster canvas overflows')
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
-  if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named section inventory is not exactly ten unique sections')
+  if (screen.sections.length !== 9 || new Set(screen.sections.map((section) => section.id)).size !== 9) failuresFound.push('Named section inventory is not exactly nine unique sections')
+  for (const [column, expected] of Object.entries({ left: ['problem', 'applicability'], center: ['protocol', 'local-tradeoff'], right: ['guidance-limitations', 'group-tradeoff'] })) {
+    if (JSON.stringify(screen.columns[column].map((section) => section.id)) !== JSON.stringify(expected)) failuresFound.push(`${column} column is not in the requested order`)
+    if (Math.abs(screen.columns[column][1]?.top - screen.columns.center[1]?.top) > 1) failuresFound.push(`${column} bottom result is not aligned with the center result`)
+  }
+  const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+  for (const logo of screen.branding.logos) {
+    if (logo.width <= 0 || logo.height <= 0 || logo.objectFit !== 'contain') failuresFound.push(`${logo.id} logo is missing or distorted`)
+    if (logo.left < screen.branding.header.left || logo.right > screen.branding.header.right || logo.top < screen.branding.header.top || logo.bottom > screen.branding.header.bottom) failuresFound.push(`${logo.id} logo exceeds the header`)
+  }
+  if (screen.branding.identityText.some((text) => overlaps(screen.branding.strip, text))) failuresFound.push('Brand logos overlap header text')
   for (const section of screen.sections) {
     if (section.scrollWidth > section.clientWidth + 1 || section.scrollHeight > section.clientHeight + 1) failuresFound.push(`${section.id} has clipped or overflowing content`)
     if (section.rect.left < screen.safeBounds.left - 1 || section.rect.right > screen.safeBounds.right + 1 || section.rect.top < screen.safeBounds.top - 1 || section.rect.bottom > screen.safeBounds.bottom + 1) failuresFound.push(`${section.id} breaches the safe area`)

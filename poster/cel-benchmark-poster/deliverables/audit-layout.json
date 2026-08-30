@@ -53,30 +53,30 @@
       "rect": {
         "top": 533.28125,
         "right": 522,
-        "bottom": 690.0625,
+        "bottom": 964.96875,
         "left": 108,
         "width": 414,
-        "height": 156.78125
+        "height": 431.6875
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 157,
-      "scrollHeight": 157
+      "clientHeight": 432,
+      "scrollHeight": 432
     },
     {
-      "id": "guidance-limitations",
+      "id": "applicability",
       "rect": {
-        "top": 714.0625,
+        "top": 980.96875,
         "right": 522,
-        "bottom": 920.875,
+        "bottom": 1259.484375,
         "left": 108,
         "width": 414,
-        "height": 206.8125
+        "height": 278.515625
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 203,
-      "scrollHeight": 203
+      "clientHeight": 275,
+      "scrollHeight": 275
     },
     {
       "id": "protocol",
@@ -109,49 +109,34 @@
       "scrollHeight": 275
     },
     {
-      "id": "applicability",
+      "id": "guidance-limitations",
       "rect": {
         "top": 533.28125,
         "right": 1812,
-        "bottom": 742.484375,
+        "bottom": 964.96875,
         "left": 1398,
         "width": 414,
-        "height": 209.203125
+        "height": 431.6875
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 205,
-      "scrollHeight": 205
+      "clientHeight": 428,
+      "scrollHeight": 428
     },
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 758.484375,
+        "top": 980.96875,
         "right": 1812,
-        "bottom": 967.703125,
+        "bottom": 1259.484375,
         "left": 1398,
         "width": 414,
-        "height": 209.21875
+        "height": 278.515625
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 205,
-      "scrollHeight": 205
-    },
-    {
-      "id": "regression-tradeoff",
-      "rect": {
-        "top": 983.703125,
-        "right": 1812,
-        "bottom": 1259.5,
-        "left": 1398,
-        "width": 414,
-        "height": 275.796875
-      },
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 272,
-      "scrollHeight": 272
+      "clientHeight": 275,
+      "scrollHeight": 275
     },
     {
       "id": "reproducibility",
@@ -171,6 +156,18 @@
   ],
   "figures": [
     {
+      "clientWidth": 378,
+      "scrollWidth": 378,
+      "clientHeight": 323,
+      "scrollHeight": 323
+    },
+    {
+      "clientWidth": 414,
+      "scrollWidth": 414,
+      "clientHeight": 116,
+      "scrollHeight": 116
+    },
+    {
       "clientWidth": 792,
       "scrollWidth": 792,
       "clientHeight": 329,
@@ -187,20 +184,154 @@
       "scrollWidth": 414,
       "clientHeight": 116,
       "scrollHeight": 116
-    },
-    {
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 116,
-      "scrollHeight": 116
-    },
-    {
-      "clientWidth": 414,
-      "scrollWidth": 414,
-      "clientHeight": 166,
-      "scrollHeight": 166
     }
   ],
+  "columns": {
+    "left": [
+      {
+        "id": "problem",
+        "top": 533.28125,
+        "right": 522,
+        "bottom": 964.96875,
+        "left": 108,
+        "width": 414,
+        "height": 431.6875
+      },
+      {
+        "id": "applicability",
+        "top": 980.96875,
+        "right": 522,
+        "bottom": 1259.484375,
+        "left": 108,
+        "width": 414,
+        "height": 278.515625
+      }
+    ],
+    "center": [
+      {
+        "id": "protocol",
+        "top": 533.28125,
+        "right": 1374,
+        "bottom": 964.96875,
+        "left": 546,
+        "width": 828,
+        "height": 431.6875
+      },
+      {
+        "id": "local-tradeoff",
+        "top": 980.96875,
+        "right": 1374,
+        "bottom": 1259.484375,
+        "left": 546,
+        "width": 828,
+        "height": 278.515625
+      }
+    ],
+    "right": [
+      {
+        "id": "guidance-limitations",
+        "top": 533.28125,
+        "right": 1812,
+        "bottom": 964.96875,
+        "left": 1398,
+        "width": 414,
+        "height": 431.6875
+      },
+      {
+        "id": "group-tradeoff",
+        "top": 980.96875,
+        "right": 1812,
+        "bottom": 1259.484375,
+        "left": 1398,
+        "width": 414,
+        "height": 278.515625
+      }
+    ]
+  },
+  "branding": {
+    "header": {
+      "top": 145,
+      "right": 1812,
+      "bottom": 416.15625,
+      "left": 108,
+      "width": 1704,
+      "height": 271.15625
+    },
+    "strip": {
+      "top": 337.15625,
+      "right": 1602,
+      "bottom": 395.15625,
+      "left": 1239,
+      "width": 363,
+      "height": 58
+    },
+    "logos": [
+      {
+        "id": "pwr",
+        "top": 337.15625,
+        "right": 1276,
+        "bottom": 395.15625,
+        "left": 1239,
+        "width": 37,
+        "height": 58,
+        "objectFit": "contain"
+      },
+      {
+        "id": "genwro",
+        "top": 349.15625,
+        "right": 1436,
+        "bottom": 383.15625,
+        "left": 1300,
+        "width": 136,
+        "height": 34,
+        "objectFit": "contain"
+      },
+      {
+        "id": "tooploox",
+        "top": 347.65625,
+        "right": 1602,
+        "bottom": 384.65625,
+        "left": 1460,
+        "width": 142,
+        "height": 37,
+        "objectFit": "contain"
+      }
+    ],
+    "identityText": [
+      {
+        "top": 169,
+        "right": 1329.859375,
+        "bottom": 291.828125,
+        "left": 108,
+        "width": 1221.859375,
+        "height": 122.828125
+      },
+      {
+        "top": 305.65625,
+        "right": 726.328125,
+        "bottom": 331.65625,
+        "left": 108,
+        "width": 618.328125,
+        "height": 26
+      },
+      {
+        "top": 349.15625,
+        "right": 627.296875,
+        "bottom": 366.15625,
+        "left": 108,
+        "width": 519.296875,
+        "height": 17
+      },
+      {
+        "top": 376.15625,
+        "right": 508.5,
+        "bottom": 392.15625,
+        "left": 108,
+        "width": 400.5,
+        "height": 16
+      }
+    ]
+  },
   "safeBounds": {
     "top": 145,
     "right": 1812,
@@ -209,29 +340,39 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:55517/architecture.bded2544.png",
+      "src": "http://127.0.0.1:57549/pwr-logo.2ab4df64.png",
       "complete": true,
-      "naturalWidth": 1400
+      "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:55517/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:57549/genwro-logo.67ba8bea.png",
       "complete": true,
-      "naturalWidth": 1400
+      "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:55517/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:57549/tpx-logo.30ba31cf.png",
+      "complete": true,
+      "naturalWidth": 2668
+    },
+    {
+      "src": "http://127.0.0.1:57549/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:55517/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:57549/architecture.bded2544.png",
       "complete": true,
-      "naturalWidth": 1000
+      "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:55517/regression.ee8ae60a.jpg",
+      "src": "http://127.0.0.1:57549/local-mixed.fafc5dac.jpg",
       "complete": true,
-      "naturalWidth": 1100
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:57549/group-adult.2e6b275a.jpg",
+      "complete": true,
+      "naturalWidth": 1000
     }
   ],
   "fonts": {

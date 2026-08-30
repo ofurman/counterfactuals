@@ -18,12 +18,15 @@ const result = await withPosterPage(async ({ page, failures, remoteRequests, con
     sections: document.querySelectorAll('[data-section]').length,
     claimMarkers: document.querySelectorAll('[data-claim-id]').length,
     manuscriptFigures: document.querySelectorAll('[data-manuscript-source]').length,
+    brandLogos: document.querySelectorAll('[data-brand-id]').length,
+    example: Boolean(document.querySelector('[data-example-kind="illustrative"]')),
+    regression: Boolean(document.querySelector('[data-finding="regression"]')),
     links: [...document.querySelectorAll('a[href]')].map((link) => link.href),
     readyState: document.readyState,
   }))
   const defects = [...failures, ...consoleErrors]
   if (remoteRequests.length) defects.push(`Required remote requests: ${remoteRequests.join(', ')}`)
-  if (!rendered.canvas || rendered.sections !== 10 || rendered.claimMarkers < 13 || rendered.manuscriptFigures !== 5 || rendered.readyState !== 'complete') defects.push(`Incomplete offline render: ${JSON.stringify(rendered)}`)
+  if (!rendered.canvas || rendered.sections !== 9 || rendered.claimMarkers < 13 || rendered.manuscriptFigures !== 4 || rendered.brandLogos !== 3 || !rendered.example || rendered.regression || rendered.readyState !== 'complete') defects.push(`Incomplete offline render: ${JSON.stringify(rendered)}`)
   if (defects.length) throw new Error(defects.join('\n'))
   return rendered
 }, { entry: 'bundle', blockRemote: true })

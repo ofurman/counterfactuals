@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "illustrative",
+  "conceptClaimId": "concept.counterfactual",
+  "label": "Illustrative loan model",
+  "feature": "Monthly income",
+  "currency": "EUR",
+  "originalIncome": 3000,
+  "counterfactualIncome": 4000,
+  "approvalThreshold": 4000,
+  "fixedFeatures": "All other features unchanged.",
+  "disclaimer": "Toy model, not benchmark data."
+}

@@ -4,13 +4,12 @@ const architectureGraphic = new URL('../../assets/manuscript/architecture.png', 
 const globalGraphic = new URL('../../assets/manuscript/global-adult.jpg', import.meta.url).href
 const groupGraphic = new URL('../../assets/manuscript/group-adult.jpg', import.meta.url).href
 const localGraphic = new URL('../../assets/manuscript/local-mixed.jpg', import.meta.url).href
-const regressionGraphic = new URL('../../assets/manuscript/regression.jpg', import.meta.url).href
 
 type ResultFigureProps = {
   alt: string
   claimId: string
   className?: string
-  finding: 'local' | 'global' | 'group' | 'regression'
+  finding: 'local' | 'global' | 'group'
   image: string
   source: string
   sourceLabel: string
@@ -94,20 +93,6 @@ export function GroupBenchmarkFigure() {
       image={groupGraphic}
       source="manuscript/figures/metrics_boxplot_group_wise.png"
       sourceLabel="Adult Census · group-wise methods"
-    />
-  )
-}
-
-export function RegressionBenchmarkFigure() {
-  return (
-    <ResultFigure
-      alt="Manuscript boxplots comparing CEARM and Wachter on regression counterfactual tasks"
-      claimId="result.regression.overview"
-      className="result-manuscript-figure--regression"
-      finding="regression"
-      image={regressionGraphic}
-      source="manuscript/figures/regression_metrics_boxplot.png"
-      sourceLabel="CEARM and Wachter · regression"
     />
   )
 }

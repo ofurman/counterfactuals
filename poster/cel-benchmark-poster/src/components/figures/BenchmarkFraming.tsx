@@ -1,14 +1,32 @@
 import { ClaimWording } from '@/components/poster'
+import { ArrowDown } from 'lucide-react'
+import { counterfactualExample as example, exampleIncome, examplePrediction } from '@/data/counterfactualExample'
 
-const confounds = ['Data splits', 'Preprocessing', 'Predictors', 'Constraints', 'Metrics']
-
-export function BenchmarkMotivation() {
+export function CounterfactualExample() {
   return (
-    <div className="benchmark-motivation" data-claim-id="scope.protocol">
-      <div className="confound-list" aria-label="Protocol choices controlled by CEL">
-        {confounds.map((confound) => <span key={confound}>{confound}</span>)}
+    <figure className="ce-example" data-example-kind={example.kind} aria-label="Illustrative counterfactual explanation for a toy loan model">
+      <figcaption>{example.label}</figcaption>
+      <div className="example-case example-case--original" data-example-case="original">
+        <div>
+          <span className="example-case-label">Original input</span>
+          <strong data-example-value="original">{exampleIncome(example.originalIncome)}</strong>
+          <span className="example-feature">{example.feature}</span>
+        </div>
+        <span className="example-prediction">{examplePrediction(example.originalIncome)}</span>
       </div>
-    </div>
+      <div className="example-change"><ArrowDown size={25} aria-hidden="true" /><span>Change income only</span></div>
+      <div className="example-case example-case--counterfactual" data-example-case="counterfactual">
+        <div>
+          <span className="example-case-label">Counterfactual input</span>
+          <strong data-example-value="counterfactual">{exampleIncome(example.counterfactualIncome)}</strong>
+          <span className="example-feature">{example.feature}</span>
+        </div>
+        <span className="example-prediction">{examplePrediction(example.counterfactualIncome)}</span>
+      </div>
+      <p className="example-fixed">{example.fixedFeatures}</p>
+      <p className="example-rule">Toy rule: approve at ≥ <span data-example-value="threshold">{exampleIncome(example.approvalThreshold)}</span>/month.</p>
+      <p className="example-disclaimer">{example.disclaimer}</p>
+    </figure>
   )
 }
 

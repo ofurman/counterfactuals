@@ -246,6 +246,7 @@ export async function buildClaims() {
   const methodScope = requireMatch(main, /The library implements (\d+) counterfactual explanation methods, categorized into local, global, and group-wise approaches/, "method scope");
   const backboneScope = requireMatch(main, /using (\w+) predictive backbones per task type/, "predictive backbone scope");
   const foldScope = requireMatch(supplementary, /averaged over (\d+)-fold cross-validation/, "cross-validation scope");
+  requireMatch(main, /identifying minimal changes required to alter a model’s prediction/, "counterfactual explanation definition");
   requireMatch(
     main,
     /protocol-level control across datasets, predictive backbones, preprocessing steps, constraint handling, and metric definitions/,
@@ -350,6 +351,19 @@ export async function buildClaims() {
   const foldCount = Number(foldScope[1]);
 
   const claims = [
+    {
+      id: "concept.counterfactual",
+      claimKind: "qualitative",
+      posterWording: "A small input change that flips a model's prediction.",
+      value: {kind: "qualitative"},
+      unit: null,
+      verdict: "Counterfactual explanations identify input changes that produce a desired model prediction.",
+      source: {file: "manuscript/main_lncs.tex", anchor: "Introduction > identifying minimal changes required to alter a model’s prediction"},
+      extractionRule: "Require the introductory definition of counterfactual explanations.",
+      direction: "qualitative",
+      qualifier: "The poster's loan example is an explicitly labelled toy model, not a manuscript experiment or lending recommendation.",
+      status: "publishable"
+    },
     {
       id: "scope.datasets",
       claimKind: "scope-count",

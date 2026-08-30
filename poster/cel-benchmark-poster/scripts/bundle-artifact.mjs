@@ -16,7 +16,7 @@ const bundlePath = path.join(projectDir, 'bundle.html')
 const distDir = path.join(projectDir, 'dist')
 let html = await readFile(bundlePath, 'utf8')
 const imageFiles = (await readdir(distDir)).filter((file) => /\.(?:jpe?g|png)$/i.test(file)).sort()
-if (imageFiles.length !== 5) throw new Error(`Expected five manuscript image assets from Parcel, found ${imageFiles.length}`)
+if (imageFiles.length !== 7) throw new Error(`Expected four manuscript graphics and three logos from Parcel, found ${imageFiles.length}`)
 
 for (const file of imageFiles) {
   const bytes = await readFile(path.join(distDir, file))
@@ -38,4 +38,4 @@ for (const file of imageFiles) {
 
 await writeFile(bundlePath, html)
 const bundled = await stat(bundlePath)
-console.log(`Inlined ${imageFiles.length} manuscript image assets; self-contained bundle=${bundled.size} bytes`)
+console.log(`Inlined ${imageFiles.length} image assets; self-contained bundle=${bundled.size} bytes`)

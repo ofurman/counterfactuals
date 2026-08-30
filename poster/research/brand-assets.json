@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "referencePoster": "/Users/ofurman/pwr/unified_cfs/pumal-scientific-poster",
+  "assets": [
+    {
+      "id": "pwr",
+      "label": "Wrocław University of Science and Technology",
+      "sourceFile": "src/assets/pwr-logo.png",
+      "localFile": "poster/cel-benchmark-poster/src/assets/brands/pwr-logo.png",
+      "sha256": "704e4955efd47eb70f42d8275af6a889a26bcdd4f737aa01a0d668fc8e09237a"
+    },
+    {
+      "id": "genwro",
+      "label": "genwro.AI",
+      "sourceFile": "src/assets/genwro-logo.png",
+      "localFile": "poster/cel-benchmark-poster/src/assets/brands/genwro-logo.png",
+      "sha256": "dccf3ddc2e88678d606bb3aea920c6d5dbfc7a1faec8fde96cdd74d0e3482cff"
+    },
+    {
+      "id": "tooploox",
+      "label": "Tooploox",
+      "sourceFile": "src/assets/tpx-logo.png",
+      "localFile": "poster/cel-benchmark-poster/src/assets/brands/tpx-logo.png",
+      "sha256": "d24e7d79f739215a190eaabe883d17c76b882157859c06024afc98035daf6c77"
+    }
+  ]
+}

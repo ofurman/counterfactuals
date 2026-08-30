@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { repositoryDir, withPosterPage } from './harness.mjs'
@@ -12,6 +13,8 @@ for (const validator of ['validate-claims.mjs', 'validate-brief.mjs']) {
 const claims = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/claims/claims.generated.json'), 'utf8'))
 const identity = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/identity.json'), 'utf8'))
 const content = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/poster-content.json'), 'utf8'))
+const brands = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/brand-assets.json'), 'utf8'))
+const example = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/ce-example.json'), 'utf8'))
 const claimsById = new Map(claims.claims.map((claim) => [claim.id, claim]))
 
 const rendered = await withPosterPage(async ({ page, failures }) => {
@@ -29,6 +32,14 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
     header: document.querySelector('.poster-header')?.textContent ?? '',
     title: document.querySelector('.poster-header h1')?.textContent ?? '',
     visibleWordCount: document.querySelector('.poster-canvas')?.innerText.trim().split(/\s+/).length ?? 0,
+    brands: [...document.querySelectorAll('[data-brand-id]')].map((image) => ({ id: image.dataset.brandId, alt: image.alt, loaded: image.complete && image.naturalWidth > 0 })),
+    example: {
+      kind: document.querySelector('[data-example-kind]')?.getAttribute('data-example-kind'),
+      text: document.querySelector('.ce-example')?.textContent ?? '',
+      values: [...document.querySelectorAll('[data-example-value]')].map((element) => [element.dataset.exampleValue, element.textContent]),
+      isResult: Boolean(document.querySelector('.ce-example[data-result-surface], .ce-example[data-finding], .ce-example[data-manuscript-source]')),
+    },
+    hasRegression: Boolean(document.querySelector('[data-section="regression-tradeoff"], [data-finding="regression"]')),
     scope: [...document.querySelectorAll('.scope-strip li')].map((element) => ({ id: element.getAttribute('data-claim-id'), text: element.textContent?.trim() ?? '' })),
     manuscriptFigures: [...document.querySelectorAll('[data-manuscript-source]')].map((element) => ({
       source: element.getAttribute('data-manuscript-source'),
@@ -69,7 +80,6 @@ const expectedManuscriptFigures = [
   'manuscript/figures/metrics_boxplot_local.png',
   'manuscript/figures/metrics_boxplot_global.png',
   'manuscript/figures/metrics_boxplot_group_wise.png',
-  'manuscript/figures/regression_metrics_boxplot.png',
 ]
 if (JSON.stringify(rendered.manuscriptFigures.map((figure) => figure.source).sort()) !== JSON.stringify(expectedManuscriptFigures.sort())) throw new Error('Rendered manuscript figure inventory is incomplete or substituted')
 for (const figure of rendered.manuscriptFigures) {
@@ -77,4 +87,18 @@ for (const figure of rendered.manuscriptFigures) {
   if (figure.alt.length < 30) throw new Error(`Manuscript figure lacks meaningful alt text: ${figure.source}`)
 }
 
-console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source notes=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, visible words=${rendered.visibleWordCount}/260, manuscript title=exact`)
+if (rendered.hasRegression) throw new Error('Removed regression results still appear on the poster')
+if (rendered.brands.length !== 3) throw new Error('Expected the three requested reference-poster logos')
+for (const brand of brands.assets) {
+  const bytes = await readFile(path.join(repositoryDir, brand.localFile))
+  if (createHash('sha256').update(bytes).digest('hex') !== brand.sha256) throw new Error(`Reference logo was modified: ${brand.id}`)
+  const visible = rendered.brands.find((item) => item.id === brand.id)
+  if (!visible?.loaded || visible.alt !== brand.label) throw new Error(`Missing or mislabelled reference logo: ${brand.id}`)
+}
+const money = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: example.currency, maximumFractionDigits: 0 }).format(value)
+const expectedExampleValues = [['original', money(example.originalIncome)], ['counterfactual', money(example.counterfactualIncome)], ['threshold', money(example.approvalThreshold)]]
+if (rendered.example.kind !== 'illustrative' || rendered.example.isResult || !rendered.example.text.includes(example.disclaimer) || !rendered.example.text.includes(example.fixedFeatures)) throw new Error('Toy example is missing its illustrative provenance or fixed-feature note')
+if (JSON.stringify(rendered.example.values) !== JSON.stringify(expectedExampleValues)) throw new Error('Displayed toy example does not match its declared inputs')
+if (!(example.originalIncome < example.approvalThreshold && example.counterfactualIncome === example.approvalThreshold) || !rendered.example.text.includes('Declined') || !rendered.example.text.includes('Approved')) throw new Error('Toy counterfactual does not flip its stated model prediction')
+
+console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source notes=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, toy example=labelled, visible words=${rendered.visibleWordCount}/260, manuscript title=exact`)

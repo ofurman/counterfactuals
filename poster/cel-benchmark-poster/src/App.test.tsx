@@ -11,7 +11,7 @@ describe('poster scaffold', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getByRole('toolbar', { name: /Poster controls/i })).toBeInTheDocument()
     expect(screen.getAllByRole('figure')).toHaveLength(5)
-    expect(screen.getAllByRole('region')).toHaveLength(8)
+    expect(screen.getAllByRole('region')).toHaveLength(7)
     const { widthPx, heightPx } = posterData.visualSpec.canvas
     expect(screen.getByText(new RegExp(`${widthPx} × ${heightPx}`))).toBeInTheDocument()
   })
@@ -22,8 +22,10 @@ describe('poster scaffold', () => {
       .map((element) => element.getAttribute('data-section'))
     expect(sectionIds).toEqual(expect.arrayContaining([
       'header', 'problem', 'scope', 'protocol', 'local-tradeoff', 'group-tradeoff',
-      'regression-tradeoff', 'applicability', 'guidance-limitations', 'reproducibility',
+      'applicability', 'guidance-limitations', 'reproducibility',
     ]))
+    expect(sectionIds).toHaveLength(9)
+    expect(sectionIds).not.toContain('regression-tradeoff')
   })
 
   it('uses the exact manuscript title and keeps the poster copy concise', () => {
@@ -33,5 +35,18 @@ describe('poster scaffold', () => {
     const headingsAndCopy = posterData.sections.flatMap((section) => [section.heading, ...section.copy]).join(' ')
     expect(headingsAndCopy.trim().split(/\s+/).length).toBeLessThanOrEqual(110)
     expect(container.querySelectorAll('.section-block .section-kicker')).toHaveLength(0)
+  })
+
+  it('places the concept and results in the requested columns', () => {
+    const { container } = render(<App />)
+    for (const [column, ids] of [
+      ['left', ['problem', 'applicability']],
+      ['center', ['protocol', 'local-tradeoff']],
+      ['right', ['guidance-limitations', 'group-tradeoff']],
+    ] as const) {
+      expect(Array.from(container.querySelectorAll(`.poster-column--${column} > [data-section]`))
+        .map((element) => element.getAttribute('data-section'))).toEqual(ids)
+    }
+    expect(container.querySelector('[data-finding="regression"]')).toBeNull()
   })
 })

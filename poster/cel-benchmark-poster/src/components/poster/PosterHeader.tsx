@@ -1,5 +1,6 @@
 import { posterData, type ResolvedSection } from '@/data/posterData'
 import { QRCodeSVG } from 'qrcode.react'
+import { BrandStrip } from './BrandStrip'
 
 export function PosterHeader({ section }: { section: ResolvedSection }) {
   const { identity } = posterData
@@ -12,6 +13,7 @@ export function PosterHeader({ section }: { section: ResolvedSection }) {
         <p className="poster-thesis">{section.copy[0]}</p>
         <p className="authors">{identity.authors.map((author) => author.name).join(' · ')}</p>
         <p className="affiliation">{identity.affiliation}</p>
+        <BrandStrip />
       </div>
       <a className="project-mark" href={identity.links.repository} data-qr-destination={identity.qr.url} aria-label="Open the CEL project repository">
         <span className="project-mark__qr" aria-hidden="true">

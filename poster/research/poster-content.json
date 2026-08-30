@@ -19,18 +19,18 @@
       "claimIds": ["scope.protocol", "conclusion.tradeoffs"],
       "sourceCitations": ["manuscript/main_lncs.tex#Benchmark", "manuscript/main_lncs.tex#Conclusions"],
       "linkIds": ["repository"],
-      "assetRoles": ["project-qr"]
+      "assetRoles": ["project-qr", "reference-logos"]
     },
     {
       "id": "problem",
       "owner": "left",
       "order": 2,
-      "heading": "Method or setup?",
-      "copy": ["Different protocols obscure fair CE comparisons."],
-      "claimIds": ["scope.protocol"],
-      "sourceCitations": ["manuscript/main_lncs.tex#Benchmark"],
+      "heading": "What is a counterfactual explanation?",
+      "copy": ["A small input change that flips a model's prediction."],
+      "claimIds": ["concept.counterfactual"],
+      "sourceCitations": ["manuscript/main_lncs.tex#Introduction"],
       "linkIds": [],
-      "assetRoles": ["benchmark-motivation"]
+      "assetRoles": ["illustrative-ce-example"]
     },
     {
       "id": "scope",
@@ -56,7 +56,7 @@
     },
     {
       "id": "local-tradeoff",
-      "owner": "right",
+      "owner": "center",
       "order": 5,
       "heading": "Local: no single winner",
       "copy": ["Validity, proximity, plausibility, and runtime trade off."],
@@ -77,20 +77,9 @@
       "assetRoles": ["group-manuscript-figure"]
     },
     {
-      "id": "regression-tradeoff",
-      "owner": "bottom",
-      "order": 7,
-      "heading": "Regression: beyond target error",
-      "copy": ["Wachter: similar error, smaller changes, stronger plausibility, lower runtime."],
-      "claimIds": ["result.regression.overview", "regression.concrete.cearm.mae", "regression.concrete.wachter.mae", "regression.concrete.cearm.l2", "regression.concrete.wachter.l2"],
-      "sourceCitations": ["manuscript/main_lncs.tex#Results", "manuscript/tables/results_regression.tex#tab:regression_all_dnn"],
-      "linkIds": [],
-      "assetRoles": ["regression-manuscript-figure"]
-    },
-    {
       "id": "applicability",
-      "owner": "bottom",
-      "order": 8,
+      "owner": "left",
+      "order": 7,
       "heading": "Global: validity and failures",
       "copy": ["GLOBE-CE and GlobalGLANCE: stronger validity. AReS: frequent missing outputs."],
       "claimIds": ["result.global.overview", "global.blobs.ares.missing"],
@@ -100,8 +89,8 @@
     },
     {
       "id": "guidance-limitations",
-      "owner": "bottom",
-      "order": 9,
+      "owner": "right",
+      "order": 8,
       "heading": "Three contributions",
       "copy": [],
       "claimIds": ["contribution.protocol", "contribution.benchmark", "contribution.library"],
@@ -112,7 +101,7 @@
     {
       "id": "reproducibility",
       "owner": "footer",
-      "order": 10,
+      "order": 9,
       "heading": "Reproduce and extend",
       "copy": ["uv add ce-library"],
       "claimIds": [],
@@ -121,5 +110,5 @@
       "assetRoles": ["provenance-note"]
     }
   ],
-  "resultVisuals": ["local-manuscript-figure", "group-manuscript-figure", "regression-manuscript-figure", "global-manuscript-figure"]
+  "resultVisuals": ["local-manuscript-figure", "group-manuscript-figure", "global-manuscript-figure"]
 }

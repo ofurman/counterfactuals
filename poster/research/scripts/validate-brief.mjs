@@ -160,7 +160,7 @@ for (const [heading, minimumWords] of [["Explicit reading order", 35], ["Thirty-
   const body = sectionBody(heading);
   if (!body || proseWordCount(body) < minimumWords) fail(`${heading} must contain a substantive narrative body`);
 }
-for (const marker of ["Header → Left → Center → Right/bottom → Footer", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
+for (const marker of ["Header → Left → Center → Right → Footer", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
   if (!storyboard.includes(marker)) fail(`Storyboard lacks required narrative/order marker: ${marker}`);
 }
 if (/^#{2,6} (?:Abstract|Introduction|Related Works?|CEL(?::.*)?|Benchmark|Datasets?|Models?|Methods?|Metrics?|Experimental Setup|Results?|Full Results?|Conclusions?)\s*$/mi.test(storyboard) || /\\(?:section|subsection)\{|\\begin\{(?:table|tabular)\}/.test(storyboard)) fail("Storyboard reproduces a manuscript section dump");
@@ -177,9 +177,10 @@ for (const [index, tag] of storyboardTags.entries()) {
   const citations = tag[2].split(",").map((value) => value.trim()).filter(Boolean);
   await validateClaimMapping(ids, citations, `storyboard claim tag ${index + 1}`);
 }
-const substantiveHeadings = ["Scientific argument", "Header", "Left — why and how broad", "Center — controlled protocol", "Right/bottom — evidence and decisions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
+const substantiveHeadings = ["Scientific argument", "Header", "Left — concept and global results", "Center — controlled protocol", "Right — contributions and group-wise results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
   "**Identity inventory:** Exact manuscript title, camera-ready authors, affiliation, XKDD venue marker. Show the title only once; use a short benchmark subtitle.",
+  "**Logo inventory:** PWr, genwro.AI, and Tooploox assets copied unchanged from the user-provided PUMAL reference poster; preserve their aspect ratios and keep authorship unchanged.",
   "**QR inventory:** One labelled `Code & project` QR linked to the repository; no paper QR.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in the source notes."
@@ -218,13 +219,19 @@ for (const section of content.sections) {
   await validateClaimMapping(section.claimIds, section.sourceCitations, `poster section ${section.id}`, {required: scientific});
   for (const linkId of section.linkIds) if (!linkIds.has(linkId)) fail(`${section.id} references unknown link ID: ${linkId}`);
 }
-for (const required of ["header", "problem", "scope", "protocol", "local-tradeoff", "group-tradeoff", "regression-tradeoff", "applicability", "guidance-limitations", "reproducibility"]) {
+for (const required of ["header", "problem", "scope", "protocol", "local-tradeoff", "group-tradeoff", "applicability", "guidance-limitations", "reproducibility"]) {
   if (!sectionIds.has(required)) fail(`Missing required poster section: ${required}`);
 }
 for (const [linkId, link] of Object.entries(content.links)) {
   if (!identity.links[link.identityLink]) fail(`${linkId} does not resolve to identity.json`);
 }
-if (content.resultVisuals.length !== 4 || new Set(content.resultVisuals).size !== content.resultVisuals.length) fail("Poster must own exactly four distinct result visuals");
+if (content.sections.length !== 9 || sectionIds.has("regression-tradeoff")) fail("Poster must contain nine sections without regression results");
+if (JSON.stringify([...content.resultVisuals].sort()) !== JSON.stringify(["global-manuscript-figure", "group-manuscript-figure", "local-manuscript-figure"])) fail("Poster must own exactly the local, global, and group-wise result visuals");
+const conceptSection = content.sections.find((section) => section.id === "problem");
+if (conceptSection.copy.join(" ") !== claimsById.get("concept.counterfactual").posterWording || !conceptSection.claimIds.includes("concept.counterfactual")) fail("CE definition must resolve to its manuscript claim");
+for (const [id, owner] of [["problem", "left"], ["applicability", "left"], ["protocol", "center"], ["local-tradeoff", "center"], ["guidance-limitations", "right"], ["group-tradeoff", "right"]]) {
+  if (content.sections.find((section) => section.id === id)?.owner !== owner) fail(`Incorrect column ownership for ${id}`);
+}
 const qrOwners = content.sections.filter((section) => section.assetRoles.includes("project-qr"));
 if (qrOwners.length !== 1 || qrOwners[0].id !== "header" || qrOwners[0].owner !== "header") fail("Exactly one project QR must be owned by the header section");
 const headerSection = content.sections.find((section) => section.id === "header");
@@ -238,7 +245,6 @@ for (const [sectionId, claimId] of [
   ["local-tradeoff", "result.local.overview"],
   ["applicability", "result.global.overview"],
   ["group-tradeoff", "result.group.overview"],
-  ["regression-tradeoff", "result.regression.overview"],
 ]) {
   if (!content.sections.find((section) => section.id === sectionId)?.claimIds.includes(claimId)) fail(`${sectionId} lacks manuscript result claim: ${claimId}`);
   if (!storyboardTags.some((tag) => tag[1].split(",").map((value) => value.trim()).includes(claimId))) fail(`Storyboard lacks manuscript result mapping: ${claimId}`);

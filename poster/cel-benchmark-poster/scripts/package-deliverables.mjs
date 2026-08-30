@@ -49,12 +49,14 @@ cd deliverables
 shasum -a 256 -c SHA256SUMS
 \`\`\`
 
-The full check validates manuscript-derived claims and graphics, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
+The full check validates manuscript-derived claims and graphics, the labelled toy CE example, reference-logo hashes, column order, the visual brief, TypeScript, tests, both Vite and single-file Parcel builds, offline rendering, native layout, PDF size/content, and package checksums.
 
 Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.github.io/counterfactuals/
 
 ## Known limitations
 
+- The loan example is an invented threshold model for teaching the CE concept, not benchmark data or lending advice.
+- PWr, genwro.AI, and Tooploox logos are unchanged copies from the user-supplied PUMAL reference poster; their provenance and hashes are recorded in \`poster/research/brand-assets.json\`.
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
 - Raster result panels preserve the manuscript's published plotting style and are intended for A0 print or zoomed digital inspection.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.
