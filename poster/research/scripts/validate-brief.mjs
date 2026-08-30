@@ -179,6 +179,7 @@ for (const [index, tag] of storyboardTags.entries()) {
 }
 const substantiveHeadings = ["Scientific argument", "Header", "Left — counterfactual concept", "Center — framework and benchmark scope", "Right — results and contributions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
+  "**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.",
   "**Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.",
   "**Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.",
   "**Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.",

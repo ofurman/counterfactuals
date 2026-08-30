@@ -30,6 +30,7 @@ path, not a dump of manuscript sections or a full result table.
 **Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.
 **Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.
 **Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.
+**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.
 
 Group the dataset inventory under Classification and Regression using each dataset's task in the manuscript table, while retaining the combined dataset total. <!-- claims: scope.datasets | sources: manuscript/main_lncs.tex#Datasets -->
 

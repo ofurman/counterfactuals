@@ -23,10 +23,10 @@
       "rect": {
         "top": 135,
         "right": 1812,
-        "bottom": 355,
+        "bottom": 352,
         "left": 108,
         "width": 1704,
-        "height": 220
+        "height": 217
       },
       "clientWidth": 1704,
       "scrollWidth": 1704,
@@ -36,12 +36,12 @@
     {
       "id": "problem",
       "rect": {
-        "top": 375,
+        "top": 372,
         "right": 493.109375,
-        "bottom": 794.8125,
+        "bottom": 787.8125,
         "left": 108,
         "width": 385.109375,
-        "height": 419.8125
+        "height": 415.8125
       },
       "clientWidth": 385,
       "scrollWidth": 385,
@@ -51,9 +51,9 @@
     {
       "id": "protocol",
       "rect": {
-        "top": 375,
+        "top": 372,
         "right": 1229.578125,
-        "bottom": 748.234375,
+        "bottom": 745.234375,
         "left": 517.109375,
         "width": 712.46875,
         "height": 373.234375
@@ -66,9 +66,9 @@
     {
       "id": "scope",
       "rect": {
-        "top": 764.234375,
+        "top": 761.234375,
         "right": 1229.578125,
-        "bottom": 1212.109375,
+        "bottom": 1209.109375,
         "left": 517.109375,
         "width": 712.46875,
         "height": 447.875
@@ -81,12 +81,12 @@
     {
       "id": "results",
       "rect": {
-        "top": 375,
+        "top": 372,
         "right": 1812,
-        "bottom": 1019.09375,
+        "bottom": 1012.09375,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 644.09375
+        "height": 640.09375
       },
       "clientWidth": 558,
       "scrollWidth": 558,
@@ -96,9 +96,9 @@
     {
       "id": "applicability",
       "rect": {
-        "top": 422.75,
+        "top": 415.75,
         "right": 1812,
-        "bottom": 582.65625,
+        "bottom": 575.65625,
         "left": 1253.578125,
         "width": 558.421875,
         "height": 159.90625
@@ -111,9 +111,9 @@
     {
       "id": "local-tradeoff",
       "rect": {
-        "top": 592.65625,
+        "top": 585.65625,
         "right": 1812,
-        "bottom": 849.1875,
+        "bottom": 842.1875,
         "left": 1253.578125,
         "width": 558.421875,
         "height": 256.53125
@@ -126,9 +126,9 @@
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 859.1875,
+        "top": 852.1875,
         "right": 1812,
-        "bottom": 1019.09375,
+        "bottom": 1012.09375,
         "left": 1253.578125,
         "width": 558.421875,
         "height": 159.90625
@@ -141,12 +141,12 @@
     {
       "id": "guidance-limitations",
       "rect": {
-        "top": 1027.09375,
+        "top": 1020.09375,
         "right": 1812,
-        "bottom": 1258.40625,
+        "bottom": 1247.40625,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 231.3125
+        "height": 227.3125
       },
       "clientWidth": 558,
       "scrollWidth": 558,
@@ -156,12 +156,12 @@
     {
       "id": "reproducibility",
       "rect": {
-        "top": 1279.5,
+        "top": 1281.5,
         "right": 1812,
         "bottom": 1324,
         "left": 108,
         "width": 1704,
-        "height": 44.5
+        "height": 42.5
       },
       "clientWidth": 1704,
       "scrollWidth": 1704,
@@ -169,6 +169,59 @@
       "scrollHeight": 43
     }
   ],
+  "sectionRules": [
+    {
+      "id": "header",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "problem",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "protocol",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "scope",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "results",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "applicability",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "local-tradeoff",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "group-tradeoff",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "guidance-limitations",
+      "top": 0,
+      "bottom": 0
+    },
+    {
+      "id": "reproducibility",
+      "top": 0,
+      "bottom": 0
+    }
+  ],
+  "horizontalRuleCount": 0,
   "figures": [
     {
       "clientWidth": 385,
@@ -205,17 +258,17 @@
   "canvasTopBorderWidth": "0px",
   "architecture": {
     "viewport": {
-      "top": 385,
+      "top": 382,
       "right": 1229.578125,
-      "bottom": 748.234375,
+      "bottom": 745.234375,
       "left": 517.109375,
       "width": 712.46875,
       "height": 363.234375
     },
     "image": {
-      "top": 368.65625,
+      "top": 365.65625,
       "right": 1282.140625,
-      "bottom": 797.875,
+      "bottom": 794.875,
       "left": 464.5625,
       "width": 817.578125,
       "height": 429.21875
@@ -230,29 +283,29 @@
     "left": [
       {
         "id": "problem",
-        "top": 375,
+        "top": 372,
         "right": 493.109375,
-        "bottom": 794.8125,
+        "bottom": 787.8125,
         "left": 108,
         "width": 385.109375,
-        "height": 419.8125
+        "height": 415.8125
       }
     ],
     "center": [
       {
         "id": "protocol",
-        "top": 375,
+        "top": 372,
         "right": 1229.578125,
-        "bottom": 748.234375,
+        "bottom": 745.234375,
         "left": 517.109375,
         "width": 712.46875,
         "height": 373.234375
       },
       {
         "id": "scope",
-        "top": 764.234375,
+        "top": 761.234375,
         "right": 1229.578125,
-        "bottom": 1212.109375,
+        "bottom": 1209.109375,
         "left": 517.109375,
         "width": 712.46875,
         "height": 447.875
@@ -261,48 +314,48 @@
     "right": [
       {
         "id": "results",
-        "top": 375,
+        "top": 372,
         "right": 1812,
-        "bottom": 1019.09375,
+        "bottom": 1012.09375,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 644.09375
+        "height": 640.09375
       },
       {
         "id": "guidance-limitations",
-        "top": 1027.09375,
+        "top": 1020.09375,
         "right": 1812,
-        "bottom": 1258.40625,
+        "bottom": 1247.40625,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 231.3125
+        "height": 227.3125
       }
     ]
   },
   "resultPanels": [
     {
       "id": "applicability",
-      "top": 422.75,
+      "top": 415.75,
       "right": 1812,
-      "bottom": 582.65625,
+      "bottom": 575.65625,
       "left": 1253.578125,
       "width": 558.421875,
       "height": 159.90625
     },
     {
       "id": "local-tradeoff",
-      "top": 592.65625,
+      "top": 585.65625,
       "right": 1812,
-      "bottom": 849.1875,
+      "bottom": 842.1875,
       "left": 1253.578125,
       "width": 558.421875,
       "height": 256.53125
     },
     {
       "id": "group-tradeoff",
-      "top": 859.1875,
+      "top": 852.1875,
       "right": 1812,
-      "bottom": 1019.09375,
+      "bottom": 1012.09375,
       "left": 1253.578125,
       "width": 558.421875,
       "height": 159.90625
@@ -319,17 +372,17 @@
         168
       ],
       "viewport": {
-        "top": 618.546875,
+        "top": 611.546875,
         "right": 1434.375,
-        "bottom": 723.28125,
+        "bottom": 716.28125,
         "left": 1253.578125,
         "width": 180.796875,
         "height": 104.734375
       },
       "image": {
-        "top": 618.546875,
+        "top": 611.546875,
         "right": 2126.390625,
-        "bottom": 1304.9375,
+        "bottom": 1297.9375,
         "left": 1253.578125,
         "width": 872.8125,
         "height": 686.390625
@@ -344,17 +397,17 @@
         168
       ],
       "viewport": {
-        "top": 618.546875,
+        "top": 611.546875,
         "right": 1623.1875,
-        "bottom": 726.25,
+        "bottom": 719.25,
         "left": 1442.375,
         "width": 180.8125,
         "height": 107.703125
       },
       "image": {
-        "top": 618.546875,
+        "top": 611.546875,
         "right": 2154.078125,
-        "bottom": 1324.46875,
+        "bottom": 1317.46875,
         "left": 1256.4375,
         "width": 897.640625,
         "height": 705.921875
@@ -369,17 +422,17 @@
         168
       ],
       "viewport": {
-        "top": 618.546875,
+        "top": 611.546875,
         "right": 1812,
-        "bottom": 727.421875,
+        "bottom": 720.421875,
         "left": 1631.1875,
         "width": 180.8125,
         "height": 108.875
       },
       "image": {
-        "top": 618.546875,
+        "top": 611.546875,
         "right": 2167.796875,
-        "bottom": 1332.0625,
+        "bottom": 1325.0625,
         "left": 1260.5,
         "width": 907.296875,
         "height": 713.515625
@@ -394,17 +447,17 @@
         168
       ],
       "viewport": {
-        "top": 735.421875,
+        "top": 728.421875,
         "right": 1528.78125,
-        "bottom": 843.125,
+        "bottom": 836.125,
         "left": 1347.96875,
         "width": 180.8125,
         "height": 107.703125
       },
       "image": {
-        "top": 735.421875,
+        "top": 728.421875,
         "right": 1699.96875,
-        "bottom": 1441.34375,
+        "bottom": 1434.34375,
         "left": 802.328125,
         "width": 897.640625,
         "height": 705.921875
@@ -419,17 +472,17 @@
         168
       ],
       "viewport": {
-        "top": 735.421875,
+        "top": 728.421875,
         "right": 1717.59375,
-        "bottom": 849.1875,
+        "bottom": 842.1875,
         "left": 1536.78125,
         "width": 180.8125,
         "height": 113.765625
       },
       "image": {
-        "top": 735.421875,
+        "top": 728.421875,
         "right": 1717.59375,
-        "bottom": 1481.015625,
+        "bottom": 1474.015625,
         "left": 769.515625,
         "width": 948.078125,
         "height": 745.59375
@@ -439,33 +492,33 @@
   "rasterChartLabels": "Embedded manuscript labels; reviewed visually, not measured as DOM text.",
   "scopeItems": [
     {
-      "top": 764.234375,
+      "top": 761.234375,
       "right": 867.34375,
-      "bottom": 1011.421875,
+      "bottom": 1008.421875,
       "left": 517.109375,
       "width": 350.234375,
       "height": 247.1875
     },
     {
-      "top": 764.234375,
+      "top": 761.234375,
       "right": 1229.578125,
-      "bottom": 1011.421875,
+      "bottom": 1008.421875,
       "left": 879.34375,
       "width": 350.234375,
       "height": 247.1875
     },
     {
-      "top": 1023.421875,
+      "top": 1020.421875,
       "right": 867.34375,
-      "bottom": 1212.109375,
+      "bottom": 1209.109375,
       "left": 517.109375,
       "width": 350.234375,
       "height": 188.6875
     },
     {
-      "top": 1023.421875,
+      "top": 1020.421875,
       "right": 1229.578125,
-      "bottom": 1212.109375,
+      "bottom": 1209.109375,
       "left": 879.34375,
       "width": 350.234375,
       "height": 188.6875
@@ -475,17 +528,17 @@
     {
       "radius": 10,
       "outline": {
-        "top": 765.234375,
+        "top": 762.234375,
         "right": 866.34375,
-        "bottom": 1010.421875,
+        "bottom": 1007.421875,
         "left": 518.109375,
         "width": 348.234375,
         "height": 245.1875
       },
       "tile": {
-        "top": 764.234375,
+        "top": 761.234375,
         "right": 867.34375,
-        "bottom": 1011.421875,
+        "bottom": 1008.421875,
         "left": 517.109375,
         "width": 350.234375,
         "height": 247.1875
@@ -505,17 +558,17 @@
     {
       "radius": 10,
       "outline": {
-        "top": 765.234375,
+        "top": 762.234375,
         "right": 1228.578125,
-        "bottom": 1010.421875,
+        "bottom": 1007.421875,
         "left": 880.34375,
         "width": 348.234375,
         "height": 245.1875
       },
       "tile": {
-        "top": 764.234375,
+        "top": 761.234375,
         "right": 1229.578125,
-        "bottom": 1011.421875,
+        "bottom": 1008.421875,
         "left": 879.34375,
         "width": 350.234375,
         "height": 247.1875
@@ -535,17 +588,17 @@
     {
       "radius": 10,
       "outline": {
-        "top": 1024.421875,
+        "top": 1021.421875,
         "right": 866.34375,
-        "bottom": 1211.109375,
+        "bottom": 1208.109375,
         "left": 518.109375,
         "width": 348.234375,
         "height": 186.6875
       },
       "tile": {
-        "top": 1023.421875,
+        "top": 1020.421875,
         "right": 867.34375,
-        "bottom": 1212.109375,
+        "bottom": 1209.109375,
         "left": 517.109375,
         "width": 350.234375,
         "height": 188.6875
@@ -565,17 +618,17 @@
     {
       "radius": 10,
       "outline": {
-        "top": 1024.421875,
+        "top": 1021.421875,
         "right": 1228.578125,
-        "bottom": 1211.109375,
+        "bottom": 1208.109375,
         "left": 880.34375,
         "width": 348.234375,
         "height": 186.6875
       },
       "tile": {
-        "top": 1023.421875,
+        "top": 1020.421875,
         "right": 1229.578125,
-        "bottom": 1212.109375,
+        "bottom": 1209.109375,
         "left": 879.34375,
         "width": 350.234375,
         "height": 188.6875
@@ -599,10 +652,10 @@
     "header": {
       "top": 135,
       "right": 1812,
-      "bottom": 355,
+      "bottom": 352,
       "left": 108,
       "width": 1704,
-      "height": 220
+      "height": 217
     },
     "title": {
       "top": 144.171875,
@@ -700,67 +753,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:62089/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:62229/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:62089/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:62229/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:62089/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:62229/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:62089/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:62229/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:62089/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:62229/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:62089/architecture.bded2544.png",
+      "src": "http://127.0.0.1:62229/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62089/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:62229/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:62089/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:62229/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62089/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:62229/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62089/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:62229/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62089/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:62229/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62089/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:62229/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:62089/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:62229/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

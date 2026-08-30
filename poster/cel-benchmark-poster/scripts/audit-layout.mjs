@@ -58,6 +58,11 @@ const report = await withPosterPage(async ({ page, failures }) => {
         scrollHeight: document.documentElement.scrollHeight,
       },
       sections,
+      sectionRules: [...document.querySelectorAll('[data-section]')].map((element) => {
+        const style = getComputedStyle(element)
+        return { id: element.dataset.section, top: parseFloat(style.borderTopWidth), bottom: parseFloat(style.borderBottomWidth) }
+      }),
+      horizontalRuleCount: document.querySelectorAll('.poster-canvas hr').length,
       figures,
       exampleBackground: getComputedStyle(document.querySelector('.problem-block')).backgroundColor,
       canvasTopBorderWidth: getComputedStyle(canvas).borderTopWidth,
@@ -120,6 +125,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   })
 
   const failuresFound = [...failures]
+  if (screen.horizontalRuleCount !== 0 || screen.sectionRules.some((section) => section.top !== 0 || section.bottom !== 0)) failuresFound.push('Horizontal section dividers must be absent, including header and footer rules')
   if (screen.centerHeadingCount !== 0 || screen.scopeTopBorderWidth !== '0px') failuresFound.push('Removed center-column headings or divider remain')
   if (screen.scopeTileStyles.length !== 4 || screen.scopeTileStyles.some((tile) => tile.radius < 6 || tile.headingRadius < 4 || tile.strokeWidth !== 2 || JSON.stringify(tile.dashArray) !== '[10,5]' || tile.headingBorder !== 'solid' || tile.background !== 'rgb(230, 244, 252)' || tile.headingBackground !== 'rgb(252, 232, 198)' || tile.headingColor !== tile.borderColor)) failuresFound.push('Scope tiles must match the schema with 10px dashes, 5px gaps, and a 2px outline')
   for (const tile of screen.scopeTileStyles) {

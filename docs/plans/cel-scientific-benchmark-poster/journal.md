@@ -173,3 +173,9 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: The Task column in `manuscript/main_lncs.tex#tab:datasets_complete` assigns 13 rows to classification and five to regression. Extraction checks those row counts against the manuscript's stated totals; the new test checks every named assignment.
 **Problems**: none.
 **Commit**: `this commit` (`feat(poster): group datasets by prediction task`)
+
+## 2026-08-30 14:48 -- Post-plan revision: Remove horizontal section dividers -- DONE
+**Did**: Removed the horizontal rules below the header, above the footer, and above the example, results, and contributions sections. Preserved table row rules, plot axes, schema boxes, dashed scope-tile outlines, and vertical contribution accents.
+**Verification**: `pnpm run verify:all` passed 20/20 tests, source and content checks, zero measured top/bottom borders on all ten semantic sections, no horizontal-rule elements, offline rendering, one-page A0 export, and package audits. Manual checksums and `git diff --check` passed. Final PDF-derived preview visually inspected with no section dividers or clipped content. REPORT visible words=243/260; body text=15 px; required remote requests=0.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): remove horizontal section dividers`)
