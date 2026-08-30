@@ -6,6 +6,16 @@ import { posterData } from './data/posterData'
 const liveClaimIds = new Set(posterData.claims.map((claim) => claim.id))
 
 describe('rendered evidence provenance', () => {
+  it('removes result captions and reflows every local metric without losing dataset identity', () => {
+    const { container } = render(<App />)
+    expect(container.querySelectorAll('.result-manuscript-figure figcaption')).toHaveLength(0)
+    const figures = Array.from(container.querySelectorAll('.result-manuscript-figure'))
+    expect(figures).toHaveLength(3)
+    for (const figure of figures) expect(figure.getAttribute('data-dataset')).toBe('Adult Census')
+    expect(Array.from(container.querySelectorAll('.local-metric-window')).map((element) => element.getAttribute('data-metric'))).toEqual(['Validity', 'L2-Hamming', 'Sparsity', 'Log-density', 'Runtime'])
+    expect(Array.from(container.querySelectorAll('.local-metric-window')).map((element) => element.getAttribute('data-crop'))).toEqual(['0 0 290 168', '290 0 282 168', '572 0 279 168', '851 0 282 168', '1133 0 267 168'])
+  })
+
   it('crops the unchanged architecture graphic without a repeated caption', () => {
     const { container } = render(<App />)
     const figure = container.querySelector('.architecture-figure')

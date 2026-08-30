@@ -1,9 +1,20 @@
 import { ClaimWording } from '@/components/poster'
+import type { CSSProperties } from 'react'
 
 const architectureGraphic = new URL('../../assets/manuscript/architecture.png', import.meta.url).href
 const globalGraphic = new URL('../../assets/manuscript/global-adult.jpg', import.meta.url).href
 const groupGraphic = new URL('../../assets/manuscript/group-adult.jpg', import.meta.url).href
 const localGraphic = new URL('../../assets/manuscript/local-mixed.jpg', import.meta.url).href
+
+// The local manuscript uses much wider axes than the global/group-wise figures.
+// Reflow its complete Adult Census metric panels without stretching the raster.
+const localMetricCrops = [
+  { metric: 'Validity', x: 0, width: 290 },
+  { metric: 'L2-Hamming', x: 290, width: 282 },
+  { metric: 'Sparsity', x: 572, width: 279 },
+  { metric: 'Log-density', x: 851, width: 282 },
+  { metric: 'Runtime', x: 1133, width: 267 },
+] as const
 
 type ResultFigureProps = {
   alt: string
@@ -23,13 +34,28 @@ function ResultFigure({ alt, claimId, className = '', finding, image, source, so
       data-finding={finding}
       data-manuscript-source={source}
       data-result-surface={finding}
+      aria-label={sourceLabel}
+      data-dataset="Adult Census"
     >
-      <div className="manuscript-image-window">
-        <img src={image} alt={alt} />
-      </div>
-      <figcaption>
-        <span>{sourceLabel}</span>
-      </figcaption>
+      {finding === 'local' ? (
+        <div className="local-metric-grid">
+          {localMetricCrops.map(({ metric, x, width }) => (
+            <div
+              className="local-metric-window"
+              key={metric}
+              data-metric={metric}
+              data-crop={`${x} 0 ${width} 168`}
+              style={{ '--crop-x': x, '--crop-width': width } as CSSProperties}
+            >
+              <img src={image} alt={`${alt}: Adult Census, ${metric}`} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="manuscript-image-window">
+          <img src={image} alt={alt} />
+        </div>
+      )}
     </figure>
   )
 }

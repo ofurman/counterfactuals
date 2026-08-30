@@ -83,75 +83,75 @@
       "rect": {
         "top": 375,
         "right": 1812,
-        "bottom": 932.015625,
+        "bottom": 1019.09375,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 557.015625
+        "height": 644.09375
       },
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 553,
-      "scrollHeight": 553
+      "clientHeight": 640,
+      "scrollHeight": 640
     },
     {
       "id": "applicability",
       "rect": {
-        "top": 426.75,
+        "top": 422.75,
         "right": 1812,
-        "bottom": 608.046875,
+        "bottom": 582.65625,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 181.296875
+        "height": 159.90625
       },
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 181,
-      "scrollHeight": 181
+      "clientHeight": 160,
+      "scrollHeight": 160
     },
     {
       "id": "local-tradeoff",
       "rect": {
-        "top": 624.046875,
+        "top": 592.65625,
         "right": 1812,
-        "bottom": 734.71875,
+        "bottom": 849.1875,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 110.671875
+        "height": 256.53125
       },
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 111,
-      "scrollHeight": 111
+      "clientHeight": 257,
+      "scrollHeight": 257
     },
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 750.71875,
+        "top": 859.1875,
         "right": 1812,
-        "bottom": 932.015625,
+        "bottom": 1019.09375,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 181.296875
+        "height": 159.90625
       },
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 181,
-      "scrollHeight": 181
+      "clientHeight": 160,
+      "scrollHeight": 160
     },
     {
       "id": "guidance-limitations",
       "rect": {
-        "top": 956.015625,
+        "top": 1027.09375,
         "right": 1812,
-        "bottom": 1254.140625,
+        "bottom": 1258.40625,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 298.125
+        "height": 231.3125
       },
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 294,
-      "scrollHeight": 294
+      "clientHeight": 227,
+      "scrollHeight": 227
     },
     {
       "id": "reproducibility",
@@ -185,20 +185,20 @@
     {
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 153,
-      "scrollHeight": 153
+      "clientHeight": 134,
+      "scrollHeight": 134
     },
     {
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 83,
-      "scrollHeight": 83
+      "clientHeight": 231,
+      "scrollHeight": 231
     },
     {
       "clientWidth": 558,
       "scrollWidth": 558,
-      "clientHeight": 153,
-      "scrollHeight": 153
+      "clientHeight": 134,
+      "scrollHeight": 134
     }
   ],
   "exampleBackground": "rgba(0, 0, 0, 0)",
@@ -263,51 +263,180 @@
         "id": "results",
         "top": 375,
         "right": 1812,
-        "bottom": 932.015625,
+        "bottom": 1019.09375,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 557.015625
+        "height": 644.09375
       },
       {
         "id": "guidance-limitations",
-        "top": 956.015625,
+        "top": 1027.09375,
         "right": 1812,
-        "bottom": 1254.140625,
+        "bottom": 1258.40625,
         "left": 1253.578125,
         "width": 558.421875,
-        "height": 298.125
+        "height": 231.3125
       }
     ]
   },
   "resultPanels": [
     {
       "id": "applicability",
-      "top": 426.75,
+      "top": 422.75,
       "right": 1812,
-      "bottom": 608.046875,
+      "bottom": 582.65625,
       "left": 1253.578125,
       "width": 558.421875,
-      "height": 181.296875
+      "height": 159.90625
     },
     {
       "id": "local-tradeoff",
-      "top": 624.046875,
+      "top": 592.65625,
       "right": 1812,
-      "bottom": 734.71875,
+      "bottom": 849.1875,
       "left": 1253.578125,
       "width": 558.421875,
-      "height": 110.671875
+      "height": 256.53125
     },
     {
       "id": "group-tradeoff",
-      "top": 750.71875,
+      "top": 859.1875,
       "right": 1812,
-      "bottom": 932.015625,
+      "bottom": 1019.09375,
       "left": 1253.578125,
       "width": 558.421875,
-      "height": 181.296875
+      "height": 159.90625
     }
   ],
+  "resultCaptionCount": 0,
+  "localMetricPanels": [
+    {
+      "metric": "Validity",
+      "crop": [
+        0,
+        0,
+        290,
+        168
+      ],
+      "viewport": {
+        "top": 618.546875,
+        "right": 1434.375,
+        "bottom": 723.28125,
+        "left": 1253.578125,
+        "width": 180.796875,
+        "height": 104.734375
+      },
+      "image": {
+        "top": 618.546875,
+        "right": 2126.390625,
+        "bottom": 1304.9375,
+        "left": 1253.578125,
+        "width": 872.8125,
+        "height": 686.390625
+      }
+    },
+    {
+      "metric": "L2-Hamming",
+      "crop": [
+        290,
+        0,
+        282,
+        168
+      ],
+      "viewport": {
+        "top": 618.546875,
+        "right": 1623.1875,
+        "bottom": 726.25,
+        "left": 1442.375,
+        "width": 180.8125,
+        "height": 107.703125
+      },
+      "image": {
+        "top": 618.546875,
+        "right": 2154.078125,
+        "bottom": 1324.46875,
+        "left": 1256.4375,
+        "width": 897.640625,
+        "height": 705.921875
+      }
+    },
+    {
+      "metric": "Sparsity",
+      "crop": [
+        572,
+        0,
+        279,
+        168
+      ],
+      "viewport": {
+        "top": 618.546875,
+        "right": 1812,
+        "bottom": 727.421875,
+        "left": 1631.1875,
+        "width": 180.8125,
+        "height": 108.875
+      },
+      "image": {
+        "top": 618.546875,
+        "right": 2167.796875,
+        "bottom": 1332.0625,
+        "left": 1260.5,
+        "width": 907.296875,
+        "height": 713.515625
+      }
+    },
+    {
+      "metric": "Log-density",
+      "crop": [
+        851,
+        0,
+        282,
+        168
+      ],
+      "viewport": {
+        "top": 735.421875,
+        "right": 1528.78125,
+        "bottom": 843.125,
+        "left": 1347.96875,
+        "width": 180.8125,
+        "height": 107.703125
+      },
+      "image": {
+        "top": 735.421875,
+        "right": 1699.96875,
+        "bottom": 1441.34375,
+        "left": 802.328125,
+        "width": 897.640625,
+        "height": 705.921875
+      }
+    },
+    {
+      "metric": "Runtime",
+      "crop": [
+        1133,
+        0,
+        267,
+        168
+      ],
+      "viewport": {
+        "top": 735.421875,
+        "right": 1717.59375,
+        "bottom": 849.1875,
+        "left": 1536.78125,
+        "width": 180.8125,
+        "height": 113.765625
+      },
+      "image": {
+        "top": 735.421875,
+        "right": 1717.59375,
+        "bottom": 1481.015625,
+        "left": 769.515625,
+        "width": 948.078125,
+        "height": 745.59375
+      }
+    }
+  ],
+  "rasterChartLabels": "Embedded manuscript labels; reviewed visually, not measured as DOM text.",
   "scopeItems": [
     {
       "top": 883.046875,
@@ -463,47 +592,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:60703/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:61039/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:60703/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:61039/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:60703/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:61039/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:60703/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:61039/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:60703/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:61039/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:60703/architecture.bded2544.png",
+      "src": "http://127.0.0.1:61039/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:60703/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:61039/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:60703/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:60703/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:61039/local-mixed.fafc5dac.jpg",
+      "complete": true,
+      "naturalWidth": 1400
+    },
+    {
+      "src": "http://127.0.0.1:61039/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }
@@ -514,7 +663,7 @@
   "minimumFontPx": {
     "body": 15,
     "caption": 12,
-    "chartLabel": 12
+    "resultHeading": 19
   },
   "print": {
     "toolbarDisplay": "none",

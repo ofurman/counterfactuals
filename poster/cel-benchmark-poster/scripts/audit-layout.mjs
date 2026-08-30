@@ -72,6 +72,9 @@ const report = await withPosterPage(async ({ page, failures }) => {
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
       columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
+      resultCaptionCount: document.querySelectorAll('.result-manuscript-figure figcaption').length,
+      localMetricPanels: [...document.querySelectorAll('.local-metric-window')].map((element) => ({ metric: element.dataset.metric, crop: element.dataset.crop.split(' ').map(Number), viewport: rect(element), image: rect(element.querySelector('img')) })),
+      rasterChartLabels: 'Embedded manuscript labels; reviewed visually, not measured as DOM text.',
       scopeItems: [...document.querySelectorAll('.scope-strip li')].map(rect),
       branding: {
         header: rect(document.querySelector('.poster-header')),
@@ -90,7 +93,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       minimumFontPx: {
         body: minimum('.section-copy'),
         caption: minimum('.source-note, figcaption'),
-        chartLabel: minimum('.manuscript-figure figcaption'),
+        resultHeading: minimum('.result-panel h3'),
       },
     }
   })
@@ -114,6 +117,15 @@ const report = await withPosterPage(async ({ page, failures }) => {
   }
   if (JSON.stringify(screen.resultPanels.map((panel) => panel.id)) !== JSON.stringify(['applicability', 'local-tradeoff', 'group-tradeoff'])) failuresFound.push('Global, local and group-wise results must be inside the unified Results section')
   if (screen.resultPanels.some((panel, index) => index > 0 && screen.resultPanels[index - 1].bottom >= panel.top)) failuresFound.push('Unified result panels overlap')
+  if (screen.resultCaptionCount !== 0) failuresFound.push('Removed result captions remain')
+  if (JSON.stringify(screen.localMetricPanels.map((panel) => panel.metric)) !== JSON.stringify(['Validity', 'L2-Hamming', 'Sparsity', 'Log-density', 'Runtime'])) failuresFound.push('All five local metric panels must remain visible')
+  for (const panel of screen.localMetricPanels) {
+    const [x, y, width, height] = panel.crop
+    const scale = panel.viewport.width / width
+    if (panel.viewport.width < 175 || panel.viewport.height < 100) failuresFound.push(`${panel.metric} is not enlarged to a readable metric panel`)
+    if (Math.abs(panel.image.width - 1400 * scale) > 1 || Math.abs(panel.image.height - 1101 * scale) > 1 || Math.abs(panel.viewport.left - panel.image.left - x * scale) > 1 || Math.abs(panel.viewport.top - panel.image.top - y * scale) > 1 || Math.abs(panel.viewport.height - height * scale) > 1) failuresFound.push(`${panel.metric} crop is stretched or has incorrect source geometry`)
+  }
+  if (screen.localMetricPanels.slice(0, 3).some((panel) => Math.abs(panel.viewport.top - screen.localMetricPanels[0].viewport.top) > 1) || screen.localMetricPanels.slice(3).some((panel) => Math.abs(panel.viewport.top - screen.localMetricPanels[3].viewport.top) > 1) || screen.localMetricPanels[0].viewport.bottom >= screen.localMetricPanels[3].viewport.top) failuresFound.push('Local metric panels must occupy two rows without overlap')
   if (screen.scopeItems.length !== 6 || screen.scopeItems.slice(0, 3).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(3).some((item) => Math.abs(item.top - screen.scopeItems[3].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[3].top) failuresFound.push('Benchmark scope must be a two-row, three-column facts grid')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const logo of screen.branding.logos) {
@@ -147,7 +159,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   const requiredFontPx = {
     body: visualSpec.minimumPrintType.body.cssPx,
     caption: visualSpec.minimumPrintType.citation.cssPx,
-    chartLabel: visualSpec.minimumPrintType.chartLabel.cssPx,
+    resultHeading: visualSpec.minimumPrintType.body.cssPx,
   }
   for (const [role, minimumPx] of Object.entries(requiredFontPx)) {
     if (screen.minimumFontPx[role] && screen.minimumFontPx[role] + 0.01 < minimumPx) failuresFound.push(`${role} font is ${screen.minimumFontPx[role]}px; minimum is ${minimumPx}px`)
@@ -167,4 +179,4 @@ const report = await withPosterPage(async ({ page, failures }) => {
 await mkdir(deliverablesDir, { recursive: true })
 const reportPath = path.join(deliverablesDir, 'audit-layout.json')
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`)
-console.log(`Layout audit passed: sections=${report.sections.length}, body=${report.minimumFontPx.body}px, caption=${report.minimumFontPx.caption}px, chart=${report.minimumFontPx.chartLabel}px`)
+console.log(`Layout audit passed: sections=${report.sections.length}, body=${report.minimumFontPx.body}px, caption=${report.minimumFontPx.caption}px, result headings=${report.minimumFontPx.resultHeading}px; raster labels require visual review`)
