@@ -153,3 +153,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Verification**: `pnpm run verify:all` passed 19/19 tests, source and brief checks, DOM absence of center headings and a zero-width scope border, PDF text absence of both headings, offline rendering, one-page A0 export, and package audits. Manual checksums and final PDF-derived visual inspection passed without clipping. REPORT visible words=242/260; body text=15 px; required remote requests=0.
 **Problems**: The storyboard validator initially treated the new layout-only instruction as a scientific claim; registered that exact structural line without changing scientific provenance checks. The new accessibility test initially queried prior test renders; scoped it to its own render container. Both were corrected before the successful complete verification.
 **Commit**: `this commit` (`feat(poster): remove center headings and divider`)
+
+## 2026-08-30 14:38 -- Post-plan revision: Schema-aligned scope tile styling -- DONE
+**Did**: Restyled the four inventory tiles as rounded pale-blue containers with dashed dark-blue outlines and cream, solid-border heading boxes, following the manuscript diagram's module/node styling. Replaced teal count accents with dark-blue sans-serif counts. Preserved every inventory name, the two-by-two layout, and 15-pixel body text. Updated the visual brief to allow the requested schema-aligned rounded tiles.
+**Verification**: `pnpm run verify:all` passed 19/19 tests, source and inventory checks, live rounded-border/palette checks, containment, offline rendering, one-page A0 export, and package audits. Manual checksums and `git diff --check` passed. Final PDF-derived preview visually inspected: all four tiles fit, their headings remain on one line, and the schema and result panels remain unchanged. REPORT visible words=242/260; body text=15 px; required remote requests=0.
+**Provenance**: Styling follows visual inspection of the unchanged manuscript architecture raster; no benchmark content or source graphics were altered.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): align scope tiles with manuscript schema`)

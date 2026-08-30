@@ -68,15 +68,15 @@
       "rect": {
         "top": 764.234375,
         "right": 1229.578125,
-        "bottom": 1150.703125,
+        "bottom": 1194.703125,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 386.46875
+        "height": 430.46875
       },
       "clientWidth": 712,
       "scrollWidth": 712,
-      "clientHeight": 386,
-      "scrollHeight": 386
+      "clientHeight": 430,
+      "scrollHeight": 430
     },
     {
       "id": "results",
@@ -252,10 +252,10 @@
         "id": "scope",
         "top": 764.234375,
         "right": 1229.578125,
-        "bottom": 1150.703125,
+        "bottom": 1194.703125,
         "left": 517.109375,
         "width": 712.46875,
-        "height": 386.46875
+        "height": 430.46875
       }
     ],
     "right": [
@@ -441,34 +441,96 @@
     {
       "top": 764.234375,
       "right": 867.34375,
-      "bottom": 973.015625,
+      "bottom": 995.015625,
       "left": 517.109375,
       "width": 350.234375,
-      "height": 208.78125
+      "height": 230.78125
     },
     {
       "top": 764.234375,
       "right": 1229.578125,
-      "bottom": 973.015625,
+      "bottom": 995.015625,
       "left": 879.34375,
       "width": 350.234375,
-      "height": 208.78125
+      "height": 230.78125
     },
     {
-      "top": 985.015625,
+      "top": 1007.015625,
       "right": 867.34375,
-      "bottom": 1150.703125,
+      "bottom": 1194.703125,
       "left": 517.109375,
       "width": 350.234375,
-      "height": 165.6875
+      "height": 187.6875
     },
     {
-      "top": 985.015625,
+      "top": 1007.015625,
       "right": 1229.578125,
-      "bottom": 1150.703125,
+      "bottom": 1194.703125,
       "left": 879.34375,
       "width": 350.234375,
-      "height": 165.6875
+      "height": 187.6875
+    }
+  ],
+  "scopeTileStyles": [
+    {
+      "radius": 10,
+      "borderStyles": [
+        "dashed",
+        "dashed",
+        "dashed",
+        "dashed"
+      ],
+      "background": "rgb(230, 244, 252)",
+      "headingRadius": 7,
+      "headingBorder": "solid",
+      "headingBackground": "rgb(252, 232, 198)",
+      "headingColor": "rgb(16, 56, 76)",
+      "borderColor": "rgb(16, 56, 76)"
+    },
+    {
+      "radius": 10,
+      "borderStyles": [
+        "dashed",
+        "dashed",
+        "dashed",
+        "dashed"
+      ],
+      "background": "rgb(230, 244, 252)",
+      "headingRadius": 7,
+      "headingBorder": "solid",
+      "headingBackground": "rgb(252, 232, 198)",
+      "headingColor": "rgb(16, 56, 76)",
+      "borderColor": "rgb(16, 56, 76)"
+    },
+    {
+      "radius": 10,
+      "borderStyles": [
+        "dashed",
+        "dashed",
+        "dashed",
+        "dashed"
+      ],
+      "background": "rgb(230, 244, 252)",
+      "headingRadius": 7,
+      "headingBorder": "solid",
+      "headingBackground": "rgb(252, 232, 198)",
+      "headingColor": "rgb(16, 56, 76)",
+      "borderColor": "rgb(16, 56, 76)"
+    },
+    {
+      "radius": 10,
+      "borderStyles": [
+        "dashed",
+        "dashed",
+        "dashed",
+        "dashed"
+      ],
+      "background": "rgb(230, 244, 252)",
+      "headingRadius": 7,
+      "headingBorder": "solid",
+      "headingBackground": "rgb(252, 232, 198)",
+      "headingColor": "rgb(16, 56, 76)",
+      "borderColor": "rgb(16, 56, 76)"
     }
   ],
   "centerHeadingCount": 0,
@@ -578,67 +640,67 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:61628/xkdd-logo.cf4f3461.png",
+      "src": "http://127.0.0.1:61780/xkdd-logo.cf4f3461.png",
       "complete": true,
       "naturalWidth": 604
     },
     {
-      "src": "http://127.0.0.1:61628/ecml-pkdd-logo.acecf1b1.svg",
+      "src": "http://127.0.0.1:61780/ecml-pkdd-logo.acecf1b1.svg",
       "complete": true,
       "naturalWidth": 1019
     },
     {
-      "src": "http://127.0.0.1:61628/pwr-logo.2ab4df64.png",
+      "src": "http://127.0.0.1:61780/pwr-logo.2ab4df64.png",
       "complete": true,
       "naturalWidth": 431
     },
     {
-      "src": "http://127.0.0.1:61628/genwro-logo.67ba8bea.png",
+      "src": "http://127.0.0.1:61780/genwro-logo.67ba8bea.png",
       "complete": true,
       "naturalWidth": 634
     },
     {
-      "src": "http://127.0.0.1:61628/tpx-logo.30ba31cf.png",
+      "src": "http://127.0.0.1:61780/tpx-logo.30ba31cf.png",
       "complete": true,
       "naturalWidth": 2668
     },
     {
-      "src": "http://127.0.0.1:61628/architecture.bded2544.png",
+      "src": "http://127.0.0.1:61780/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61628/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:61780/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61628/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:61780/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:61628/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:61780/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     }

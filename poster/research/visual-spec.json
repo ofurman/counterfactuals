@@ -29,6 +29,6 @@
   },
   "print": {"pageCss": "@page { size: 1189mm 841mm; margin: 0; }", "colorAdjust": "exact", "singlePage": true},
   "chartSemantics": {"success": "#087f78", "changeCost": "#e66b37", "neutral": "#536274", "missing": "#d8d5cc"},
-  "avoid": ["Inter", "purple gradients", "excessive centering", "generic shadows", "uniform rounded cards"],
+  "avoid": ["Inter", "purple gradients", "excessive centering", "generic shadows", "rounded cards unrelated to the manuscript schema"],
   "expectedBundleAssetBudgetBytes": 3000000
 }
