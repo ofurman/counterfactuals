@@ -6,7 +6,7 @@ Counterfactual-explanation results are difficult to compare when protocols diffe
 
 ## Explicit reading order
 
-**Header → Left → Center → Right → Footer.** The header uses the exact manuscript title and establishes
+**Header → Left → Center → Right.** The header uses the exact manuscript title and establishes
 identity. The left column explains counterfactual explanations with an illustrative before/after
 example. The center contains the manuscript architecture above a compact benchmark-scope grid,
 followed by the contribution stack and project QR.
@@ -18,6 +18,7 @@ path, not a dump of manuscript sections or a full result table.
 
 - Paper identity and a direct benchmark hook: CEL enables controlled comparison of counterfactual explanations across multiple quality dimensions. <!-- claims: scope.protocol, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Benchmark, manuscript/main_lncs.tex#Conclusions -->
 **Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.
+**Typography:** Use a ninety-six-point Georgia title, thirty-six-point Georgia subheadings, and Arial body and figure labels. Enlarge figure labels to at least twenty-two points at A0. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.
 **Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.
 **QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the center-column scope tiles; linked to the repository, with no header or paper QR.
 

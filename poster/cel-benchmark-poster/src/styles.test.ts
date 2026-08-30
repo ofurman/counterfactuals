@@ -18,6 +18,15 @@ function cssToken(name: string): string {
 }
 
 describe('print contract', () => {
+  it('uses an explicit Georgia/Arial scale with a 96pt title and 36pt subheadings', () => {
+    const pointsPerPixel = cssNumber('print-scale') * 0.75
+    expect(cssNumber('title-size') * pointsPerPixel).toBeCloseTo(96, 6)
+    expect(cssNumber('subheading-size') * pointsPerPixel).toBeCloseTo(36, 6)
+    expect(css).toContain('font-family: Arial, sans-serif;')
+    expect(css).not.toMatch(/Aptos|Segoe UI|font-weight: (550|750|800|900)/)
+    expect(css).toMatch(/\.recourse-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
+    expect(css).toMatch(/\.result-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
+  })
   it('fixes the native canvas and asymmetric macro grid', () => {
     expect(cssNumber('poster-width')).toBe(visualSpec.canvas.widthPx)
     expect(cssNumber('poster-height')).toBe(visualSpec.canvas.heightPx)

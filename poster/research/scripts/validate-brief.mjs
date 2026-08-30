@@ -160,7 +160,7 @@ for (const [heading, minimumWords] of [["Explicit reading order", 35], ["Thirty-
   const body = sectionBody(heading);
   if (!body || proseWordCount(body) < minimumWords) fail(`${heading} must contain a substantive narrative body`);
 }
-for (const marker of ["Header → Left → Center → Right → Footer", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
+for (const marker of ["Header → Left → Center → Right", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
   if (!storyboard.includes(marker)) fail(`Storyboard lacks required narrative/order marker: ${marker}`);
 }
 if (/^#{2,6} (?:Abstract|Introduction|Related Works?|CEL(?::.*)?|Benchmark|Datasets?|Models?|Methods?|Metrics?|Experimental Setup|Results?|Full Results?|Conclusions?)\s*$/mi.test(storyboard) || /\\(?:section|subsection)\{|\\begin\{(?:table|tabular)\}/.test(storyboard)) fail("Storyboard reproduces a manuscript section dump");
@@ -184,6 +184,7 @@ const structuralLines = new Set([
   "**Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.",
   "**Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.",
   "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.",
+  "**Typography:** Use a ninety-six-point Georgia title, thirty-six-point Georgia subheadings, and Arial body and figure labels. Enlarge figure labels to at least twenty-two points at A0. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.",
   "**Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.",
   "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the center-column scope tiles; linked to the repository, with no header or paper QR.",
   "**Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.",

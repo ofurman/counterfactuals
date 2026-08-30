@@ -6,23 +6,25 @@ import { posterData } from './data/posterData'
 const liveClaimIds = new Set(posterData.claims.map((claim) => claim.id))
 
 describe('rendered evidence provenance', () => {
-  it('removes result captions and reflows every local metric without losing dataset identity', () => {
+  it('uses poster typography derivatives without losing dataset identity or source graphics', () => {
     const { container } = render(<App />)
     expect(container.querySelectorAll('.result-manuscript-figure figcaption')).toHaveLength(0)
     const figures = Array.from(container.querySelectorAll('.result-manuscript-figure'))
     expect(figures).toHaveLength(4)
     for (const figure of figures) expect(figure.getAttribute('data-dataset')).toBe(figure.getAttribute('data-finding') === 'regression' ? 'Concrete' : 'Adult Census')
-    expect(container.querySelector('[data-finding="regression"] [data-crop]')?.getAttribute('data-crop')).toBe('0 0 1100 225')
-    expect(Array.from(container.querySelectorAll('.local-metric-window')).map((element) => element.getAttribute('data-metric'))).toEqual(['Validity', 'L2-Hamming', 'Sparsity', 'Log-density', 'Runtime'])
-    expect(Array.from(container.querySelectorAll('.local-metric-window')).map((element) => element.getAttribute('data-crop'))).toEqual(['0 0 290 168', '290 0 282 168', '572 0 279 168', '851 0 282 168', '1133 0 267 168'])
+    for (const figure of figures) {
+      expect(figure.getAttribute('data-typography-asset')).toBe(figure.getAttribute('data-finding'))
+      expect(figure.querySelector('img')?.getAttribute('src')).toContain(`manuscript-${figure.getAttribute('data-finding')}.svg`)
+    }
   })
 
-  it('crops the unchanged architecture graphic without a repeated caption', () => {
+  it('uses the vector architecture derivative without a repeated caption', () => {
     const { container } = render(<App />)
     const figure = container.querySelector('.architecture-figure')
     expect(figure?.querySelector('figcaption')).toBeNull()
     expect(figure?.textContent).not.toContain('Shared evaluation protocol')
-    expect(figure?.querySelector('.architecture-image-window')?.getAttribute('data-crop')).toBe('90 28 1220 622')
+    expect(figure?.getAttribute('data-typography-asset')).toBe('architecture')
+    expect(figure?.querySelector('img')?.getAttribute('src')).toContain('manuscript-architecture.svg')
     expect(figure?.querySelector('img')?.getAttribute('data-claim-id')).toBe('scope.methods')
   })
 

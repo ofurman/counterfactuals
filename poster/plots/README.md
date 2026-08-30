@@ -18,7 +18,7 @@ Axes, points, arrows, and decision-region labels have no figure titles or action
 captions. A three-item legend below the group-wise plot identifies both original
 group colors, counterfactual points, and the decision boundary. The other plots
 have no legends. The extra legend row preserves the plot-area size and scale.
-Outlined labels render consistently in
+Arial labels are outlined and render consistently in
 the browser and PDF without requiring the Matplotlib font to be installed.
 
 For one example or a transparent asset:
@@ -64,7 +64,7 @@ scikit-learn --with pillow python poster/plots/plot_ce_examples.py`.
 ## Checks
 
 ```sh
-uv run --no-sync pytest -q poster/plots/test_plot_ce_examples.py
+uv run --no-sync pytest -q poster/plots
 uv run --no-sync ruff check poster/plots
 uv run --no-sync ruff format --check poster/plots
 ```
@@ -75,3 +75,29 @@ coordinates, arrow endpoints and direction, helper provenance and style, equal
 plot-area sizes, legend symbols and placement, text containment, CLI
 output, and transparent exports. The current CEL boundary helper emits a PyTorch
 warning about future `meshgrid` indexing defaults; this does not affect rendering.
+
+## Manuscript typography derivatives
+
+`manuscript_typography.py` creates five poster-only SVGs with outlined Arial
+labels. Run it with `uv run --no-sync python poster/plots/manuscript_typography.py`.
+It requires the existing Matplotlib, NumPy, and Pillow environment, Arial regular
+and bold fonts, and Poppler's `pdftocairo` command. It does not modify manuscript files.
+
+The architecture derivative retains the PDF's vector boxes and connectors. Only
+text glyphs are replaced, using larger labels and adjusted line breaks. The four
+result derivatives embed lossless PNG crops of the original plot interiors,
+including every box, whisker, median, and gridline. No statistics are inferred or
+replotted. Each crop retains its source aspect ratio; local metrics keep the
+three-plus-two arrangement. Dataset labels and all method names remain visible.
+
+Tick strings are transcribed from the manuscript figures. Their anchors snap to
+the original high-resolution gridlines. Regression log-density uses `k` for
+thousands to keep its long negative tick labels readable. SVG metadata records
+source and generator hashes, crop pixel bounds, embedded crop hashes, method
+ordering, dataset identity, tick anchors, and minimum font sizes.
+
+Tests compare the embedded crop pixels to the original PNGs and the schema
+artwork to the source PDF conversion. The poster audit checks source hashes,
+uniform image scaling, label containment, and at least 22pt labels at A0. The
+title is 96pt, subheadings are 36pt, and body/figure text uses Arial. Logo artwork
+is unchanged.

@@ -17,7 +17,7 @@
   },
   "fonts": {
     "title": "Georgia, 'Times New Roman', serif",
-    "body": "Aptos, 'Segoe UI', Arial, sans-serif",
+    "body": "Arial, sans-serif",
     "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
   },
   "minimumPrintType": {

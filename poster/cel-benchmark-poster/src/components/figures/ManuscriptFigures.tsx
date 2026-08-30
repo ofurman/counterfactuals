@@ -1,21 +1,10 @@
 import { ClaimWording } from '@/components/poster'
-import type { CSSProperties } from 'react'
 
-const architectureGraphic = new URL('../../assets/manuscript/architecture.png', import.meta.url).href
-const globalGraphic = new URL('../../assets/manuscript/global-adult.jpg', import.meta.url).href
-const groupGraphic = new URL('../../assets/manuscript/group-adult.jpg', import.meta.url).href
-const localGraphic = new URL('../../assets/manuscript/local-mixed.jpg', import.meta.url).href
-const regressionGraphic = new URL('../../assets/manuscript/regression.jpg', import.meta.url).href
-
-// The local manuscript uses much wider axes than the global/group-wise figures.
-// Reflow its complete Adult Census metric panels without stretching the raster.
-const localMetricCrops = [
-  { metric: 'Validity', x: 0, width: 290 },
-  { metric: 'L2-Hamming', x: 290, width: 282 },
-  { metric: 'Sparsity', x: 572, width: 279 },
-  { metric: 'Log-density', x: 851, width: 282 },
-  { metric: 'Runtime', x: 1133, width: 267 },
-] as const
+const architectureGraphic = new URL('../../../../plots/generated/manuscript-architecture.svg', import.meta.url).href
+const globalGraphic = new URL('../../../../plots/generated/manuscript-global.svg', import.meta.url).href
+const groupGraphic = new URL('../../../../plots/generated/manuscript-group.svg', import.meta.url).href
+const localGraphic = new URL('../../../../plots/generated/manuscript-local.svg', import.meta.url).href
+const regressionGraphic = new URL('../../../../plots/generated/manuscript-regression.svg', import.meta.url).href
 
 type ResultFigureProps = {
   alt: string
@@ -34,29 +23,14 @@ function ResultFigure({ alt, claimId, className = '', finding, image, source, so
       data-claim-id={claimId}
       data-finding={finding}
       data-manuscript-source={source}
+      data-typography-asset={finding}
       data-result-surface={finding}
       aria-label={sourceLabel}
       data-dataset={finding === 'regression' ? 'Concrete' : 'Adult Census'}
     >
-      {finding === 'local' ? (
-        <div className="local-metric-grid">
-          {localMetricCrops.map(({ metric, x, width }) => (
-            <div
-              className="local-metric-window"
-              key={metric}
-              data-metric={metric}
-              data-crop={`${x} 0 ${width} 168`}
-              style={{ '--crop-x': x, '--crop-width': width } as CSSProperties}
-            >
-              <img src={image} alt={`${alt}: Adult Census, ${metric}`} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="manuscript-image-window" data-crop={finding === 'regression' ? '0 0 1100 225' : undefined}>
-          <img src={image} alt={alt} />
-        </div>
-      )}
+      <div className="manuscript-image-window">
+        <img src={image} alt={`${alt}. ${finding === 'regression' ? 'Concrete' : 'Adult Census'}; original plot marks with enlarged Arial labels.`} />
+      </div>
     </figure>
   )
 }
@@ -67,8 +41,9 @@ export function ArchitectureFigure() {
       className="manuscript-figure architecture-figure"
       data-claim-id="scope.protocol"
       data-manuscript-source="manuscript/figures/teaser.pdf"
+      data-typography-asset="architecture"
     >
-      <div className="architecture-image-window" data-crop="90 28 1220 622">
+      <div className="architecture-image-window">
         <img
           src={architectureGraphic}
           alt="CEL manuscript architecture: data and model modules feed local, global, and group-wise counterfactual methods, then shared metrics and reports"

@@ -1,11 +1,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { loadExampleAssets } from './example-assets.mjs'
+import { loadManuscriptAssets, auditManuscriptLabelBounds } from './manuscript-assets.mjs'
 import { deliverablesDir, repositoryDir, withPosterPage } from './harness.mjs'
 
 const visualSpec = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/visual-spec.json'), 'utf8'))
 
 const exampleAssets = await loadExampleAssets()
+const manuscriptAssets = await loadManuscriptAssets()
 
 const report = await withPosterPage(async ({ page, failures }) => {
   const screen = await page.evaluate(() => {
@@ -98,8 +100,12 @@ const report = await withPosterPage(async ({ page, failures }) => {
         image: rect(document.querySelector('[data-finding="regression"] img')),
       },
       resultCaptionCount: document.querySelectorAll('.result-manuscript-figure figcaption').length,
-      localMetricPanels: [...document.querySelectorAll('.local-metric-window')].map((element) => ({ metric: element.dataset.metric, crop: element.dataset.crop.split(' ').map(Number), viewport: rect(element), image: rect(element.querySelector('img')) })),
-      rasterChartLabels: 'Embedded manuscript labels; reviewed visually, not measured as DOM text.',
+      manuscriptAssets: [...document.querySelectorAll('[data-typography-asset]')].map((element) => ({kind: element.dataset.typographyAsset, image: rect(element.querySelector('img'))})),
+      typography: {
+        titlePt: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize) * numberToken('--print-scale') * 0.75,
+        subheadingPt: fontSizes('.recourse-panel h3, .result-panel h3').map((size) => size * numberToken('--print-scale') * 0.75),
+        bodyFamily: getComputedStyle(document.querySelector('.section-copy')).fontFamily,
+      },
       scopeItems: [...document.querySelectorAll('.scope-tile')].map(rect),
       scopeTileStyles: [...document.querySelectorAll('.scope-tile')].map((element) => {
         const style = getComputedStyle(element)
@@ -157,8 +163,13 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
   if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the rebalanced center column')
-  const cropScale = screen.architecture.viewport.width / 1220
-  if (Math.abs(screen.architecture.image.width - 1400 * cropScale) > 1 || Math.abs(screen.architecture.viewport.left - screen.architecture.image.left - 90 * cropScale) > 1 || Math.abs(screen.architecture.viewport.top - screen.architecture.image.top - 28 * cropScale) > 1 || Math.abs(screen.architecture.viewport.height - 622 * cropScale) > 1) failuresFound.push('Architecture whitespace crop differs from its source-image bounds')
+  if (Math.abs(screen.typography.titlePt - 96) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 36) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use a 96pt title, 36pt subheadings, and Arial body')
+  for (const asset of manuscriptAssets) {
+    const rendered = screen.manuscriptAssets.find((item) => item.kind === asset.kind)
+    if (!rendered || Math.abs(rendered.image.height - rendered.image.width * asset.height / asset.width) > 1) failuresFound.push(`${asset.kind} typography asset is missing or stretched`)
+    const printSize = asset.minimumFontSize * rendered.image.width / asset.width * 2.4965879265 * 0.75
+    if (printSize < 22) failuresFound.push(`${asset.kind} labels are below 22pt at A0: ${printSize}`)
+  }
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
   if (JSON.stringify(screen.examplePlots.map((plot) => plot.paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) failuresFound.push('All three Matplotlib examples must be visible')
   if (new Set(screen.examplePlots.map((plot) => plot.viewport.width)).size !== 1) failuresFound.push('Example plots must share identical widths')
@@ -183,18 +194,10 @@ const report = await withPosterPage(async ({ page, failures }) => {
   for (const frame of screen.resultFrames) {
     if (Math.abs(frame.outline.width - frame.panel.width + 2) > 1 || Math.abs(frame.outline.height - frame.panel.height + 2) > 1 || Math.abs(frame.outline.left - frame.panel.left - 1) > 1 || Math.abs(frame.outline.top - frame.panel.top - 1) > 1) failuresFound.push('Result outline does not follow its category bounds')
   }
-  const regressionScale = screen.regression.viewport.width / 1100
-  if (Math.abs(screen.regression.image.width - 1100 * regressionScale) > 1 || Math.abs(screen.regression.image.height - 655 * regressionScale) > 1 || Math.abs(screen.regression.viewport.height - 225 * regressionScale) > 1 || Math.abs(screen.regression.image.top - screen.regression.viewport.top) > 1) failuresFound.push('Regression figure must preserve the complete Concrete row without stretching')
   if (screen.resultPanels.some((panel, index) => index > 0 && screen.resultPanels[index - 1].bottom >= panel.top)) failuresFound.push('Unified result panels overlap')
   if (screen.resultCaptionCount !== 0) failuresFound.push('Removed result captions remain')
-  if (JSON.stringify(screen.localMetricPanels.map((panel) => panel.metric)) !== JSON.stringify(['Validity', 'L2-Hamming', 'Sparsity', 'Log-density', 'Runtime'])) failuresFound.push('All five local metric panels must remain visible')
-  for (const panel of screen.localMetricPanels) {
-    const [x, y, width, height] = panel.crop
-    const scale = panel.viewport.width / width
-    if (panel.viewport.width < 175 || panel.viewport.height < 100) failuresFound.push(`${panel.metric} is not enlarged to a readable metric panel`)
-    if (Math.abs(panel.image.width - 1400 * scale) > 1 || Math.abs(panel.image.height - 1101 * scale) > 1 || Math.abs(panel.viewport.left - panel.image.left - x * scale) > 1 || Math.abs(panel.viewport.top - panel.image.top - y * scale) > 1 || Math.abs(panel.viewport.height - height * scale) > 1) failuresFound.push(`${panel.metric} crop is stretched or has incorrect source geometry`)
-  }
-  if (screen.localMetricPanels.slice(0, 3).some((panel) => Math.abs(panel.viewport.top - screen.localMetricPanels[0].viewport.top) > 1) || screen.localMetricPanels.slice(3).some((panel) => Math.abs(panel.viewport.top - screen.localMetricPanels[3].viewport.top) > 1) || screen.localMetricPanels[0].viewport.bottom >= screen.localMetricPanels[3].viewport.top) failuresFound.push('Local metric panels must occupy two rows without overlap')
+  const localCrops = manuscriptAssets.find((asset) => asset.kind === 'local').crops
+  if (localCrops.slice(0, 3).some((crop) => crop.display[1] !== localCrops[0].display[1]) || localCrops.slice(3).some((crop) => crop.display[1] <= localCrops[0].display[1] + localCrops[0].display[3])) failuresFound.push('Local metric panels must retain the three-plus-two arrangement')
   if (screen.scopeItems.length !== 4 || screen.scopeItems.slice(0, 2).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(2).some((item) => Math.abs(item.top - screen.scopeItems[2].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[2].top) failuresFound.push('Benchmark scope must be a two-by-two named tile grid')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const logo of screen.branding.logos) {
@@ -234,6 +237,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
     if (screen.minimumFontPx[role] && screen.minimumFontPx[role] + 0.01 < minimumPx) failuresFound.push(`${role} font is ${screen.minimumFontPx[role]}px; minimum is ${minimumPx}px`)
   }
 
+  await auditManuscriptLabelBounds(page, manuscriptAssets)
   await page.emulateMedia({ media: 'print' })
   const print = await page.evaluate(() => ({
     toolbarDisplay: getComputedStyle(document.querySelector('.print-toolbar')).display,
@@ -248,4 +252,4 @@ const report = await withPosterPage(async ({ page, failures }) => {
 await mkdir(deliverablesDir, { recursive: true })
 const reportPath = path.join(deliverablesDir, 'audit-layout.json')
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`)
-console.log(`Layout audit passed: sections=${report.sections.length}, body=${report.minimumFontPx.body}px, caption=${report.minimumFontPx.caption}px, result headings=${report.minimumFontPx.resultHeading}px; raster labels require visual review`)
+console.log(`Layout audit passed: sections=${report.sections.length}, title=${report.typography.titlePt.toFixed(2)}pt, subheadings=36pt, manuscript labels≥22pt; outlined label bounds verified`)

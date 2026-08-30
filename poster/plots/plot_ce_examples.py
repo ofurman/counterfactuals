@@ -285,6 +285,7 @@ def asset_metadata(example, data_path, selected, transparent):
         "generatorSha256": digest(Path(__file__)),
         "transparent": transparent,
         "minimumFontPt": LABEL_SIZE,
+        "fontFamily": "Arial",
         "legendLabels": LEGEND_LABELS if "group-wise" in selected else [],
         "transitions": {
             paradigm: [
@@ -317,7 +318,12 @@ def main(argv=None):
     if args.paradigm == "all":
         exports.append(("comparison", PARADIGMS))
     with plt.rc_context(
-        {"font.size": LABEL_SIZE, "svg.fonttype": "path", "svg.hashsalt": "cel-ce-examples"}
+        {
+            "font.family": "Arial",
+            "font.size": LABEL_SIZE,
+            "svg.fonttype": "path",
+            "svg.hashsalt": "cel-ce-examples",
+        }
     ):
         for name, selected in exports:
             fig = create_figure(example, selected)
@@ -338,6 +344,11 @@ def main(argv=None):
                         if extension == "svg"
                         else None,
                     )
+                    if extension == "svg":
+                        output.write_text(
+                            "\n".join(line.rstrip() for line in output.read_text().splitlines())
+                            + "\n"
+                        )
                     print(output)
             finally:
                 plt.close(fig)

@@ -18,7 +18,7 @@ export async function loadExampleAssets() {
     for (const [key, expected] of Object.entries(expectedHashes)) {
       if (metadata[key] !== expected) throw new Error(`${paradigm} Matplotlib asset is stale: ${key}`)
     }
-    if (!metadata.transparent || /<image\b|<text\b/i.test(svg)) throw new Error(`${paradigm} must be a transparent, font-outlined vector`)
+    if (metadata.fontFamily !== 'Arial' || !svg.includes('ArialMT-') || !metadata.transparent || /<image\b|<text\b/i.test(svg)) throw new Error(`${paradigm} must be a transparent, Arial-outlined vector`)
     const legendLabels = paradigm === 'group-wise' ? ['Original', 'Counterfactual', 'Decision boundary'] : []
     if (JSON.stringify(metadata.legendLabels) !== JSON.stringify(legendLabels) || svg.includes('id="group-wise-legend"') !== (paradigm === 'group-wise')) throw new Error('Only group-wise must have the three-item legend')
     for (const label of legendLabels) if (!svg.includes(`<!-- ${label} -->`)) throw new Error(`Missing legend label: ${label}`)

@@ -1,6 +1,6 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `d98120786fcc549fa8c91dc4434a718bfa045896`
+Source revision: `c60f423924f7d0dc2c66acb393a05fb22706a844`
 
 ## Contents
 
@@ -37,5 +37,6 @@ Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.g
 - XKDD and ECML-PKDD logos use the supplied project assets unchanged; their original external sources are not recorded. Local file hashes are retained in the same brand manifest.
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
 - The example plots are transparent, font-outlined SVGs generated with CEL plotting helpers. Their data, generator, and style hashes are validated before packaging.
-- Raster result panels preserve the manuscript's published plotting style and are intended for A0 print or zoomed digital inspection.
+- Result SVGs retain lossless manuscript plot crops with enlarged outlined Arial labels; schema boxes and connectors remain original vectors. Source hashes, crop pixels, and uniform scaling are checked. The source manuscript files are unchanged.
+- Typography uses a 96pt Georgia title, 36pt Georgia subheadings, Arial body text, and figure labels of at least 22pt at A0. Regression density ticks use k for thousands.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.
