@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
+from matplotlib.markers import MarkerStyle
 from matplotlib.ticker import FuncFormatter
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,6 +32,10 @@ LABEL_SIZE = 16
 PLOT_HEIGHT = 2.65
 LEGEND_HEIGHT = 0.33
 LEGEND_LABELS = ["Original", "Counterfactual", "Decision boundary"]
+BOUNDARY_COLOR = "#087f78"
+BOUNDARY_WIDTH = 1.4
+ARROW_COLOR = "#536274"
+ARROW_ALPHA = 0.9
 
 
 def load_plot_utils():
@@ -156,9 +161,15 @@ def draw_example(ax, example, paradigm):
     original = normalize([t.original for t in transitions], example)
     counterfactual = normalize([t.counterfactual for t in transitions], example)
     PLOT_UTILS.plot_classifier_decision_region(ax, ExampleClassifier(example))
-    ax.collections[-1].set_gid(f"{paradigm}-boundary")
+    boundary = ax.collections[-1]
+    boundary.set_gid(f"{paradigm}-boundary")
+    # Style the helper's actual contours uniformly so the legend represents
+    # the visible boundary, not a pale intermediate colormap level.
+    boundary.set_edgecolor(BOUNDARY_COLOR)
+    boundary.set_alpha(1)
+    boundary.set_linewidth(BOUNDARY_WIDTH)
 
-    # Keep CEL's tab10 originals, orange counterfactuals, and translucent black arrows.
+    # Keep CEL's group palette and distinguish approved targets by shape as well.
     # Skip tab10's orange index for groups so it remains reserved for counterfactuals.
     color_indices = np.array([0 if t.group == 0 else 2 for t in transitions])
     PLOT_UTILS.plot_observations(ax, original, color_indices)
@@ -167,13 +178,18 @@ def draw_example(ax, example, paradigm):
     observations.set_zorder(4)
     observations.set_gid(f"{paradigm}-originals-declined")
     PLOT_UTILS.plot_counterfactuals(ax, counterfactual)
-    ax.collections[-1].set_zorder(4)
-    ax.collections[-1].set_gid(f"{paradigm}-counterfactuals-approved")
+    targets = ax.collections[-1]
+    diamond = MarkerStyle("D")
+    targets.set_paths([diamond.get_path().transformed(diamond.get_transform())])
+    targets.set_zorder(4)
+    targets.set_gid(f"{paradigm}-counterfactuals-approved")
     first_arrow = len(ax.patches)
     PLOT_UTILS.plot_arrows(ax, original, counterfactual)
     for arrow, transition in zip(ax.patches[first_arrow:], transitions):
-        # Preserve the helper's direction, black/alpha style, and exact endpoint.
-        arrow.set_data(width=0.002, head_width=0.020, head_length=0.025)
+        # Preserve the helper's direction and exact endpoint; improve contrast.
+        arrow.set_data(width=0.0035, head_width=0.035, head_length=0.040)
+        arrow.set_color(ARROW_COLOR)
+        arrow.set_alpha(ARROW_ALPHA)
         arrow.set_zorder(3)
         arrow.set_gid(f"{paradigm}-arrow-{transition.applicant}")
 
@@ -250,7 +266,7 @@ def add_group_legend(fig, ax, center):
         for index in (0, 2)
     )
     counterfactual = Line2D(
-        [], [], marker="o", linestyle="none", color="orange", alpha=0.8, markersize=np.sqrt(50)
+        [], [], marker="D", linestyle="none", color="orange", alpha=0.8, markersize=np.sqrt(50)
     )
     boundary = next(
         collection for collection in ax.collections if collection.get_gid() == "group-wise-boundary"

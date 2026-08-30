@@ -179,6 +179,9 @@ for (const [index, tag] of storyboardTags.entries()) {
 }
 const substantiveHeadings = ["Scientific argument", "Header", "Upper left — counterfactual concept", "Upper right — framework and benchmark scope", "Lower page — results", "Bottom — contributions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
+  "**Inventory spacing:** Increase line spacing, task-group separation, and inner padding without adding names or text. Extend the scope grid to align with the bottom of the example column.",
+  "**Visual hierarchy:** Give Results a stronger bold heading, add internal frame padding, and align the frame bottoms within each row. Keep the title, logos, original manuscript architecture, and section order unchanged.",
+  "Use the existing contribution statements as bold headings instead of repeated action labels. Align the statements at the top and keep the QR in its own column within the library contribution.",
   "**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.",
   "**Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.",
   "**Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.",

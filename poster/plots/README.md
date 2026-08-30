@@ -44,10 +44,12 @@ boundary functions in [`cel/plotting/plot_utils.py`](../../cel/plotting/plot_uti
 
 - Originals use `tab10`, with opacity 0.8 and marker size 50. Group-wise originals
   use blue for A-B and green for C-D; all are declined.
-- Counterfactuals use the helper's orange markers; all are approved.
-- Arrows retain the helper's translucent black style, with larger arrowheads.
-- Decision contours use the helper's style. The light grid follows
-  `counterfactual_visualization.py`.
+- Counterfactuals use orange diamond markers, distinct from original circles;
+  all are approved. The group-wise legend uses the same shapes.
+- Arrows retain the helper's exact endpoints, with a wider shaft, larger
+  arrowheads, and slate color at opacity 0.9 for clearer transitions.
+- The helper's decision contours use one opaque teal stroke, also used in the
+  legend. The light grid follows `counterfactual_visualization.py`.
 
 Coordinates are normalized to the unit square expected by the CEL helpers, but
 ticks and axes show monthly euro amounts. All panels share the same limits.
@@ -89,23 +91,30 @@ using its existing CropBox. Original Poppins/Canva Sans glyphs, line breaks,
 boxes, and connectors are preserved; no poster labels are substituted. The four
 result derivatives embed lossless PNG crops of the original plot interiors,
 including every box, whisker, median, and gridline. No statistics are inferred or
-replotted. Each crop retains its source aspect ratio; local metrics keep the
-three-plus-two arrangement. Dataset labels and all method names remain visible.
+replotted. Each crop retains its source aspect ratio. Local and global metrics
+use a three-plus-two arrangement. Global source axes are approximately 39% wider
+in the SVG than in the former five-across version. Numbered ticks refer to one
+shared key with all three original method names, avoiding repeated long labels.
+The other result categories retain method names at each axis. Dataset labels
+and all method names remain visible.
 
 Tick strings are transcribed from the manuscript figures. Their anchors snap to
 the original high-resolution gridlines. Regression log-density uses `k` for
 thousands to keep its long negative tick labels readable. SVG metadata records
 source and generator hashes, crop pixel bounds, embedded crop hashes, method
-ordering, dataset identity, tick anchors, and minimum font sizes.
+ordering, the global numbered method key, layout, dataset identity, tick anchors,
+and minimum font sizes.
 
 Tests compare the embedded crop pixels to the original PNGs and the complete schema
 SVG, including every glyph and its viewport, to an independent source PDF conversion.
 The poster audit checks source hashes, uniform image scaling, result-label containment,
 and at least 17pt result labels at A1. The original diagram deliberately retains
 its smaller manuscript typography (approximately 13.6pt on the poster).
-The title is 80pt, subheadings are 28pt, and body/result text uses Arial. The A1 portrait
-layout uses upper example/framework columns and a lower two-by-two results grid. Logo artwork
-is unchanged.
+The title is 80pt, the main Results heading is 32pt bold, subheadings are 28pt,
+and body/result text uses Arial. The A1 portrait layout uses upper example/framework
+columns and a lower two-by-two results grid with aligned frames and larger internal
+padding. Scope inventories have more line and group spacing. Bottom contribution
+statements are bold and top-aligned, with a separate QR column. Logo artwork is unchanged.
 
 The poster's Parcel configuration bypasses SVG optimization only for
 `manuscript-architecture*.svg`: the original nested glyph definitions make the

@@ -21,6 +21,7 @@ export async function loadManuscriptAssets() {
     }
     const viewBox = svg.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number)
     if (kind !== 'architecture') {
+      if (kind === 'global' && (metadata.layout !== 'three-plus-two' || JSON.stringify(metadata.methodKey) !== JSON.stringify(metadata.methods.map((method, index) => ({ tick: String(index + 1), method }))))) throw new Error('Global numbered ticks must match the complete, ordered method key')
       const images = [...svg.matchAll(/href="data:image\/png;base64,([^"]+)"/g)]
       if (images.length !== 5 || metadata.crops.length !== 5) throw new Error(`${kind} must retain five source plot crops`)
       images.forEach((image, index) => {

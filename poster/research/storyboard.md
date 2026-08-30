@@ -31,6 +31,7 @@ path, not a dump of manuscript sections or a full result table.
 **Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.
 **Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.
 **Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.
+**Inventory spacing:** Increase line spacing, task-group separation, and inner padding without adding names or text. Extend the scope grid to align with the bottom of the example column.
 **Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.
 
 Group the dataset inventory under Classification and Regression using each dataset's task in the manuscript table, while retaining the combined dataset total. <!-- claims: scope.datasets | sources: manuscript/main_lncs.tex#Datasets -->
@@ -43,6 +44,7 @@ Group the dataset inventory under Classification and Regression using each datas
 
 **Evidence-view inventory:**
 **Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.
+**Visual hierarchy:** Give Results a stronger bold heading, add internal frame padding, and align the frame bottoms within each row. Keep the title, logos, original manuscript architecture, and section order unchanged.
 
 1. **Local methods:** a focused view of the manuscript local-results figure shows validity, proximity, density, sparsity, and runtime moving differently. <!-- claims: result.local.overview, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Results, manuscript/main_lncs.tex#Conclusions -->
 2. **Global methods:** the manuscript figure and result text surface stronger GLOBE-CE/GlobalGLANCE validity and AReS reliability limitations. <!-- claims: result.global.overview, global.blobs.ares.missing | sources: manuscript/main_lncs.tex#Results, manuscript/tables/results_global.tex#tab:global_metrics_mlp -->
@@ -51,6 +53,7 @@ Group the dataset inventory under Classification and Regression using each datas
 
 Combine the global, local, group-wise, and regression panels into one right-column Results section. Keep their concise takeaway headings and manuscript graphics, without repeated explanatory paragraphs or dataset/method captions. <!-- claims: result.local.overview, result.global.overview, result.group.overview, result.regression.overview | sources: manuscript/main_lncs.tex#Results -->
 Reflow the local figure's metric panels into two rows to enlarge the original axes and labels without stretching them. Preserve every metric, axis, and method label. Keep dataset identity in accessible metadata and source mappings in project files rather than printed captions. <!-- claims: result.local.overview | sources: manuscript/main_lncs.tex#Results -->
+Reflow the global metrics into the same row arrangement. Use numbered ticks with a shared full-name method key to enlarge the source axes without repeating long method names. Preserve source plot pixels, axis proportions, and method order. <!-- claims: result.global.overview | sources: manuscript/main_lncs.tex#Results -->
 Inspect coverage or missingness before validity, because validity can be conditional on the experiment's result semantics. <!-- claims: local.adult.cadex.validity, global.adult.globe.validity, global.blobs.ares.missing | sources: manuscript/tables/results_categorical.tex#tab:cat_metrics_mlp, manuscript/tables/results_global.tex#tab:global_metrics_mlp -->
 Compare plausibility or density only within a named dataset and model. <!-- claims: local.blobs.ppcef.pp | sources: manuscript/tables/results_numerical.tex#tab:num_metrics_mlp -->
 Displayed zeroes can be rounded rather than exact. <!-- claims: group.adult.tcrex.distance | sources: manuscript/tables/results_group.tex#tab:group_metrics_mlp -->
@@ -61,6 +64,7 @@ Do not use the unresolved sparsity direction. <!-- claims: caveat.sparsity-direc
 ## Bottom — contributions
 
 Present the controlled protocol, broad benchmark, and extensible library in a full-width closing row below all results, with the repository QR inside Extend. <!-- claims: contribution.protocol, contribution.benchmark, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
+Use the existing contribution statements as bold headings instead of repeated action labels. Align the statements at the top and keep the QR in its own column within the library contribution.
 
 ## Thirty-second visitor narrative
 

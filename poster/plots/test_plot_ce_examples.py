@@ -81,9 +81,20 @@ def test_artists_match_points_directions_and_library_style(example, paradigm):
     np.testing.assert_allclose(points[1].get_offsets(), target)
     np.testing.assert_allclose(points[1].get_facecolors(), [colors.to_rgba("orange", alpha=0.8)])
     assert points[0].get_cmap().name == "tab10"
+    diamond = plots.MarkerStyle("D")
+    np.testing.assert_allclose(
+        points[1].get_paths()[0].vertices,
+        diamond.get_path().transformed(diamond.get_transform()).vertices,
+    )
+    assert points[0].get_paths()[0].vertices.shape != points[1].get_paths()[0].vertices.shape
     assert len(ax.patches) == len(transitions)
     for arrow, start, end in zip(ax.patches, original, target):
-        np.testing.assert_allclose(arrow.get_facecolor(), colors.to_rgba("black", alpha=0.5))
+        np.testing.assert_allclose(
+            arrow.get_facecolor(), colors.to_rgba(plots.ARROW_COLOR, alpha=plots.ARROW_ALPHA)
+        )
+        assert arrow._width == 0.0035
+        assert arrow._head_width == 0.035
+        assert arrow._head_length == 0.040
         direction = end - start
         projection = (arrow.get_xy() - start) @ direction / (direction @ direction)
         assert projection.min() == pytest.approx(0)
@@ -131,6 +142,7 @@ def test_group_legend_matches_marks_and_sits_below_the_plot(example):
     )
     lines = legend.findobj(plots.Line2D)
     assert len(lines) == 4
+    assert [line.get_marker() for line in lines[:3]] == ["o", "o", "D"]
     np.testing.assert_allclose(
         colors.to_rgba(lines[0].get_color(), lines[0].get_alpha()),
         colors.to_rgba(plots.matplotlib.colormaps["tab10"](0), 0.8),
@@ -146,6 +158,9 @@ def test_group_legend_matches_marks_and_sits_below_the_plot(example):
     edge_colors = boundary.get_edgecolors()
     np.testing.assert_allclose(lines[3].get_color(), edge_colors[len(edge_colors) // 2])
     assert lines[3].get_linewidth() == boundary.get_linewidths()[0]
+    assert boundary.get_alpha() == 1
+    assert boundary.get_linewidths()[0] == plots.BOUNDARY_WIDTH
+    np.testing.assert_allclose(edge_colors, [colors.to_rgba(plots.BOUNDARY_COLOR)])
 
 
 def test_invalid_examples_are_rejected(example):

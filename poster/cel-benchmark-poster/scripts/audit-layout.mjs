@@ -91,10 +91,13 @@ const report = await withPosterPage(async ({ page, failures }) => {
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
       columns: Object.fromEntries(['left', 'center', 'right', 'bottom'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
+      contributionHeadings: [...document.querySelectorAll('.contribution-item h3')].map(rect),
+      contributionQr: rect(document.querySelector('.contribution-item .project-mark')),
       resultFrames: [...document.querySelectorAll('.result-panel')].map((element) => {
         const outline = element.querySelector('.result-panel__outline rect')
         const style = getComputedStyle(outline)
-        return { background: getComputedStyle(element).backgroundColor, radius: Number(outline.getAttribute('rx')), fill: style.fill, stroke: style.stroke, strokeWidth: parseFloat(style.strokeWidth), dashArray: style.strokeDasharray.split(/[ ,]+/).map(parseFloat), outline: rect(outline), panel: rect(element) }
+        const panelStyle = getComputedStyle(element)
+        return { background: panelStyle.backgroundColor, padding: ['Top', 'Right', 'Bottom', 'Left'].map((side) => parseFloat(panelStyle[`padding${side}`])), radius: Number(outline.getAttribute('rx')), fill: style.fill, stroke: style.stroke, strokeWidth: parseFloat(style.strokeWidth), dashArray: style.strokeDasharray.split(/[ ,]+/).map(parseFloat), outline: rect(outline), panel: rect(element) }
       }),
       regression: {
         viewport: rect(document.querySelector('[data-finding="regression"] .manuscript-image-window')),
@@ -105,6 +108,8 @@ const report = await withPosterPage(async ({ page, failures }) => {
       typography: {
         pointsPerPixel: numberToken('--print-scale') * 0.75,
         titlePt: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize) * numberToken('--print-scale') * 0.75,
+        resultsHeadingPt: parseFloat(getComputedStyle(document.querySelector('.unified-results-block > h2')).fontSize) * numberToken('--print-scale') * 0.75,
+        resultsHeadingWeight: getComputedStyle(document.querySelector('.unified-results-block > h2')).fontWeight,
         subheadingPt: fontSizes('.recourse-panel h3, .result-panel h3').map((size) => size * numberToken('--print-scale') * 0.75),
         bodyFamily: getComputedStyle(document.querySelector('.section-copy')).fontFamily,
       },
@@ -166,6 +171,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
   if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the wide upper-right column')
   if (Math.abs(screen.typography.titlePt - 80) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use an 80pt title, 28pt subheadings, and Arial body')
+  if (Math.abs(screen.typography.resultsHeadingPt - 32) > 0.05 || screen.typography.resultsHeadingWeight !== '700') failuresFound.push('Results heading must have stronger 32pt bold hierarchy')
   for (const asset of manuscriptAssets) {
     const rendered = screen.manuscriptAssets.find((item) => item.kind === asset.kind)
     if (!rendered || Math.abs(rendered.image.height - rendered.image.width * asset.height / asset.width) > 1) failuresFound.push(`${asset.kind} typography asset is missing or stretched`)
@@ -195,19 +201,25 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (JSON.stringify(screen.resultPanels.map((panel) => panel.id)) !== JSON.stringify(['applicability', 'local-tradeoff', 'group-tradeoff', 'regression-tradeoff'])) failuresFound.push('Global, local, group-wise, and regression results must be inside the unified Results section')
   if (screen.resultFrames.length !== 4 || screen.resultFrames.some((frame) => frame.background !== 'rgba(0, 0, 0, 0)' || frame.radius !== 9 || frame.fill !== 'none' || frame.stroke !== 'rgb(16, 56, 76)' || frame.strokeWidth !== 2 || JSON.stringify(frame.dashArray) !== '[10,5]')) failuresFound.push('Each result category must have a transparent rounded long-dash outline')
   for (const frame of screen.resultFrames) {
+    if (frame.padding.some((padding) => padding < 12)) failuresFound.push('Result frames need at least 12px of internal padding')
     if (Math.abs(frame.outline.width - frame.panel.width + 2) > 1 || Math.abs(frame.outline.height - frame.panel.height + 2) > 1 || Math.abs(frame.outline.left - frame.panel.left - 1) > 1 || Math.abs(frame.outline.top - frame.panel.top - 1) > 1) failuresFound.push('Result outline does not follow its category bounds')
   }
   const results = screen.columns.right[0]
   const contributions = screen.columns.bottom[0]
+  if (screen.contributionHeadings.length !== 3 || screen.contributionHeadings.some((heading) => Math.abs(heading.top - screen.contributionHeadings[0].top) > 1) || screen.contributionHeadings[2].right >= screen.contributionQr.left) failuresFound.push('Contribution statements must align at the top with a separate QR column')
   if (!contributions || contributions.top <= results.bottom || Math.abs(contributions.left - screen.safeBounds.left) > 1 || Math.abs(contributions.right - screen.safeBounds.right) > 1) failuresFound.push('Contributions and their QR must span the bottom below all results')
   if (results.top <= Math.max(...screen.columns.left.map((section) => section.bottom), ...screen.columns.center.map((section) => section.bottom)) || Math.abs(results.left - screen.safeBounds.left) > 1 || Math.abs(results.right - screen.safeBounds.right) > 1) failuresFound.push('Results must span the lower page below both upper columns')
   if (screen.resultPanels.length === 4) {
     const [global, local, group, regression] = screen.resultPanels
     if (Math.abs(global.top - local.top) > 1 || Math.abs(group.top - regression.top) > 1 || global.right >= local.left || group.right >= regression.left || Math.max(global.bottom, local.bottom) >= Math.min(group.top, regression.top)) failuresFound.push('Results must use a non-overlapping two-by-two grid')
+    if (Math.abs(global.bottom - local.bottom) > 1 || Math.abs(group.bottom - regression.bottom) > 1) failuresFound.push('Result frames must align at the bottom of each row')
   }
   if (screen.resultCaptionCount !== 0) failuresFound.push('Removed result captions remain')
-  const localCrops = manuscriptAssets.find((asset) => asset.kind === 'local').crops
-  if (localCrops.slice(0, 3).some((crop) => crop.display[1] !== localCrops[0].display[1]) || localCrops.slice(3).some((crop) => crop.display[1] <= localCrops[0].display[1] + localCrops[0].display[3])) failuresFound.push('Local metric panels must retain the three-plus-two arrangement')
+  for (const kind of ['local', 'global']) {
+    const crops = manuscriptAssets.find((asset) => asset.kind === kind).crops
+    if (crops.slice(0, 3).some((crop) => crop.display[1] !== crops[0].display[1]) || crops.slice(3).some((crop) => crop.display[1] <= crops[0].display[1] + crops[0].display[3])) failuresFound.push(`${kind} metric panels must use the three-plus-two arrangement`)
+  }
+  if (Math.abs(screen.columns.center[1].bottom - screen.columns.left[0].bottom) > 1) failuresFound.push('Expanded scope tiles must align with the bottom of the example column')
   if (screen.scopeItems.length !== 4 || screen.scopeItems.slice(0, 2).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(2).some((item) => Math.abs(item.top - screen.scopeItems[2].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[2].top) failuresFound.push('Benchmark scope must be a two-by-two named tile grid')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const logo of screen.branding.logos) {

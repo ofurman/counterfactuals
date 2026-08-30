@@ -74,7 +74,7 @@ export function LocalBenchmarkFigure() {
 export function GlobalBenchmarkFigure() {
   return (
     <ResultFigure
-      alt="Manuscript boxplots comparing global counterfactual methods"
+      alt="Manuscript boxplots comparing global counterfactual methods in two rows; shared method key: 1 AReS, 2 GLOBE-CE, 3 GlobalGLANCE"
       claimId="result.global.overview"
       className="result-manuscript-figure--strip"
       finding="global"

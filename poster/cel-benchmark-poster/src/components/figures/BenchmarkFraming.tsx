@@ -46,9 +46,9 @@ export function CounterfactualExample() {
 }
 
 const contributions = [
-  { eyebrow: 'CONTROL', claimId: 'contribution.protocol' },
-  { eyebrow: 'COVER', claimId: 'contribution.benchmark' },
-  { eyebrow: 'EXTEND', claimId: 'contribution.library' },
+  { claimId: 'contribution.protocol' },
+  { claimId: 'contribution.benchmark' },
+  { claimId: 'contribution.library' },
 ]
 
 export function ContributionStack() {
@@ -56,8 +56,7 @@ export function ContributionStack() {
     <div className="contribution-stack">
       {contributions.map((contribution) => (
         <article className={`contribution-item${contribution.claimId === 'contribution.library' ? ' contribution-item--extend' : ''}`} data-claim-id={contribution.claimId} key={contribution.claimId}>
-          <span>{contribution.eyebrow}</span>
-          <p><ClaimWording claimId={contribution.claimId} /></p>
+          <h3><ClaimWording claimId={contribution.claimId} /></h3>
           {contribution.claimId === 'contribution.library' && <ProjectQr />}
         </article>
       ))}

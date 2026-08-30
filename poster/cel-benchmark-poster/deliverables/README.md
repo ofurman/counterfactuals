@@ -1,6 +1,6 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `4629001630c2309ee44aa7297eddc7ae319708ee`
+Source revision: `a97b54d006d721d91d14b02d89dfb925a5d686a6`
 
 ## Contents
 
@@ -36,7 +36,7 @@ Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.g
 - PWr, genwro.AI, and Tooploox logos are unchanged copies from the user-supplied PUMAL reference poster; their provenance and hashes are recorded in `poster/research/brand-assets.json`.
 - XKDD and ECML-PKDD logos use the supplied project assets unchanged; their original external sources are not recorded. Local file hashes are retained in the same brand manifest.
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
-- The example plots are transparent, font-outlined SVGs generated with CEL plotting helpers. Their data, generator, and style hashes are validated before packaging.
+- The example plots are transparent, font-outlined SVGs generated with CEL plotting helpers. Original circles and counterfactual diamonds distinguish status without relying only on color; arrows have stronger contrast, and the decision-boundary legend matches the opaque teal plot stroke. Their data, generator, and style hashes are validated before packaging.
 - Result SVGs retain lossless manuscript plot crops with enlarged outlined Arial labels. The architecture is an unmodified vector conversion of the original manuscript PDF, retaining all original glyphs, line breaks, boxes, and connectors. Source hashes, crop pixels, complete schema SVG content, and uniform scaling are checked. The source manuscript files are unchanged.
-- Typography uses an 80pt Georgia title, 28pt Georgia subheadings, approximately 18pt Arial body text, and result labels of at least 17pt at A1. The original diagram retains its smaller Poppins/Canva Sans typography (approximately 13.6pt on the poster). Regression density ticks use k for thousands. The examples and framework occupy the upper two columns; a two-by-two results grid spans the lower page, followed by the full-width Three contributions section and project QR at the bottom.
+- Typography uses an 80pt Georgia title, a 32pt bold Results heading, 28pt Georgia subheadings, approximately 18pt Arial body text, and result labels of at least 17pt at A1. The original diagram retains its smaller Poppins/Canva Sans typography (approximately 13.6pt on the poster). Regression density ticks use k for thousands. The examples and framework occupy the upper two columns; expanded scope tiles align with the bottom of the examples. A two-by-two results grid has padded, row-aligned frames; Global and Local use three-plus-two metric layouts, with a numbered full-name method key for Global. Bold contribution statements align at the top of the final band, with a separate QR column inside the library contribution.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.

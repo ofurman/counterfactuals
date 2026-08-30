@@ -27,10 +27,19 @@ describe('print contract', () => {
     const pointsPerPixel = cssNumber('print-scale') * 0.75
     expect(cssNumber('title-size') * pointsPerPixel).toBeCloseTo(80, 6)
     expect(cssNumber('subheading-size') * pointsPerPixel).toBeCloseTo(28, 6)
+    expect(cssNumber('results-heading-size') * pointsPerPixel).toBeCloseTo(32, 6)
     expect(css).toContain('font-family: Arial, sans-serif;')
     expect(css).not.toMatch(/Aptos|Segoe UI|font-weight: (550|750|800|900)/)
     expect(css).toMatch(/\.recourse-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
     expect(css).toMatch(/\.result-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
+  })
+  it('aligns result frames and contribution headings while opening up scope inventories', () => {
+    expect(css).toMatch(/\.result-panels\s*\{[^}]*align-items: stretch/)
+    expect(css).toMatch(/\.benchmark-grid \.result-panel\s*\{[^}]*padding: 12px/)
+    expect(css).toMatch(/\.scope-tile__inventory\s*\{[^}]*gap: 10px;[^}]*line-height: 1.4/)
+    expect(css).toContain('.scope-tile__inventory [data-scope-name] { white-space: nowrap; }')
+    expect(css).toMatch(/\.contribution-item\s*\{[^}]*align-items: start/)
+    expect(css).toMatch(/\.contribution-item--extend h3\s*\{[^}]*grid-row: 1/)
   })
   it('fixes the native canvas and asymmetric macro grid', () => {
     expect(cssNumber('poster-width')).toBe(visualSpec.canvas.widthPx)

@@ -32,11 +32,35 @@ def test_result_crops_are_lossless_and_uniformly_scaled(kind):
         )
     assert meta["dataset"] == ("Concrete" if kind == "regression" else "Adult Census")
     labels = svg.findall(".//*[@data-label]")
-    assert min(float(label.get("data-font-size")) for label in labels) == 12.5
+    assert min(float(label.get("data-font-size")) for label in labels) == figures.LABEL_SIZE
     assert {label.get("data-font-family") for label in labels} == {"Arial"}
     for method in meta["methods"]:
-        assert sum(label.get("data-label") == method for label in labels) == 5
+        assert sum(label.get("data-label") == method for label in labels) == (
+            1 if kind == "global" else 5
+        )
     assert len(svg.findall(f".//{{{figures.SVG}}}text")) == 0
+
+
+@pytest.mark.parametrize("kind", ["local", "global"])
+def test_two_row_metric_layout_and_shared_global_method_key(kind):
+    svg = figures.result_figure(kind)
+    meta = json.loads(svg.find(f"{{{figures.SVG}}}metadata").text)
+    assert meta["layout"] == "three-plus-two"
+    top = meta["crops"][:3]
+    bottom = meta["crops"][3:]
+    assert len({crop["display"][1] for crop in top}) == 1
+    assert len({crop["display"][1] for crop in bottom}) == 1
+    assert bottom[0]["display"][1] > top[0]["display"][1] + top[0]["display"][3]
+    if kind == "global":
+        assert meta["methodKey"] == [
+            {"tick": str(index + 1), "method": method}
+            for index, method in enumerate(figures.RESULTS[kind]["methods"])
+        ]
+        assert top[0]["display"][2] > (figures.WIDTH / 5 - 44) * 1.35
+        for metric in svg.findall(".//*[@id]"):
+            if metric.get("id", "").startswith("metric-"):
+                ticks = [node.get("data-label") for node in metric.findall(".//*[@data-label]")]
+                assert ticks[-3:] == ["1", "2", "3"]
 
 
 def test_schema_preserves_all_original_vectors_and_font_glyphs(tmp_path):

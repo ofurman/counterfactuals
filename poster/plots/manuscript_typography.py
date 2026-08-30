@@ -32,7 +32,7 @@ ET.register_namespace("", SVG)
 ET.register_namespace("xlink", XLINK)
 FONT = FontProperties(family="Arial")
 BOLD = FontProperties(family="Arial", weight="bold")
-LABEL_SIZE = 12.5
+LABEL_SIZE = 13
 WIDTH = 550
 
 # Coordinates refer to the manuscript image at the indicated calibration width.
@@ -42,7 +42,7 @@ RESULTS = {
         "source": "metrics_boxplot_global.png",
         "calibration": 1000,
         "methods": ["AReS", "GLOBE-CE", "GlobalGLANCE"],
-        "height": 168,
+        "height": 274,
         "bounds": [
             [71, 33, 198, 150],
             [269, 33, 396, 150],
@@ -206,11 +206,11 @@ def result_figure(kind):
     )
     crops = []
     for index, bounds in enumerate(spec["bounds"]):
-        if kind == "local":
+        if kind in ("local", "global"):
             row = index // 3
             left = (index % 3 + (0.5 if row else 0)) * WIDTH / 3
             cell_width = WIDTH / 3
-            top = row * 130
+            top = row * (126 if kind == "global" else 130)
         else:
             left, cell_width, top = index * WIDTH / 5, WIDTH / 5, 0
         # Uniform scaling preserves every source box/whisker/gridline proportion.
@@ -218,6 +218,11 @@ def result_figure(kind):
         left += 16
         plot_x, plot_y = left + 39, top + 24
         plot_width = cell_width - 44
+        if kind == "global":
+            # Wider source axes fit the shared row height with numbered ticks;
+            # the full method names appear once in the key below both rows.
+            plot_width = 92
+            plot_x += (cell_width - 44 - plot_width) / 2
         plot_height = plot_width * crop.height / crop.width
         if index == 0:
             label(
@@ -251,7 +256,10 @@ def result_figure(kind):
         count = len(spec["methods"])
         for method_index, method in enumerate(spec["methods"]):
             x = plot_x + plot_width * (method_index + 0.5) / count
-            label(group, method, x, plot_y + plot_height + 10, anchor="end", rotate=-55)
+            if kind == "global":
+                label(group, str(method_index + 1), x, plot_y + plot_height + 15)
+            else:
+                label(group, method, x, plot_y + plot_height + 10, anchor="end", rotate=-55)
         crops.append(
             {
                 "metric": titles[index],
@@ -261,12 +269,22 @@ def result_figure(kind):
                 "ticks": anchored_ticks,
             }
         )
+    method_key = []
+    if kind == "global":
+        key = element(svg, "g", id="method-key")
+        for index, method in enumerate(spec["methods"]):
+            x = 60 + index * 166
+            label(key, str(index + 1), x, 268, bold=True)
+            label(key, method, x + 13, 268, anchor="start")
+            method_key.append({"tick": str(index + 1), "method": method})
     metadata(
         svg,
         source,
         minimumFontSize=LABEL_SIZE,
         dataset="Concrete" if kind == "regression" else "Adult Census",
         methods=spec["methods"],
+        layout="three-plus-two" if kind in ("global", "local") else "five-across",
+        methodKey=method_key,
         crops=crops,
         transformation="Lossless source plot crops; replaced labels only; k denotes 1000.",
     )
