@@ -24,6 +24,13 @@ describe('poster data adapter', () => {
     }
   })
 
+  it('splits the dataset inventory by the manuscript task column', () => {
+    expect(resolveClaim('scope.datasets').inventory).toEqual([
+      { label: 'Classification', names: ['Adult Census', 'Audit', 'Bank Marketing', 'Blobs', 'Credit Default', 'Digits', 'German Credit', 'Give Me Some Credit', 'HELOC', 'Law', 'Lending Club', 'Moons', 'Wine'] },
+      { label: 'Regression', names: ['Synthetic', 'Concrete', 'Diabetes', 'Yacht', 'SCM20D'] },
+    ])
+  })
+
   it('composes the argument from frozen claim verdicts', () => {
     expect(posterData.argument).toContain(resolveClaim('scope.protocol').verdict)
     expect(posterData.argument).toContain(resolveClaim('conclusion.tradeoffs').verdict)

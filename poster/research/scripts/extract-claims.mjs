@@ -352,10 +352,22 @@ export async function buildClaims() {
   }
   const foldCount = Number(foldScope[1]);
   const creditDatasetName = requireMatch(supplementary, /German Credit, ([A-Za-z ]+), Law, and Lending Club/, 'Give Me Some Credit dataset name')[1].trim();
-  const datasetNames = tableBlock(main, 'tab:datasets_complete').split('\n')
+  const datasetRows = tableBlock(main, 'tab:datasets_complete').split('\n')
     .filter((line) => /&\s*(?:Clf\.|Regr\.)\s*&/.test(line))
-    .map((line) => cleanTex(line.split('&')[0].replace(/\\cite\{[^}]+\}/g, '')).replace(/^GMC$/, creditDatasetName));
+    .map((line) => {
+      const [name, task] = line.split('&');
+      return {name: cleanTex(name.replace(/\\cite\{[^}]+\}/g, '')).replace(/^GMC$/, creditDatasetName), task: task.trim()};
+    });
+  const datasetNames = datasetRows.map((row) => row.name);
   if (datasetNames.length !== datasetCounts.total || new Set(datasetNames).size !== datasetCounts.total) throw new Error('Dataset names do not match the declared scope');
+  const datasetInventory = [
+    {label: 'Classification', task: 'Clf.', expectedCount: datasetCounts.classification},
+    {label: 'Regression', task: 'Regr.', expectedCount: datasetCounts.regression},
+  ].map(({label, task, expectedCount}) => {
+    const names = datasetRows.filter((row) => row.task === task).map((row) => row.name);
+    if (names.length !== expectedCount) throw new Error(`${label} dataset rows do not match the declared task count`);
+    return {label, names};
+  });
   const classificationBackbones = requireMatch(main, /Classification Models:\} The library includes implementations of ([^.]+)\./, 'classification backbone names')[1].split(',').map((name) => name.trim());
   const regressionBackbones = requireMatch(main, /For continuous target variables, CEL provides ([^.]+) models\./, 'continuous-target backbone names')[1].split(' and ').map((name) => name.trim());
   if (classificationBackbones.length !== backboneCount || regressionBackbones.length !== backboneCount) throw new Error('Named backbones do not match the per-task count');
@@ -391,14 +403,14 @@ export async function buildClaims() {
     },
     {
       id: "scope.datasets",
-      inventory: [{label: '', names: datasetNames}],
+      inventory: datasetInventory,
       claimKind: "scope-count",
       posterWording: `${datasetCounts.total} datasets: ${datasetCounts.classification} classification + ${datasetCounts.regression} regression`,
       value: {kind: "finite", classification: datasetCounts.classification, regression: datasetCounts.regression, total: datasetCounts.total},
       unit: "datasets",
       verdict: "CEL spans both classification and regression benchmarks.",
       source: {file: "manuscript/main_lncs.tex", anchor: `Benchmark > Datasets: ‘CEL includes ${datasetCounts.total} pre-configured datasets…’`},
-      extractionRule: "Regex-extract total and task counts from the Datasets subsection.",
+      extractionRule: "Regex-extract total and task counts from the Datasets subsection; group named dataset rows by the Task column in tab:datasets_complete and verify both group counts.",
       direction: "scope",
       qualifier: "Dataset counts, not the number of train/test folds.",
       status: "publishable"

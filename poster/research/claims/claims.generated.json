@@ -32,7 +32,7 @@
       "id": "scope.datasets",
       "inventory": [
         {
-          "label": "",
+          "label": "Classification",
           "names": [
             "Adult Census",
             "Audit",
@@ -46,7 +46,12 @@
             "Law",
             "Lending Club",
             "Moons",
-            "Wine",
+            "Wine"
+          ]
+        },
+        {
+          "label": "Regression",
+          "names": [
             "Synthetic",
             "Concrete",
             "Diabetes",
@@ -69,7 +74,7 @@
         "file": "manuscript/main_lncs.tex",
         "anchor": "Benchmark > Datasets: ‘CEL includes 18 pre-configured datasets…’"
       },
-      "extractionRule": "Regex-extract total and task counts from the Datasets subsection.",
+      "extractionRule": "Regex-extract total and task counts from the Datasets subsection; group named dataset rows by the Task column in tab:datasets_complete and verify both group counts.",
       "direction": "scope",
       "qualifier": "Dataset counts, not the number of train/test folds.",
       "status": "publishable"

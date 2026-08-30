@@ -166,3 +166,10 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Verification**: `pnpm run verify:all` passed 19/19 tests, exact heading and inventory checks, live SVG dash/stroke measurements and container-bound checks, offline rendering, one-page A0 export, and package audits. Manual checksums and `git diff --check` passed. Final PDF-derived preview visually inspected with longer dashes, capitalized headings, and no clipping. REPORT visible words=242/260; body text=15 px; required remote requests=0.
 **Problems**: The storyboard's scientific-number validator treated new pixel dimensions as benchmark claims. Kept that check intact and described the styling qualitatively in the storyboard; precise dimensions remain in CSS and the live layout audit.
 **Commit**: `this commit` (`feat(poster): refine tile dashes and capitalize headings`)
+
+## 2026-08-30 14:46 -- Post-plan revision: Dataset inventory grouped by task -- DONE
+**Did**: Split the existing 18 Datasets tile into Classification and Regression groups, preserving all names, the total count, and the rounded dashed styling. Task assignments are parsed from the manuscript table rather than inferred from dataset names.
+**Verification**: `pnpm run verify:all` passed 20/20 tests, manuscript-derived task counts, exact grouped inventories, layout containment, offline rendering, one-page A0 export, and package audits. Manual checksums and `git diff --check` passed. Final PDF-derived preview visually inspected with both dataset groups readable and no clipping. REPORT visible words=243/260; body text=15 px; required remote requests=0.
+**Provenance**: The Task column in `manuscript/main_lncs.tex#tab:datasets_complete` assigns 13 rows to classification and five to regression. Extraction checks those row counts against the manuscript's stated totals; the new test checks every named assignment.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): group datasets by prediction task`)
