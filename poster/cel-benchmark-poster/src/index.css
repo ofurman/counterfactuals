@@ -15,7 +15,7 @@
   --safe-bottom: 30px;
   --safe-left: 30px;
   --print-scale: 1.7007874016;
-  --title-size: 75.2592592593px;
+  --title-size: 62.7160493827px;
   --subheading-size: 21.950617284px;
   --paper: #fffdf8;
   --navy: #13253c;
@@ -181,8 +181,8 @@ h1 {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr 2.1fr;
-  grid-template-rows: max-content max-content;
-  gap: 18px 22px;
+  grid-template-rows: max-content max-content max-content;
+  gap: 14px 22px;
   align-content: start;
   overflow: hidden;
 }
@@ -265,9 +265,10 @@ h1 {
   overflow: hidden;
 }
 .poster-column--left { grid-template-rows: max-content; }
-.poster-column--center { grid-template-rows: max-content max-content max-content; gap: 8px; }
+.poster-column--center { grid-template-rows: max-content max-content; gap: 8px; }
 .poster-column--right { grid-template-rows: auto; grid-column: 1 / -1; }
 .poster-column--right { gap: 8px; }
+.poster-column--bottom { grid-column: 1 / -1; }
 .poster-column > .section-block {
   min-height: 0;
   overflow: hidden;
@@ -330,7 +331,14 @@ h1 {
 .contribution-item--extend .project-mark__qr svg { width: 60px; height: 60px; }
 .contribution-item--extend .project-mark { gap: 3px; }
 .benchmark-grid .contributions-block h2 { margin-bottom: 0; }
-.benchmark-grid .contributions-block { padding-top: 0; }
+.benchmark-grid .contributions-block {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding-top: 0;
+}
+.contributions-block .contribution-stack { margin-top: 0; }
 
 .protocol-block {
   padding: 4px 0 0 !important;

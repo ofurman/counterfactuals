@@ -3,7 +3,7 @@
   "page": {"format": "A1", "orientation": "portrait", "widthMm": 594, "heightMm": 841, "marginMm": 0},
   "canvas": {"widthPx": 1320, "heightPx": 1868.88},
   "safeArea": {"topPx": 30, "rightPx": 30, "bottomPx": 30, "leftPx": 30},
-  "macroGrid": {"columns": ["1fr", "2.1fr"], "gapPx": 22, "readingOrder": ["upper-left", "upper-right", "bottom"]},
+  "macroGrid": {"columns": ["1fr", "2.1fr"], "gapPx": 22, "readingOrder": ["upper-left", "upper-right", "results", "bottom"]},
   "colors": {
     "paper": "#fffdf8",
     "navy": "#13253c",
@@ -21,7 +21,7 @@
     "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
   },
   "minimumPrintType": {
-    "title": {"cssPx": 75.2592592593, "approxPt": 96},
+    "title": {"cssPx": 62.7160493827, "approxPt": 80},
     "sectionHeading": {"cssPx": 22, "approxPt": 28},
     "body": {"cssPx": 14, "approxPt": 18},
     "chartLabel": {"cssPx": 13.3333333333, "approxPt": 17},

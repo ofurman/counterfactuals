@@ -35,9 +35,6 @@ export default function App() {
                 <ArchitectureFigure />
               </SectionBlock>
               <ScopeStrip section={resolveSection('scope')} />
-              <SectionBlock section={resolveSection('guidance-limitations')} className="contributions-block" showClaims={false}>
-                <ContributionStack />
-              </SectionBlock>
             </div>
             <div className="poster-column poster-column--right">
               <SectionBlock section={resolveSection('results')} className="unified-results-block" showClaims={false}>
@@ -55,6 +52,11 @@ export default function App() {
                     <RegressionBenchmarkFigure />
                   </SectionBlock>
                 </div>
+              </SectionBlock>
+            </div>
+            <div className="poster-column poster-column--bottom">
+              <SectionBlock section={resolveSection('guidance-limitations')} className="contributions-block" showClaims={false}>
+                <ContributionStack />
               </SectionBlock>
             </div>
           </div>

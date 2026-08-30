@@ -84,7 +84,7 @@ for (const edge of ["topPx", "rightPx", "bottomPx", "leftPx"]) {
   if (!Number.isFinite(visual.safeArea?.[edge]) || visual.safeArea[edge] <= 0) fail(`Invalid safe-area value: ${edge}`);
 }
 if (visual.safeArea.leftPx + visual.safeArea.rightPx >= visual.canvas.widthPx || visual.safeArea.topPx + visual.safeArea.bottomPx >= visual.canvas.heightPx) fail("Safe area is not contained by the canvas");
-if (JSON.stringify(visual.macroGrid.columns) !== JSON.stringify(["1fr", "2.1fr"]) || JSON.stringify(visual.macroGrid.readingOrder) !== JSON.stringify(["upper-left", "upper-right", "bottom"])) fail("Visual spec lacks the portrait two-column layout with results below");
+if (JSON.stringify(visual.macroGrid.columns) !== JSON.stringify(["1fr", "2.1fr"]) || JSON.stringify(visual.macroGrid.readingOrder) !== JSON.stringify(["upper-left", "upper-right", "results", "bottom"])) fail("Visual spec lacks the portrait layout with results followed by bottom contributions");
 if (!Number.isFinite(visual.macroGrid.gapPx) || visual.macroGrid.gapPx <= 0) fail("Macro-grid gap must be positive");
 for (const family of ["title", "body", "mono"]) if (!visual.fonts?.[family]) fail(`Missing font stack: ${family}`);
 
@@ -160,7 +160,7 @@ for (const [heading, minimumWords] of [["Explicit reading order", 35], ["Thirty-
   const body = sectionBody(heading);
   if (!body || proseWordCount(body) < minimumWords) fail(`${heading} must contain a substantive narrative body`);
 }
-for (const marker of ["Header → Upper left → Upper right → Bottom", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
+for (const marker of ["Header → Upper left → Upper right → Results → Bottom contributions", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
   if (!storyboard.includes(marker)) fail(`Storyboard lacks required narrative/order marker: ${marker}`);
 }
 if (/^#{2,6} (?:Abstract|Introduction|Related Works?|CEL(?::.*)?|Benchmark|Datasets?|Models?|Methods?|Metrics?|Experimental Setup|Results?|Full Results?|Conclusions?)\s*$/mi.test(storyboard) || /\\(?:section|subsection)\{|\\begin\{(?:table|tabular)\}/.test(storyboard)) fail("Storyboard reproduces a manuscript section dump");
@@ -177,16 +177,16 @@ for (const [index, tag] of storyboardTags.entries()) {
   const citations = tag[2].split(",").map((value) => value.trim()).filter(Boolean);
   await validateClaimMapping(ids, citations, `storyboard claim tag ${index + 1}`);
 }
-const substantiveHeadings = ["Scientific argument", "Header", "Upper left — counterfactual concept", "Upper right — framework and benchmark scope", "Bottom — results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
+const substantiveHeadings = ["Scientific argument", "Header", "Upper left — counterfactual concept", "Upper right — framework and benchmark scope", "Lower page — results", "Bottom — contributions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
   "**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.",
   "**Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.",
   "**Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.",
   "**Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.",
   "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.",
-  "**Typography:** Use a ninety-six-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and figure labels. Set body copy near eighteen points and manuscript figure labels to at least seventeen points at A1. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.",
+  "**Typography:** Use an eighty-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and figure labels. Set body copy near eighteen points and manuscript figure labels to at least seventeen points at A1. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.",
   "**Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.",
-  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the upper-right scope tiles; linked to the repository, with no header or paper QR.",
+  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution at the bottom of the poster; linked to the repository, with no header or paper QR.",
   "**Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** No bottom reproduction strip or repository/documentation links. Retain the contribution QR and non-printing provenance. Keep a compact twelve-pixel gap between the header and main body with no header bottom padding."
@@ -235,7 +235,7 @@ if (content.sections.length !== 10 || !sectionIds.has("regression-tradeoff") || 
 if (JSON.stringify([...content.resultVisuals].sort()) !== JSON.stringify(["global-manuscript-figure", "group-manuscript-figure", "local-manuscript-figure", "regression-manuscript-figure"])) fail("Poster must own exactly the local, global, group-wise, and regression result visuals");
 const conceptSection = content.sections.find((section) => section.id === "problem");
 if (conceptSection.copy.join(" ") !== claimsById.get("concept.counterfactual").posterWording || !conceptSection.claimIds.includes("concept.counterfactual")) fail("CE definition must resolve to its manuscript claim");
-for (const [id, owner] of [["problem", "left"], ["applicability", "right"], ["protocol", "center"], ["scope", "center"], ["results", "right"], ["local-tradeoff", "right"], ["guidance-limitations", "center"], ["group-tradeoff", "right"], ["regression-tradeoff", "right"]]) {
+for (const [id, owner] of [["problem", "left"], ["applicability", "right"], ["protocol", "center"], ["scope", "center"], ["results", "right"], ["local-tradeoff", "right"], ["guidance-limitations", "bottom"], ["group-tradeoff", "right"], ["regression-tradeoff", "right"]]) {
   if (content.sections.find((section) => section.id === id)?.owner !== owner) fail(`Incorrect column ownership for ${id}`);
 }
 const scopeSection = content.sections.find((section) => section.id === 'scope');
@@ -243,10 +243,10 @@ if (['scope', 'protocol'].some((id) => content.sections.find((section) => sectio
 if (!scopeSection.claimIds.includes('scope.metrics') || scopeSection.order <= content.sections.find((section) => section.id === 'protocol').order) fail('Scope with the reported metric count must follow the evaluation framework');
 if (JSON.stringify(scopeSection.claimIds) !== JSON.stringify(['scope.datasets', 'scope.methods', 'scope.backbones', 'scope.metrics'])) fail('Scope must contain only the four named inventory tiles');
 const resultsSection = content.sections.find((section) => section.id === 'results');
-if (resultsSection.heading !== 'Results' || scopeSection.order >= content.sections.find((section) => section.id === 'guidance-limitations').order) fail('Contributions must follow the center scope tiles');
+if (resultsSection.heading !== 'Results' || content.sections.filter((section) => section.id !== 'guidance-limitations').some((section) => section.order >= content.sections.find((item) => item.id === 'guidance-limitations').order)) fail('Contributions must follow all other sections');
 for (const id of ['result.global.overview', 'result.local.overview', 'result.group.overview', 'result.regression.overview']) if (!resultsSection.claimIds.includes(id)) fail(`Unified Results lacks ${id}`);
 const qrOwners = content.sections.filter((section) => section.assetRoles.includes("project-qr"));
-if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "center" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the center-column Extend contribution");
+if (qrOwners.length !== 1 || qrOwners[0].id !== "guidance-limitations" || qrOwners[0].owner !== "bottom" || !qrOwners[0].claimIds.includes("contribution.library") || !qrOwners[0].linkIds.includes("repository")) fail("Exactly one project QR must be owned by the bottom Extend contribution");
 const headerSection = content.sections.find((section) => section.id === "header");
 if (headerSection.heading !== identity.title) fail("Poster title must exactly match the manuscript title");
 if (headerSection.copy.length !== 0) fail("The title header must not contain a subtitle");

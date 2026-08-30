@@ -18,9 +18,9 @@ function cssToken(name: string): string {
 }
 
 describe('print contract', () => {
-  it('uses an explicit Georgia/Arial scale with a 96pt title and 28pt subheadings', () => {
+  it('uses an explicit Georgia/Arial scale with an 80pt title and 28pt subheadings', () => {
     const pointsPerPixel = cssNumber('print-scale') * 0.75
-    expect(cssNumber('title-size') * pointsPerPixel).toBeCloseTo(96, 6)
+    expect(cssNumber('title-size') * pointsPerPixel).toBeCloseTo(80, 6)
     expect(cssNumber('subheading-size') * pointsPerPixel).toBeCloseTo(28, 6)
     expect(css).toContain('font-family: Arial, sans-serif;')
     expect(css).not.toMatch(/Aptos|Segoe UI|font-weight: (550|750|800|900)/)

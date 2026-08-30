@@ -56,8 +56,9 @@ describe('poster scaffold', () => {
     const { container } = render(<App />)
     for (const [column, ids] of [
       ['left', ['problem']],
-      ['center', ['protocol', 'scope', 'guidance-limitations']],
+      ['center', ['protocol', 'scope']],
       ['right', ['results']],
+      ['bottom', ['guidance-limitations']],
     ] as const) {
       expect(Array.from(container.querySelectorAll(`.poster-column--${column} > [data-section]`))
         .map((element) => element.getAttribute('data-section'))).toEqual(ids)
@@ -69,6 +70,19 @@ describe('poster scaffold', () => {
     expect(Array.from(container.querySelectorAll('.scope-tile__heading')).map((element) => element.textContent)).toEqual(['18Datasets', '14Methods', '2Backbones / Task', '9Classification Metrics'])
     expect(container.querySelector('.scope-strip [data-claim-id="scope.folds"]')).toBeNull()
     expect(container.querySelector('.scope-strip')?.textContent).not.toMatch(/5folds|3paradigms/)
+  })
+
+  it('closes the poster with all three contributions and their QR below results', () => {
+    const { container } = render(<App />)
+    const grid = container.querySelector('.poster-grid')!
+    const bottom = grid.lastElementChild!
+    expect(bottom).toHaveClass('poster-column--bottom')
+    expect(bottom.querySelector('h2')?.textContent).toBe('Three contributions')
+    expect(bottom.querySelectorAll('.contribution-item')).toHaveLength(3)
+    expect(bottom.querySelectorAll('[data-qr-destination]')).toHaveLength(1)
+    expect(bottom.previousElementSibling).toHaveClass('poster-column--right')
+    expect(posterData.sections.find((section) => section.id === 'guidance-limitations')?.order)
+      .toBe(Math.max(...posterData.sections.map((section) => section.order)))
   })
 
   it('omits center-column headings but keeps accessible section names', () => {

@@ -77,7 +77,7 @@ describe('rendered evidence provenance', () => {
     expect(container.querySelector('.poster-header [data-qr-destination]')).toBeNull()
     expect(qr?.closest('article')?.dataset.claimId).toBe('contribution.library')
     expect(qr?.closest('[data-section]')?.getAttribute('data-section')).toBe('guidance-limitations')
-    expect(qr?.closest('.poster-column--center')).not.toBeNull()
+    expect(qr?.closest('.poster-column--bottom')).not.toBeNull()
     expect(qr?.dataset.qrDestination).toBe(posterData.identity.qr.url)
     expect(qr?.getAttribute('href')).toBe(posterData.identity.links.repository)
 

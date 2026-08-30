@@ -1,6 +1,6 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `d378786016546fd0eb9496b5ba25ec17ebf6781c`
+Source revision: `639e1d8d1faa9855f1d7325cc1fc35a67a0cf00b`
 
 ## Contents
 
@@ -38,5 +38,5 @@ Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.g
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
 - The example plots are transparent, font-outlined SVGs generated with CEL plotting helpers. Their data, generator, and style hashes are validated before packaging.
 - Result SVGs retain lossless manuscript plot crops with enlarged outlined Arial labels; schema boxes and connectors remain original vectors. Source hashes, crop pixels, and uniform scaling are checked. The source manuscript files are unchanged.
-- Typography uses a 96pt Georgia title, 28pt Georgia subheadings, approximately 18pt Arial body text, and manuscript figure labels of at least 17pt at A1. Regression density ticks use k for thousands. The examples and framework occupy the upper two columns; a two-by-two results grid spans the lower page.
+- Typography uses an 80pt Georgia title, 28pt Georgia subheadings, approximately 18pt Arial body text, and manuscript figure labels of at least 17pt at A1. Regression density ticks use k for thousands. The examples and framework occupy the upper two columns; a two-by-two results grid spans the lower page, followed by the full-width Three contributions section and project QR at the bottom.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.

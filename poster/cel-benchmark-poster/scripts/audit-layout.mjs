@@ -89,7 +89,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
         captionCount: document.querySelectorAll('.architecture-figure figcaption').length,
       },
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
-      columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
+      columns: Object.fromEntries(['left', 'center', 'right', 'bottom'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
       resultFrames: [...document.querySelectorAll('.result-panel')].map((element) => {
         const outline = element.querySelector('.result-panel__outline rect')
@@ -165,7 +165,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
   if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the wide upper-right column')
-  if (Math.abs(screen.typography.titlePt - 96) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use a 96pt title, 28pt subheadings, and Arial body')
+  if (Math.abs(screen.typography.titlePt - 80) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use an 80pt title, 28pt subheadings, and Arial body')
   for (const asset of manuscriptAssets) {
     const rendered = screen.manuscriptAssets.find((item) => item.kind === asset.kind)
     if (!rendered || Math.abs(rendered.image.height - rendered.image.width * asset.height / asset.width) > 1) failuresFound.push(`${asset.kind} typography asset is missing or stretched`)
@@ -188,7 +188,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   for (const container of screen.layoutContainers) if (container.scrollWidth > container.clientWidth + 1 || container.scrollHeight > container.clientHeight + 1) failuresFound.push(`${container.name} overflows or clips content`)
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
   if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named inventory must include six top-level sections and four nested result panels')
-  for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope', 'guidance-limitations'], right: ['results'] })) {
+  for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope'], right: ['results'], bottom: ['guidance-limitations'] })) {
     if (JSON.stringify(screen.columns[column].map((section) => section.id)) !== JSON.stringify(expected)) failuresFound.push(`${column} column is not in the requested order`)
     if (screen.columns[column].some((section, index, sections) => index > 0 && sections[index - 1].bottom >= section.top)) failuresFound.push(`${column} sections overlap`)
   }
@@ -198,6 +198,8 @@ const report = await withPosterPage(async ({ page, failures }) => {
     if (Math.abs(frame.outline.width - frame.panel.width + 2) > 1 || Math.abs(frame.outline.height - frame.panel.height + 2) > 1 || Math.abs(frame.outline.left - frame.panel.left - 1) > 1 || Math.abs(frame.outline.top - frame.panel.top - 1) > 1) failuresFound.push('Result outline does not follow its category bounds')
   }
   const results = screen.columns.right[0]
+  const contributions = screen.columns.bottom[0]
+  if (!contributions || contributions.top <= results.bottom || Math.abs(contributions.left - screen.safeBounds.left) > 1 || Math.abs(contributions.right - screen.safeBounds.right) > 1) failuresFound.push('Contributions and their QR must span the bottom below all results')
   if (results.top <= Math.max(...screen.columns.left.map((section) => section.bottom), ...screen.columns.center.map((section) => section.bottom)) || Math.abs(results.left - screen.safeBounds.left) > 1 || Math.abs(results.right - screen.safeBounds.right) > 1) failuresFound.push('Results must span the lower page below both upper columns')
   if (screen.resultPanels.length === 4) {
     const [global, local, group, regression] = screen.resultPanels

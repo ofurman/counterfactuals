@@ -59,7 +59,7 @@
     {
       "id": "results",
       "owner": "right",
-      "order": 6,
+      "order": 5,
       "heading": "Results",
       "copy": [],
       "claimIds": ["result.global.overview", "result.local.overview", "result.group.overview", "result.regression.overview"],
@@ -70,7 +70,7 @@
     {
       "id": "local-tradeoff",
       "owner": "right",
-      "order": 8,
+      "order": 7,
       "heading": "Local: no single winner",
       "copy": [],
       "claimIds": ["result.local.overview", "conclusion.tradeoffs", "caveat.sparsity-direction"],
@@ -81,7 +81,7 @@
     {
       "id": "group-tradeoff",
       "owner": "right",
-      "order": 9,
+      "order": 8,
       "heading": "Group-wise: reach versus change",
       "copy": [],
       "claimIds": ["result.group.overview", "group.adult.tcrex.validity", "group.adult.glance.validity"],
@@ -92,7 +92,7 @@
     {
       "id": "applicability",
       "owner": "right",
-      "order": 7,
+      "order": 6,
       "heading": "Global: validity and failures",
       "copy": [],
       "claimIds": ["result.global.overview", "global.blobs.ares.missing"],
@@ -102,8 +102,8 @@
     },
     {
       "id": "guidance-limitations",
-      "owner": "center",
-      "order": 5,
+      "owner": "bottom",
+      "order": 10,
       "heading": "Three contributions",
       "copy": [],
       "claimIds": ["contribution.protocol", "contribution.benchmark", "contribution.library"],
@@ -114,7 +114,7 @@
     {
       "id": "regression-tradeoff",
       "owner": "right",
-      "order": 10,
+      "order": 9,
       "heading": "Regression: accuracy versus change",
       "copy": [],
       "claimIds": ["result.regression.overview"],
