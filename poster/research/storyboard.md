@@ -6,7 +6,7 @@ Counterfactual-explanation results are difficult to compare when protocols diffe
 
 ## Explicit reading order
 
-**Header → Left → Center → Right/bottom → Footer.** The header poses the claim and establishes
+**Header → Left → Center → Right/bottom → Footer.** The header uses the exact manuscript title and establishes
 identity. The left column names the comparison problem and the paper's three contributions. The
 dominant center uses the manuscript architecture and local-results figure to explain what CEL
 benchmarks. The right column uses the manuscript global, group-wise, and regression figures to show
@@ -16,7 +16,7 @@ path, not a dump of manuscript sections or a full result table.
 ## Header
 
 - Paper identity and a direct benchmark hook: CEL enables controlled comparison of counterfactual explanations across multiple quality dimensions. <!-- claims: scope.protocol, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Benchmark, manuscript/main_lncs.tex#Conclusions -->
-**Identity inventory:** Camera-ready authors, affiliation, XKDD venue marker.
+**Identity inventory:** Exact manuscript title, camera-ready authors, affiliation, XKDD venue marker. Show the title only once; use a short benchmark subtitle.
 **QR inventory:** One labelled `Code & project` QR linked to the repository; no paper QR.
 
 ## Left — why and how broad
@@ -47,7 +47,7 @@ Compare plausibility or density only within a named dataset and model. <!-- clai
 Displayed zeroes can be rounded rather than exact. <!-- claims: group.adult.tcrex.distance | sources: manuscript/tables/results_group.tex#tab:group_metrics_mlp -->
 Do not use the unresolved sparsity direction. <!-- claims: caveat.sparsity-direction | sources: manuscript/supplementary.tex#app:metrics -->
 
-**Footer inventory:** `uv add ce-library`, repository/documentation links, and a short claim-provenance note.
+**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in the source notes.
 
 ## Thirty-second visitor narrative
 

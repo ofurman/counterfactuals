@@ -235,9 +235,9 @@ h1 {
   gap: 16px;
   overflow: hidden;
 }
-.poster-column--left { grid-template-rows: 0.8fr 1.2fr; }
+.poster-column--left { grid-template-rows: auto auto; align-content: start; gap: 24px; }
 .poster-column--center { grid-template-rows: 1.55fr 1fr; }
-.poster-column--right { grid-template-rows: 1.06fr 1.06fr 1.53fr; }
+.poster-column--right { grid-template-rows: 1.1fr 1.1fr 1.45fr; }
 .poster-column > .section-block {
   min-height: 0;
   overflow: hidden;
@@ -290,7 +290,7 @@ h1 {
 .contribution-item:nth-child(2) { border-left-color: var(--orange); }
 .contribution-item > span { color: var(--teal); font-size: 10px; font-weight: 900; letter-spacing: 0.09em; }
 .contribution-item:nth-child(2) > span { color: var(--orange); }
-.contribution-item p { margin: 0; font-size: 12px; line-height: 1.26; }
+.contribution-item p { margin: 0; font-size: 16px; line-height: 1.26; }
 
 .protocol-block {
   padding: 14px 18px !important;
@@ -303,7 +303,7 @@ h1 {
 .manuscript-figure img { display: block; width: 100%; }
 .manuscript-figure figcaption {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   align-items: start;
   margin-top: 5px;
@@ -317,8 +317,8 @@ h1 {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.architecture-figure > img { height: 248px; object-fit: contain; background: white; }
-.architecture-figure figcaption { grid-template-columns: 165px 1fr; }
+.architecture-figure > img { height: 310px; object-fit: contain; background: white; }
+.architecture-figure figcaption { grid-template-columns: 1fr; }
 
 .local-results-block { border-top-color: var(--orange); }
 .local-results-block .manuscript-image-window { height: 94px; }
@@ -343,8 +343,8 @@ h1 {
   font-size: 12px;
   line-height: 1.1;
 }
-.result-manuscript-figure--strip .manuscript-image-window { height: 58px; }
-.result-manuscript-figure--regression .manuscript-image-window { height: 106px; }
+.result-manuscript-figure--strip .manuscript-image-window { height: auto; aspect-ratio: 1000 / 240; }
+.result-manuscript-figure--regression .manuscript-image-window { height: 150px; }
 .result-manuscript-figure--regression .manuscript-image-window img { height: 100%; object-fit: contain; }
 .regression-results-block { border-top-color: var(--orange); }
 

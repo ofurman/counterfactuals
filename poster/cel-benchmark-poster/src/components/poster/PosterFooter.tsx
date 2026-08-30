@@ -6,7 +6,6 @@ export function PosterFooter({ section }: { section: ResolvedSection }) {
       <div>
         <strong>{section.heading}</strong>
         <code>{section.copy[0]}</code>
-        <span>{section.copy[1]}</span>
       </div>
       <p className="precedent-citations">
         Benchmark context&nbsp;·&nbsp;

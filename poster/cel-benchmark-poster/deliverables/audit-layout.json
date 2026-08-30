@@ -38,120 +38,120 @@
       "rect": {
         "top": 436.15625,
         "right": 1812,
-        "bottom": 532.65625,
+        "bottom": 513.28125,
         "left": 108,
         "width": 1704,
-        "height": 96.5
+        "height": 77.125
       },
       "clientWidth": 1696,
       "scrollWidth": 1696,
-      "clientHeight": 97,
-      "scrollHeight": 97
+      "clientHeight": 77,
+      "scrollHeight": 77
     },
     {
       "id": "problem",
       "rect": {
-        "top": 552.65625,
+        "top": 533.28125,
         "right": 522,
-        "bottom": 828.984375,
+        "bottom": 690.0625,
         "left": 108,
         "width": 414,
-        "height": 276.328125
+        "height": 156.78125
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 276,
-      "scrollHeight": 276
+      "clientHeight": 157,
+      "scrollHeight": 157
     },
     {
       "id": "guidance-limitations",
       "rect": {
-        "top": 844.984375,
+        "top": 714.0625,
         "right": 522,
-        "bottom": 1259.5,
+        "bottom": 920.875,
         "left": 108,
         "width": 414,
-        "height": 414.515625
+        "height": 206.8125
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 411,
-      "scrollHeight": 411
+      "clientHeight": 203,
+      "scrollHeight": 203
     },
     {
       "id": "protocol",
       "rect": {
-        "top": 552.65625,
+        "top": 533.28125,
         "right": 1374,
-        "bottom": 972.578125,
+        "bottom": 964.96875,
         "left": 546,
         "width": 828,
-        "height": 419.921875
+        "height": 431.6875
       },
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 420,
-      "scrollHeight": 420
+      "clientHeight": 432,
+      "scrollHeight": 432
     },
     {
       "id": "local-tradeoff",
       "rect": {
-        "top": 988.578125,
+        "top": 980.96875,
         "right": 1374,
-        "bottom": 1259.5,
+        "bottom": 1259.484375,
         "left": 546,
         "width": 828,
-        "height": 270.921875
+        "height": 278.515625
       },
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 267,
-      "scrollHeight": 267
+      "clientHeight": 275,
+      "scrollHeight": 275
     },
     {
       "id": "applicability",
       "rect": {
-        "top": 552.65625,
+        "top": 533.28125,
         "right": 1812,
-        "bottom": 748.625,
+        "bottom": 742.484375,
         "left": 1398,
         "width": 414,
-        "height": 195.96875
+        "height": 209.203125
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 192,
-      "scrollHeight": 192
+      "clientHeight": 205,
+      "scrollHeight": 205
     },
     {
       "id": "group-tradeoff",
       "rect": {
-        "top": 764.625,
+        "top": 758.484375,
         "right": 1812,
-        "bottom": 960.609375,
+        "bottom": 967.703125,
         "left": 1398,
         "width": 414,
-        "height": 195.984375
+        "height": 209.21875
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 192,
-      "scrollHeight": 192
+      "clientHeight": 205,
+      "scrollHeight": 205
     },
     {
       "id": "regression-tradeoff",
       "rect": {
-        "top": 976.609375,
+        "top": 983.703125,
         "right": 1812,
-        "bottom": 1259.484375,
+        "bottom": 1259.5,
         "left": 1398,
         "width": 414,
-        "height": 282.875
+        "height": 275.796875
       },
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 279,
-      "scrollHeight": 279
+      "clientHeight": 272,
+      "scrollHeight": 272
     },
     {
       "id": "reproducibility",
@@ -173,32 +173,32 @@
     {
       "clientWidth": 792,
       "scrollWidth": 792,
-      "clientHeight": 282,
-      "scrollHeight": 282
+      "clientHeight": 329,
+      "scrollHeight": 329
     },
     {
       "clientWidth": 828,
       "scrollWidth": 828,
-      "clientHeight": 142,
-      "scrollHeight": 142
+      "clientHeight": 113,
+      "scrollHeight": 113
     },
     {
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 74,
-      "scrollHeight": 74
+      "clientHeight": 116,
+      "scrollHeight": 116
     },
     {
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 74,
-      "scrollHeight": 74
+      "clientHeight": 116,
+      "scrollHeight": 116
     },
     {
       "clientWidth": 414,
       "scrollWidth": 414,
-      "clientHeight": 122,
-      "scrollHeight": 122
+      "clientHeight": 166,
+      "scrollHeight": 166
     }
   ],
   "safeBounds": {
@@ -209,27 +209,27 @@
   },
   "images": [
     {
-      "src": "http://127.0.0.1:50509/architecture.bded2544.png",
+      "src": "http://127.0.0.1:55517/architecture.bded2544.png",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:50509/local-mixed.fafc5dac.jpg",
+      "src": "http://127.0.0.1:55517/local-mixed.fafc5dac.jpg",
       "complete": true,
       "naturalWidth": 1400
     },
     {
-      "src": "http://127.0.0.1:50509/global-adult.e5956f6a.jpg",
+      "src": "http://127.0.0.1:55517/global-adult.e5956f6a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:50509/group-adult.2e6b275a.jpg",
+      "src": "http://127.0.0.1:55517/group-adult.2e6b275a.jpg",
       "complete": true,
       "naturalWidth": 1000
     },
     {
-      "src": "http://127.0.0.1:50509/regression.ee8ae60a.jpg",
+      "src": "http://127.0.0.1:55517/regression.ee8ae60a.jpg",
       "complete": true,
       "naturalWidth": 1100
     }

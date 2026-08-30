@@ -597,7 +597,7 @@ export async function buildClaims() {
   claims.push({
     id: "caveat.sparsity-direction",
     claimKind: "caveat",
-    posterWording: "Sparsity omitted pending metric-direction reconciliation",
+    posterWording: "Sparsity direction unresolved; no ranking.",
     value: {
       kind: "contradictory",
       definition: "fraction of features modified",

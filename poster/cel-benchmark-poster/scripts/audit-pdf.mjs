@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { deliverablesDir } from './harness.mjs'
+import { deliverablesDir, repositoryDir } from './harness.mjs'
 
 const pdfPath = path.join(deliverablesDir, 'cel-benchmark-poster-a0.pdf')
 const reviewPrefix = path.join(deliverablesDir, 'cel-benchmark-poster-preview')
@@ -24,18 +24,10 @@ if (review.size === 0) throw new Error('PDF-derived review PNG is empty')
 const text = spawnSync('pdftotext', [pdfPath, '-'], { encoding: 'utf8' })
 if (text.status !== 0) throw new Error(`pdftotext failed:\n${text.stdout}${text.stderr}`)
 const normalizedText = text.stdout.replace(/\s+/g, ' ').trim()
-const requiredSectionText = [
-  'CEL: a controlled benchmark for counterfactual explanations',
-  'One broad benchmark',
-  'Why CE results are hard to compare',
-  'A benchmark, not just a library',
-  'Local methods: quality is multi-dimensional',
-  'Group-wise: effectiveness versus minimal change',
-  'Regression: target accuracy is not enough',
-  'Global methods expose failure modes',
-  'Three contributions',
-  'Reproduce and extend',
-]
+const content = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/poster-content.json'), 'utf8'))
+const identity = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/identity.json'), 'utf8'))
+const requiredSectionText = content.sections.map((section) => section.heading)
+if (requiredSectionText[0] !== identity.title) throw new Error('PDF title contract differs from the manuscript')
 for (const expected of requiredSectionText) if (!normalizedText.includes(expected)) throw new Error(`PDF text is missing required section content: ${expected}`)
 const pngSignature = await readFile(reviewPath).then((bytes) => bytes.subarray(0, 8).toString('hex'))
 if (pngSignature !== '89504e470d0a1a0a') throw new Error('PDF-derived preview is not a PNG')

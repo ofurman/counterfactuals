@@ -179,10 +179,10 @@ for (const [index, tag] of storyboardTags.entries()) {
 }
 const substantiveHeadings = ["Scientific argument", "Header", "Left — why and how broad", "Center — controlled protocol", "Right/bottom — evidence and decisions", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
-  "**Identity inventory:** Camera-ready authors, affiliation, XKDD venue marker.",
+  "**Identity inventory:** Exact manuscript title, camera-ready authors, affiliation, XKDD venue marker. Show the title only once; use a short benchmark subtitle.",
   "**QR inventory:** One labelled `Code & project` QR linked to the repository; no paper QR.",
   "**Evidence-view inventory:**",
-  "**Footer inventory:** `uv add ce-library`, repository/documentation links, and a short claim-provenance note."
+  "**Footer inventory:** `uv add ce-library` and repository/documentation links; keep provenance in the source notes."
 ]);
 for (const heading of substantiveHeadings) {
   const body = sectionBody(heading);
@@ -228,6 +228,7 @@ if (content.resultVisuals.length !== 4 || new Set(content.resultVisuals).size !=
 const qrOwners = content.sections.filter((section) => section.assetRoles.includes("project-qr"));
 if (qrOwners.length !== 1 || qrOwners[0].id !== "header" || qrOwners[0].owner !== "header") fail("Exactly one project QR must be owned by the header section");
 const headerSection = content.sections.find((section) => section.id === "header");
+if (headerSection.heading !== identity.title) fail("Poster title must exactly match the manuscript title");
 if (/hold\s+the\s+protocol\s+constant/i.test([headerSection.heading, ...headerSection.copy].join(" ")) && !headerSection.claimIds.includes("scope.protocol")) fail("Header protocol-constant copy must map to scope.protocol");
 const guidanceSection = content.sections.find((section) => section.id === "guidance-limitations");
 for (const id of ["contribution.protocol", "contribution.benchmark", "contribution.library"]) {
@@ -284,7 +285,7 @@ for (const section of content.sections) scanNumericLiterals([section.heading, ..
 const scannedText = [guidelines, storyboard, JSON.stringify(content)].join("\n");
 if (/\b(?:TBD|TODO|FIXME|TBA)\b|example\.com/i.test(scannedText)) fail("Brief contains placeholder text");
 const wordCount = content.sections.flatMap((section) => [section.heading, ...section.copy]).join(" ").trim().split(/\s+/).filter(Boolean).length;
-if (wordCount > 180) fail(`Poster copy exceeds the 180-word section heading+copy budget: ${wordCount}`);
+if (wordCount > 110) fail(`Poster copy exceeds the 110-word section heading+copy budget: ${wordCount}`);
 
 console.log(`Validated brief: ${ruleBlocks.length} source-backed rules, ${content.sections.length} sections, ${content.resultVisuals.length} result visuals`);
-console.log(`Section heading+copy word count: ${wordCount}/180`);
+console.log(`Section heading+copy word count: ${wordCount}/110`);

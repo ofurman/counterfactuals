@@ -1,4 +1,4 @@
-import { ClaimQualifier } from '@/components/poster'
+import { ClaimWording } from '@/components/poster'
 
 const architectureGraphic = new URL('../../assets/manuscript/architecture.png', import.meta.url).href
 const globalGraphic = new URL('../../assets/manuscript/global-adult.jpg', import.meta.url).href
@@ -48,8 +48,7 @@ export function ArchitectureFigure() {
         data-claim-id="scope.methods"
       />
       <figcaption>
-        <span>Manuscript architecture</span>
-        Data, models, CE methods, and metrics share one evaluation system.
+        <span>Shared evaluation protocol</span>
       </figcaption>
     </figure>
   )
@@ -64,9 +63,9 @@ export function LocalBenchmarkFigure() {
         finding="local"
         image={localGraphic}
         source="manuscript/figures/metrics_boxplot_local.png"
-        sourceLabel="Manuscript local-method figure - Adult Census row"
+        sourceLabel="Adult Census · local methods"
       />
-      <p className="figure-caveat" data-claim-id="caveat.sparsity-direction"><ClaimQualifier claimId="caveat.sparsity-direction" /></p>
+      <p className="figure-caveat" data-claim-id="caveat.sparsity-direction"><ClaimWording claimId="caveat.sparsity-direction" /></p>
     </div>
   )
 }
@@ -80,7 +79,7 @@ export function GlobalBenchmarkFigure() {
       finding="global"
       image={globalGraphic}
       source="manuscript/figures/metrics_boxplot_global.png"
-      sourceLabel="Manuscript global-method figure - Adult Census row"
+      sourceLabel="Adult Census · global methods"
     />
   )
 }
@@ -94,7 +93,7 @@ export function GroupBenchmarkFigure() {
       finding="group"
       image={groupGraphic}
       source="manuscript/figures/metrics_boxplot_group_wise.png"
-      sourceLabel="Manuscript group-wise figure - Adult Census row"
+      sourceLabel="Adult Census · group-wise methods"
     />
   )
 }
@@ -108,7 +107,7 @@ export function RegressionBenchmarkFigure() {
       finding="regression"
       image={regressionGraphic}
       source="manuscript/figures/regression_metrics_boxplot.png"
-      sourceLabel="Manuscript regression-method figure"
+      sourceLabel="CEARM and Wachter · regression"
     />
   )
 }

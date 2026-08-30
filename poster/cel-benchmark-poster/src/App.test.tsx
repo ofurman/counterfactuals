@@ -25,4 +25,13 @@ describe('poster scaffold', () => {
       'regression-tradeoff', 'applicability', 'guidance-limitations', 'reproducibility',
     ]))
   })
+
+  it('uses the exact manuscript title and keeps the poster copy concise', () => {
+    const { container } = render(<App />)
+    expect(container.querySelector('h1')?.textContent).toBe(posterData.identity.title)
+    expect(container.querySelector('.eyebrow')?.textContent).toBe(posterData.identity.venue)
+    const headingsAndCopy = posterData.sections.flatMap((section) => [section.heading, ...section.copy]).join(' ')
+    expect(headingsAndCopy.trim().split(/\s+/).length).toBeLessThanOrEqual(110)
+    expect(container.querySelectorAll('.section-block .section-kicker')).toHaveLength(0)
+  })
 })
