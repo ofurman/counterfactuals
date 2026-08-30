@@ -106,3 +106,9 @@ turn it red] - [or `NOT MEASURED` for any that could not be produced from this r
 **Provenance**: Logo assets remain byte-identical to the supplied reference poster. Browser geometry checks verify the title midpoint matches the header midpoint and the right-side logos share a center line. PDF text extraction checks the removed subtitle is absent; package verification binds the preview to the current PDF.
 **Problems**: none.
 **Commit**: `this commit` (`feat(poster): center title and arrange header logos`)
+
+## 2026-08-30 13:22 -- Post-plan revision: Remove top line and venue label -- DONE
+**Did**: Removed the teal line at the top of the canvas and the printed XKDD 2026 label. Preserved the centered manuscript title and split logo arrangement; retained the venue in research metadata only.
+**Verification**: `pnpm run verify:all` passed all 15 tests, source/brief checks, offline build, layout, claims, one-page A0 PDF, and package audits. New checks require a zero-width canvas top border and no printed venue marker in the header or PDF. Manual checksums and final PDF-derived visual inspection passed; visible words=185/260.
+**Problems**: none.
+**Commit**: `this commit` (`feat(poster): remove top line and venue label`)

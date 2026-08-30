@@ -31,7 +31,8 @@ describe('poster scaffold', () => {
   it('uses the exact manuscript title and keeps the poster copy concise', () => {
     const { container } = render(<App />)
     expect(container.querySelector('h1')?.textContent).toBe(posterData.identity.title)
-    expect(container.querySelector('.eyebrow')?.textContent).toBe(posterData.identity.venue)
+    expect(container.querySelector('.eyebrow')).toBeNull()
+    expect(container.querySelector('.poster-header')?.textContent).not.toContain(posterData.identity.venue)
     expect(container.querySelector('.poster-thesis')).toBeNull()
     expect(container.querySelector('.poster-header')?.textContent).not.toContain('One protocol. Multiple CE paradigms. Measurable trade-offs.')
     const headingsAndCopy = posterData.sections.flatMap((section) => [section.heading, ...section.copy]).join(' ')

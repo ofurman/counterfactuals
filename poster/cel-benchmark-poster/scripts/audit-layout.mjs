@@ -60,6 +60,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       sections,
       figures,
       exampleBackground: getComputedStyle(document.querySelector('.problem-block')).backgroundColor,
+      canvasTopBorderWidth: getComputedStyle(canvas).borderTopWidth,
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
       columns: Object.fromEntries(['left', 'center', 'right'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       branding: {
@@ -85,6 +86,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
   })
 
   const failuresFound = [...failures]
+  if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
   if (screen.visibleProvenance !== 0) failuresFound.push('Source metadata must not appear on the poster')
   if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)

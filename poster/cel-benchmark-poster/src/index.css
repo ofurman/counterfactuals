@@ -72,7 +72,6 @@ a { color: inherit; }
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   color: var(--navy);
   background: var(--paper);
-  border-top: 10px solid var(--teal);
 }
 
 .poster-header {
@@ -83,7 +82,7 @@ a { color: inherit; }
   padding-bottom: 18px;
   border-bottom: 3px solid var(--navy);
 }
-.eyebrow, .section-kicker {
+.section-kicker {
   margin: 0 0 8px;
   color: var(--teal);
   font-size: 14px;

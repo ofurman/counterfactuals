@@ -85,7 +85,8 @@ if (rendered.qr !== identity.qr.url) throw new Error('Rendered QR destination do
 if (rendered.qrCount !== 1 || rendered.qrOwner !== 'contribution.library' || rendered.qrSection !== 'guidance-limitations') throw new Error('The unique project QR must be inside the Extend contribution')
 if (rendered.title !== identity.title) throw new Error('Poster title differs from the manuscript title')
 if (!rendered.visibleWordCount || rendered.visibleWordCount > 260) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/260`)
-for (const text of [identity.venue, identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)
+for (const text of [identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)
+if (rendered.header.includes(identity.venue)) throw new Error('Removed venue marker remains in the header')
 
 const expectedManuscriptFigures = [
   'manuscript/figures/teaser.pdf',

@@ -1,6 +1,6 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `5f71c2ef6b087440c6611f3d060bdc4c41e51a28`
+Source revision: `6f4cb03727716b86f3de15bb13db4da2c88de258`
 
 ## Contents
 
