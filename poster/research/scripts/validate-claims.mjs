@@ -127,7 +127,7 @@ if (!pyproject.includes(`Repository = "${identity.links.repository}"`)) fail("Re
 if (!readme.includes(`**Live Docs**: ${identity.links.documentation}`)) fail("Documentation URL is not sourced from README.md");
 if (identity.qr.url !== identity.links.repository || !identity.qr.label) fail("QR must be the labelled repository/project link");
 if (identity.paperUrl !== null) fail("Paper URL must remain null until a publication URL exists");
-if (identity.output.widthMm !== 1189 || identity.output.heightMm !== 841 || identity.output.format !== "A0 landscape") fail("Output contract is not A0 landscape 1189 × 841 mm");
+if (identity.output.widthMm !== 594 || identity.output.heightMm !== 841 || identity.output.format !== "A1 portrait") fail("Output contract is not A1 portrait 594 × 841 mm");
 
 const methodTable = tableBlock(main, "tab:methods");
 function methodNameByCitation(citation) {

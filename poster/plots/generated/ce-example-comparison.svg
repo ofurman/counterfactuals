@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:description>{"dataSha256": "4438ecdd73e049887669e11d4e224f5f41e7b2127fb3ed0a9d639f0a8e8811da", "styleSha256": "ac304d941a5a0eb9a5db6fb929e6e5ea62abe63a775c3285a051bc6fdf8610f2", "generatorSha256": "eab9107bec02eb0e159fcc78e08f3750b5ea4f6dd3afb081f8d3934f7eb81601", "transparent": true, "minimumFontPt": 14.5, "fontFamily": "Arial", "legendLabels": ["Original", "Counterfactual", "Decision boundary"], "transitions": {"local": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}], "global": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4300, "monthlyDebt": 1200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4500, "monthlyDebt": 1300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}], "group-wise": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}]}}</dc:description>
+    <dc:description>{"dataSha256": "4438ecdd73e049887669e11d4e224f5f41e7b2127fb3ed0a9d639f0a8e8811da", "styleSha256": "ac304d941a5a0eb9a5db6fb929e6e5ea62abe63a775c3285a051bc6fdf8610f2", "generatorSha256": "fb54eb0eae3a085d7a50d4cc730cc492e4fa52f15553f098e9639e47ef9c9ff3", "transparent": true, "minimumFontPt": 16, "fontFamily": "Arial", "legendLabels": ["Original", "Counterfactual", "Decision boundary"], "transitions": {"local": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}], "global": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4300, "monthlyDebt": 1200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4500, "monthlyDebt": 1300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}], "group-wise": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}]}}</dc:description>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -58,7 +58,7 @@ L 0 3.5
      </g>
      <g id="text_1">
       <!-- 2,000 -->
-      <g transform="translate(64.803141 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(62.9265 159.6445) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-32" d="M 3222 541
 L 3222 0
@@ -144,7 +144,7 @@ L 205.70539 11.448
      </g>
      <g id="text_2">
       <!-- 3,000 -->
-      <g transform="translate(187.564531 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(185.68789 159.6445) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-33" d="M 269 1209
 L 831 1284
@@ -201,7 +201,7 @@ L 328.46678 11.448
      </g>
      <g id="text_3">
       <!-- 4,000 -->
-      <g transform="translate(310.325921 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(308.44928 159.6445) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-34" d="M 2069 0
 L 2069 1097
@@ -233,7 +233,7 @@ z
     </g>
     <g id="text_4">
      <!-- Monthly income (€) -->
-     <g transform="translate(193.167954 176.00825) scale(0.145 -0.145)">
+     <g transform="translate(186.791196 178.472) scale(0.16 -0.16)">
       <defs>
        <path id="ArialMT-4d" d="M 475 0
 L 475 4581
@@ -560,7 +560,7 @@ L -3.5 0
      </g>
      <g id="text_5">
       <!-- 0 -->
-      <g transform="translate(67.880641 146.381414) scale(0.145 -0.145)">
+      <g transform="translate(67.0465 146.91825) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-30"/>
       </g>
      </g>
@@ -578,7 +578,7 @@ L 426.675892 76.32
      </g>
      <g id="text_6">
       <!-- 800 -->
-      <g transform="translate(51.753922 81.509414) scale(0.145 -0.145)">
+      <g transform="translate(49.2515 82.04625) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-38" d="M 1131 2484
 Q 781 2613 612 2850
@@ -640,7 +640,7 @@ L 426.675892 11.448
      </g>
      <g id="text_7">
       <!-- 1,600 -->
-      <g transform="translate(39.662281 16.637414) scale(0.145 -0.145)">
+      <g transform="translate(35.909 17.17425) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-31" d="M 2384 0
 L 1822 0
@@ -698,7 +698,7 @@ z
     </g>
     <g id="text_8">
      <!-- Debt payments (€) -->
-     <g transform="translate(32.610484 135.95125) rotate(-90) scale(0.145 -0.145)">
+     <g transform="translate(28.5415 142.12) rotate(-90) scale(0.16 -0.16)">
       <defs>
        <path id="ArialMT-44" d="M 494 0
 L 494 4581
@@ -3504,7 +3504,7 @@ z
    </g>
    <g id="text_9">
     <!-- A -->
-    <g transform="translate(188.233671 36.884) scale(0.145 -0.145)">
+    <g transform="translate(187.15039 36.884) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-41" d="M 4597 0
 L 3591 0
@@ -3528,7 +3528,7 @@ z
    </g>
    <g id="text_10">
     <!-- Declined -->
-    <g transform="translate(94.974616 27.01728) scale(0.145 -0.145)">
+    <g transform="translate(94.974616 27.01728) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-44" d="M 463 4581
 L 2153 4581
@@ -3682,7 +3682,7 @@ z
    </g>
    <g id="text_11">
     <!-- Approved -->
-    <g transform="translate(348.696513 130.81248) scale(0.145 -0.145)">
+    <g transform="translate(341.696435 130.81248) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-70" d="M 434 3319
 L 1253 3319
@@ -3834,7 +3834,7 @@ L 546.982054 11.448
      </g>
      <g id="text_12">
       <!-- 2,000 -->
-      <g transform="translate(528.841195 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(526.964554 159.6445) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-32"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(83.398438 0)"/>
@@ -3856,7 +3856,7 @@ L 669.743444 11.448
      </g>
      <g id="text_13">
       <!-- 3,000 -->
-      <g transform="translate(651.602585 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(649.725944 159.6445) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-33"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(83.398438 0)"/>
@@ -3878,7 +3878,7 @@ L 792.504834 11.448
      </g>
      <g id="text_14">
       <!-- 4,000 -->
-      <g transform="translate(774.363975 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(772.487334 159.6445) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-34"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(83.398438 0)"/>
@@ -3889,7 +3889,7 @@ L 792.504834 11.448
     </g>
     <g id="text_15">
      <!-- Monthly income (€) -->
-     <g transform="translate(657.206008 176.00825) scale(0.145 -0.145)">
+     <g transform="translate(650.82925 178.472) scale(0.16 -0.16)">
       <use xlink:href="#ArialMT-4d"/>
       <use xlink:href="#ArialMT-6f" transform="translate(83.300781 0)"/>
       <use xlink:href="#ArialMT-6e" transform="translate(138.916016 0)"/>
@@ -3925,7 +3925,7 @@ L 890.713946 141.192
      </g>
      <g id="text_16">
       <!-- 0 -->
-      <g transform="translate(531.918695 146.381414) scale(0.145 -0.145)">
+      <g transform="translate(531.084554 146.91825) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-30"/>
       </g>
      </g>
@@ -3943,7 +3943,7 @@ L 890.713946 76.32
      </g>
      <g id="text_17">
       <!-- 800 -->
-      <g transform="translate(515.791976 81.509414) scale(0.145 -0.145)">
+      <g transform="translate(513.289554 82.04625) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-38"/>
        <use xlink:href="#ArialMT-30" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(111.230469 0)"/>
@@ -3963,7 +3963,7 @@ L 890.713946 11.448
      </g>
      <g id="text_18">
       <!-- 1,600 -->
-      <g transform="translate(503.700335 16.637414) scale(0.145 -0.145)">
+      <g transform="translate(499.947054 17.17425) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-31"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-36" transform="translate(83.398438 0)"/>
@@ -3974,7 +3974,7 @@ L 890.713946 11.448
     </g>
     <g id="text_19">
      <!-- Debt payments (€) -->
-     <g transform="translate(496.648538 135.95125) rotate(-90) scale(0.145 -0.145)">
+     <g transform="translate(492.579554 142.12) rotate(-90) scale(0.16 -0.16)">
       <use xlink:href="#ArialMT-44"/>
       <use xlink:href="#ArialMT-65" transform="translate(72.216797 0)"/>
       <use xlink:href="#ArialMT-62" transform="translate(127.832031 0)"/>
@@ -6642,13 +6642,13 @@ z
    </g>
    <g id="text_20">
     <!-- A -->
-    <g transform="translate(652.271725 36.884) scale(0.145 -0.145)">
+    <g transform="translate(651.188444 36.884) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-41"/>
     </g>
    </g>
    <g id="text_21">
     <!-- B -->
-    <g transform="translate(676.824003 28.775) scale(0.145 -0.145)">
+    <g transform="translate(675.740722 28.775) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-42" d="M 469 4581
 L 2300 4581
@@ -6696,7 +6696,7 @@ z
    </g>
    <g id="text_22">
     <!-- C -->
-    <g transform="translate(554.062613 77.429) scale(0.145 -0.145)">
+    <g transform="translate(552.979332 77.429) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-43" d="M 3397 1684
 L 4294 1400
@@ -6725,13 +6725,13 @@ z
    </g>
    <g id="text_23">
     <!-- D -->
-    <g transform="translate(578.614891 69.32) scale(0.145 -0.145)">
+    <g transform="translate(577.53161 69.32) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-44"/>
     </g>
    </g>
    <g id="text_24">
     <!-- Declined -->
-    <g transform="translate(559.01267 27.01728) scale(0.145 -0.145)">
+    <g transform="translate(559.01267 27.01728) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-44"/>
      <use xlink:href="#Arial-BoldMT-65" transform="translate(72.216797 0)"/>
      <use xlink:href="#Arial-BoldMT-63" transform="translate(127.832031 0)"/>
@@ -6744,7 +6744,7 @@ z
    </g>
    <g id="text_25">
     <!-- Approved -->
-    <g transform="translate(812.734567 130.81248) scale(0.145 -0.145)">
+    <g transform="translate(805.734489 130.81248) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-41"/>
      <use xlink:href="#Arial-BoldMT-70" transform="translate(72.216797 0)"/>
      <use xlink:href="#Arial-BoldMT-70" transform="translate(133.300781 0)"/>
@@ -6815,7 +6815,7 @@ L 1011.020108 11.448
      </g>
      <g id="text_26">
       <!-- 2,000 -->
-      <g transform="translate(992.879249 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(991.002608 159.6445) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-32"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(83.398438 0)"/>
@@ -6837,7 +6837,7 @@ L 1133.781498 11.448
      </g>
      <g id="text_27">
       <!-- 3,000 -->
-      <g transform="translate(1115.640639 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(1113.763998 159.6445) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-33"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(83.398438 0)"/>
@@ -6859,7 +6859,7 @@ L 1256.542888 11.448
      </g>
      <g id="text_28">
       <!-- 4,000 -->
-      <g transform="translate(1238.402029 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(1236.525388 159.6445) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-34"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(83.398438 0)"/>
@@ -6870,7 +6870,7 @@ L 1256.542888 11.448
     </g>
     <g id="text_29">
      <!-- Monthly income (€) -->
-     <g transform="translate(1121.244062 176.00825) scale(0.145 -0.145)">
+     <g transform="translate(1114.867304 178.472) scale(0.16 -0.16)">
       <use xlink:href="#ArialMT-4d"/>
       <use xlink:href="#ArialMT-6f" transform="translate(83.300781 0)"/>
       <use xlink:href="#ArialMT-6e" transform="translate(138.916016 0)"/>
@@ -6906,7 +6906,7 @@ L 1354.752 141.192
      </g>
      <g id="text_30">
       <!-- 0 -->
-      <g transform="translate(995.956749 146.381414) scale(0.145 -0.145)">
+      <g transform="translate(995.122608 146.91825) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-30"/>
       </g>
      </g>
@@ -6924,7 +6924,7 @@ L 1354.752 76.32
      </g>
      <g id="text_31">
       <!-- 800 -->
-      <g transform="translate(979.83003 81.509414) scale(0.145 -0.145)">
+      <g transform="translate(977.327608 82.04625) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-38"/>
        <use xlink:href="#ArialMT-30" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-30" transform="translate(111.230469 0)"/>
@@ -6944,7 +6944,7 @@ L 1354.752 11.448
      </g>
      <g id="text_32">
       <!-- 1,600 -->
-      <g transform="translate(967.738389 16.637414) scale(0.145 -0.145)">
+      <g transform="translate(963.985108 17.17425) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-31"/>
        <use xlink:href="#ArialMT-2c" transform="translate(55.615234 0)"/>
        <use xlink:href="#ArialMT-36" transform="translate(83.398438 0)"/>
@@ -6955,7 +6955,7 @@ L 1354.752 11.448
     </g>
     <g id="text_33">
      <!-- Debt payments (€) -->
-     <g transform="translate(960.686592 135.95125) rotate(-90) scale(0.145 -0.145)">
+     <g transform="translate(956.617608 142.12) rotate(-90) scale(0.16 -0.16)">
       <use xlink:href="#ArialMT-44"/>
       <use xlink:href="#ArialMT-65" transform="translate(72.216797 0)"/>
       <use xlink:href="#ArialMT-62" transform="translate(127.832031 0)"/>
@@ -9622,31 +9622,31 @@ z
    </g>
    <g id="text_34">
     <!-- A -->
-    <g transform="translate(1116.309779 36.884) scale(0.145 -0.145)">
+    <g transform="translate(1115.226498 36.884) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-41"/>
     </g>
    </g>
    <g id="text_35">
     <!-- B -->
-    <g transform="translate(1140.862057 28.775) scale(0.145 -0.145)">
+    <g transform="translate(1139.778776 28.775) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-42"/>
     </g>
    </g>
    <g id="text_36">
     <!-- C -->
-    <g transform="translate(1018.100667 77.429) scale(0.145 -0.145)">
+    <g transform="translate(1017.017386 77.429) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-43"/>
     </g>
    </g>
    <g id="text_37">
     <!-- D -->
-    <g transform="translate(1042.652945 69.32) scale(0.145 -0.145)">
+    <g transform="translate(1041.569664 69.32) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-44"/>
     </g>
    </g>
    <g id="text_38">
     <!-- Declined -->
-    <g transform="translate(1023.050724 27.01728) scale(0.145 -0.145)">
+    <g transform="translate(1023.050724 27.01728) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-44"/>
      <use xlink:href="#Arial-BoldMT-65" transform="translate(72.216797 0)"/>
      <use xlink:href="#Arial-BoldMT-63" transform="translate(127.832031 0)"/>
@@ -9659,7 +9659,7 @@ z
    </g>
    <g id="text_39">
     <!-- Approved -->
-    <g transform="translate(1276.772621 130.81248) scale(0.145 -0.145)">
+    <g transform="translate(1269.772543 130.81248) scale(0.16 -0.16)">
      <use xlink:href="#Arial-BoldMT-41"/>
      <use xlink:href="#Arial-BoldMT-70" transform="translate(72.216797 0)"/>
      <use xlink:href="#Arial-BoldMT-70" transform="translate(133.300781 0)"/>
@@ -9709,7 +9709,7 @@ z
   <g id="group-wise-legend">
    <g id="line2d_37">
     <g>
-     <use xlink:href="#mcc1f62c31a" x="973.060938" y="204.287603" style="fill: #1f77b4; fill-opacity: 0.8; stroke: #1f77b4; stroke-opacity: 0.8"/>
+     <use xlink:href="#mcc1f62c31a" x="954.55" y="203.4469" style="fill: #1f77b4; fill-opacity: 0.8; stroke: #1f77b4; stroke-opacity: 0.8"/>
     </g>
    </g>
    <g id="line2d_38">
@@ -9727,12 +9727,12 @@ z
 " style="stroke: #2ca02c; stroke-opacity: 0.8"/>
     </defs>
     <g>
-     <use xlink:href="#m700d288b0e" x="983.210938" y="204.287603" style="fill: #2ca02c; fill-opacity: 0.8; stroke: #2ca02c; stroke-opacity: 0.8"/>
+     <use xlink:href="#m700d288b0e" x="965.75" y="203.4469" style="fill: #2ca02c; fill-opacity: 0.8; stroke: #2ca02c; stroke-opacity: 0.8"/>
     </g>
    </g>
    <g id="text_40">
     <!-- Original -->
-    <g transform="translate(994.810938 209.362603) scale(0.145 -0.145)">
+    <g transform="translate(978.55 209.0469) scale(0.16 -0.16)">
      <defs>
       <path id="ArialMT-4f" d="M 309 2231
 Q 309 3372 921 4017
@@ -9822,12 +9822,12 @@ z
    </g>
    <g id="line2d_39">
     <g>
-     <use xlink:href="#m8edc1cd310" x="1066.5225" y="204.287603" style="fill: #ffa500; fill-opacity: 0.8; stroke: #ffa500; stroke-opacity: 0.8"/>
+     <use xlink:href="#m8edc1cd310" x="1057.68" y="203.4469" style="fill: #ffa500; fill-opacity: 0.8; stroke: #ffa500; stroke-opacity: 0.8"/>
     </g>
    </g>
    <g id="text_41">
     <!-- Counterfactual -->
-    <g transform="translate(1083.1975 209.362603) scale(0.145 -0.145)">
+    <g transform="translate(1076.08 209.0469) scale(0.16 -0.16)">
      <defs>
       <path id="ArialMT-43" d="M 3763 1606
 L 4369 1453
@@ -9916,14 +9916,14 @@ z
     </g>
    </g>
    <g id="line2d_40">
-    <path d="M 1189.097344 204.287603
-L 1199.247344 204.287603
-L 1209.397344 204.287603
+    <path d="M 1192.935 203.4469
+L 1204.135 203.4469
+L 1215.335 203.4469
 " style="fill: none; stroke: #1fa187; stroke-opacity: 0.3; stroke-width: 1.5; stroke-linecap: square"/>
    </g>
    <g id="text_42">
     <!-- Decision boundary -->
-    <g transform="translate(1215.922344 209.362603) scale(0.145 -0.145)">
+    <g transform="translate(1222.535 209.0469) scale(0.16 -0.16)">
      <defs>
       <path id="ArialMT-64" d="M 2575 0
 L 2575 419

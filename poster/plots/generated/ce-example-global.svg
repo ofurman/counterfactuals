@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:description>{"dataSha256": "4438ecdd73e049887669e11d4e224f5f41e7b2127fb3ed0a9d639f0a8e8811da", "styleSha256": "ac304d941a5a0eb9a5db6fb929e6e5ea62abe63a775c3285a051bc6fdf8610f2", "generatorSha256": "eab9107bec02eb0e159fcc78e08f3750b5ea4f6dd3afb081f8d3934f7eb81601", "transparent": true, "minimumFontPt": 14.5, "fontFamily": "Arial", "legendLabels": [], "transitions": {"global": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4300, "monthlyDebt": 1200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4500, "monthlyDebt": 1300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}]}}</dc:description>
+    <dc:description>{"dataSha256": "4438ecdd73e049887669e11d4e224f5f41e7b2127fb3ed0a9d639f0a8e8811da", "styleSha256": "ac304d941a5a0eb9a5db6fb929e6e5ea62abe63a775c3285a051bc6fdf8610f2", "generatorSha256": "fb54eb0eae3a085d7a50d4cc730cc492e4fa52f15553f098e9639e47ef9c9ff3", "transparent": true, "minimumFontPt": 16, "fontFamily": "Arial", "legendLabels": [], "transitions": {"global": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4300, "monthlyDebt": 1200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4500, "monthlyDebt": 1300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}]}}</dc:description>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -58,7 +58,7 @@ L 0 3.5
      </g>
      <g id="text_1">
       <!-- 2,000 -->
-      <g transform="translate(64.803141 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(62.9265 159.6445) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-32" d="M 3222 541
 L 3222 0
@@ -144,7 +144,7 @@ L 214.601143 11.448
      </g>
      <g id="text_2">
       <!-- 3,000 -->
-      <g transform="translate(196.460283 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(194.583643 159.6445) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-33" d="M 269 1209
 L 831 1284
@@ -201,7 +201,7 @@ L 346.258286 11.448
      </g>
      <g id="text_3">
       <!-- 4,000 -->
-      <g transform="translate(328.117426 158.570828) scale(0.145 -0.145)">
+      <g transform="translate(326.240786 159.6445) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-34" d="M 2069 0
 L 2069 1097
@@ -233,7 +233,7 @@ z
     </g>
     <g id="text_4">
      <!-- Monthly income (€) -->
-     <g transform="translate(205.622008 176.00825) scale(0.145 -0.145)">
+     <g transform="translate(199.24525 178.472) scale(0.16 -0.16)">
       <defs>
        <path id="ArialMT-4d" d="M 475 0
 L 475 4581
@@ -560,7 +560,7 @@ L -3.5 0
      </g>
      <g id="text_5">
       <!-- 0 -->
-      <g transform="translate(67.880641 146.381414) scale(0.145 -0.145)">
+      <g transform="translate(67.0465 146.91825) scale(0.16 -0.16)">
        <use xlink:href="#ArialMT-30"/>
       </g>
      </g>
@@ -578,7 +578,7 @@ L 451.584 76.32
      </g>
      <g id="text_6">
       <!-- 800 -->
-      <g transform="translate(51.753922 81.509414) scale(0.145 -0.145)">
+      <g transform="translate(49.2515 82.04625) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-38" d="M 1131 2484
 Q 781 2613 612 2850
@@ -640,7 +640,7 @@ L 451.584 11.448
      </g>
      <g id="text_7">
       <!-- 1,600 -->
-      <g transform="translate(39.662281 16.637414) scale(0.145 -0.145)">
+      <g transform="translate(35.909 17.17425) scale(0.16 -0.16)">
        <defs>
         <path id="ArialMT-31" d="M 2384 0
 L 1822 0
@@ -698,7 +698,7 @@ z
     </g>
     <g id="text_8">
      <!-- Debt payments (€) -->
-     <g transform="translate(32.610484 135.95125) rotate(-90) scale(0.145 -0.145)">
+     <g transform="translate(28.5415 142.12) rotate(-90) scale(0.16 -0.16)">
       <defs>
        <path id="ArialMT-44" d="M 494 0
 L 494 4581
@@ -3542,7 +3542,7 @@ z
    </g>
    <g id="text_9">
     <!-- A -->
-    <g transform="translate(197.129424 36.884) scale(0.145 -0.145)">
+    <g transform="translate(196.046143 36.884) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-41" d="M 4597 0
 L 3591 0
@@ -3566,7 +3566,7 @@ z
    </g>
    <g id="text_10">
     <!-- B -->
-    <g transform="translate(223.460853 28.775) scale(0.145 -0.145)">
+    <g transform="translate(222.377571 28.775) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-42" d="M 469 4581
 L 2300 4581
@@ -3614,7 +3614,7 @@ z
    </g>
    <g id="text_11">
     <!-- C -->
-    <g transform="translate(91.80371 77.429) scale(0.145 -0.145)">
+    <g transform="translate(90.720429 77.429) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-43" d="M 3397 1684
 L 4294 1400
@@ -3643,7 +3643,7 @@ z
    </g>
    <g id="text_12">
     <!-- D -->
-    <g transform="translate(118.135138 69.32) scale(0.145 -0.145)">
+    <g transform="translate(117.051857 69.32) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-44" d="M 463 4581
 L 2153 4581
@@ -3678,7 +3678,7 @@ z
    </g>
    <g id="text_13">
     <!-- Declined -->
-    <g transform="translate(95.8464 27.01728) scale(0.145 -0.145)">
+    <g transform="translate(95.8464 27.01728) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-65" d="M 2381 1056
 L 3256 909
@@ -3805,7 +3805,7 @@ z
    </g>
    <g id="text_14">
     <!-- Approved -->
-    <g transform="translate(372.857378 130.81248) scale(0.145 -0.145)">
+    <g transform="translate(365.8573 130.81248) scale(0.16 -0.16)">
      <defs>
       <path id="Arial-BoldMT-70" d="M 434 3319
 L 1253 3319

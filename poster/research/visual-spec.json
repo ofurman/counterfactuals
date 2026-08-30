@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "page": {"format": "A0", "orientation": "landscape", "widthMm": 1189, "heightMm": 841, "marginMm": 0},
-  "canvas": {"widthPx": 1800, "heightPx": 1273},
-  "safeArea": {"topPx": 42, "rightPx": 48, "bottomPx": 42, "leftPx": 48},
-  "macroGrid": {"columns": ["1fr", "1.85fr", "1.45fr"], "gapPx": 24, "readingOrder": ["left", "center", "right"]},
+  "page": {"format": "A1", "orientation": "portrait", "widthMm": 594, "heightMm": 841, "marginMm": 0},
+  "canvas": {"widthPx": 1320, "heightPx": 1868.88},
+  "safeArea": {"topPx": 30, "rightPx": 30, "bottomPx": 30, "leftPx": 30},
+  "macroGrid": {"columns": ["1fr", "2.1fr"], "gapPx": 22, "readingOrder": ["upper-left", "upper-right", "bottom"]},
   "colors": {
     "paper": "#fffdf8",
     "navy": "#13253c",
@@ -21,13 +21,13 @@
     "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
   },
   "minimumPrintType": {
-    "title": {"cssPx": 44, "approxPtAtA0": 82},
-    "sectionHeading": {"cssPx": 22, "approxPtAtA0": 41},
-    "body": {"cssPx": 15, "approxPtAtA0": 28},
-    "chartLabel": {"cssPx": 12, "approxPtAtA0": 22},
-    "citation": {"cssPx": 9, "approxPtAtA0": 17}
+    "title": {"cssPx": 75.2592592593, "approxPt": 96},
+    "sectionHeading": {"cssPx": 22, "approxPt": 28},
+    "body": {"cssPx": 14, "approxPt": 18},
+    "chartLabel": {"cssPx": 13.3333333333, "approxPt": 17},
+    "citation": {"cssPx": 9, "approxPt": 11.5}
   },
-  "print": {"pageCss": "@page { size: 1189mm 841mm; margin: 0; }", "colorAdjust": "exact", "singlePage": true},
+  "print": {"pageCss": "@page { size: 594mm 841mm; margin: 0; }", "colorAdjust": "exact", "singlePage": true},
   "chartSemantics": {"success": "#087f78", "changeCost": "#e66b37", "neutral": "#536274", "missing": "#d8d5cc"},
   "avoid": ["Inter", "purple gradients", "excessive centering", "generic shadows", "rounded cards unrelated to the manuscript schema"],
   "expectedBundleAssetBudgetBytes": 3000000

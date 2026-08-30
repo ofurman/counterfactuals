@@ -1,10 +1,10 @@
 # CEL scientific benchmark poster deliverables
 
-Source revision: `c60f423924f7d0dc2c66acb393a05fb22706a844`
+Source revision: `d378786016546fd0eb9496b5ba25ec17ebf6781c`
 
 ## Contents
 
-- `cel-benchmark-poster-a0.pdf` — one-page A0 landscape PDF (1189 × 841 mm).
+- `cel-benchmark-poster-a1.pdf` — one-page A1 portrait PDF (594 × 841 mm).
 - `cel-benchmark-poster-preview.png` — 72 DPI PNG rendered from the final PDF with Poppler.
 - `cel-benchmark-poster.html` — self-contained offline HTML poster; the contribution QR links to the repository but is not required for rendering. No bottom reproduction strip is shown.
 - `SHA256SUMS` — SHA-256 hashes for the three final artifacts above.
@@ -13,7 +13,7 @@ Source revision: `c60f423924f7d0dc2c66acb393a05fb22706a844`
 
 ## Print
 
-Print the PDF at 100% / actual size on A0 landscape media. Do not use “fit to page.” The page is 1189 × 841 mm and includes the poster's configured safe area.
+Print the PDF at 100% / actual size on A1 portrait media. Do not use “fit to page.” The page is 594 × 841 mm with 13.5 mm safe margins. The previous A0 PDF is retained for reference only and is not the workshop print file.
 
 ## Regenerate and verify
 
@@ -38,5 +38,5 @@ Verified links: https://github.com/ofurman/counterfactuals and https://ofurman.g
 - The poster uses focused views of the manuscript result graphics; consult the paper and supplement for the full figure matrices and exact tables.
 - The example plots are transparent, font-outlined SVGs generated with CEL plotting helpers. Their data, generator, and style hashes are validated before packaging.
 - Result SVGs retain lossless manuscript plot crops with enlarged outlined Arial labels; schema boxes and connectors remain original vectors. Source hashes, crop pixels, and uniform scaling are checked. The source manuscript files are unchanged.
-- Typography uses a 96pt Georgia title, 36pt Georgia subheadings, Arial body text, and figure labels of at least 22pt at A0. Regression density ticks use k for thousands.
+- Typography uses a 96pt Georgia title, 28pt Georgia subheadings, approximately 18pt Arial body text, and manuscript figure labels of at least 17pt at A1. Regression density ticks use k for thousands. The examples and framework occupy the upper two columns; a two-by-two results grid spans the lower page.
 - Sparsity rankings are intentionally omitted until the manuscript's direction convention is reconciled; the source figure is retained without an added comparative claim.

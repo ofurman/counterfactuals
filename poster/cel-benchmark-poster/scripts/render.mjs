@@ -3,11 +3,14 @@ import path from 'node:path'
 import { deliverablesDir, withPosterPage } from './harness.mjs'
 
 const previewPath = path.join(deliverablesDir, 'cel-benchmark-poster-preview.png')
-const pdfPath = path.join(deliverablesDir, 'cel-benchmark-poster-a0.pdf')
+const pdfPath = path.join(deliverablesDir, 'cel-benchmark-poster-a1.pdf')
 await mkdir(deliverablesDir, { recursive: true })
 
 await withPosterPage(async ({ page, failures }) => {
   const canvas = page.locator('.poster-canvas')
+  // A portrait canvas exceeds the viewport; sticky controls must not cover it
+  // when Playwright scrolls the element into view for the preview capture.
+  await page.locator('.print-toolbar').evaluate((element) => { element.style.position = 'static' })
   await canvas.screenshot({ path: previewPath, animations: 'disabled' })
   await page.emulateMedia({ media: 'print' })
   const toolbarDisplay = await page.locator('.print-toolbar').evaluate((element) => getComputedStyle(element).display)

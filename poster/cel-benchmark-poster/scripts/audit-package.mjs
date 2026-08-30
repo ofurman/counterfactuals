@@ -7,7 +7,7 @@ import { deliverablesDir } from './harness.mjs'
 
 const sumsPath = path.join(deliverablesDir, 'SHA256SUMS')
 const sums = (await readFile(sumsPath, 'utf8')).trim().split('\n')
-const expectedNames = ['cel-benchmark-poster.html', 'cel-benchmark-poster-a0.pdf', 'cel-benchmark-poster-preview.png']
+const expectedNames = ['cel-benchmark-poster.html', 'cel-benchmark-poster-a1.pdf', 'cel-benchmark-poster-preview.png']
 if (sums.length !== expectedNames.length) throw new Error(`Checksum manifest has ${sums.length} entries; expected ${expectedNames.length}`)
 for (const [index, line] of sums.entries()) {
   const match = line.match(/^([0-9a-f]{64})  (.+)$/)
@@ -18,12 +18,12 @@ for (const [index, line] of sums.entries()) {
 }
 
 const readme = await readFile(path.join(deliverablesDir, 'README.md'), 'utf8')
-for (const required of ['1189 × 841 mm', 'Print', 'Source revision', 'pnpm run verify:all', 'Known limitations', ...expectedNames]) if (!readme.includes(required)) throw new Error(`Deliverables README is missing: ${required}`)
+for (const required of ['594 × 841 mm', 'A1 portrait', 'Print', 'Source revision', 'pnpm run verify:all', 'Known limitations', ...expectedNames]) if (!readme.includes(required)) throw new Error(`Deliverables README is missing: ${required}`)
 
 const temporaryDir = await mkdtemp(path.join(os.tmpdir(), 'cel-poster-audit-'))
 try {
   const prefix = path.join(temporaryDir, 'preview')
-  const pdfPath = path.join(deliverablesDir, 'cel-benchmark-poster-a0.pdf')
+  const pdfPath = path.join(deliverablesDir, 'cel-benchmark-poster-a1.pdf')
   const render = spawnSync('pdftoppm', ['-png', '-singlefile', '-r', '72', pdfPath, prefix], { encoding: 'utf8' })
   if (render.status !== 0) throw new Error(`Could not reproduce PDF preview:\n${render.stdout}${render.stderr}`)
   const [reproduced, packaged] = await Promise.all([

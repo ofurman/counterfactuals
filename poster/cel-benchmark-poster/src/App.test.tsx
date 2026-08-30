@@ -14,6 +14,7 @@ describe('poster scaffold', () => {
     expect(screen.getAllByRole('region')).toHaveLength(5)
     const { widthPx, heightPx } = posterData.visualSpec.canvas
     expect(screen.getByText(new RegExp(`${widthPx} × ${heightPx}`))).toBeInTheDocument()
+    expect(screen.getByText(/A1 portrait · 594 × 841 mm/)).toBeInTheDocument()
   })
 
   it('renders every section owned by the frozen content brief', () => {

@@ -18,10 +18,10 @@ function cssToken(name: string): string {
 }
 
 describe('print contract', () => {
-  it('uses an explicit Georgia/Arial scale with a 96pt title and 36pt subheadings', () => {
+  it('uses an explicit Georgia/Arial scale with a 96pt title and 28pt subheadings', () => {
     const pointsPerPixel = cssNumber('print-scale') * 0.75
     expect(cssNumber('title-size') * pointsPerPixel).toBeCloseTo(96, 6)
-    expect(cssNumber('subheading-size') * pointsPerPixel).toBeCloseTo(36, 6)
+    expect(cssNumber('subheading-size') * pointsPerPixel).toBeCloseTo(28, 6)
     expect(css).toContain('font-family: Arial, sans-serif;')
     expect(css).not.toMatch(/Aptos|Segoe UI|font-weight: (550|750|800|900)/)
     expect(css).toMatch(/\.recourse-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
@@ -41,7 +41,10 @@ describe('print contract', () => {
     expect(cssToken('orange')).toBe(visualSpec.colors.orange)
   })
 
-  it('declares exact A0 landscape output and removes screen controls', () => {
+  it('declares exact A1 portrait output and removes screen controls', () => {
+    expect(visualSpec.page).toMatchObject({ format: 'A1', orientation: 'portrait', widthMm: 594, heightMm: 841 })
+    expect(css).toContain('.poster-column--right { grid-template-rows: auto; grid-column: 1 / -1; }')
+    expect(css).toMatch(/\.result-panels\s*\{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
     expect(css).toContain(`@page { size: ${visualSpec.page.widthMm}mm ${visualSpec.page.heightMm}mm; margin: ${visualSpec.page.marginMm}; }`)
     expect(css).toContain('print-color-adjust: exact')
     expect(css).toMatch(/\.screen-only, \.print-toolbar\s*{\s*display: none !important;/)

@@ -98,6 +98,7 @@ ordering, dataset identity, tick anchors, and minimum font sizes.
 
 Tests compare the embedded crop pixels to the original PNGs and the schema
 artwork to the source PDF conversion. The poster audit checks source hashes,
-uniform image scaling, label containment, and at least 22pt labels at A0. The
-title is 96pt, subheadings are 36pt, and body/figure text uses Arial. Logo artwork
+uniform image scaling, label containment, and at least 17pt manuscript labels at A1. The
+title is 96pt, subheadings are 28pt, and body/figure text uses Arial. The A1 portrait
+layout uses upper example/framework columns and a lower two-by-two results grid. Logo artwork
 is unchanged.

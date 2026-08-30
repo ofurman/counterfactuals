@@ -7,16 +7,19 @@ bound to the repository file
 at `docs/plans/cel-scientific-benchmark-poster/resources/planning-findings.md`,
 which records the inspected PUMAL A0 bundle and its exact `1800 × 1273` canvas,
 `1189 × 841 mm` A0 target, and `1fr 2fr 1fr` body grid. A local-only fact is explicitly
-labelled and is not presented as a NeurIPS convention.
+labelled and is not presented as a NeurIPS convention. The user-supplied workshop
+requirement supersedes that reference geometry: the final poster is A1 portrait,
+594 × 841 mm. Reference observations below remain historical evidence, not a
+claim that the workshop uses A0.
 
 ## Canvas and grid
 
-- **Preserve — fixed print geometry.** Use one landscape canvas with explicit print dimensions;
+- **Preserve — fixed print geometry.** Use one portrait canvas with explicit print dimensions;
   the local reference demonstrates the `1800 × 1273`/A0 implementation, while the observed
   NeurIPS examples support one-page overview composition. Sources: [local-reference (local-only),
   openxai-2022, tabular-dl-2022].
-- **Adapt — asymmetric macro-grid.** Use a `1fr 1.85fr 1.45fr` body so the CEL
-  framework retains the widest column and the unified results gain room on the right; use the navigable left/center/right progression visible in OpenXAI and
+- **Adapt — asymmetric macro-grid.** Use a `1fr 2.1fr` upper body so the CEL
+  framework retains the widest column, with a full-width two-by-two results grid below. Adapt the navigable concept/framework/evidence progression visible in OpenXAI and
   M4. Sources: [local-reference (local-only), openxai-2022, m4-2023].
 - **Avoid — manuscript columns.** Do not reproduce paper sections or equal-weight text columns;
   ADBench shows that comprehensiveness can overwhelm overview reading. Sources: [adbench-2022].
@@ -77,7 +80,7 @@ they are not observations attributed to the NeurIPS posters.
 - **Preserve — real-distance QA.** Inspect the full-page render, chart labels, and smallest type;
   dense OpenXAI, M4, and ADBench regions show why source completeness is not the same as legibility.
   Sources: [openxai-2022, m4-2023, adbench-2022].
-- **Adapt — exact A0 CSS.** Use `@page { size: 1189mm 841mm; margin: 0; }`, print-color adjustment,
-  and safe-area containment. This exact implementation detail is local-reference-only; NeurIPS
-  sources support the one-page landscape composition, not this CSS value. Sources:
+- **Adapt — exact A1 CSS.** Use `@page { size: 594mm 841mm; margin: 0; }`, print-color adjustment,
+  and safe-area containment. These dimensions come from the user-supplied workshop requirement;
+  the reference sources support explicit single-page sizing, not this CSS value. Sources:
   [local-reference (local-only), tabular-dl-2022].

@@ -69,6 +69,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       }),
       horizontalRuleCount: document.querySelectorAll('.poster-canvas hr').length,
       figures,
+      layoutContainers: [...document.querySelectorAll('.poster-grid, .poster-column, .scope-tile, .contribution-item')].map((element) => ({ name: element.className, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, clientHeight: element.clientHeight, scrollHeight: element.scrollHeight })),
       exampleBackground: getComputedStyle(document.querySelector('.problem-block')).backgroundColor,
       examplePlots: [...document.querySelectorAll('[data-example-plot]')].map((plot) => ({
         paradigm: plot.dataset.examplePlot, viewport: rect(plot),
@@ -102,6 +103,7 @@ const report = await withPosterPage(async ({ page, failures }) => {
       resultCaptionCount: document.querySelectorAll('.result-manuscript-figure figcaption').length,
       manuscriptAssets: [...document.querySelectorAll('[data-typography-asset]')].map((element) => ({kind: element.dataset.typographyAsset, image: rect(element.querySelector('img'))})),
       typography: {
+        pointsPerPixel: numberToken('--print-scale') * 0.75,
         titlePt: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize) * numberToken('--print-scale') * 0.75,
         subheadingPt: fontSizes('.recourse-panel h3, .result-panel h3').map((size) => size * numberToken('--print-scale') * 0.75),
         bodyFamily: getComputedStyle(document.querySelector('.section-copy')).fontFamily,
@@ -162,13 +164,13 @@ const report = await withPosterPage(async ({ page, failures }) => {
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
-  if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the rebalanced center column')
-  if (Math.abs(screen.typography.titlePt - 96) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 36) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use a 96pt title, 36pt subheadings, and Arial body')
+  if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the wide upper-right column')
+  if (Math.abs(screen.typography.titlePt - 96) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use a 96pt title, 28pt subheadings, and Arial body')
   for (const asset of manuscriptAssets) {
     const rendered = screen.manuscriptAssets.find((item) => item.kind === asset.kind)
     if (!rendered || Math.abs(rendered.image.height - rendered.image.width * asset.height / asset.width) > 1) failuresFound.push(`${asset.kind} typography asset is missing or stretched`)
-    const printSize = asset.minimumFontSize * rendered.image.width / asset.width * 2.4965879265 * 0.75
-    if (printSize < 22) failuresFound.push(`${asset.kind} labels are below 22pt at A0: ${printSize}`)
+    const printSize = asset.minimumFontSize * rendered.image.width / asset.width * screen.typography.pointsPerPixel
+    if (printSize < 17) failuresFound.push(`${asset.kind} labels are below 17pt at A1: ${printSize}`)
   }
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
   if (JSON.stringify(screen.examplePlots.map((plot) => plot.paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) failuresFound.push('All three Matplotlib examples must be visible')
@@ -178,11 +180,12 @@ const report = await withPosterPage(async ({ page, failures }) => {
     const asset = exampleAssets.find((candidate) => candidate.paradigm === plot.paradigm)
     if (!plot.loaded || plot.renderer !== 'matplotlib') failuresFound.push(`${plot.paradigm} SVG failed to load`)
     if (Math.abs(plot.viewport.height - plot.viewport.width * asset.height / asset.width) > 1) failuresFound.push(`${plot.paradigm} SVG is stretched`)
-    if (asset.minimumFontPt * plot.viewport.width / asset.width < 12) failuresFound.push(`${plot.paradigm} SVG labels are smaller than twelve native pixels`)
+    if (asset.minimumFontPt * plot.viewport.width / asset.width * screen.typography.pointsPerPixel < 17) failuresFound.push(`${plot.paradigm} SVG labels are smaller than 17pt at A1`)
   }
   if (screen.visibleProvenance !== 0) failuresFound.push('Source metadata must not appear on the poster')
-  if (Math.abs(screen.canvas.width - 1800) > 0.01 || Math.abs(screen.canvas.height - 1273) > 0.01) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)
+  if (Math.abs(screen.canvas.width - visualSpec.canvas.widthPx) > 0.02 || Math.abs(screen.canvas.height - visualSpec.canvas.heightPx) > 0.02) failuresFound.push(`Native canvas is ${screen.canvas.width} × ${screen.canvas.height}`)
   if (screen.canvas.scrollWidth > screen.canvas.clientWidth || screen.canvas.scrollHeight > screen.canvas.clientHeight) failuresFound.push('Poster canvas overflows')
+  for (const container of screen.layoutContainers) if (container.scrollWidth > container.clientWidth + 1 || container.scrollHeight > container.clientHeight + 1) failuresFound.push(`${container.name} overflows or clips content`)
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
   if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named inventory must include six top-level sections and four nested result panels')
   for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope', 'guidance-limitations'], right: ['results'] })) {
@@ -194,7 +197,12 @@ const report = await withPosterPage(async ({ page, failures }) => {
   for (const frame of screen.resultFrames) {
     if (Math.abs(frame.outline.width - frame.panel.width + 2) > 1 || Math.abs(frame.outline.height - frame.panel.height + 2) > 1 || Math.abs(frame.outline.left - frame.panel.left - 1) > 1 || Math.abs(frame.outline.top - frame.panel.top - 1) > 1) failuresFound.push('Result outline does not follow its category bounds')
   }
-  if (screen.resultPanels.some((panel, index) => index > 0 && screen.resultPanels[index - 1].bottom >= panel.top)) failuresFound.push('Unified result panels overlap')
+  const results = screen.columns.right[0]
+  if (results.top <= Math.max(...screen.columns.left.map((section) => section.bottom), ...screen.columns.center.map((section) => section.bottom)) || Math.abs(results.left - screen.safeBounds.left) > 1 || Math.abs(results.right - screen.safeBounds.right) > 1) failuresFound.push('Results must span the lower page below both upper columns')
+  if (screen.resultPanels.length === 4) {
+    const [global, local, group, regression] = screen.resultPanels
+    if (Math.abs(global.top - local.top) > 1 || Math.abs(group.top - regression.top) > 1 || global.right >= local.left || group.right >= regression.left || Math.max(global.bottom, local.bottom) >= Math.min(group.top, regression.top)) failuresFound.push('Results must use a non-overlapping two-by-two grid')
+  }
   if (screen.resultCaptionCount !== 0) failuresFound.push('Removed result captions remain')
   const localCrops = manuscriptAssets.find((asset) => asset.kind === 'local').crops
   if (localCrops.slice(0, 3).some((crop) => crop.display[1] !== localCrops[0].display[1]) || localCrops.slice(3).some((crop) => crop.display[1] <= localCrops[0].display[1] + localCrops[0].display[3])) failuresFound.push('Local metric panels must retain the three-plus-two arrangement')
@@ -252,4 +260,4 @@ const report = await withPosterPage(async ({ page, failures }) => {
 await mkdir(deliverablesDir, { recursive: true })
 const reportPath = path.join(deliverablesDir, 'audit-layout.json')
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`)
-console.log(`Layout audit passed: sections=${report.sections.length}, title=${report.typography.titlePt.toFixed(2)}pt, subheadings=36pt, manuscript labels≥22pt; outlined label bounds verified`)
+console.log(`A1 portrait layout audit passed: sections=${report.sections.length}, title=${report.typography.titlePt.toFixed(2)}pt, subheadings=28pt, manuscript labels≥17pt; outlined label bounds verified`)

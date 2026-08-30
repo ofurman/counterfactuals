@@ -19,8 +19,8 @@
   },
   "paperUrl": null,
   "output": {
-    "format": "A0 landscape",
-    "widthMm": 1189,
+    "format": "A1 portrait",
+    "widthMm": 594,
     "heightMm": 841,
     "deliverables": ["self-contained HTML", "one-page PDF", "PNG preview"]
   },

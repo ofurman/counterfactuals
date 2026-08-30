@@ -75,30 +75,30 @@ if (!/web-artifacts-builder constraints[\s\S]*not observations attributed to the
   fail("Web-artifacts-builder constraints are not separated from source-observation claims");
 }
 
-// Gate 2: geometry must be positive, contained, and physically coherent at A0 scale.
+// Gate 2: geometry must match the user-supplied workshop A1 portrait specification.
 const expectedPage = visual.page;
-if (expectedPage.format !== "A0" || expectedPage.orientation !== "landscape" || expectedPage.widthMm !== 1189 || expectedPage.heightMm !== 841 || expectedPage.marginMm !== 0) fail("Visual spec lacks exact A0 landscape page geometry");
-if (visual.canvas.widthPx !== 1800 || visual.canvas.heightPx !== 1273) fail("Visual spec lacks the native canvas dimensions");
+if (expectedPage.format !== "A1" || expectedPage.orientation !== "portrait" || expectedPage.widthMm !== 594 || expectedPage.heightMm !== 841 || expectedPage.marginMm !== 0) fail("Visual spec lacks exact A1 portrait page geometry");
+if (visual.canvas.widthPx !== 1320 || visual.canvas.heightPx !== 1868.88) fail("Visual spec lacks the native portrait canvas dimensions");
 if (expectedPage.widthMm <= 0 || expectedPage.heightMm <= 0 || visual.canvas.widthPx <= 0 || visual.canvas.heightPx <= 0) fail("Page and canvas dimensions must be positive");
 for (const edge of ["topPx", "rightPx", "bottomPx", "leftPx"]) {
   if (!Number.isFinite(visual.safeArea?.[edge]) || visual.safeArea[edge] <= 0) fail(`Invalid safe-area value: ${edge}`);
 }
 if (visual.safeArea.leftPx + visual.safeArea.rightPx >= visual.canvas.widthPx || visual.safeArea.topPx + visual.safeArea.bottomPx >= visual.canvas.heightPx) fail("Safe area is not contained by the canvas");
-if (JSON.stringify(visual.macroGrid.columns) !== JSON.stringify(["1fr", "1.85fr", "1.45fr"])) fail("Visual spec lacks the rebalanced framework/results macro-grid");
+if (JSON.stringify(visual.macroGrid.columns) !== JSON.stringify(["1fr", "2.1fr"]) || JSON.stringify(visual.macroGrid.readingOrder) !== JSON.stringify(["upper-left", "upper-right", "bottom"])) fail("Visual spec lacks the portrait two-column layout with results below");
 if (!Number.isFinite(visual.macroGrid.gapPx) || visual.macroGrid.gapPx <= 0) fail("Macro-grid gap must be positive");
 for (const family of ["title", "body", "mono"]) if (!visual.fonts?.[family]) fail(`Missing font stack: ${family}`);
 
 const mmPerCanvasPxX = expectedPage.widthMm / visual.canvas.widthPx;
 const mmPerCanvasPxY = expectedPage.heightMm / visual.canvas.heightPx;
-if (Math.abs(mmPerCanvasPxX - mmPerCanvasPxY) / mmPerCanvasPxX > 0.005) fail("Canvas-to-A0 scaling is incoherent across axes");
+if (Math.abs(mmPerCanvasPxX - mmPerCanvasPxY) / mmPerCanvasPxX > 0.005) fail("Canvas-to-A1 scaling is incoherent across axes");
 for (const role of ["title", "sectionHeading", "body", "chartLabel", "citation"]) {
   const size = visual.minimumPrintType?.[role];
-  if (!Number.isFinite(size?.cssPx) || size.cssPx <= 0 || !Number.isFinite(size?.approxPtAtA0) || size.approxPtAtA0 <= 0) fail(`Invalid minimum print type: ${role}`);
+  if (!Number.isFinite(size?.cssPx) || size.cssPx <= 0 || !Number.isFinite(size?.approxPt) || size.approxPt <= 0) fail(`Invalid minimum print type: ${role}`);
   const derivedPt = size.cssPx * mmPerCanvasPxX * 72 / 25.4;
   const tolerancePt = Math.max(1, derivedPt * 0.025);
-  if (Math.abs(size.approxPtAtA0 - derivedPt) > tolerancePt) fail(`Incoherent CSS-pixel to A0-point conversion for ${role}: expected approximately ${derivedPt.toFixed(2)}pt`);
+  if (Math.abs(size.approxPt - derivedPt) > tolerancePt) fail(`Incoherent CSS-pixel to A1-point conversion for ${role}: expected approximately ${derivedPt.toFixed(2)}pt`);
 }
-if (visual.print.pageCss !== "@page { size: 1189mm 841mm; margin: 0; }" || visual.print.colorAdjust !== "exact" || visual.print.singlePage !== true) fail("Visual spec lacks exact print-color/page handling");
+if (visual.print.pageCss !== "@page { size: 594mm 841mm; margin: 0; }" || visual.print.colorAdjust !== "exact" || visual.print.singlePage !== true) fail("Visual spec lacks exact print-color/page handling");
 if (!Number.isFinite(visual.expectedBundleAssetBudgetBytes) || visual.expectedBundleAssetBudgetBytes <= 0) fail("Missing expected bundle asset budget");
 
 // Citations are repository-relative and their fragments must still exist when one is supplied.
@@ -160,7 +160,7 @@ for (const [heading, minimumWords] of [["Explicit reading order", 35], ["Thirty-
   const body = sectionBody(heading);
   if (!body || proseWordCount(body) < minimumWords) fail(`${heading} must contain a substantive narrative body`);
 }
-for (const marker of ["Header → Left → Center → Right", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
+for (const marker of ["Header → Upper left → Upper right → Bottom", "Thirty-second visitor narrative", "Two-minute visitor narrative"]) {
   if (!storyboard.includes(marker)) fail(`Storyboard lacks required narrative/order marker: ${marker}`);
 }
 if (/^#{2,6} (?:Abstract|Introduction|Related Works?|CEL(?::.*)?|Benchmark|Datasets?|Models?|Methods?|Metrics?|Experimental Setup|Results?|Full Results?|Conclusions?)\s*$/mi.test(storyboard) || /\\(?:section|subsection)\{|\\begin\{(?:table|tabular)\}/.test(storyboard)) fail("Storyboard reproduces a manuscript section dump");
@@ -177,16 +177,16 @@ for (const [index, tag] of storyboardTags.entries()) {
   const citations = tag[2].split(",").map((value) => value.trim()).filter(Boolean);
   await validateClaimMapping(ids, citations, `storyboard claim tag ${index + 1}`);
 }
-const substantiveHeadings = ["Scientific argument", "Header", "Left — counterfactual concept", "Center — framework and benchmark scope", "Right — results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
+const substantiveHeadings = ["Scientific argument", "Header", "Upper left — counterfactual concept", "Upper right — framework and benchmark scope", "Bottom — results", "Thirty-second visitor narrative", "Two-minute visitor narrative"];
 const structuralLines = new Set([
   "**Section separation:** Use whitespace without horizontal rules between sections, including the header and footer. Preserve table rules, plot axes, and tile outlines.",
   "**Tile details:** Use title-case headings and longer dashes with slightly thicker outlines.",
   "**Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.",
   "**Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.",
   "**Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.",
-  "**Typography:** Use a ninety-six-point Georgia title, thirty-six-point Georgia subheadings, and Arial body and figure labels. Enlarge figure labels to at least twenty-two points at A0. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.",
+  "**Typography:** Use a ninety-six-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and figure labels. Set body copy near eighteen points and manuscript figure labels to at least seventeen points at A1. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.",
   "**Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.",
-  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the center-column scope tiles; linked to the repository, with no header or paper QR.",
+  "**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the upper-right scope tiles; linked to the repository, with no header or paper QR.",
   "**Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.",
   "**Evidence-view inventory:**",
   "**Footer inventory:** No bottom reproduction strip or repository/documentation links. Retain the contribution QR and non-printing provenance. Keep a compact twelve-pixel gap between the header and main body with no header bottom padding."
@@ -266,7 +266,7 @@ for (const [sectionId, claimId] of [
 }
 
 // Numeric provenance scan. Source IDs, citation metadata, and ordered-list markers are structural;
-// the only permitted prose numerals are exact geometry strings already owned by visual-spec.json.
+// Permit current geometry plus exact historical geometry checked against local-reference above.
 const blankPreservingLength = (match) => " ".repeat(match.length);
 const stripStructuralNumbers = (text) => {
   let stripped = text
@@ -294,6 +294,8 @@ const scanNumericLiterals = (text, owner, allowedPhrases = []) => {
   }
 };
 scanNumericLiterals(guidelines, "design guidelines", [
+  "1800 × 1273",
+  "1189 × 841 mm",
   `${visual.canvas.widthPx} × ${visual.canvas.heightPx}`,
   `${visual.page.widthMm} × ${visual.page.heightMm} mm`,
   visual.macroGrid.columns.join(" "),

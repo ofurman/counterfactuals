@@ -6,11 +6,11 @@ Counterfactual-explanation results are difficult to compare when protocols diffe
 
 ## Explicit reading order
 
-**Header → Left → Center → Right.** The header uses the exact manuscript title and establishes
-identity. The left column explains counterfactual explanations with an illustrative before/after
-example. The center contains the manuscript architecture above a compact benchmark-scope grid,
+**Header → Upper left → Upper right → Bottom.** The A1 portrait header uses the exact manuscript title and establishes
+identity. The upper-left column explains counterfactual explanations with an illustrative before/after
+example. The upper-right column contains the manuscript architecture above a compact benchmark-scope grid,
 followed by the contribution stack and project QR.
-The right column combines global, local, group-wise, and regression findings under one Results heading.
+The full-width bottom section combines global, local, group-wise, and regression findings in a two-by-two grid under one Results heading.
 Each result category has its own transparent dashed rounded frame. This is a visitor
 path, not a dump of manuscript sections or a full result table.
 
@@ -18,15 +18,15 @@ path, not a dump of manuscript sections or a full result table.
 
 - Paper identity and a direct benchmark hook: CEL enables controlled comparison of counterfactual explanations across multiple quality dimensions. <!-- claims: scope.protocol, conclusion.tradeoffs | sources: manuscript/main_lncs.tex#Benchmark, manuscript/main_lncs.tex#Conclusions -->
 **Identity inventory:** Exact manuscript title centered between the logos, camera-ready authors, affiliation. Show the title only once, without a subtitle, venue marker, or top color line.
-**Typography:** Use a ninety-six-point Georgia title, thirty-six-point Georgia subheadings, and Arial body and figure labels. Enlarge figure labels to at least twenty-two points at A0. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.
+**Typography:** Use a ninety-six-point Georgia title, twenty-eight-point Georgia subheadings, and Arial body and figure labels. Set body copy near eighteen points and manuscript figure labels to at least seventeen points at A1. Preserve manuscript vector artwork and lossless plot interiors in poster-only typography derivatives; do not infer or reconstruct benchmark statistics.
 **Logo inventory:** XKDD above ECML-PKDD on the left; PWr above genwro.AI above Tooploox on the right. Institutional assets come from the user-provided PUMAL reference poster; conference assets were supplied in the project. Preserve all logo files and aspect ratios and keep authorship unchanged.
-**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the center-column scope tiles; linked to the repository, with no header or paper QR.
+**QR inventory:** One labelled `Code & project` QR inside the Extend contribution below the upper-right scope tiles; linked to the repository, with no header or paper QR.
 
-## Left — counterfactual concept
+## Upper left — counterfactual concept
 
 1. **Counterfactual example:** show income, debt payments, and unchanged employment in a local before/after profile. Extend it to global and group-wise examples using the same original applicants, shared axes, and decision boundary. Every original is declined and every arrow ends at an approved counterfactual. Show a shared income increase globally, and distinct debt-payment or income changes per group. Retain invented-data provenance and model assumptions in project files rather than visible notes; keep the light background and concise captions. <!-- claims: concept.counterfactual | sources: manuscript/main_lncs.tex#Introduction -->
 
-## Center — framework and benchmark scope
+## Upper right — framework and benchmark scope
 
 **Presentation:** Omit both printed section headings and the divider between the architecture and inventory tiles. Keep section names in accessible metadata only.
 **Tile styling:** Echo the schema with rounded, pale-blue module containers, dashed dark-blue outlines, and cream heading boxes with solid rounded borders. Keep inventory text and the two-by-two arrangement unchanged.
@@ -35,12 +35,12 @@ path, not a dump of manuscript sections or a full result table.
 
 Group the dataset inventory under Classification and Regression using each dataset's task in the manuscript table, while retaining the combined dataset total. <!-- claims: scope.datasets | sources: manuscript/main_lncs.tex#Datasets -->
 
-1. Use the manuscript architecture figure at readable scale: crop its outer whitespace, enlarge it to the center-column width, and omit the repeated caption and panel background. Preserve all schema content: Data Module and Model Module feed the Explanation Engine, then the Metrics Orchestrator and counterfactual reports. <!-- claims: scope.protocol, scope.methods, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
+1. Use the manuscript architecture figure at readable scale: crop its outer whitespace, enlarge it to the upper-right column width, and omit the repeated caption and panel background. Preserve all schema content: Data Module and Model Module feed the Explanation Engine, then the Metrics Orchestrator and counterfactual reports. <!-- claims: scope.protocol, scope.methods, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
 2. The architecture must make the benchmark surface explicit: local, global, and group-wise CEs share data, models, constraints, and metrics. <!-- claims: scope.methods, contribution.protocol | sources: manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Introduction -->
 3. **Scope tiles below the framework:** name the full dataset and method inventories, task-specific backbones, and classification-table metrics in a compact two-by-two grid. Group methods into local, global, and group-wise lists. Remove standalone folds and paradigm-count tiles. Include runtime among metrics and count proximity variants once. All displayed names resolve to the manuscript-derived claim inventory. <!-- claims: scope.datasets, scope.methods, scope.backbones, scope.metrics | sources: manuscript/main_lncs.tex#Datasets, manuscript/main_lncs.tex#Methods, manuscript/main_lncs.tex#Models, manuscript/supplementary.tex#app:full_results, manuscript/tables/results_categorical.tex#tab:cat_metrics_mlp -->
 4. **Contributions beneath the tiles:** present the controlled protocol, broad benchmark, and extensible library in a compact row, with the repository QR inside Extend. <!-- claims: contribution.protocol, contribution.benchmark, contribution.library | sources: manuscript/main_lncs.tex#Introduction -->
 
-## Right — results
+## Bottom — results
 
 **Evidence-view inventory:**
 **Result frames:** Put each category inside a dashed, rounded, transparent rectangle matching the scope outlines. Keep spacing rather than standalone section divider lines.
