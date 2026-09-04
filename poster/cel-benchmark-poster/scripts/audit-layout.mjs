@@ -88,7 +88,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
         captionCount: document.querySelectorAll('.architecture-figure figcaption').length,
       },
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
-      columns: Object.fromEntries(['left', 'center', 'right', 'bottom'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
+      columns: Object.fromEntries(['top', 'examples', 'right', 'bottom'].map((column) => [column, [...document.querySelectorAll(`.poster-column--${column} > [data-section]`)].map((element) => ({ id: element.dataset.section, ...rect(element) }))])),
       resultPanels: [...document.querySelectorAll('[data-section="results"] article[data-section]')].map((element) => ({ id: element.dataset.section, ...rect(element) })),
       contributionHeadings: [...document.querySelectorAll('.contribution-item h3')].map(rect),
       contributionDetails: [...document.querySelectorAll('.contribution-item p')].map(rect),
@@ -184,7 +184,9 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
   if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.svgCount !== 1) failuresFound.push('Architecture section must render a single native schematic with no panel background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
-  if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the wide upper-right column')
+  const archCenterX = (screen.architecture.viewport.left + screen.architecture.viewport.right) / 2
+  const canvasCenterX = (screen.canvas.left + screen.canvas.right) / 2
+  if (Math.abs(archCenterX - canvasCenterX) > 1 || screen.architecture.viewport.width < 560) failuresFound.push('Architecture schema must be centred at the top of the page')
   if (Math.abs(screen.typography.titlePt - 80) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use an 80pt title, 28pt subheadings, and Arial body')
   if (Math.abs(screen.typography.resultsHeadingPt - 32) > 0.05 || screen.typography.resultsHeadingWeight !== '700') failuresFound.push('Results heading must have stronger 32pt bold hierarchy')
   for (const asset of manuscriptAssets) {
@@ -211,7 +213,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   for (const container of screen.layoutContainers) if (container.scrollWidth > container.clientWidth + 1 || container.scrollHeight > container.clientHeight + 1) failuresFound.push(`${container.name} overflows or clips content`)
   if (screen.document.scrollWidth > screen.document.clientWidth) failuresFound.push('Document has horizontal overflow')
   if (screen.sections.length !== 10 || new Set(screen.sections.map((section) => section.id)).size !== 10) failuresFound.push('Named inventory must include six top-level sections and four nested result panels')
-  for (const [column, expected] of Object.entries({ left: ['problem'], center: ['protocol', 'scope'], right: ['results'], bottom: ['guidance-limitations'] })) {
+  for (const [column, expected] of Object.entries({ top: ['scope'], examples: ['problem'], right: ['results'], bottom: ['guidance-limitations'] })) {
     if (JSON.stringify(screen.columns[column].map((section) => section.id)) !== JSON.stringify(expected)) failuresFound.push(`${column} column is not in the requested order`)
     if (screen.columns[column].some((section, index, sections) => index > 0 && sections[index - 1].bottom >= section.top)) failuresFound.push(`${column} sections overlap`)
   }
@@ -235,7 +237,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   if (qr.symbol.width !== 96 || qr.symbol.height !== 96 || qr.visibleText !== '' || qr.errorLevel !== 'H' || qr.margin !== '4' || !localGithubLogo) failuresFound.push('QR must be 96px, caption-free, high-error-correction, and contain the local GitHub SVG with a four-module quiet zone')
   if (Math.abs(qr.logo.width - 22) > 0.1 || Math.abs(qr.logo.height - 22) > 0.1 || Math.abs(qr.logo.left + qr.logo.width / 2 - qr.symbol.left - qr.symbol.width / 2) > 0.1 || Math.abs(qr.logo.top + qr.logo.height / 2 - qr.symbol.top - qr.symbol.height / 2) > 0.1) failuresFound.push('GitHub logo must be centered and undistorted inside the QR')
   if (!contributions || contributions.top <= results.bottom || Math.abs(contributions.left - screen.safeBounds.left) > 1 || Math.abs(contributions.right - screen.safeBounds.right) > 1) failuresFound.push('Contributions and their QR must span the bottom below all results')
-  if (results.top <= Math.max(...screen.columns.left.map((section) => section.bottom), ...screen.columns.center.map((section) => section.bottom)) || Math.abs(results.left - screen.safeBounds.left) > 1 || Math.abs(results.right - screen.safeBounds.right) > 1) failuresFound.push('Results must span the lower page below both upper columns')
+  if (results.top <= Math.max(...screen.columns.top.map((section) => section.bottom), ...screen.columns.examples.map((section) => section.bottom)) || Math.abs(results.left - screen.safeBounds.left) > 1 || Math.abs(results.right - screen.safeBounds.right) > 1) failuresFound.push('Results must span the lower page below the scope band and the example row')
   if (screen.resultPanels.length === 4) {
     const [global, local, group, regression] = screen.resultPanels
     if (Math.abs(global.top - local.top) > 1 || Math.abs(group.top - regression.top) > 1 || global.right >= local.left || group.right >= regression.left || Math.max(global.bottom, local.bottom) >= Math.min(group.top, regression.top)) failuresFound.push('Results must use a non-overlapping two-by-two grid')
@@ -246,8 +248,13 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
     const crops = manuscriptAssets.find((asset) => asset.kind === kind).crops
     if (crops.slice(0, 3).some((crop) => crop.display[1] !== crops[0].display[1]) || crops.slice(3).some((crop) => crop.display[1] <= crops[0].display[1] + crops[0].display[3])) failuresFound.push(`${kind} metric panels must use the three-plus-two arrangement`)
   }
-  if (Math.abs(screen.columns.center[1].bottom - screen.columns.left[0].bottom) > 1) failuresFound.push('Expanded scope tiles must align with the bottom of the example column')
+  if (screen.columns.examples[0].top <= screen.columns.top[0].bottom) failuresFound.push('The example row must sit below the scope band')
   if (screen.scopeItems.length !== 4 || screen.scopeItems.slice(0, 2).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(2).some((item) => Math.abs(item.top - screen.scopeItems[2].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[2].top) failuresFound.push('Benchmark scope must be a two-by-two named tile grid')
+  // Two tiles flank each side of the architecture; the diagram is centred vertically within the band.
+  const arch = screen.architecture.viewport
+  const band = screen.columns.top[0]
+  if ([0, 2].some((index) => screen.scopeItems[index].right >= arch.left) || [1, 3].some((index) => screen.scopeItems[index].left <= arch.right)) failuresFound.push('Scope tiles must flank the architecture schematic on both sides')
+  if (Math.abs((arch.top + arch.bottom) / 2 - (band.top + band.bottom) / 2) > 2) failuresFound.push('Architecture schematic must be vertically centred in the scope band')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const [id, [width, height]] of Object.entries({ pwr: [52.9, 85.1], genwro: [99, 25.2], tooploox: [99, 26.1] })) {
     const logo = screen.branding.logos.find((item) => item.id === id)

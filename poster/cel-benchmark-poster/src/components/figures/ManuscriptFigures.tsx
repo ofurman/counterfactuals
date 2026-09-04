@@ -68,9 +68,10 @@ function ArchChip({ x, y, w, h, title, sub, stroke = arch.navy, accent, titleSiz
 }
 
 /**
- * Poster-native redraw of the manuscript architecture (Fig. 1): five stages of the
- * controlled protocol flowing left to right. Recreated as vector shapes rather than a
- * shrunk PDF export so the labels stay legible at A1.
+ * Poster-native redraw of the manuscript architecture (Fig. 1), keeping its hub
+ * arrangement: data and model modules on top, the explanation engine in the middle,
+ * metrics and reports below. Recreated as vector shapes rather than a shrunk PDF
+ * export so the labels stay legible at A1.
  */
 export function ArchitectureFigure() {
   return (
@@ -83,7 +84,7 @@ export function ArchitectureFigure() {
     >
       <div className="architecture-image-window">
         <svg
-          viewBox="0 0 1210 470"
+          viewBox="0 0 620 460"
           role="img"
           aria-labelledby="architecture-title architecture-desc"
         >
@@ -94,65 +95,61 @@ export function ArchitectureFigure() {
             comparable reports.
           </desc>
           <defs>
-            <marker id="arch-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
-              <path d="M0,0 L9,4.5 L0,9 z" fill={arch.navyMuted} />
+            <marker id="arch-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 z" fill={arch.navyMuted} />
             </marker>
           </defs>
 
           {/* Protocol frame */}
-          <rect x={3} y={6} width={1204} height={458} rx={16} fill="none" stroke={arch.teal} strokeWidth={3} />
-          <text x={24} y={34} fill={arch.teal} fontSize={18} fontWeight={800} letterSpacing="0.04em">CONTROLLED PROTOCOL</text>
-          <text x={1186} y={34} textAnchor="end" fill={arch.navyMuted} fontSize={14}>fixed splits · shared models · one metric suite</text>
+          <rect x={3} y={3} width={614} height={454} rx={14} fill="none" stroke={arch.teal} strokeWidth={2.5} />
+          <text x={18} y={27} fill={arch.teal} fontSize={14} fontWeight={800} letterSpacing="0.04em">CONTROLLED PROTOCOL</text>
+          <text x={602} y={27} textAnchor="end" fill={arch.navyMuted} fontSize={10.5}>fixed splits · shared models · one metric suite</text>
 
-          {/* Spine arrows */}
-          <path d="M182 254 H222" stroke={arch.navyMuted} strokeWidth={3} markerEnd="url(#arch-arrow)" />
-          <path d="M472 254 H512" stroke={arch.navyMuted} strokeWidth={3} markerEnd="url(#arch-arrow)" />
-          <path d="M780 254 H820" stroke={arch.navyMuted} strokeWidth={3} markerEnd="url(#arch-arrow)" />
-          <path d="M1030 254 H1070" stroke={arch.navyMuted} strokeWidth={3} markerEnd="url(#arch-arrow)" />
+          {/* Flow arrows: data + models feed the engine; engine feeds metrics; metrics feed reports */}
+          <path d="M159 172 V194" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
+          <path d="M461 172 V194" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
+          <path d="M310 298 V320" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
+          <path d="M310 408 V420" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
+          {/* Probabilistic backbones also score plausibility */}
+          <path d="M606 106 H611 V366 H609" fill="none" stroke={arch.navyMuted} strokeWidth={1.5} strokeDasharray="4 3" markerEnd="url(#arch-arrow)" />
 
-          {/* Stage captions */}
-          <text x={94} y={64} textAnchor="middle" fill={arch.navy} fontSize={17} fontWeight={800} letterSpacing="0.04em">DATA MODULE</text>
-          <text x={347} y={64} textAnchor="middle" fill={arch.navy} fontSize={17} fontWeight={800} letterSpacing="0.04em">MODEL MODULE</text>
-          <text x={646} y={64} textAnchor="middle" fill={arch.teal} fontSize={17} fontWeight={800} letterSpacing="0.04em">EXPLANATION ENGINE</text>
-          <text x={925} y={64} textAnchor="middle" fill={arch.metricInk} fontSize={16} fontWeight={800} letterSpacing="0.03em">METRICS ORCHESTRATOR</text>
-          <text x={1137} y={64} textAnchor="middle" fill={arch.navy} fontSize={17} fontWeight={800} letterSpacing="0.04em">OUTPUT</text>
+          {/* Row 1: data + model modules */}
+          <rect x={14} y={40} width={290} height={132} rx={10} fill={arch.tintNavy} stroke={arch.navyMuted} strokeWidth={1.5} />
+          <text x={159} y={58} textAnchor="middle" fill={arch.navy} fontSize={12} fontWeight={800} letterSpacing="0.04em">DATA MODULE</text>
+          <ArchChip x={26} y={66} w={130} h={40} title="Datasets" sub="18 tabular sets" titleSize={13} subSize={10} />
+          <ArchChip x={164} y={66} w={130} h={40} title="Preprocessing" sub="scaling · encoding" titleSize={13} subSize={10} />
+          <ArchChip x={26} y={114} w={130} h={40} title="Actionability" sub="mutable features" titleSize={13} subSize={10} />
+          <ArchChip x={164} y={114} w={130} h={40} title="Feature bounds" sub="valid domains" titleSize={13} subSize={10} />
 
-          {/* Data module */}
-          <rect x={6} y={78} width={176} height={352} rx={12} fill={arch.tintNavy} stroke={arch.navyMuted} strokeWidth={1.5} />
-          <ArchChip x={18} y={92} w={152} h={68} title="Datasets" sub="18 tabular sets" />
-          <ArchChip x={18} y={174} w={152} h={68} title="Preprocessing" sub="scaling · encoding" />
-          <ArchChip x={18} y={256} w={152} h={68} title="Actionability" sub="mutable features" />
-          <ArchChip x={18} y={338} w={152} h={68} title="Feature bounds" sub="valid domains" />
+          <rect x={316} y={40} width={290} height={132} rx={10} fill={arch.tintNavy} stroke={arch.navyMuted} strokeWidth={1.5} />
+          <text x={461} y={58} textAnchor="middle" fill={arch.navy} fontSize={12} fontWeight={800} letterSpacing="0.04em">MODEL MODULE</text>
+          <text x={328} y={75} fill={arch.navyMuted} fontSize={10} fontWeight={700}>Predictive</text>
+          <ArchChip x={328} y={80} w={130} h={34} title="Classifiers" sub="LR · MLP" titleSize={12} subSize={9.5} />
+          <ArchChip x={328} y={120} w={130} h={34} title="Regressors" sub="Linear · MLP" titleSize={12} subSize={9.5} />
+          <text x={466} y={75} fill={arch.navyMuted} fontSize={10} fontWeight={700}>Probabilistic</text>
+          <ArchChip x={466} y={80} w={130} h={34} title="Density" sub="KDE · GMM" titleSize={12} subSize={9.5} />
+          <ArchChip x={466} y={120} w={130} h={34} title="Normalizing flows" sub="MAF · RealNVP · NICE" titleSize={12} subSize={9.5} />
 
-          {/* Model module */}
-          <rect x={222} y={78} width={250} height={352} rx={12} fill={arch.tintNavy} stroke={arch.navyMuted} strokeWidth={1.5} />
-          <line x1={236} y1={254} x2={458} y2={254} stroke={arch.rule} strokeWidth={1.5} />
-          <text x={236} y={106} fill={arch.navyMuted} fontSize={14} fontWeight={700}>Predictive</text>
-          <ArchChip x={236} y={116} w={222} h={54} title="Classifiers" sub="LR · MLP" titleSize={16} subSize={13} />
-          <ArchChip x={236} y={178} w={222} h={54} title="Regressors" sub="Linear · MLP" titleSize={16} subSize={13} />
-          <text x={236} y={282} fill={arch.navyMuted} fontSize={14} fontWeight={700}>Probabilistic</text>
-          <ArchChip x={236} y={292} w={222} h={54} title="Density" sub="KDE · GMM" titleSize={16} subSize={13} />
-          <ArchChip x={236} y={354} w={222} h={54} title="Normalizing flows" sub="MAF · RealNVP · NICE" titleSize={16} subSize={13} />
-
-          {/* Explanation engine — the hero stage */}
-          <rect x={512} y={78} width={268} height={352} rx={12} fill={arch.tealLight} stroke={arch.teal} strokeWidth={2.5} />
+          {/* Row 2: explanation engine — the hero stage */}
+          <rect x={14} y={198} width={592} height={100} rx={10} fill={arch.tealLight} stroke={arch.teal} strokeWidth={2.5} />
+          <text x={310} y={216} textAnchor="middle" fill={arch.teal} fontSize={13} fontWeight={800} letterSpacing="0.04em">EXPLANATION ENGINE</text>
           <g data-claim-id="scope.methods">
-            <ArchChip x={528} y={94} w={236} h={96} title="Local" sub="CCHVAE · DiCE · PPCEF · …" stroke={arch.teal} accent={arch.teal} titleSize={22} subSize={15} />
-            <ArchChip x={528} y={204} w={236} h={96} title="Global" sub="AReS · GLOBE-CE" stroke={arch.teal} accent={arch.teal} titleSize={22} subSize={15} />
-            <ArchChip x={528} y={314} w={236} h={96} title="Group-wise" sub="GLANCE · T-CREx" stroke={arch.teal} accent={arch.teal} titleSize={22} subSize={15} />
+            <ArchChip x={26} y={230} w={184} h={54} title="Local" sub="CCHVAE · DiCE · PPCEF · …" stroke={arch.teal} accent={arch.teal} titleSize={16} subSize={11} />
+            <ArchChip x={218} y={230} w={184} h={54} title="Global" sub="AReS · GLOBE-CE" stroke={arch.teal} accent={arch.teal} titleSize={16} subSize={11} />
+            <ArchChip x={410} y={230} w={184} h={54} title="Group-wise" sub="GLANCE · T-CREx" stroke={arch.teal} accent={arch.teal} titleSize={16} subSize={11} />
           </g>
 
-          {/* Metrics orchestrator */}
-          <rect x={820} y={78} width={210} height={352} rx={12} fill={arch.orangeLight} stroke={arch.orange} strokeWidth={2} />
-          <ArchChip x={832} y={92} w={186} h={68} title="Coverage & validity" stroke={arch.orange} titleSize={16} />
-          <ArchChip x={832} y={174} w={186} h={68} title="Proximity" sub="L1 · L2 · MAD" stroke={arch.orange} />
-          <ArchChip x={832} y={256} w={186} h={68} title="Sparsity" stroke={arch.orange} />
-          <ArchChip x={832} y={338} w={186} h={68} title="Plausibility" sub="density · LOF · IsoForest" stroke={arch.orange} subSize={13} />
+          {/* Row 3: metrics orchestrator */}
+          <rect x={14} y={324} width={592} height={84} rx={10} fill={arch.orangeLight} stroke={arch.orange} strokeWidth={2} />
+          <text x={310} y={342} textAnchor="middle" fill={arch.metricInk} fontSize={12} fontWeight={800} letterSpacing="0.04em">METRICS ORCHESTRATOR</text>
+          <ArchChip x={26} y={352} w={138} h={44} title="Validity" sub="coverage" stroke={arch.orange} titleSize={12} subSize={9.5} />
+          <ArchChip x={172} y={352} w={138} h={44} title="Proximity" sub="L1 · L2 · MAD" stroke={arch.orange} titleSize={12} subSize={9.5} />
+          <ArchChip x={318} y={352} w={138} h={44} title="Sparsity" sub="changed features" stroke={arch.orange} titleSize={12} subSize={9.5} />
+          <ArchChip x={464} y={352} w={138} h={44} title="Plausibility" sub="density · LOF · IsoForest" stroke={arch.orange} titleSize={12} subSize={9.5} />
 
-          {/* Output */}
-          <rect x={1070} y={194} width={134} height={120} rx={12} fill={arch.navy} />
-          <text x={1137} y={248} textAnchor="middle" fill={arch.white} fontSize={16} fontWeight={700}>Reports &amp;</text>
-          <text x={1137} y={274} textAnchor="middle" fill={arch.white} fontSize={15} fontWeight={700}>visualisations</text>
+          {/* Row 4: output */}
+          <rect x={210} y={424} width={200} height={28} rx={8} fill={arch.navy} />
+          <text x={310} y={443} textAnchor="middle" fill={arch.white} fontSize={12} fontWeight={700}>Reports &amp; visualisations</text>
         </svg>
       </div>
     </figure>

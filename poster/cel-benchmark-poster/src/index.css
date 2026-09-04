@@ -130,16 +130,23 @@ h1 {
   outline: 3px solid var(--teal-light);
 }
 
+/* Top band: two scope tiles on each side of the centred architecture schematic. */
 .scope-strip {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+  grid-template-columns: 300px minmax(0, 1fr) 300px;
+  grid-template-rows: auto auto;
+  gap: 10px;
   padding: 0;
   border-top: 0;
 }
 .scope-strip h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 25px; }
-.scope-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.scope-tiles { display: contents; margin: 0; padding: 0; list-style: none; }
+.scope-tile:nth-child(1) { grid-column: 1; grid-row: 1; }
+.scope-tile:nth-child(2) { grid-column: 3; grid-row: 1; }
+.scope-tile:nth-child(3) { grid-column: 1; grid-row: 2; }
+.scope-tile:nth-child(4) { grid-column: 3; grid-row: 2; }
+.scope-strip > .protocol-block { grid-column: 2; grid-row: 1 / span 2; display: grid; align-content: center; }
 /* Echo the manuscript's blue module containers and cream rounded nodes. */
 .scope-tile {
   --schema-ink: #10384c;
@@ -258,7 +265,7 @@ h1 {
 .source-note { margin: 8px 0 0; color: var(--navy-muted); font-size: 9px; line-height: 1.15; }
 
 /* Benchmark-first layout using graphics published with the manuscript. */
-.benchmark-grid { align-items: stretch; }
+.benchmark-grid { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
 .poster-column {
   min-width: 0;
   min-height: 0;
@@ -267,8 +274,7 @@ h1 {
   align-content: start;
   overflow: hidden;
 }
-.poster-column--left { grid-template-rows: max-content; }
-.poster-column--center { grid-template-rows: max-content 1fr; gap: 8px; }
+.poster-column--top, .poster-column--examples { grid-column: 1 / -1; grid-template-rows: max-content; }
 .poster-column--right { grid-template-rows: auto; grid-column: 1 / -1; }
 .poster-column--right { gap: 8px; }
 .poster-column--bottom { grid-column: 1 / -1; }
@@ -282,15 +288,22 @@ h1 {
 .benchmark-grid .section-copy { margin-bottom: 7px; font-size: 15px; line-height: 1.24; }
 .benchmark-grid .source-note { margin-top: 4px; font-size: 9px; line-height: 1.05; }
 
+/* Full-width example row: heading and copy share one line, three paradigms sit side by side. */
 .problem-block {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 14px;
+  align-items: baseline;
   padding: 4px 0 0 !important;
   border-top: 0;
   color: var(--navy);
   background: transparent;
 }
-.problem-block .section-copy { color: var(--navy-muted); }
-.ce-example { display: grid; gap: 2px; margin: 2px 0 0; }
-.ce-example figcaption { color: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.problem-block > h2 { grid-column: 1; }
+.problem-block > .section-copy { grid-column: 2; margin-bottom: 4px; color: var(--navy-muted); }
+.problem-block > .ce-example { grid-column: 1 / -1; }
+.ce-example { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 24px; align-items: start; margin: 2px 0 0; }
+.ce-example > figcaption { grid-column: 1 / -1; color: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .example-profile { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; line-height: 1.2; }
 .example-profile th, .example-profile td { padding: 3px 6px; border-bottom: 0; text-align: left; vertical-align: middle; }
 .example-profile th:first-child { width: 36%; padding-left: 0; }

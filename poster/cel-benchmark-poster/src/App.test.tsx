@@ -55,14 +55,16 @@ describe('poster scaffold', () => {
   it('places the concept and results in the requested columns', () => {
     const { container } = render(<App />)
     for (const [column, ids] of [
-      ['left', ['problem']],
-      ['center', ['protocol', 'scope']],
+      ['top', ['scope']],
+      ['examples', ['problem']],
       ['right', ['results']],
       ['bottom', ['guidance-limitations']],
     ] as const) {
       expect(Array.from(container.querySelectorAll(`.poster-column--${column} > [data-section]`))
         .map((element) => element.getAttribute('data-section'))).toEqual(ids)
     }
+    // The architecture sits in the middle of the scope strip, between the tiles.
+    expect(container.querySelector('.scope-strip > [data-section="protocol"] .architecture-figure')).not.toBeNull()
     expect(container.querySelector('[data-finding="regression"]')).toBeInTheDocument()
     expect(Array.from(container.querySelectorAll('[data-section="results"] article[data-section]')).map((element) => element.getAttribute('data-section'))).toEqual(['applicability', 'local-tradeoff', 'group-tradeoff', 'regression-tradeoff'])
     expect(container.querySelectorAll('.result-panel > .result-panel__outline[aria-hidden="true"]')).toHaveLength(4)

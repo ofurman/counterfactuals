@@ -25,16 +25,17 @@ export default function App() {
         <PosterCanvas>
           <PosterHeader section={resolveSection('header')} />
           <div className="poster-grid benchmark-grid">
-            <div className="poster-column poster-column--left">
+            <div className="poster-column poster-column--top">
+              <ScopeStrip section={resolveSection('scope')}>
+                <SectionBlock section={resolveSection('protocol')} className="protocol-block" showClaims={false}>
+                  <ArchitectureFigure />
+                </SectionBlock>
+              </ScopeStrip>
+            </div>
+            <div className="poster-column poster-column--examples">
               <SectionBlock section={resolveSection('problem')} className="problem-block" showClaims={false}>
                 <CounterfactualExample />
               </SectionBlock>
-            </div>
-            <div className="poster-column poster-column--center">
-              <SectionBlock section={resolveSection('protocol')} className="protocol-block" showClaims={false}>
-                <ArchitectureFigure />
-              </SectionBlock>
-              <ScopeStrip section={resolveSection('scope')} />
             </div>
             <div className="poster-column poster-column--right">
               <SectionBlock section={resolveSection('results')} className="unified-results-block" showClaims={false}>

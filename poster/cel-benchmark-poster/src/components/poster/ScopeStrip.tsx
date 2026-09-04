@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react'
 import type { ResolvedSection } from '@/data/posterData'
 import { posterData } from '@/data/posterData'
 import { SourceNote } from './SourceNote'
 
-export function ScopeStrip({ section }: { section: ResolvedSection }) {
+// `children` renders in the middle column of the strip, flanked by the four tiles.
+export function ScopeStrip({ section, children }: { section: ResolvedSection; children?: ReactNode }) {
   return (
     <section className="scope-strip" data-section={section.id}
       aria-labelledby={section.showHeading === false ? undefined : `${section.id}-heading`}
@@ -30,6 +32,7 @@ export function ScopeStrip({ section }: { section: ResolvedSection }) {
           </li>
         ))}
       </ul>
+      {children}
       <SourceNote section={section} />
     </section>
   )
