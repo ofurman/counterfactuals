@@ -18,15 +18,18 @@ describe('rendered evidence provenance', () => {
     }
   })
 
-  it('uses the original manuscript vector architecture without a repeated caption', () => {
+  it('renders a poster-native architecture schematic without a repeated caption', () => {
     const { container } = render(<App />)
     const figure = container.querySelector('.architecture-figure')
     expect(figure?.querySelector('figcaption')).toBeNull()
     expect(figure?.textContent).not.toContain('Shared evaluation protocol')
     expect(figure?.getAttribute('data-typography-asset')).toBe('architecture')
-    expect(figure?.getAttribute('data-manuscript-presentation')).toBe('original')
-    expect(figure?.querySelector('img')?.getAttribute('src')).toContain('manuscript-architecture.svg')
-    expect(figure?.querySelector('img')?.getAttribute('data-claim-id')).toBe('scope.methods')
+    expect(figure?.getAttribute('data-manuscript-presentation')).toBe('native')
+    // Recreated as vector shapes, not a shrunk manuscript raster.
+    expect(figure?.querySelector('img')).toBeNull()
+    const svg = figure?.querySelector('.architecture-image-window svg')
+    expect(svg).not.toBeNull()
+    expect(svg?.querySelector('[data-claim-id="scope.methods"]')).not.toBeNull()
   })
 
   it('binds every rendered claim marker to the live generated ledger', () => {

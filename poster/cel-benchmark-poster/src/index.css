@@ -375,6 +375,11 @@ h1 {
   height: auto;
   mix-blend-mode: multiply;
 }
+.architecture-image-window svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 
 .benchmark-grid .unified-results-block > h2, .benchmark-grid .contributions-block > h2 { font-size: var(--results-heading-size); font-weight: 700; }
 .result-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 8px; align-items: stretch; }

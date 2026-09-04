@@ -82,10 +82,9 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
       footerCount: document.querySelectorAll('.poster-footer, [data-section="reproducibility"]').length,
       architecture: {
         viewport: rect(document.querySelector('.architecture-image-window')),
-        image: rect(document.querySelector('.architecture-image-window img')),
+        svgCount: document.querySelectorAll('.architecture-image-window svg').length,
         background: getComputedStyle(document.querySelector('.protocol-block')).backgroundColor,
         outline: getComputedStyle(document.querySelector('.protocol-block')).outlineStyle,
-        blend: getComputedStyle(document.querySelector('.architecture-image-window img')).mixBlendMode,
         captionCount: document.querySelectorAll('.architecture-figure figcaption').length,
       },
       visibleProvenance: [...document.querySelectorAll('[data-source-section], [data-source-citation]')].filter((element) => element.getClientRects().length > 0).length,
@@ -116,7 +115,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
         image: rect(document.querySelector('[data-finding="regression"] img')),
       },
       resultCaptionCount: document.querySelectorAll('.result-manuscript-figure figcaption').length,
-      manuscriptAssets: [...document.querySelectorAll('[data-typography-asset]')].map((element) => ({kind: element.dataset.typographyAsset, image: rect(element.querySelector('img'))})),
+      manuscriptAssets: [...document.querySelectorAll('[data-typography-asset]')].map((element) => { const img = element.querySelector('img'); return {kind: element.dataset.typographyAsset, image: img ? rect(img) : null} }),
       typography: {
         pointsPerPixel: numberToken('--print-scale') * 0.75,
         titlePt: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize) * numberToken('--print-scale') * 0.75,
@@ -183,16 +182,18 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
     if (Math.abs(tile.outline.width - tile.tile.width + 2) > 1 || Math.abs(tile.outline.height - tile.tile.height + 2) > 1 || Math.abs(tile.outline.left - tile.tile.left - 1) > 1 || Math.abs(tile.outline.top - tile.tile.top - 1) > 1) failuresFound.push('Scope tile outline does not follow its container bounds')
   }
   if (screen.canvasTopBorderWidth !== '0px') failuresFound.push('Removed top color line remains on the canvas')
-  if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.blend !== 'multiply') failuresFound.push('Architecture section must have no panel or image background')
+  if (screen.architecture.background !== 'rgba(0, 0, 0, 0)' || screen.architecture.outline !== 'none' || screen.architecture.svgCount !== 1) failuresFound.push('Architecture section must render a single native schematic with no panel background')
   if (screen.architecture.captionCount !== 0) failuresFound.push('Removed architecture caption remains')
   if (Math.abs(screen.architecture.viewport.width - screen.columns.center[0].width) > 1 || screen.architecture.viewport.width < 700) failuresFound.push('Architecture schema must fill the wide upper-right column')
   if (Math.abs(screen.typography.titlePt - 80) > 0.05 || screen.typography.subheadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.bodyFamily !== 'Arial, sans-serif') failuresFound.push('Typography must use an 80pt title, 28pt subheadings, and Arial body')
   if (Math.abs(screen.typography.resultsHeadingPt - 32) > 0.05 || screen.typography.resultsHeadingWeight !== '700') failuresFound.push('Results heading must have stronger 32pt bold hierarchy')
   for (const asset of manuscriptAssets) {
+    // The architecture is now a poster-native vector schematic, not an <img> crop.
+    if (asset.kind === 'architecture') continue
     const rendered = screen.manuscriptAssets.find((item) => item.kind === asset.kind)
-    if (!rendered || Math.abs(rendered.image.height - rendered.image.width * asset.height / asset.width) > 1) failuresFound.push(`${asset.kind} typography asset is missing or stretched`)
+    if (!rendered || !rendered.image || Math.abs(rendered.image.height - rendered.image.width * asset.height / asset.width) > 1) failuresFound.push(`${asset.kind} typography asset is missing or stretched`)
     const printSize = asset.minimumFontSize * rendered.image.width / asset.width * screen.typography.pointsPerPixel
-    if (asset.kind !== 'architecture' && printSize < 17) failuresFound.push(`${asset.kind} labels are below 17pt at A1: ${printSize}`)
+    if (printSize < 17) failuresFound.push(`${asset.kind} labels are below 17pt at A1: ${printSize}`)
   }
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
   if (JSON.stringify(screen.examplePlots.map((plot) => plot.paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) failuresFound.push('All three Matplotlib examples must be visible')
