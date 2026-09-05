@@ -123,7 +123,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
         resultsHeadingWeight: getComputedStyle(document.querySelector('.unified-results-block > h2')).fontWeight,
         contributionHeadingPt: fontSizes('.contribution-item h3').map((size) => size * numberToken('--print-scale') * 0.75),
         contributionHeadingStyles: [...document.querySelectorAll('.contribution-item h3')].map((element) => ({ family: getComputedStyle(element).fontFamily, weight: getComputedStyle(element).fontWeight })),
-        sectionHeadingStyles: [...document.querySelectorAll('.unified-results-block > h2, .contributions-block > h2')].map((element) => { const style = getComputedStyle(element); return { family: style.fontFamily, weight: style.fontWeight, size: style.fontSize, lineHeight: style.lineHeight, color: style.color } }),
+        sectionHeadingStyles: [...document.querySelectorAll('.problem-block > h2, .unified-results-block > h2, .contributions-block > h2')].map((element) => { const style = getComputedStyle(element); return { family: style.fontFamily, weight: style.fontWeight, size: style.fontSize, lineHeight: style.lineHeight, color: style.color } }),
         contributionDetailPt: fontSizes('.contribution-item p').map((size) => size * numberToken('--print-scale') * 0.75),
         subheadingPt: fontSizes('.recourse-panel h3, .result-panel h3').map((size) => size * numberToken('--print-scale') * 0.75),
         bodyFamily: getComputedStyle(document.querySelector('.section-copy')).fontFamily,
@@ -200,7 +200,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   if (screen.exampleBackground !== 'rgba(0, 0, 0, 0)' && screen.exampleBackground !== 'rgb(255, 253, 248)') failuresFound.push('Example panel must use the light poster background')
   if (JSON.stringify(screen.examplePlots.map((plot) => plot.paradigm)) !== JSON.stringify(['local', 'global', 'group-wise'])) failuresFound.push('All three Matplotlib examples must be visible')
   if (new Set(screen.examplePlots.map((plot) => plot.viewport.width)).size !== 1) failuresFound.push('Example plots must share identical widths')
-  if (Math.abs(screen.examplePlots[0].viewport.height - screen.examplePlots[1].viewport.height) > 1 || screen.examplePlots[2].viewport.height <= screen.examplePlots[1].viewport.height) failuresFound.push('Only group-wise must reserve the extra legend row')
+  if (Math.abs(screen.examplePlots[0].viewport.height - screen.examplePlots[2].viewport.height) > 1 || screen.examplePlots[1].viewport.height <= screen.examplePlots[0].viewport.height) failuresFound.push('Only global must reserve the extra legend row')
   for (const plot of screen.examplePlots) {
     const asset = exampleAssets.find((candidate) => candidate.paradigm === plot.paradigm)
     if (!plot.loaded || plot.renderer !== 'matplotlib') failuresFound.push(`${plot.paradigm} SVG failed to load`)
@@ -231,7 +231,10 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   if (screen.contributionDetails.length !== 3 || screen.contributionDetails.some((detail, index) => detail.top < screen.contributionHeadings[index].bottom || detail.bottom > contributions.bottom + 1 || Math.abs(detail.top - screen.contributionDetails[0].top) > 1)) failuresFound.push('Contribution supporting lines must align below their headings and stay inside the strip')
   if (JSON.stringify(screen.contributionNumbers.map((number) => number.text)) !== '["01","02","03"]' || screen.contributionNumbers.some((number) => number.color !== 'rgb(8, 127, 120)')) failuresFound.push('Contributions must use small ordered teal numerals')
   if (screen.typography.contributionHeadingPt.some((size) => Math.abs(size - 28) > 0.05) || screen.typography.contributionHeadingStyles.some((style) => !style.family.startsWith('Georgia') || style.weight !== '700') || screen.typography.contributionDetailPt.some((size) => Math.abs(size - 18) > 0.05)) failuresFound.push('Contribution headings must match result titles at 28pt Georgia, but bold; supporting lines stay 18pt')
-  if (JSON.stringify(screen.typography.sectionHeadingStyles[0]) !== JSON.stringify(screen.typography.sectionHeadingStyles[1])) failuresFound.push('Contributions and Results section headings must have identical typography')
+  if (screen.typography.sectionHeadingStyles.length !== 3 || screen.typography.sectionHeadingStyles.some((style) => JSON.stringify(style) !== JSON.stringify(screen.typography.sectionHeadingStyles[0]))) failuresFound.push('Problem, Results, and Contributions section headings must have identical typography')
+  const majorSections = ['top', 'examples', 'right', 'bottom'].map((column) => screen.columns[column][0])
+  const majorSectionGaps = majorSections.slice(1).map((section, index) => section.top - majorSections[index].bottom)
+  if (majorSectionGaps.some((gap) => Math.abs(gap - 12) > 0.1)) failuresFound.push('Major poster sections must use a consistent 12px vertical gap')
   const qr = screen.qrBranding
   const localGithubLogo = new URL(qr.logoSource).origin === new URL(url).origin && /\/GitHub_Invertocat_Black_Clearspace\.[a-zA-Z0-9_-]+\.svg$/.test(new URL(qr.logoSource).pathname)
   if (qr.symbol.width !== 96 || qr.symbol.height !== 96 || qr.visibleText !== '' || qr.errorLevel !== 'H' || qr.margin !== '4' || !localGithubLogo) failuresFound.push('QR must be 96px, caption-free, high-error-correction, and contain the local GitHub SVG with a four-module quiet zone')

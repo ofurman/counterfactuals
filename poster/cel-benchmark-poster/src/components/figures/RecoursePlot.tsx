@@ -18,8 +18,8 @@ export function RecoursePlot({ paradigm }: { paradigm: ExampleParadigm }) {
       data-example-asset={`poster/plots/generated/ce-example-${paradigm}.svg`}
       data-example-renderer="matplotlib"
       width="640"
-      height={paradigm === 'group-wise' ? '298' : '265'}
-      alt={`${paradigm} loan example. ${description}. All amounts are monthly; employment stays full-time.${paradigm === 'group-wise' ? ' Legend: blue and green original points; orange counterfactual points; decision boundary line.' : ''}`}
+      height={paradigm === 'global' ? '298' : '265'}
+      alt={`${paradigm} loan example. ${description}. All amounts are monthly; employment stays full-time.${paradigm === 'global' ? ' Legend: blue original points; orange counterfactual points; decision boundary line.' : ''}`}
     />
   )
 }

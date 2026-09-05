@@ -40,7 +40,7 @@ describe('print contract', () => {
     expect(css).toMatch(/\.recourse-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
     expect(css).toMatch(/\.result-panel h3\s*\{[^}]*font-size: var\(--subheading-size\)/)
     expect(css).toMatch(/\.contribution-item h3\s*\{[^}]*font-family: Georgia, 'Times New Roman', serif;[^}]*font-size: var\(--subheading-size\);[^}]*font-weight: 700/)
-    expect(css).toMatch(/\.benchmark-grid \.unified-results-block > h2, \.benchmark-grid \.contributions-block > h2\s*\{[^}]*font-size: var\(--results-heading-size\);[^}]*font-weight: 700/)
+    expect(css).toMatch(/\.benchmark-grid \.problem-block > h2,\s*\.benchmark-grid \.unified-results-block > h2,\s*\.benchmark-grid \.contributions-block > h2\s*\{[^}]*font-size: var\(--results-heading-size\);[^}]*font-weight: 700/)
   })
   it('aligns result frames and contribution headings while opening up scope inventories', () => {
     expect(css).toMatch(/\.result-panels\s*\{[^}]*align-items: stretch/)
@@ -55,6 +55,7 @@ describe('print contract', () => {
   it('fixes the native canvas and asymmetric macro grid', () => {
     expect(cssNumber('poster-width')).toBe(visualSpec.canvas.widthPx)
     expect(cssNumber('poster-height')).toBe(visualSpec.canvas.heightPx)
+    expect(css).toMatch(/\.benchmark-grid\s*\{[^}]*row-gap: 12px/)
     expect(css).toContain(`grid-template-columns: ${visualSpec.macroGrid.columns.join(' ')}`)
     expect(cssNumber('safe-top')).toBe(visualSpec.safeArea.topPx)
     expect(cssNumber('safe-right')).toBe(visualSpec.safeArea.rightPx)

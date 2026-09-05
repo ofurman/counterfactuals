@@ -265,7 +265,7 @@ h1 {
 .source-note { margin: 8px 0 0; color: var(--navy-muted); font-size: 9px; line-height: 1.15; }
 
 /* Benchmark-first layout using graphics published with the manuscript. */
-.benchmark-grid { grid-template-columns: minmax(0, 1fr); row-gap: 8px; align-items: stretch; }
+.benchmark-grid { grid-template-columns: minmax(0, 1fr); row-gap: 12px; align-items: stretch; }
 .poster-column {
   min-width: 0;
   min-height: 0;
@@ -297,7 +297,7 @@ h1 {
   color: var(--navy);
   background: transparent;
 }
-.problem-block > h2 { margin-bottom: 3px; }
+.problem-block > h2 { margin-bottom: 5px; }
 .problem-block > .section-copy { display: none; }
 .ce-example { display: grid; gap: 4px; margin: 0; }
 .ce-definition { margin: 0 !important; color: var(--navy) !important; font-size: 15px !important; line-height: 1.24 !important; }
@@ -399,7 +399,12 @@ h1 {
   height: auto;
 }
 
-.benchmark-grid .unified-results-block > h2, .benchmark-grid .contributions-block > h2 { font-size: var(--results-heading-size); font-weight: 700; }
+.benchmark-grid .problem-block > h2,
+.benchmark-grid .unified-results-block > h2,
+.benchmark-grid .contributions-block > h2 {
+  font-size: var(--results-heading-size);
+  font-weight: 700;
+}
 .result-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 8px; align-items: stretch; }
 .benchmark-grid .result-panel { position: relative; padding: 12px; border: 0; border-radius: 10px; background: transparent; }
 .result-panel h3 { margin: 0 0 8px; font-family: Georgia, 'Times New Roman', serif; font-size: var(--subheading-size); line-height: 1.1; font-weight: 400; }

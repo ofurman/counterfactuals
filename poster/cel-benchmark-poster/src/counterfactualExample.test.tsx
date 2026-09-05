@@ -86,8 +86,8 @@ describe('illustrative CE example', () => {
       expect(plot.dataset.exampleAsset).toBe(`poster/plots/generated/ce-example-${paradigm}.svg`)
       expect(plot.getAttribute('src')).toContain(`ce-example-${paradigm}.svg`)
       expect(plot.getAttribute('width')).toBe('640')
-      expect(plot.getAttribute('height')).toBe(paradigm === 'group-wise' ? '298' : '265')
-      expect(plot.alt.includes('Legend:')).toBe(paradigm === 'group-wise')
+      expect(plot.getAttribute('height')).toBe(paradigm === 'global' ? '298' : '265')
+      expect(plot.alt.includes('Legend:')).toBe(paradigm === 'global')
       for (const { id, original, counterfactual } of exampleTransitions(paradigm)) {
         expect(plot.alt).toContain(`${id}: Declined at income €${original.monthlyIncome} and debt payments €${original.monthlyDebt}; Approved at income €${counterfactual.monthlyIncome} and debt payments €${counterfactual.monthlyDebt}`)
       }

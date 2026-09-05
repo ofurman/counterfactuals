@@ -19,7 +19,6 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.ticker import FuncFormatter
@@ -231,8 +230,8 @@ def draw_example(ax, example, paradigm):
 
 
 def create_figure(example, paradigms):
-    """Keep axes sizes fixed; reserve a legend row only when group-wise is present."""
-    extra = LEGEND_HEIGHT if "group-wise" in paradigms else 0
+    """Keep axes sizes fixed; reserve a legend row only when global is present."""
+    extra = LEGEND_HEIGHT if "global" in paradigms else 0
     height = PLOT_HEIGHT + extra
     fig, axes = plt.subplots(
         1, len(paradigms), figsize=(6.4 * len(paradigms), height), squeeze=False
@@ -246,37 +245,33 @@ def create_figure(example, paradigms):
     )
     for ax, paradigm in zip(axes[0], paradigms):
         draw_example(ax, example, paradigm)
-        if paradigm == "group-wise":
-            add_group_legend(fig, ax, (paradigms.index(paradigm) + 0.5) / len(paradigms))
+        if paradigm == "global":
+            add_global_legend(fig, ax, (paradigms.index(paradigm) + 0.5) / len(paradigms))
     return fig
 
 
-def add_group_legend(fig, ax, center):
-    """Both original group colors share the same declined status."""
-    originals = tuple(
-        Line2D(
-            [],
-            [],
-            marker="o",
-            linestyle="none",
-            color=matplotlib.colormaps["tab10"](index),
-            alpha=0.8,
-            markersize=np.sqrt(50),
-        )
-        for index in (0, 2)
+def add_global_legend(fig, ax, center):
+    """Label the marks once beneath the shared global-change plot."""
+    original = Line2D(
+        [],
+        [],
+        marker="o",
+        linestyle="none",
+        color=matplotlib.colormaps["tab10"](0),
+        alpha=0.8,
+        markersize=np.sqrt(50),
     )
     counterfactual = Line2D(
         [], [], marker="D", linestyle="none", color="orange", alpha=0.8, markersize=np.sqrt(50)
     )
     boundary = next(
-        collection for collection in ax.collections if collection.get_gid() == "group-wise-boundary"
+        collection for collection in ax.collections if collection.get_gid() == "global-boundary"
     )
     colors = boundary.get_edgecolors()
     line = Line2D([], [], color=colors[len(colors) // 2], linewidth=boundary.get_linewidths()[0])
     legend = fig.legend(
-        handles=[originals, counterfactual, line],
+        handles=[original, counterfactual, line],
         labels=LEGEND_LABELS,
-        handler_map={tuple: HandlerTuple(ndivide=None)},
         loc="lower center",
         bbox_to_anchor=(center, 0.01),
         borderaxespad=0,
@@ -288,7 +283,7 @@ def add_group_legend(fig, ax, center):
         handletextpad=0.45,
         columnspacing=0.8,
     )
-    legend.set_gid("group-wise-legend")
+    legend.set_gid("global-legend")
 
 
 def asset_metadata(example, data_path, selected, transparent):
@@ -302,7 +297,7 @@ def asset_metadata(example, data_path, selected, transparent):
         "transparent": transparent,
         "minimumFontPt": LABEL_SIZE,
         "fontFamily": "Arial",
-        "legendLabels": LEGEND_LABELS if "group-wise" in selected else [],
+        "legendLabels": LEGEND_LABELS if "global" in selected else [],
         "transitions": {
             paradigm: [
                 {"id": t.applicant, "original": t.original, "counterfactual": t.counterfactual}

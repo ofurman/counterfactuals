@@ -110,7 +110,7 @@ def test_equal_axes_and_no_clipped_text(example, selected):
     fig = plots.create_figure(example, selected)
     fig.canvas.draw()
     assert not fig.texts
-    assert len(fig.legends) == int("group-wise" in selected)
+    assert len(fig.legends) == int("global" in selected)
     assert all(not ax.get_title() for ax in fig.axes)
     renderer = fig.canvas.get_renderer()
     sizes = [ax.get_window_extent(renderer).size for ax in fig.axes]
@@ -126,38 +126,34 @@ def test_equal_axes_and_no_clipped_text(example, selected):
         assert bounds.y1 <= fig.bbox.y1 + 1, label.get_text()
 
 
-def test_group_legend_matches_marks_and_sits_below_the_plot(example):
+def test_global_legend_matches_marks_and_sits_below_the_plot(example):
     local = plots.create_figure(example, ("local",))
-    group = plots.create_figure(example, ("group-wise",))
+    global_plot = plots.create_figure(example, ("global",))
     local.canvas.draw()
-    group.canvas.draw()
-    np.testing.assert_allclose(local.axes[0].bbox.size, group.axes[0].bbox.size)
-    legend = group.legends[0]
+    global_plot.canvas.draw()
+    np.testing.assert_allclose(local.axes[0].bbox.size, global_plot.axes[0].bbox.size)
+    legend = global_plot.legends[0]
     assert [label.get_text() for label in legend.get_texts()] == plots.LEGEND_LABELS
-    assert legend.get_gid() == "group-wise-legend"
-    renderer = group.canvas.get_renderer()
+    assert legend.get_gid() == "global-legend"
+    renderer = global_plot.canvas.get_renderer()
     assert (
         legend.get_window_extent(renderer).y1
-        < group.axes[0].xaxis.label.get_window_extent(renderer).y0
+        < global_plot.axes[0].xaxis.label.get_window_extent(renderer).y0
     )
     lines = legend.findobj(plots.Line2D)
-    assert len(lines) == 4
-    assert [line.get_marker() for line in lines[:3]] == ["o", "o", "D"]
+    assert len(lines) == 3
+    assert [line.get_marker() for line in lines[:2]] == ["o", "D"]
     np.testing.assert_allclose(
         colors.to_rgba(lines[0].get_color(), lines[0].get_alpha()),
         colors.to_rgba(plots.matplotlib.colormaps["tab10"](0), 0.8),
     )
     np.testing.assert_allclose(
-        colors.to_rgba(lines[1].get_color(), lines[1].get_alpha()),
-        colors.to_rgba(plots.matplotlib.colormaps["tab10"](2), 0.8),
+        colors.to_rgba(lines[1].get_color(), lines[1].get_alpha()), colors.to_rgba("orange", 0.8)
     )
-    np.testing.assert_allclose(
-        colors.to_rgba(lines[2].get_color(), lines[2].get_alpha()), colors.to_rgba("orange", 0.8)
-    )
-    boundary = group.axes[0].collections[0]
+    boundary = global_plot.axes[0].collections[0]
     edge_colors = boundary.get_edgecolors()
-    np.testing.assert_allclose(lines[3].get_color(), edge_colors[len(edge_colors) // 2])
-    assert lines[3].get_linewidth() == boundary.get_linewidths()[0]
+    np.testing.assert_allclose(lines[2].get_color(), edge_colors[len(edge_colors) // 2])
+    assert lines[2].get_linewidth() == boundary.get_linewidths()[0]
     assert boundary.get_alpha() == 1
     assert boundary.get_linewidths()[0] == plots.BOUNDARY_WIDTH
     np.testing.assert_allclose(edge_colors, [colors.to_rgba(plots.BOUNDARY_COLOR)])

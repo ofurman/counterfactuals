@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:description>{"dataSha256": "4438ecdd73e049887669e11d4e224f5f41e7b2127fb3ed0a9d639f0a8e8811da", "styleSha256": "ac304d941a5a0eb9a5db6fb929e6e5ea62abe63a775c3285a051bc6fdf8610f2", "generatorSha256": "b43d9acf4928f89422e825c72b6f7a163cdbfabe328a204ac50f61b8178f85e4", "transparent": true, "minimumFontPt": 16, "fontFamily": "Arial", "legendLabels": ["Original", "Counterfactual", "Decision boundary"], "transitions": {"local": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}], "global": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4300, "monthlyDebt": 1200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4500, "monthlyDebt": 1300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}], "group-wise": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}]}}</dc:description>
+    <dc:description>{"dataSha256": "4438ecdd73e049887669e11d4e224f5f41e7b2127fb3ed0a9d639f0a8e8811da", "styleSha256": "ac304d941a5a0eb9a5db6fb929e6e5ea62abe63a775c3285a051bc6fdf8610f2", "generatorSha256": "47c20da01e43977ed9df478ed44519c3ed881a6c750ebc51105286baae6e3432", "transparent": true, "minimumFontPt": 16, "fontFamily": "Arial", "legendLabels": ["Original", "Counterfactual", "Decision boundary"], "transitions": {"local": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}], "global": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4300, "monthlyDebt": 1200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 4500, "monthlyDebt": 1300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}], "group-wise": [{"id": "A", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 1200}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3000, "monthlyDebt": 200}}, {"id": "B", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 1300}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3200, "monthlyDebt": 300}}, {"id": "C", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2200, "monthlyDebt": 700}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3500, "monthlyDebt": 700}}, {"id": "D", "original": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 2400, "monthlyDebt": 800}, "counterfactual": {"age": 35, "employment": "Full-time", "creditHistoryYears": 6, "loanAmount": 15000, "monthlyIncome": 3700, "monthlyDebt": 800}}]}}</dc:description>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -9701,33 +9701,15 @@ z
     </g>
    </g>
   </g>
-  <g id="group-wise-legend">
+  <g id="global-legend">
    <g id="line2d_37">
     <g>
-     <use xlink:href="#mcc1f62c31a" x="954.55" y="203.4469" style="fill: #1f77b4; fill-opacity: 0.8; stroke: #1f77b4; stroke-opacity: 0.8"/>
-    </g>
-   </g>
-   <g id="line2d_38">
-    <defs>
-     <path id="m700d288b0e" d="M 0 3.535534
-C 0.937635 3.535534 1.836992 3.163008 2.5 2.5
-C 3.163008 1.836992 3.535534 0.937635 3.535534 0
-C 3.535534 -0.937635 3.163008 -1.836992 2.5 -2.5
-C 1.836992 -3.163008 0.937635 -3.535534 0 -3.535534
-C -0.937635 -3.535534 -1.836992 -3.163008 -2.5 -2.5
-C -3.163008 -1.836992 -3.535534 -0.937635 -3.535534 0
-C -3.535534 0.937635 -3.163008 1.836992 -2.5 2.5
-C -1.836992 3.163008 -0.937635 3.535534 0 3.535534
-z
-" style="stroke: #2ca02c; stroke-opacity: 0.8"/>
-    </defs>
-    <g>
-     <use xlink:href="#m700d288b0e" x="965.75" y="203.4469" style="fill: #2ca02c; fill-opacity: 0.8; stroke: #2ca02c; stroke-opacity: 0.8"/>
+     <use xlink:href="#mcc1f62c31a" x="499.35" y="203.4469" style="fill: #1f77b4; fill-opacity: 0.8; stroke: #1f77b4; stroke-opacity: 0.8"/>
     </g>
    </g>
    <g id="text_40">
     <!-- Original -->
-    <g transform="translate(978.55 209.0469) scale(0.16 -0.16)">
+    <g transform="translate(517.75 209.0469) scale(0.16 -0.16)">
      <defs>
       <path id="ArialMT-4f" d="M 309 2231
 Q 309 3372 921 4017
@@ -9815,7 +9797,7 @@ z
      <use xlink:href="#ArialMT-6c" transform="translate(322.363281 0)"/>
     </g>
    </g>
-   <g id="line2d_39">
+   <g id="line2d_38">
     <defs>
      <path id="md53b67080f" d="M -0 5
 L 5 0
@@ -9825,12 +9807,12 @@ z
 " style="stroke: #ffa500; stroke-opacity: 0.8; stroke-linejoin: miter"/>
     </defs>
     <g>
-     <use xlink:href="#md53b67080f" x="1057.68" y="203.4469" style="fill: #ffa500; fill-opacity: 0.8; stroke: #ffa500; stroke-opacity: 0.8; stroke-linejoin: miter"/>
+     <use xlink:href="#md53b67080f" x="596.88" y="203.4469" style="fill: #ffa500; fill-opacity: 0.8; stroke: #ffa500; stroke-opacity: 0.8; stroke-linejoin: miter"/>
     </g>
    </g>
    <g id="text_41">
     <!-- Counterfactual -->
-    <g transform="translate(1076.08 209.0469) scale(0.16 -0.16)">
+    <g transform="translate(615.28 209.0469) scale(0.16 -0.16)">
      <defs>
       <path id="ArialMT-43" d="M 3763 1606
 L 4369 1453
@@ -9918,15 +9900,15 @@ z
      <use xlink:href="#ArialMT-6c" transform="translate(628.173828 0)"/>
     </g>
    </g>
-   <g id="line2d_40">
-    <path d="M 1192.935 203.4469
-L 1204.135 203.4469
-L 1215.335 203.4469
+   <g id="line2d_39">
+    <path d="M 732.135 203.4469
+L 743.335 203.4469
+L 754.535 203.4469
 " style="fill: none; stroke: #087f78; stroke-width: 1.4; stroke-linecap: square"/>
    </g>
    <g id="text_42">
     <!-- Decision boundary -->
-    <g transform="translate(1222.535 209.0469) scale(0.16 -0.16)">
+    <g transform="translate(761.735 209.0469) scale(0.16 -0.16)">
      <defs>
       <path id="ArialMT-64" d="M 2575 0
 L 2575 419
