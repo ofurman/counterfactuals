@@ -265,7 +265,7 @@ h1 {
 .source-note { margin: 8px 0 0; color: var(--navy-muted); font-size: 9px; line-height: 1.15; }
 
 /* Benchmark-first layout using graphics published with the manuscript. */
-.benchmark-grid { grid-template-columns: minmax(0, 1fr); row-gap: 12px; align-items: stretch; }
+.benchmark-grid { grid-template-columns: minmax(0, 1fr); row-gap: 26px; align-items: stretch; }
 .poster-column {
   min-width: 0;
   min-height: 0;
@@ -300,8 +300,8 @@ h1 {
 .problem-block > h2 { margin-bottom: 5px; }
 .problem-block > .section-copy { display: none; }
 .ce-example { display: grid; gap: 4px; margin: 0; }
-.ce-definition { margin: 0 !important; color: var(--navy) !important; font-size: 15px !important; line-height: 1.24 !important; }
-.ce-what-if { margin: 0; padding: 6px 10px; color: var(--navy); background: rgba(83, 98, 116, 0.08); border-left: 4px solid rgba(83, 98, 116, 0.38); font-family: Georgia, 'Times New Roman', serif; font-size: 13.5px; line-height: 1.18; }
+.ce-definition { margin: 0 !important; color: var(--navy) !important; font-size: 16px !important; line-height: 1.24 !important; }
+.ce-what-if { margin: 0; padding: 6px 10px; color: var(--navy); background: rgba(83, 98, 116, 0.08); border-left: 4px solid rgba(83, 98, 116, 0.38); font-family: Georgia, 'Times New Roman', serif; font-size: 14px; line-height: 1.18; }
 .ce-what-if p { margin: 0; white-space: nowrap; }
 .ce-example__accessible-label { display: none; }
 .ce-example__panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }

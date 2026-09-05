@@ -234,7 +234,7 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   if (screen.typography.sectionHeadingStyles.length !== 3 || screen.typography.sectionHeadingStyles.some((style) => JSON.stringify(style) !== JSON.stringify(screen.typography.sectionHeadingStyles[0]))) failuresFound.push('Problem, Results, and Contributions section headings must have identical typography')
   const majorSections = ['top', 'examples', 'right', 'bottom'].map((column) => screen.columns[column][0])
   const majorSectionGaps = majorSections.slice(1).map((section, index) => section.top - majorSections[index].bottom)
-  if (majorSectionGaps.some((gap) => Math.abs(gap - 12) > 0.1)) failuresFound.push('Major poster sections must use a consistent 12px vertical gap')
+  if (majorSectionGaps.some((gap) => Math.abs(gap - 26) > 0.1)) failuresFound.push('Major poster sections must use a consistent 26px vertical gap')
   const qr = screen.qrBranding
   const localGithubLogo = new URL(qr.logoSource).origin === new URL(url).origin && /\/GitHub_Invertocat_Black_Clearspace\.[a-zA-Z0-9_-]+\.svg$/.test(new URL(qr.logoSource).pathname)
   if (qr.symbol.width !== 96 || qr.symbol.height !== 96 || qr.visibleText !== '' || qr.errorLevel !== 'H' || qr.margin !== '4' || !localGithubLogo) failuresFound.push('QR must be 96px, caption-free, high-error-correction, and contain the local GitHub SVG with a four-module quiet zone')
