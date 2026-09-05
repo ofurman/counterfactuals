@@ -37,8 +37,8 @@ function ResultFigure({ alt, claimId, className = '', finding, image, source, so
 
 const arch = {
   ...posterData.visualSpec.colors,
+  scopeInk: '#10384c',
   tintNavy: '#eef1f6',
-  metricInk: '#a53a0e',
 }
 
 type ChipProps = {
@@ -49,20 +49,21 @@ type ChipProps = {
   title: string
   sub?: string
   stroke?: string
-  accent?: string
   titleSize?: number
   subSize?: number
 }
 
-function ArchChip({ x, y, w, h, title, sub, stroke = arch.navy, accent, titleSize = 18, subSize = 14 }: ChipProps) {
+function ArchChip({ x, y, w, h, title, sub, stroke = arch.scopeInk, titleSize = 18, subSize = 14 }: ChipProps) {
   const cx = x + w / 2
-  const titleY = y + (sub ? h * 0.42 : h * 0.58) + 4
+  const cy = y + h / 2
+  const lineGap = 2
+  const titleY = sub ? cy - (subSize + lineGap) / 2 : cy
+  const subY = cy + (titleSize + lineGap) / 2
   return (
     <g>
       <rect x={x} y={y} width={w} height={h} rx={8} fill={arch.white} stroke={stroke} strokeWidth={1.5} />
-      {accent ? <rect x={x} y={y} width={6} height={h} rx={3} fill={accent} /> : null}
-      <text x={cx} y={titleY} textAnchor="middle" fill={arch.navy} fontSize={titleSize} fontWeight={700}>{title}</text>
-      {sub ? <text x={cx} y={y + h * 0.72 + 6} textAnchor="middle" fill={arch.navyMuted} fontSize={subSize}>{sub}</text> : null}
+      <text x={cx} y={titleY} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={titleSize} fontWeight={700}>{title}</text>
+      {sub ? <text x={cx} y={subY} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={subSize}>{sub}</text> : null}
     </g>
   )
 }
@@ -84,72 +85,66 @@ export function ArchitectureFigure() {
     >
       <div className="architecture-image-window">
         <svg
-          viewBox="0 0 620 460"
+          viewBox="0 0 620 464"
           role="img"
           aria-labelledby="architecture-title architecture-desc"
         >
-          <title id="architecture-title">CEL controlled benchmark architecture</title>
+          <title id="architecture-title">CEL benchmark architecture</title>
           <desc id="architecture-desc">
-            One controlled protocol: a data module and predictive or probabilistic models feed local,
-            global, and group-wise counterfactual methods, which a shared metrics suite scores into
-            comparable reports.
+            A data module and predictive or probabilistic models feed local, global, and group-wise
+            counterfactual methods, which a metrics suite scores into comparable reports.
           </desc>
           <defs>
-            <marker id="arch-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-              <path d="M0,0 L8,4 L0,8 z" fill={arch.navyMuted} />
+            <marker id="arch-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+              <path d="M0,0 L8,4 L0,8 z" fill={arch.scopeInk} />
             </marker>
           </defs>
 
-          {/* Protocol frame */}
-          <rect x={3} y={3} width={614} height={454} rx={14} fill="none" stroke={arch.teal} strokeWidth={2.5} />
-          <text x={18} y={27} fill={arch.teal} fontSize={14} fontWeight={800} letterSpacing="0.04em">CONTROLLED PROTOCOL</text>
-          <text x={602} y={27} textAnchor="end" fill={arch.navyMuted} fontSize={10.5}>fixed splits · shared models · one metric suite</text>
+          {/* Row 1: data and model modules */}
+          <rect x={14} y={4} width={290} height={152} rx={10} fill={arch.tintNavy} stroke={arch.scopeInk} strokeWidth={1.5} />
+          <text x={159} y={18} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={12} fontWeight={800} letterSpacing="0.04em">DATA MODULE</text>
+          <ArchChip x={26} y={30} w={129} h={50} title="Datasets" sub="18 tabular sets" titleSize={13} subSize={10} />
+          <ArchChip x={163} y={30} w={129} h={50} title="Preprocessing" sub="scaling · encoding" titleSize={13} subSize={10} />
+          <ArchChip x={26} y={90} w={129} h={50} title="Actionability" sub="mutable features" titleSize={13} subSize={10} />
+          <ArchChip x={163} y={90} w={129} h={50} title="Feature bounds" sub="valid domains" titleSize={13} subSize={10} />
 
-          {/* Flow arrows: data + models feed the engine; engine feeds metrics; metrics feed reports */}
-          <path d="M159 172 V194" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
-          <path d="M461 172 V194" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
-          <path d="M310 298 V320" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
-          <path d="M310 408 V420" stroke={arch.navyMuted} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
-          {/* Probabilistic backbones also score plausibility */}
-          <path d="M606 106 H611 V366 H609" fill="none" stroke={arch.navyMuted} strokeWidth={1.5} strokeDasharray="4 3" markerEnd="url(#arch-arrow)" />
+          <rect x={316} y={4} width={290} height={152} rx={10} fill={arch.tintNavy} stroke={arch.scopeInk} strokeWidth={1.5} />
+          <text x={461} y={18} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={12} fontWeight={800} letterSpacing="0.04em">MODEL MODULE</text>
+          <text x={328} y={33} dominantBaseline="middle" fill={arch.scopeInk} fontSize={10} fontWeight={700}>Predictive</text>
+          <ArchChip x={328} y={40} w={129} h={42} title="Classifiers" sub="LR · MLP" titleSize={12} subSize={9.5} />
+          <ArchChip x={328} y={94} w={129} h={42} title="Regressors" sub="Linear · MLP" titleSize={12} subSize={9.5} />
+          <text x={465} y={33} dominantBaseline="middle" fill={arch.scopeInk} fontSize={10} fontWeight={700}>Probabilistic</text>
+          <ArchChip x={465} y={40} w={129} h={42} title="Density" sub="KDE · GMM" titleSize={12} subSize={9.5} />
+          <ArchChip x={465} y={94} w={129} h={42} title="Normalizing flows" sub="MAF · RealNVP · NICE" titleSize={12} subSize={9.5} />
 
-          {/* Row 1: data + model modules */}
-          <rect x={14} y={40} width={290} height={132} rx={10} fill={arch.tintNavy} stroke={arch.navyMuted} strokeWidth={1.5} />
-          <text x={159} y={58} textAnchor="middle" fill={arch.navy} fontSize={12} fontWeight={800} letterSpacing="0.04em">DATA MODULE</text>
-          <ArchChip x={26} y={66} w={130} h={40} title="Datasets" sub="18 tabular sets" titleSize={13} subSize={10} />
-          <ArchChip x={164} y={66} w={130} h={40} title="Preprocessing" sub="scaling · encoding" titleSize={13} subSize={10} />
-          <ArchChip x={26} y={114} w={130} h={40} title="Actionability" sub="mutable features" titleSize={13} subSize={10} />
-          <ArchChip x={164} y={114} w={130} h={40} title="Feature bounds" sub="valid domains" titleSize={13} subSize={10} />
+          {/* Flow arrows: data and models feed the engine, then metrics and reports. */}
+          <path className="architecture-arrow" d="M159 156 V178" stroke={arch.scopeInk} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
+          <path className="architecture-arrow" d="M461 156 V178" stroke={arch.scopeInk} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
 
-          <rect x={316} y={40} width={290} height={132} rx={10} fill={arch.tintNavy} stroke={arch.navyMuted} strokeWidth={1.5} />
-          <text x={461} y={58} textAnchor="middle" fill={arch.navy} fontSize={12} fontWeight={800} letterSpacing="0.04em">MODEL MODULE</text>
-          <text x={328} y={75} fill={arch.navyMuted} fontSize={10} fontWeight={700}>Predictive</text>
-          <ArchChip x={328} y={80} w={130} h={34} title="Classifiers" sub="LR · MLP" titleSize={12} subSize={9.5} />
-          <ArchChip x={328} y={120} w={130} h={34} title="Regressors" sub="Linear · MLP" titleSize={12} subSize={9.5} />
-          <text x={466} y={75} fill={arch.navyMuted} fontSize={10} fontWeight={700}>Probabilistic</text>
-          <ArchChip x={466} y={80} w={130} h={34} title="Density" sub="KDE · GMM" titleSize={12} subSize={9.5} />
-          <ArchChip x={466} y={120} w={130} h={34} title="Normalizing flows" sub="MAF · RealNVP · NICE" titleSize={12} subSize={9.5} />
-
-          {/* Row 2: explanation engine — the hero stage */}
-          <rect x={14} y={198} width={592} height={100} rx={10} fill={arch.tealLight} stroke={arch.teal} strokeWidth={2.5} />
-          <text x={310} y={216} textAnchor="middle" fill={arch.teal} fontSize={13} fontWeight={800} letterSpacing="0.04em">EXPLANATION ENGINE</text>
+          {/* Row 2: explanation engine */}
+          <rect x={14} y={180} width={592} height={110} rx={10} fill={arch.tealLight} stroke={arch.scopeInk} strokeWidth={2} />
+          <text x={310} y={196} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={13} fontWeight={800} letterSpacing="0.04em">EXPLANATION ENGINE</text>
           <g data-claim-id="scope.methods">
-            <ArchChip x={26} y={230} w={184} h={54} title="Local" sub="CCHVAE · DiCE · PPCEF · …" stroke={arch.teal} accent={arch.teal} titleSize={16} subSize={11} />
-            <ArchChip x={218} y={230} w={184} h={54} title="Global" sub="AReS · GLOBE-CE" stroke={arch.teal} accent={arch.teal} titleSize={16} subSize={11} />
-            <ArchChip x={410} y={230} w={184} h={54} title="Group-wise" sub="GLANCE · T-CREx" stroke={arch.teal} accent={arch.teal} titleSize={16} subSize={11} />
+            <ArchChip x={26} y={210} w={184} h={66} title="Local" sub="CCHVAE · DiCE · PPCEF · …" titleSize={16} subSize={11} />
+            <ArchChip x={218} y={210} w={184} h={66} title="Global" sub="AReS · GLOBE-CE" titleSize={16} subSize={11} />
+            <ArchChip x={410} y={210} w={184} h={66} title="Group-wise" sub="GLANCE · T-CREx" titleSize={16} subSize={11} />
           </g>
 
+          <path className="architecture-arrow" d="M310 290 V312" stroke={arch.scopeInk} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
+
           {/* Row 3: metrics orchestrator */}
-          <rect x={14} y={324} width={592} height={84} rx={10} fill={arch.orangeLight} stroke={arch.orange} strokeWidth={2} />
-          <text x={310} y={342} textAnchor="middle" fill={arch.metricInk} fontSize={12} fontWeight={800} letterSpacing="0.04em">METRICS ORCHESTRATOR</text>
-          <ArchChip x={26} y={352} w={138} h={44} title="Validity" sub="coverage" stroke={arch.orange} titleSize={12} subSize={9.5} />
-          <ArchChip x={172} y={352} w={138} h={44} title="Proximity" sub="L1 · L2 · MAD" stroke={arch.orange} titleSize={12} subSize={9.5} />
-          <ArchChip x={318} y={352} w={138} h={44} title="Sparsity" sub="changed features" stroke={arch.orange} titleSize={12} subSize={9.5} />
-          <ArchChip x={464} y={352} w={138} h={44} title="Plausibility" sub="density · LOF · IsoForest" stroke={arch.orange} titleSize={12} subSize={9.5} />
+          <rect x={14} y={314} width={592} height={96} rx={10} fill={arch.orangeLight} stroke={arch.scopeInk} strokeWidth={2} />
+          <text x={310} y={328} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={12} fontWeight={800} letterSpacing="0.04em">METRICS ORCHESTRATOR</text>
+          <ArchChip x={26} y={340} w={136} h={56} title="Validity" sub="coverage" titleSize={12} subSize={9.5} />
+          <ArchChip x={170} y={340} w={136} h={56} title="Proximity" sub="L1 · L2 · MAD" titleSize={12} subSize={9.5} />
+          <ArchChip x={314} y={340} w={136} h={56} title="Sparsity" sub="changed features" titleSize={12} subSize={9.5} />
+          <ArchChip x={458} y={340} w={136} h={56} title="Plausibility" sub="density · LOF · IsoForest" titleSize={12} subSize={9.5} />
+
+          <path className="architecture-arrow" d="M310 410 V426" stroke={arch.scopeInk} strokeWidth={2.5} markerEnd="url(#arch-arrow)" />
 
           {/* Row 4: output */}
-          <rect x={210} y={424} width={200} height={28} rx={8} fill={arch.navy} />
-          <text x={310} y={443} textAnchor="middle" fill={arch.white} fontSize={12} fontWeight={700}>Reports &amp; visualisations</text>
+          <rect x={210} y={428} width={200} height={32} rx={8} fill={arch.white} stroke={arch.scopeInk} strokeWidth={1.5} />
+          <text x={310} y={444} textAnchor="middle" dominantBaseline="middle" fill={arch.scopeInk} fontSize={12} fontWeight={700}>Reports &amp; visualisations</text>
         </svg>
       </div>
     </figure>

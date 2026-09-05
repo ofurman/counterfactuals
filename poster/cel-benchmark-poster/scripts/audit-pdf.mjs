@@ -21,7 +21,9 @@ if (render.status !== 0) throw new Error(`pdftoppm failed:\n${render.stdout}${re
 const reviewPath = `${reviewPrefix}.png`
 const review = await stat(reviewPath)
 if (review.size === 0) throw new Error('PDF-derived review PNG is empty')
-const text = spawnSync('pdftotext', [pdfPath, '-'], { encoding: 'utf8' })
+// Preserve column layout so headings split across lines stay adjacent instead of
+// being interleaved with text from the centre column.
+const text = spawnSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' })
 if (text.status !== 0) throw new Error(`pdftotext failed:\n${text.stdout}${text.stderr}`)
 const normalizedText = text.stdout.replace(/\s+/g, ' ').trim()
 const content = JSON.parse(await readFile(path.join(repositoryDir, 'poster/research/poster-content.json'), 'utf8'))
@@ -33,7 +35,10 @@ if (normalizedText.includes('One protocol. Multiple CE paradigms. Measurable tra
 if (normalizedText.includes(identity.venue)) throw new Error('Removed venue marker remains in the PDF')
 if (/Reproduce and extend|uv add ce-library|Documentation/.test(normalizedText)) throw new Error('Removed footer text remains in the PDF')
 if (/Code & project|Three contributions/.test(normalizedText)) throw new Error('Removed QR caption or old Contributions heading remains')
-if (!normalizedText.includes('Counterfactual Explanations Metrics') || normalizedText.includes('Classification Metrics')) throw new Error('Metrics tile must use the updated Counterfactual Explanations Metrics label')
+// Poppler may interleave the centre-column label when the right-column heading
+// wraps across two lines, even though the words occupy one visual text block.
+const hasMetricsTileHeading = /Counterfactual Explanations(?: METRICS ORCHESTRATOR)? Metrics/.test(normalizedText)
+if (!hasMetricsTileHeading || normalizedText.includes('Classification Metrics')) throw new Error('Metrics tile must use the updated Counterfactual Explanations Metrics label')
 if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed architecture caption remains in the PDF')
 if (/One evaluation framework|Benchmark scope/i.test(normalizedText)) throw new Error('Removed center-column heading remains in the PDF')
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')

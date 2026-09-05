@@ -250,11 +250,11 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   }
   if (screen.columns.examples[0].top <= screen.columns.top[0].bottom) failuresFound.push('The example row must sit below the scope band')
   if (screen.scopeItems.length !== 4 || screen.scopeItems.slice(0, 2).some((item) => Math.abs(item.top - screen.scopeItems[0].top) > 1) || screen.scopeItems.slice(2).some((item) => Math.abs(item.top - screen.scopeItems[2].top) > 1) || screen.scopeItems[0].bottom >= screen.scopeItems[2].top) failuresFound.push('Benchmark scope must be a two-by-two named tile grid')
-  // Two tiles flank each side of the architecture; the diagram is centred vertically within the band.
+  // Two tiles flank each side of the architecture; all three columns share the same height.
   const arch = screen.architecture.viewport
   const band = screen.columns.top[0]
   if ([0, 2].some((index) => screen.scopeItems[index].right >= arch.left) || [1, 3].some((index) => screen.scopeItems[index].left <= arch.right)) failuresFound.push('Scope tiles must flank the architecture schematic on both sides')
-  if (Math.abs((arch.top + arch.bottom) / 2 - (band.top + band.bottom) / 2) > 2) failuresFound.push('Architecture schematic must be vertically centred in the scope band')
+  if (Math.abs(arch.top - band.top) > 1 || Math.abs(arch.bottom - band.bottom) > 1 || Math.abs(arch.height - band.height) > 1) failuresFound.push('Architecture schematic must match the height of the flanking scope sections')
   const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   for (const [id, [width, height]] of Object.entries({ pwr: [52.9, 85.1], genwro: [99, 25.2], tooploox: [99, 26.1] })) {
     const logo = screen.branding.logos.find((item) => item.id === id)

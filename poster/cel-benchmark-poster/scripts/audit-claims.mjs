@@ -67,7 +67,9 @@ const rendered = await withPosterPage(async ({ page, failures }) => {
     })),
     manuscriptFigures: [...document.querySelectorAll('[data-manuscript-source]')].map((element) => ({
       source: element.getAttribute('data-manuscript-source'),
-      alt: element.querySelector('img')?.getAttribute('alt') ?? '',
+      alt: element.querySelector('img')?.getAttribute('alt')
+        ?? element.querySelector('svg')?.textContent?.trim()
+        ?? '',
     })),
   }))
 })
@@ -97,8 +99,10 @@ for (const link of rendered.links) if (!allowedLinks.has(link)) throw new Error(
 if (rendered.qr !== identity.qr.url) throw new Error('Rendered QR destination does not match identity')
 if (rendered.qrCount !== 1 || rendered.qrOwner !== 'contribution.library' || rendered.qrSection !== 'guidance-limitations') throw new Error('The unique project QR must be inside the Extend contribution')
 if (rendered.title !== identity.title) throw new Error('Poster title differs from the manuscript title')
-// The expanded left column adds two requested practical paradigm examples.
-if (!rendered.visibleWordCount || rendered.visibleWordCount > 320) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/320`)
+// The poster-native architecture contributes visible SVG labels that the previous
+// image-based schematic did not expose to innerText.
+const visibleWordBudget = 340
+if (!rendered.visibleWordCount || rendered.visibleWordCount > visibleWordBudget) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/${visibleWordBudget}`)
 for (const text of [identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)
 if (rendered.header.includes(identity.venue)) throw new Error('Removed venue marker remains in the header')
 
@@ -153,4 +157,4 @@ for (const { paradigm, transitions, source } of exampleAssets) {
 }
 if (/toy|source|not benchmark|threshold/i.test(rendered.example.text)) throw new Error('Removed explanatory footnotes remain visible in the example')
 
-console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source metadata=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, example features=${expectedFeatures.length} (${changedCount} changed), visible words=${rendered.visibleWordCount}/320, manuscript title=exact`)
+console.log(`Claim audit passed: rendered markers=${rendered.claims.length}, visible=${rendered.claims.filter((claim) => claim.visible).length}, source metadata=${rendered.sources.length}, manuscript figures=${rendered.manuscriptFigures.length}, logos=${rendered.brands.length}, example features=${expectedFeatures.length} (${changedCount} changed), visible words=${rendered.visibleWordCount}/${visibleWordBudget}, manuscript title=exact`)

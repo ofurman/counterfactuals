@@ -29,7 +29,13 @@ describe('rendered evidence provenance', () => {
     expect(figure?.querySelector('img')).toBeNull()
     const svg = figure?.querySelector('.architecture-image-window svg')
     expect(svg).not.toBeNull()
-    expect(svg?.querySelector('[data-claim-id="scope.methods"]')).not.toBeNull()
+    expect(figure?.textContent).not.toContain('CONTROLLED PROTOCOL')
+    expect(figure?.textContent).not.toContain('fixed splits · shared models · one metric suite')
+    expect(svg?.querySelector('.architecture-frame')).toBeNull()
+    expect(svg?.querySelectorAll('.architecture-arrow')).toHaveLength(4)
+    const methods = svg?.querySelector('[data-claim-id="scope.methods"]')
+    expect(methods).not.toBeNull()
+    expect(methods?.querySelectorAll('rect')).toHaveLength(3)
   })
 
   it('binds every rendered claim marker to the live generated ledger', () => {
