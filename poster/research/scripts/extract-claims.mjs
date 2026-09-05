@@ -391,7 +391,7 @@ export async function buildClaims() {
     {
       id: "concept.counterfactual",
       claimKind: "qualitative",
-      posterWording: "A small input change that flips a model's prediction.",
+      posterWording: "A counterfactual explanation describes the smallest, realistic change in input data needed to flip an algorithmic decision.",
       value: {kind: "qualitative"},
       unit: null,
       verdict: "Counterfactual explanations identify input changes that produce a desired model prediction.",

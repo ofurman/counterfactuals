@@ -33,6 +33,20 @@ describe('illustrative CE example', () => {
     }
   })
 
+  it('introduces the what-if idea before three parallel explanation levels', () => {
+    const { container } = render(<CounterfactualExample />)
+    expect(container.querySelector('.ce-definition')?.textContent).toBe('A counterfactual explanation describes the smallest, realistic change in input data needed to flip an algorithmic decision.')
+    expect(container.querySelectorAll('.ce-what-if p')).toHaveLength(1)
+    expect(container.querySelector('.ce-what-if')?.textContent).toContain('If your annual income was $500 higher, your loan would have been approved.')
+    expect(Array.from(container.querySelectorAll('.recourse-panel h3')).map((heading) => heading.textContent)).toEqual([
+      'Local One applicant',
+      'Global One shared change',
+      'Group-wise One change per group',
+    ])
+    expect(container.querySelectorAll('.recourse-panel .recourse-actions')).toHaveLength(3)
+    expect(container.querySelectorAll('.recourse-panel [data-example-plot]')).toHaveLength(3)
+  })
+
   it('starts every applicant declined and approves every endpoint without changing hidden features', () => {
     expect(exampleApplicants.map(({ id }) => id)).toEqual(['A', 'B', 'C', 'D'])
     for (const { profile } of exampleApplicants) expect(examplePrediction(profile)).toBe('Declined')

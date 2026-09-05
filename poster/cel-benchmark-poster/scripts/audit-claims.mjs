@@ -101,7 +101,8 @@ if (rendered.qrCount !== 1 || rendered.qrOwner !== 'contribution.library' || ren
 if (rendered.title !== identity.title) throw new Error('Poster title differs from the manuscript title')
 // The poster-native architecture contributes visible SVG labels that the previous
 // image-based schematic did not expose to innerText.
-const visibleWordBudget = 340
+// The concept section includes the requested two-line what-if explanation.
+const visibleWordBudget = 350
 if (!rendered.visibleWordCount || rendered.visibleWordCount > visibleWordBudget) throw new Error(`Poster exceeds the concise visible-text budget: ${rendered.visibleWordCount}/${visibleWordBudget}`)
 for (const text of [identity.affiliation, ...identity.authors.map((author) => author.name)]) if (!rendered.header.includes(text)) throw new Error(`Header identity is missing: ${text}`)
 if (rendered.header.includes(identity.venue)) throw new Error('Removed venue marker remains in the header')

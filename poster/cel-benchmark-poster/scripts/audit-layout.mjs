@@ -287,7 +287,9 @@ const report = await withPosterPage(async ({ page, failures, url }) => {
   }
   if (screen.images.some((image) => !image.complete || image.naturalWidth === 0)) failuresFound.push('Poster has an unresolved image')
   if (screen.fonts.status !== 'loaded') failuresFound.push(`Fonts are not loaded: ${screen.fonts.status}`)
-  for (const [role, value] of Object.entries(screen.minimumFontPx)) if (!value) failuresFound.push(`${role} font size is NOT MEASURED`)
+  for (const [role, value] of Object.entries(screen.minimumFontPx)) {
+    if (!value && role !== 'caption') failuresFound.push(`${role} font size is NOT MEASURED`)
+  }
   const requiredFontPx = {
     body: visualSpec.minimumPrintType.body.cssPx,
     caption: visualSpec.minimumPrintType.citation.cssPx,

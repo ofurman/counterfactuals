@@ -42,7 +42,18 @@ if (!hasMetricsTileHeading || normalizedText.includes('Classification Metrics'))
 if (/shared evaluation protocol/i.test(normalizedText)) throw new Error('Removed architecture caption remains in the PDF')
 if (/One evaluation framework|Benchmark scope/i.test(normalizedText)) throw new Error('Removed center-column heading remains in the PDF')
 if (/Adult Census\s*·\s*(?:global|local|group-wise) methods/i.test(normalizedText)) throw new Error('Removed result caption remains in the PDF')
-for (const expected of ['Loan application example', 'Employment', 'Monthly income', 'Debt payments', 'Original A', 'Counterfactual', 'Declined', 'Approved', 'One applicant', 'One shared change', 'One change per group', 'Income +€1,300', 'Debt −€1,000']) if (!normalizedText.toLowerCase().includes(expected.toLowerCase())) throw new Error(`PDF is missing the applicant comparison: ${expected}`)
+for (const expected of [
+  'A counterfactual explanation describes the smallest, realistic change in input data needed to flip an algorithmic decision.',
+  'It answers the “what-if” question by showing how a situation would look if specific facts were different.',
+  'If your annual income was $500 higher, your loan would have been approved.',
+  'One applicant',
+  'One shared change',
+  'One change per group',
+  'Income +€500; debt −€500',
+  'Income +€1,300; debt unchanged',
+  'Debt −€1,000; income unchanged',
+]) if (!normalizedText.toLowerCase().includes(expected.toLowerCase())) throw new Error(`PDF is missing the counterfactual explainer: ${expected}`)
+if (normalizedText.includes('LOAN APPLICATION EXAMPLE: THE SAME IDEA AT THREE LEVELS')) throw new Error('Removed loan-example caption remains in the PDF')
 if (/\bSource\s*[·:]|\btoy\b|not benchmark data|Sparsity direction unresolved|Benchmark context/i.test(normalizedText)) throw new Error('Removed source or disclaimer text remains in the PDF')
 if (!normalizedText.includes('Regression: accuracy versus change')) throw new Error('Requested regression result heading is missing from the PDF')
 if (/\b5\s+folds\b|\b3\s+paradigms\b/i.test(normalizedText)) throw new Error('Removed folds or paradigms tiles remain in the PDF')

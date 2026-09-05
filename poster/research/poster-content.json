@@ -26,7 +26,7 @@
       "owner": "left",
       "order": 2,
       "heading": "What is a counterfactual explanation?",
-      "copy": ["A small input change that flips a model's prediction."],
+      "copy": ["A counterfactual explanation describes the smallest, realistic change in input data needed to flip an algorithmic decision."],
       "claimIds": ["concept.counterfactual"],
       "sourceCitations": ["manuscript/main_lncs.tex#Introduction"],
       "linkIds": [],

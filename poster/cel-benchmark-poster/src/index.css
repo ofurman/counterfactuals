@@ -265,7 +265,7 @@ h1 {
 .source-note { margin: 8px 0 0; color: var(--navy-muted); font-size: 9px; line-height: 1.15; }
 
 /* Benchmark-first layout using graphics published with the manuscript. */
-.benchmark-grid { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+.benchmark-grid { grid-template-columns: minmax(0, 1fr); row-gap: 8px; align-items: stretch; }
 .poster-column {
   min-width: 0;
   min-height: 0;
@@ -288,22 +288,23 @@ h1 {
 .benchmark-grid .section-copy { margin-bottom: 7px; font-size: 15px; line-height: 1.24; }
 .benchmark-grid .source-note { margin-top: 4px; font-size: 9px; line-height: 1.05; }
 
-/* Full-width example row: heading and copy share one line, three paradigms sit side by side. */
+/* Full-width explainer: definition first, then three directly comparable paradigms. */
 .problem-block {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 14px;
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr);
   padding: 4px 0 0 !important;
   border-top: 0;
   color: var(--navy);
   background: transparent;
 }
-.problem-block > h2 { grid-column: 1; }
-.problem-block > .section-copy { grid-column: 2; margin-bottom: 4px; color: var(--navy-muted); }
-.problem-block > .ce-example { grid-column: 1 / -1; }
-.ce-example { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 24px; align-items: start; margin: 2px 0 0; }
-.ce-example > figcaption { grid-column: 1 / -1; color: var(--teal); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.problem-block > h2 { margin-bottom: 3px; }
+.problem-block > .section-copy { display: none; }
+.ce-example { display: grid; gap: 4px; margin: 0; }
+.ce-definition { margin: 0 !important; color: var(--navy) !important; font-size: 15px !important; line-height: 1.24 !important; }
+.ce-what-if { margin: 0; padding: 6px 10px; color: var(--navy); background: rgba(83, 98, 116, 0.08); border-left: 4px solid rgba(83, 98, 116, 0.38); font-family: Georgia, 'Times New Roman', serif; font-size: 13.5px; line-height: 1.18; }
+.ce-what-if p { margin: 0; white-space: nowrap; }
+.ce-example__accessible-label { display: none; }
+.ce-example__panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
 .example-profile { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; line-height: 1.2; }
 .example-profile th, .example-profile td { padding: 3px 6px; border-bottom: 0; text-align: left; vertical-align: middle; }
 .example-profile th:first-child { width: 36%; padding-left: 0; }
@@ -316,13 +317,17 @@ h1 {
 .example-prediction { display: inline-block; padding: 6px 8px; font-size: 14px; font-weight: 700; }
 .example-prediction--declined { color: #a53a0e; background: var(--orange-light); }
 .example-prediction--approved { color: var(--teal); background: var(--teal-light); }
-.recourse-panel { min-width: 0; }
+.example-profile--accessible {
+  display: none;
+}
+.recourse-panel { min-width: 0; display: grid; grid-template-rows: auto 39px auto; align-content: start; }
 .recourse-panel h3 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 4px; font-size: var(--subheading-size); line-height: 1.1; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
 .recourse-panel h3 span { color: var(--navy-muted); font-family: Arial, sans-serif; font-size: 14px; }
+.recourse-actions { align-self: start; }
 .recourse-action { margin: 3px 0; font-size: 14px; line-height: 1.2; }
 .recourse-action b { display: inline-block; min-width: 36px; }
 .recourse-action--lower-income { color: var(--teal); }
-.recourse-plot { display: block; width: 100%; height: auto; margin-top: 3px; }
+.recourse-plot { display: block; align-self: start; width: 100%; height: auto; margin-top: 0; }
 
 
 .contribution-stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; padding-right: 120px; }
