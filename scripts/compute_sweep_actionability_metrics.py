@@ -50,6 +50,11 @@ from counterfactuals.preprocessing import (
 logger = logging.getLogger(__name__)
 
 KEEP_PER_FACTUAL = 10
+# When True, CFs were generated with target_class=null (each factual explained
+# toward the flip of its own predicted label). The factual set and per-factual
+# targets are then read from the saved factuals CSV rather than reconstructed
+# from a fixed target class.
+TARGET_NULL = False
 
 
 # (pretty_name, method_subdir_suffix, MethodDir, csv_suffix, cf_in_raw_space, target_class)
@@ -57,6 +62,7 @@ METHODS: list[tuple[str, str, str, str, bool, int]] = [
     ("DICE", "dice", "DiceExplainerWrapper", "DiceExplainerWrapper_SimpleMLPClassifier", False, 0),
     ("CCHVAE", "cchvae", "CCHVAE", "CCHVAE_SimpleMLPClassifier", False, 0),
     ("DiCoFlex", "dicoflex", "DiCoFlex", "DiCoFlex_SimpleMLPClassifier", True, 1),
+    ("TabDCE", "tabdce", "TabDCE", "TabDCE_SimpleMLPClassifier", False, 0),
 ]
 
 METRIC_COLUMNS = [
@@ -67,6 +73,7 @@ METRIC_COLUMNS = [
     ("epsilon_spars", "$\\epsilon$-Spars. $\\downarrow$", "min", "float"),
     ("lof", "LOF $\\downarrow$", "min", "float"),
     ("diversity", "Diversity $\\uparrow$", "max", "float"),
+    ("dir_diversity", "Dir.Div $\\uparrow$", "max", "float"),
     ("actionability", "Act. $\\downarrow$", "min", "float"),
     ("violation", "Viol. $\\downarrow$", "min", "float"),
     ("missing", "Missing $\\downarrow$", "min", "int"),
@@ -213,6 +220,30 @@ def _diversity_mixed(
             group_diversities.append(float(np.mean(mixed) / D_total))
 
     return float(np.mean(group_diversities)) if group_diversities else 0.0
+
+
+def _directional_diversity_cosine(cfs_metric: np.ndarray, orig_metric: np.ndarray) -> float | None:
+    """Angular diversity of the change vectors v_i = cf_i - orig.
+
+        1 - mean_{i != j} cos(v_i, v_j)
+
+    Computed in the classifier's input space (standardized numericals + one-hot
+    categoricals), so it reflects only *where* each CF moves, not how far. CFs
+    identical to the query carry no direction and are dropped. Returns None when
+    fewer than two directioned CFs remain (caller skips it), matching how
+    pairwise diversity handles singletons.
+    """
+    V = cfs_metric - orig_metric[None, :]
+    norms = np.linalg.norm(V, axis=1)
+    keep = norms > 1e-12
+    V, norms = V[keep], norms[keep]
+    K = len(V)
+    if K < 2:
+        return None
+    Vn = V / norms[:, None]
+    S = Vn @ Vn.T
+    mean_cos = (S.sum() - np.trace(S)) / (K * (K - 1))
+    return 1.0 - float(mean_cos)
 
 
 # ---------------------------------------------------------------------------
@@ -408,10 +439,33 @@ def evaluate_fold(
         return None
 
     cf_minmax = _load_cf_minmax(cf_csv, cf_in_raw_space, bundle)
-    factual_pool = _factual_pool_for_target(bundle, target_class)
-    cf_minmax, n_fact = _align_cf_to_pool(cf_minmax, factual_pool, cf_per_instance, cf_csv.name)
-    factuals_minmax = factual_pool[:n_fact]
-    y_target = np.full(cf_minmax.shape[0], target_class, dtype=np.int64)
+
+    if TARGET_NULL:
+        # Both-directions run: the factual set and its per-factual targets come
+        # from the saved factuals CSV, and each target is the flip of the
+        # factual's own predicted label. No opposite-direction file to merge.
+        fac_csv = cf_csv.parent / cf_csv.name.replace("counterfactuals_", "factuals_", 1)
+        if not fac_csv.exists():
+            logger.warning("Missing factuals file for null eval: %s", fac_csv)
+            return None
+        factuals_minmax = _load_cf_minmax(fac_csv, cf_in_raw_space, bundle)
+        cf_minmax, n_fact = _align_cf_to_pool(
+            cf_minmax, factuals_minmax, cf_per_instance, cf_csv.name
+        )
+        factuals_minmax = factuals_minmax[:n_fact]
+        with torch.no_grad():
+            preds_fact = (
+                torch.argmax(bundle.disc_model(torch.from_numpy(factuals_minmax).float()), dim=1)
+                .cpu()
+                .numpy()
+            )
+        y_target = np.repeat(1 - preds_fact, cf_per_instance).astype(np.int64)
+        cf_csv_flipped = None
+    else:
+        factual_pool = _factual_pool_for_target(bundle, target_class)
+        cf_minmax, n_fact = _align_cf_to_pool(cf_minmax, factual_pool, cf_per_instance, cf_csv.name)
+        factuals_minmax = factual_pool[:n_fact]
+        y_target = np.full(cf_minmax.shape[0], target_class, dtype=np.int64)
 
     if cf_csv_flipped is not None:
         if not cf_csv_flipped.exists():
@@ -492,6 +546,7 @@ def evaluate_fold(
     eps_spars_vals: list[float] = []
     lof_vals: list[float] = []
     diversity_vals: list[float] = []
+    dir_diversity_vals: list[float] = []
     actionability_vals: list[float] = []
 
     n_num = len(bundle.num_idx)
@@ -541,6 +596,9 @@ def evaluate_fold(
                     bundle.cat_groups,
                 )
             )
+            dir_div = _directional_diversity_cosine(cfs_i, factuals[i])
+            if dir_div is not None:
+                dir_diversity_vals.append(dir_div)
         else:
             skipped_diversity += 1
 
@@ -566,6 +624,7 @@ def evaluate_fold(
         "epsilon_spars": float(np.mean(eps_spars_vals)) if eps_spars_vals else 0.0,
         "lof": float(np.mean(lof_vals)) if lof_vals else 0.0,
         "diversity": float(np.mean(diversity_vals)) if diversity_vals else 0.0,
+        "dir_diversity": float(np.mean(dir_diversity_vals)) if dir_diversity_vals else 0.0,
         "actionability": float(np.mean(actionability_vals)) if actionability_vals else 0.0,
         "violation": violation_rate,
         "missing": missing_slots,
@@ -853,6 +912,15 @@ def _parse_args() -> argparse.Namespace:
             "before metric computation so results cover the full test set."
         ),
     )
+    p.add_argument(
+        "--target-null",
+        action="store_true",
+        help=(
+            "The CFs were generated with target_class=null (both directions in "
+            "one run). Read the factual set and per-factual targets from each "
+            "method's saved factuals CSV instead of a fixed target class."
+        ),
+    )
     return p.parse_args()
 
 
@@ -860,8 +928,9 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
     args = _parse_args()
 
-    global KEEP_PER_FACTUAL
+    global KEEP_PER_FACTUAL, TARGET_NULL
     KEEP_PER_FACTUAL = args.keep_per_factual
+    TARGET_NULL = args.target_null
 
     for dataset_key in args.datasets:
         logger.info("=== Dataset: %s ===", dataset_key)

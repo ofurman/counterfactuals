@@ -76,14 +76,17 @@ class MixedTabularDiffusion(nn.Module):
 
     def q_sample_cat(self, log_x0: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
         """Forward diffusion for categorical variables via multinomial noise."""
-        alphas_bar_t = extract(self.alphas_bar, t, log_x0.shape)
+        # alpha_bar_t is a per-sample scalar; keep it (B, 1) so it broadcasts
+        # across each group's K columns. extract(..., log_x0.shape) would expand
+        # it to the full categorical width and break for >1 group.
+        alphas_bar_t = extract(self.alphas_bar, t, (log_x0.shape[0], 1))
+        log_alpha = alphas_bar_t.log()
+        log_1_m_alpha = (1.0 - alphas_bar_t).log()
         out_parts = []
         start = 0
         for K in self.num_classes:
             sl = slice(start, start + K)
             log_probs_x0 = log_x0[:, sl]
-            log_alpha = alphas_bar_t.log()
-            log_1_m_alpha = (1.0 - alphas_bar_t).log()
             log_inv_K = -torch.log(torch.tensor(K, device=log_x0.device))
 
             term1 = log_alpha + log_probs_x0

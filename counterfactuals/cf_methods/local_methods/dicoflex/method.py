@@ -28,6 +28,7 @@ class DiCoFlexParams:
     target_class: Optional[int]
     sampling_batch_size: int
     cf_samples_per_factual: int = 1
+    temperature: float = 1.0
 
 
 class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
@@ -42,6 +43,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         params: DiCoFlexParams,
         device: Optional[str] = None,
         monotonic_direction: Optional[np.ndarray] = None,
+        monotonic_categorical: Optional[list] = None,
     ) -> None:
         super().__init__(
             gen_model=gen_model,
@@ -73,6 +75,7 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
                     f"feature dimension {n_features}."
                 )
             self.monotonic_direction = direction_vec
+        self.monotonic_categorical = list(monotonic_categorical or [])
         self.gen_model.to(self.device)
         self.disc_model.to(self.device)
 
@@ -172,7 +175,9 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
                 continue
             context = self._build_context(X_batch, y_target_batch)
             samples, log_probs = self.gen_model.sample_and_log_proba(
-                n_samples=self.params.num_counterfactuals, context=context
+                n_samples=self.params.num_counterfactuals,
+                context=context,
+                temp=self.params.temperature,
             )
 
             (
@@ -218,16 +223,28 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         Features with direction_vec == +1 must not decrease; direction_vec == -1 must not
         increase. A small numerical tolerance permits equality under float noise.
         """
+        tol = 1e-6
+        ok = np.ones(candidates.shape[:2], dtype=bool)
+
         direction = self.monotonic_direction
         active_idx = np.where(direction != 0)[0]
-        if active_idx.size == 0:
-            return np.ones(candidates.shape[:2], dtype=bool)
-        tol = 1e-6
-        factual_sub = X_batch[:, active_idx][:, None, :]
-        candidate_sub = candidates[:, :, active_idx]
-        signs = direction[active_idx].astype(np.float32)
-        delta = (candidate_sub - factual_sub) * signs[None, None, :]
-        return np.all(delta >= -tol, axis=2)
+        if active_idx.size:
+            factual_sub = X_batch[:, active_idx][:, None, :]
+            candidate_sub = candidates[:, :, active_idx]
+            signs = direction[active_idx].astype(np.float32)
+            delta = (candidate_sub - factual_sub) * signs[None, None, :]
+            ok &= np.all(delta >= -tol, axis=2)
+
+        # Ordinal direction on one-hot categorical groups: compare decoded codes.
+        for constraint in self.monotonic_categorical:
+            cols = constraint["cols"]
+            values = constraint["values"]
+            sign = constraint["sign"]
+            factual_code = values[np.argmax(X_batch[:, cols], axis=1)]  # (batch,)
+            candidate_code = values[np.argmax(candidates[:, :, cols], axis=2)]  # (batch, samples)
+            ok &= (candidate_code - factual_code[:, None]) * sign >= -tol
+
+        return ok
 
     def _build_context(self, X: np.ndarray, y_target: np.ndarray) -> np.ndarray:
         mask = self.mask_vectors[self.params.mask_index]
@@ -242,6 +259,42 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
             np.float32
         )
 
+    def _project_candidates(self, X_batch: np.ndarray, candidates: np.ndarray) -> np.ndarray:
+        """Hard-enforce actionability on the flow samples.
+
+        The actionability mask only shapes the flow during training, so raw
+        samples still drift on immutable features. This projects each candidate
+        onto the actionable set (row-aligned to its factual): immutable columns
+        are frozen to the factual, numeric monotonic columns are clamped to the
+        allowed direction, and a categorical monotonic group that would move the
+        wrong way is snapped back to the factual category (equal, so >=/<= holds).
+        """
+        candidates = candidates.copy()
+        mask = self.mask_vectors[self.params.mask_index]
+        immutable = np.where(mask == 0)[0]
+        if immutable.size:
+            candidates[:, :, immutable] = X_batch[:, None, immutable]
+
+        direction = self.monotonic_direction
+        inc = np.where(direction > 0)[0]
+        dec = np.where(direction < 0)[0]
+        if inc.size:
+            candidates[:, :, inc] = np.maximum(candidates[:, :, inc], X_batch[:, None, inc])
+        if dec.size:
+            candidates[:, :, dec] = np.minimum(candidates[:, :, dec], X_batch[:, None, dec])
+
+        for constraint in self.monotonic_categorical:
+            cols, values, sign = constraint["cols"], constraint["values"], constraint["sign"]
+            factual_code = values[np.argmax(X_batch[:, cols], axis=1)]
+            candidate_code = values[np.argmax(candidates[:, :, cols], axis=2)]
+            bad = (candidate_code - factual_code[:, None]) * sign < -1e-6
+            if bad.any():
+                b_idx, s_idx = np.where(bad)
+                candidates[b_idx[:, None], s_idx[:, None], cols[None, :]] = X_batch[
+                    b_idx[:, None], cols[None, :]
+                ]
+        return candidates
+
     def _select_topk_candidates(
         self,
         X_batch: np.ndarray,
@@ -250,9 +303,33 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         candidate_log_probs: np.ndarray,
         top_k: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Project onto the actionable set before any validity/selection work, so
+        # both the kept CFs and their metrics reflect the constraints.
+        candidates = self._project_candidates(X_batch, candidates)
         batch_size, num_samples, _ = candidates.shape
         flat_candidates = candidates.reshape(batch_size * num_samples, -1)
-        probs = self.disc_model.predict_proba(flat_candidates).reshape(batch_size, num_samples, -1)
+        # The flow occasionally samples non-finite or astronomically large rows;
+        # they are dead candidates, and feeding them to the classifier crashes
+        # space-converting adapters (inverting minmax on a huge value overflows
+        # float32 to inf, which sklearn transforms reject). Legit generation-space
+        # values sit in ~[0, 1], so the magnitude bound is generous. Score only
+        # sane rows and mark the rest invalid below.
+        finite_rows = np.isfinite(flat_candidates).all(axis=1) & (
+            np.abs(flat_candidates) < 1e6
+        ).all(axis=1)
+        if finite_rows.all():
+            flat_probs = self.disc_model.predict_proba(flat_candidates)
+        elif finite_rows.any():
+            finite_probs = self.disc_model.predict_proba(flat_candidates[finite_rows])
+            flat_probs = np.zeros(
+                (flat_candidates.shape[0], finite_probs.shape[1]), dtype=finite_probs.dtype
+            )
+            flat_probs[finite_rows] = finite_probs
+        else:
+            flat_probs = np.zeros(
+                (flat_candidates.shape[0], len(self.class_to_index)), dtype=np.float32
+            )
+        probs = flat_probs.reshape(batch_size, num_samples, -1)
         num_classes = probs.shape[-1]
         target_indices = np.vectorize(self.class_to_index.get, otypes=[int])(
             y_target_batch.reshape(-1).astype(int)
@@ -263,12 +340,24 @@ class DiCoFlex(BaseCounterfactualMethod, LocalCounterfactualMixin):
         target_probs = np.take_along_axis(probs, expanded_targets[..., None], axis=2).squeeze(2)
         predicted_class = np.argmax(probs, axis=2)
         valid_mask_matrix = predicted_class == target_indices[:, None]
+        # A zero-filled prob row argmaxes to class 0, which would wrongly count
+        # as valid whenever the target is 0 — exclude non-finite rows explicitly.
+        valid_mask_matrix &= finite_rows.reshape(batch_size, num_samples)
 
-        if np.any(self.monotonic_direction != 0):
+        if np.any(self.monotonic_direction != 0) or self.monotonic_categorical:
             monotonic_ok = self._check_monotonic_constraints(X_batch, candidates)
             valid_mask_matrix = valid_mask_matrix & monotonic_ok
 
-        sorted_indices = np.argsort(-target_probs, axis=1)
+        # Rank candidates by PROXIMITY to the factual (closest first), not by
+        # classifier confidence. Ranking by ``-target_probs`` prefers the samples
+        # the classifier is most sure about, which sit deepest in the target
+        # region and are therefore the FARTHEST from the factual — the opposite
+        # of what a counterfactual should be. The reference DiCoFlex / DICTUM
+        # select by distance to the factual, so we do too. L1 over all
+        # (generation-space) features matches the Prox.-Cont metric's cityblock
+        # form; validity is still enforced first via ``valid_mask_matrix`` below.
+        distances = np.abs(candidates - X_batch[:, None, :]).sum(axis=2)
+        sorted_indices = np.argsort(distances, axis=1)
         top_indices = np.zeros((batch_size, top_k), dtype=int)
         for i in range(batch_size):
             chosen: list[int] = []

@@ -1,0 +1,60 @@
+defaults:
+  - _self_
+  - gen_model: large_maf
+  - disc_model: mlr
+
+hydra:
+  sweeper:
+    max_batch_size: 1
+
+experiment:
+  output_folder: models/
+  relabel_with_disc_model: true
+  seed: 42
+  use_gpu: false
+
+dataset:
+  _target_: counterfactuals.datasets.TrainTestFileDataset
+  config_path: config/datasets/lending_club.yaml
+  train_data_path: data/lending_club_train.csv
+  test_data_path: data/lending_club_test.csv
+
+disc_model:
+  train_model: true
+  epochs: 5000
+  batch_size: 128
+  patience: 300
+  lr: 0.001
+
+gen_model:
+  train_model: true
+  batch_size: 1024
+  epochs: 2000
+  patience: 100
+  lr: 0.003
+  noise_lvl: 0.02
+
+tabdce:
+  k_neighbors: 15
+  search_method: knn
+  batch_size: 512
+  epochs: 300
+  lr: 0.001
+  T: 1000
+  hidden_dim: 256
+  use_gpu: false
+
+counterfactuals_params:
+  cf_method:
+    _target_: counterfactuals.cf_methods.local_methods.tabdce.tabdce.TabDCE
+  log_prob_quantile: 0.25
+  target_class: 0
+  batch_size: 512
+  # M candidates generated per factual (paper protocol M=100).
+  cf_samples_per_factual: 100
+  # Cap on number of explained test rows (null = all eligible).
+  n_test_samples: null
+  # {feature: INCREASE|DECREASE}. Numeric features get a directional clamp;
+  # categorical features here fold to immutable (TabDCE cannot enforce a
+  # direction on one-hot groups), matching DiCE/CCHVAE.
+  monotonic_overrides: {}

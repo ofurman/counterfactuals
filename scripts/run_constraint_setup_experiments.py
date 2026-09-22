@@ -63,29 +63,17 @@ SETUPS: dict[str, list[Setup]] = {
             ("age", "education"),
         ),
     ],
+    # Setups transcribed from the paper's Table 3 image (Default dataset).
+    # Setup index == the image's "Setup Level". "Increasing Cat." features
+    # (EDUCATION, PAY_*) are passed as monotonic_increase; the runner freezes
+    # them for DiCE/CCHVAE/TabDCE and DiCoFlex enforces ordinal increase.
     "default": [
-        Setup(1, ()),
-        Setup(2, ("SEX", "MARRIAGE")),
-        Setup(3, ("SEX", "MARRIAGE"), ("AGE", "EDUCATION")),
+        Setup(1, ("SEX", "MARRIAGE")),
+        Setup(2, ("SEX", "MARRIAGE"), ("AGE", "EDUCATION")),
         Setup(
-            4,
-            ("SEX", "MARRIAGE"),
+            3,
+            ("SEX", "MARRIAGE", "BILL_AMT1", "BILL_AMT2"),
             ("AGE", "EDUCATION", "PAY_0", "PAY_2"),
-        ),
-        Setup(
-            5,
-            # BILL_AMT_* shown without ++ in the source table — treated as immutable.
-            (
-                "SEX",
-                "MARRIAGE",
-                "BILL_AMT1",
-                "BILL_AMT2",
-                "BILL_AMT3",
-                "BILL_AMT4",
-                "BILL_AMT5",
-                "BILL_AMT6",
-            ),
-            ("AGE", "EDUCATION", "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"),
         ),
     ],
     "lending-club": [
@@ -104,10 +92,14 @@ PIPELINES: dict[str, str] = {
     "dice": "counterfactuals.pipelines.run_dice_traintest_pipeline",
     "dicoflex": "counterfactuals.pipelines.run_dicoflex_traintest_pipeline",
     "cchvae": "counterfactuals.pipelines.run_cchvae_traintest_pipeline",
+    "tabdce": "counterfactuals.pipelines.run_tabdce_traintest_pipeline",
 }
 
 # Default target_class baked into each pipeline's hydra config.
-DEFAULT_TARGETS: dict[str, int] = {"dice": 0, "cchvae": 0, "dicoflex": 1}
+DEFAULT_TARGETS: dict[str, int] = {"dice": 0, "cchvae": 0, "dicoflex": 1, "tabdce": 0}
+
+# Methods that consume monotonic_overrides directly (numeric direction clamp).
+MONOTONIC_AWARE: frozenset[str] = frozenset({"dicoflex", "tabdce"})
 
 
 def base_config_path(dataset: str) -> Path:
@@ -200,6 +192,8 @@ def run_one(
     results_root: Path,
     flip_target: bool = False,
     reuse_dicoflex_from: Path | None = None,
+    target_null: bool = False,
+    n_test_samples: int | None = None,
 ) -> float:
     """Invoke the appropriate pipeline for a single (method, dataset, setup) cell."""
     cfg_path = build_setup_yaml(dataset, setup, out_dir, method)
@@ -231,13 +225,19 @@ def run_one(
         f"dataset.test_data_path={test.relative_to(REPO_ROOT)}",
         f"experiment.output_folder={setup_output}",
     ]
-    if method == "dicoflex":
+    if method in MONOTONIC_AWARE:
         cmd.append(
             f"++counterfactuals_params.monotonic_overrides={monotonic_override_str(setup.monotonic_increase)}"
         )
-    if flip_target:
+    if target_null:
+        # Both directions in one run: explain every selected row toward the flip
+        # of its own predicted label. Overrides the per-method default target.
+        cmd.append("++counterfactuals_params.target_class=null")
+    elif flip_target:
         flipped = 1 - DEFAULT_TARGETS[method]
         cmd.append(f"++counterfactuals_params.target_class={flipped}")
+    if n_test_samples is not None:
+        cmd.append(f"++counterfactuals_params.n_test_samples={n_test_samples}")
 
     logger.info(
         "RUN method=%s dataset=%s setup=%d immutable=%s monotonic=%s flip=%s reuse=%s",
@@ -304,6 +304,21 @@ def parse_args() -> argparse.Namespace:
             "DiCoFlex only (the flow is target-class-agnostic)."
         ),
     )
+    p.add_argument(
+        "--target-null",
+        action="store_true",
+        help=(
+            "Generate both directions in one run per method: target_class=null, "
+            "explaining every selected row toward the flip of its own predicted "
+            "label (the DICTUM-aligned setting). Overrides --flip-target."
+        ),
+    )
+    p.add_argument(
+        "--n-test-samples",
+        type=int,
+        default=None,
+        help="Cap explained test rows (seeded sample). DICTUM uses 2000.",
+    )
     return p.parse_args()
 
 
@@ -332,6 +347,8 @@ def main() -> int:
                             args.results_root,
                             flip_target=args.flip_target,
                             reuse_dicoflex_from=args.reuse_dicoflex_from,
+                            target_null=args.target_null,
+                            n_test_samples=args.n_test_samples,
                         )
                         timings.append(
                             {

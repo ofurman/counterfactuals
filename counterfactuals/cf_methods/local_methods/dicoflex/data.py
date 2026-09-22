@@ -115,6 +115,60 @@ def build_monotonic_direction_vector(
     return direction_vec
 
 
+def build_monotonic_categorical_constraints(
+    dataset: MethodDataset,
+    overrides: Optional[Dict[str, str]] = None,
+) -> List[dict]:
+    """Ordinal monotonic constraints for one-hot categorical features.
+
+    ``build_monotonic_direction_vector`` only covers numerical features, because
+    a per-column +/-1 sign has no meaning on a one-hot block. For categoricals
+    whose categories are ordered (e.g. PAY_* delay months, EDUCATION levels),
+    the direction is instead enforced on the decoded ordinal code: the category
+    value is read from the expanded column name suffix (``EDUCATION__2`` -> 2.0).
+
+    Returns a list of dicts ``{"cols", "values", "sign"}`` where ``cols`` are the
+    one-hot column indices of the group, ``values[i]`` is the ordinal code that
+    column encodes, and ``sign`` is +1 (INCREASE) or -1 (DECREASE).
+    """
+    combined: Dict[str, MonotonicityDirection] = {}
+    for name, direction in (dataset.monotonic_features or {}).items():
+        combined[name] = direction
+    for name, direction_str in (overrides or {}).items():
+        combined[name] = MonotonicityDirection(str(direction_str).upper())
+    if not combined:
+        return []
+
+    features = list(dataset.features)
+    numerical = set(dataset.numerical_features)
+    constraints: List[dict] = []
+    for feature_name, direction in combined.items():
+        if feature_name in numerical:
+            continue  # numeric handled by the direction vector
+        sign = 1 if direction is MonotonicityDirection.INCREASE else -1
+        prefix = f"{feature_name}__"
+        cols: List[int] = []
+        values: List[float] = []
+        for idx, col_name in enumerate(features):
+            if col_name.startswith(prefix):
+                cols.append(idx)
+                try:
+                    values.append(float(col_name[len(prefix) :]))
+                except ValueError:
+                    # Non-numeric category: fall back to encounter order so the
+                    # constraint at least freezes the observed ordering.
+                    values.append(float(len(values)))
+        if len(cols) >= 2:
+            constraints.append(
+                {
+                    "cols": np.array(cols, dtype=int),
+                    "values": np.array(values, dtype=np.float32),
+                    "sign": int(sign),
+                }
+            )
+    return constraints
+
+
 @dataclass
 class DiCoFlexDatasetConfig:
     """Container describing how to assemble the DiCoFlex training dataset."""

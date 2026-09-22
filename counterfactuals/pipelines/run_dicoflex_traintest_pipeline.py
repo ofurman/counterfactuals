@@ -33,6 +33,7 @@ from counterfactuals.cf_methods.local_methods.dicoflex.context_utils import (
 )
 from counterfactuals.cf_methods.local_methods.dicoflex.data import (
     build_actionability_mask,
+    build_monotonic_categorical_constraints,
     build_monotonic_direction_vector,
     create_dicoflex_dataloaders,
 )
@@ -43,6 +44,7 @@ from counterfactuals.cf_methods.local_methods.dicoflex.visualization import (
 )
 from counterfactuals.datasets.method_dataset import MethodDataset
 from counterfactuals.metrics.metrics import evaluate_cf
+from counterfactuals.models.space_adapter import SpaceAdapterClassifier
 from counterfactuals.pipelines.nodes.disc_model_nodes import create_disc_model
 from counterfactuals.pipelines.nodes.factual_selection import (
     resolve_target_labels,
@@ -218,8 +220,21 @@ def compute_pairwise_mean_distance(samples: np.ndarray, group_ids: np.ndarray) -
     return float(np.mean(min_dists)) if min_dists else float("nan")
 
 
-def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
-    """Run the DiCoFlex pipeline on a single train-test split."""
+def run_pipeline(
+    cfg: DictConfig,
+    dataset: MethodDataset,
+    device: str,
+    disc_dataset: MethodDataset | None = None,
+):
+    """Run the DiCoFlex pipeline on a single train-test split.
+
+    Args:
+        disc_dataset: When the classifier lives in a different model space than
+            the generation space (`experiment.disc_model_space_scaler`), the
+            dataset fitted with the classifier's space. The classifier is then
+            trained/loaded and evaluated in its own space and wrapped so every
+            downstream call converts generation-space rows into it.
+    """
     logger.info("Running DiCoFlex pipeline on train-test split")
     disc_model_path, gen_model_path, save_folder = set_model_paths(cfg, fold=0)
     gen_model_name = cfg.gen_model.model._target_.split(".")[-1]
@@ -232,7 +247,13 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         cf_gen_model_filename = f"gen_model_{gen_model_name}_dicoflex.pt"
     cf_gen_model_path = os.path.join(save_folder, cf_gen_model_filename)
     disc_train_start = time()
-    disc_model = create_disc_model(cfg, dataset, disc_model_path, save_folder)
+    disc_model = create_disc_model(cfg, disc_dataset or dataset, disc_model_path, save_folder)
+    if disc_dataset is not None:
+        disc_model = SpaceAdapterClassifier(
+            base_model=disc_model,
+            caller_dataset=dataset,
+            model_dataset=disc_dataset,
+        )
     disc_train_time = time() - disc_train_start
     if cfg.experiment.relabel_with_disc_model:
         dataset.y_train = disc_model.predict(dataset.X_train)
@@ -292,6 +313,17 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         gen_model.load(cf_gen_model_path)
     gen_train_time = time() - gen_train_start
 
+    if cfg.experiment.get("train_only", False):
+        # Train-the-flow-elsewhere split: the checkpoint at cf_gen_model_path is
+        # all a later generation run (gen_model.train_model=false) needs; the
+        # log-prob threshold is recomputed there from the same data.
+        logger.info(
+            "train_only=true: flow saved to %s after %.1fs, skipping generation",
+            cf_gen_model_path,
+            gen_train_time,
+        )
+        return
+
     full_loader = get_full_training_loader(
         train_loader, cfg.counterfactuals_params.train_batch_factuals
     )
@@ -309,14 +341,20 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         target_class=cfg.counterfactuals_params.target_class,
         sampling_batch_size=cfg.counterfactuals_params.sampling_batch_size,
         cf_samples_per_factual=cfg.counterfactuals_params.cf_samples_per_factual,
+        temperature=cfg.counterfactuals_params.get("temperature", 1.0),
     )
     mask_vector = mask_vectors[params.mask_index]
     monotonic_overrides = dict(cfg.counterfactuals_params.get("monotonic_overrides") or {})
     monotonic_direction = build_monotonic_direction_vector(dataset, overrides=monotonic_overrides)
-    if np.any(monotonic_direction != 0):
+    monotonic_categorical = build_monotonic_categorical_constraints(
+        dataset, overrides=monotonic_overrides
+    )
+    if np.any(monotonic_direction != 0) or monotonic_categorical:
         logger.info(
-            "Monotonic constraints active on %d feature(s). Overrides: %s",
+            "Monotonic constraints active: %d numeric feature(s), %d categorical group(s). "
+            "Overrides: %s",
             int(np.sum(monotonic_direction != 0)),
+            len(monotonic_categorical),
             monotonic_overrides,
         )
     cf_method = DiCoFlex(
@@ -327,6 +365,7 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
         params=params,
         device=device,
         monotonic_direction=monotonic_direction,
+        monotonic_categorical=monotonic_categorical,
     )
 
     target_class = cfg.counterfactuals_params.target_class
@@ -367,18 +406,32 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
     if model_returned_mask.size == 0:
         model_returned_mask = np.ones(explanation_result.x_cfs.shape[0], dtype=bool)
 
-    # Replace NaN rows (where counterfactuals couldn't be found) with original factuals
+    # Replace failed counterfactual rows with the original factuals. NaN means the
+    # method produced nothing; inf or absurd magnitudes are flow samples that
+    # would overflow the space conversions downstream (legit generation-space
+    # values sit in ~[0, 1]).
     x_cfs_cleaned = explanation_result.x_cfs.copy()
-    nan_rows = np.any(np.isnan(x_cfs_cleaned), axis=1)
+    nan_rows = ~np.isfinite(x_cfs_cleaned).all(axis=1) | (np.abs(x_cfs_cleaned) >= 1e6).any(axis=1)
     if np.any(nan_rows):
         logger.info(
-            "Replacing %d rows with NaN (failed counterfactuals) with original factuals",
+            "Replacing %d rows with NaN/non-finite (failed counterfactuals) with original factuals",
             np.sum(nan_rows),
         )
         x_cfs_cleaned[nan_rows] = explanation_result.x_origs[nan_rows]
     x_cfs_cleaned = apply_categorical_discretization(
         dataset.categorical_features_lists, x_cfs_cleaned
     )
+
+    # Hard backstop against the flow's unbounded sampling tail: clip the numeric
+    # (MinMax) columns to the training data box [0, 1] in generation space before
+    # inverse-transform. Temperature already shrinks most of the tail; this bounds
+    # the residual few-percent of samples that a Gaussian base can still push far
+    # outside the data range, which otherwise dominate the mean-based proximity
+    # and diversity metrics. Categorical columns are left to the argmax snap above.
+    if cfg.experiment.get("clamp_numeric_to_box", True):
+        num_idx = dataset.numerical_features_indices
+        if len(num_idx) > 0:
+            x_cfs_cleaned[:, num_idx] = np.clip(x_cfs_cleaned[:, num_idx], 0.0, 1.0)
 
     # Handle multiple CFs per instance: extract first CF for metrics
     cf_per_instance = params.cf_samples_per_factual
@@ -531,15 +584,25 @@ def run_pipeline(cfg: DictConfig, dataset: MethodDataset, device: str):
 @hydra.main(config_path="./conf", config_name="dicoflex_traintest_config", version_base="1.2")
 def main(cfg: DictConfig):
     set_global_seed(cfg.experiment.seed)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    # Only hide the GPU when we are not asked to use it. Previously this was
+    # unconditionally "-1", which forced CPU even on a GPU node.
+    if not cfg.experiment.get("use_gpu", False):
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     device = "cuda" if torch.cuda.is_available() and cfg.experiment.get("use_gpu", False) else "cpu"
 
-    file_dataset = instantiate(cfg.dataset)
-    preprocessing_pipeline = build_model_space_pipeline(
-        cfg.experiment.get("model_space_scaler", "minmax")
+    gen_scaler = cfg.experiment.get("model_space_scaler", "minmax")
+    dataset = MethodDataset(instantiate(cfg.dataset), build_model_space_pipeline(gen_scaler))
+    # The classifier under explanation may live in a different model space than
+    # the one DiCoFlex generates in (e.g. the shared DICTUM classifier is
+    # trained in `standard` while the flow needs `minmax_qt`). A MethodDataset
+    # mutates the file dataset it wraps, so the second space gets its own.
+    disc_scaler = cfg.experiment.get("disc_model_space_scaler", gen_scaler)
+    disc_dataset = (
+        None
+        if disc_scaler == gen_scaler
+        else MethodDataset(instantiate(cfg.dataset), build_model_space_pipeline(disc_scaler))
     )
-    dataset = MethodDataset(file_dataset, preprocessing_pipeline)
-    run_pipeline(cfg, dataset, device)
+    run_pipeline(cfg, dataset, device, disc_dataset=disc_dataset)
 
 
 if __name__ == "__main__":
